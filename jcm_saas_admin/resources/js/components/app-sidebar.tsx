@@ -43,35 +43,29 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     return (
-        <Sidebar
-            collapsible="icon"
-            variant="inset"
-            className="border-r border-white/50 bg-white/70 backdrop-blur-[20px] shadow-[0_10px_40px_rgba(15,23,42,0.08)]"
-        >
-            {/* HEADER */}
-            <SidebarHeader className="border-b border-white/40">
+<Sidebar
+    collapsible="icon"
+    className="border-r border-slate-200 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
+>
+            <SidebarHeader className="flex h-[74px] items-center border-b border-slate-800 px-3 dark:border-slate-800">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton
                             size="lg"
                             asChild
-                            className="hover:bg-sky-50/70 transition"
+                            className="h-auto rounded-2xl px-3 py-3 transition hover:bg-slate-100 dark:hover:bg-slate-900"
                         >
-                            <Link href="/dashboard" prefetch>
-                                <div className="flex items-center gap-3">
-                                    {/* LOGO WRAPPER */}
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-md">
-                                        J
-                                    </div>
+                            <Link href="/dashboard" prefetch className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-sky-600 dark:border-slate-800 dark:bg-slate-900 dark:text-sky-400">
+                                    <AppLogo className="h-6 w-6" />
+                                </div>
 
-                                    {/* TEXT */}
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-slate-900 leading-none">
-                                            JCM Admin
-                                        </span>
-                                        <span className="text-xs text-slate-500">
-                                            Control Panel
-                                        </span>
+                                <div className="min-w-0 flex-1">
+                                    <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                        JCM Admin
+                                    </div>
+                                    <div className="truncate text-xs text-slate-500 dark:text-slate-400">
+                                        Control Panel
                                     </div>
                                 </div>
                             </Link>
@@ -80,16 +74,18 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            {/* CONTENT */}
-            <SidebarContent className="px-2 py-4">
+            <SidebarContent className="px-3 py-4">
+                <div className="mb-3 px-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                    Platform
+                </div>
+
                 <NavMain items={mainNavItems} />
             </SidebarContent>
 
-            {/* FOOTER */}
-            <SidebarFooter className="border-t border-white/40">
+            <SidebarFooter className="border-t border-slate-200 px-3 py-4 dark:border-slate-800">
                 <NavFooter items={footerNavItems} className="mt-auto" />
 
-                <div className="mt-3 border-t border-slate-200/60 pt-3">
+                <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-800">
                     <NavUser />
                 </div>
             </SidebarFooter>

@@ -26,7 +26,8 @@ class TransactionController extends Controller
                                 ->orWhere('email', 'like', "%{$search}%");
                         })
                         ->orWhereHas('order', function ($subQ) use ($search) {
-                            $subQ->where('order_code', 'like', "%{$search}%");
+                            $subQ->where('order_code', 'like', "%{$search}%")
+                                ->orWhere('status', 'like', "%{$search}%");
                         })
                         ->orWhereHas('order.product', function ($subQ) use ($search) {
                             $subQ->where('name', 'like', "%{$search}%");
@@ -42,7 +43,9 @@ class TransactionController extends Controller
             ->through(fn ($transaction) => [
                 'id' => $transaction->id,
                 'transaction_code' => $transaction->transaction_code,
+                'order_id' => $transaction->order?->id,
                 'order_code' => $transaction->order?->order_code,
+                'order_status' => $transaction->order?->status,
                 'user_name' => $transaction->user?->name,
                 'product_name' => $transaction->order?->product?->name,
                 'plan_name' => $transaction->order?->plan?->plan_name,
@@ -71,50 +74,14 @@ class TransactionController extends Controller
         ]);
     }
 
-    public function verify(Transaction $transaction): RedirectResponse
-    {
-        $transaction->update([
-            'status' => 'verified',
-            'verified_at' => now(),
-        ]);
-
-        if ($transaction->order) {
-            $transaction->order->update([
-                'status' => 'verified',
-                'verified_at' => now(),
-            ]);
-        }
-
-        return redirect()
-            ->route('admin.transactions.index')
-            ->with('success', 'Transaction verified successfully.');
-    }
-
-    public function reject(Request $request, Transaction $transaction): RedirectResponse
-    {
-        $validated = $request->validate([
-            'notes' => ['nullable', 'string'],
-        ]);
-
-        $transaction->update([
-            'status' => 'rejected',
-            'notes' => $validated['notes'] ?? $transaction->notes,
-        ]);
-
-        if ($transaction->order) {
-            $transaction->order->update([
-                'status' => 'rejected',
-                'notes' => $validated['notes'] ?? $transaction->order->notes,
-            ]);
-        }
-
-        return redirect()
-            ->route('admin.transactions.index')
-            ->with('success', 'Transaction rejected.');
-    }
-
     public function destroy(Transaction $transaction): RedirectResponse
     {
+        if ($transaction->status === 'verified') {
+            return redirect()
+                ->route('admin.transactions.index')
+                ->with('success', 'Verified transaction cannot be deleted.');
+        }
+
         $transaction->delete();
 
         return redirect()

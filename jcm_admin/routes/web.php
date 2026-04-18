@@ -57,10 +57,9 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{order}/reject', [OrderController::class, 'reject'])->name('reject');
             Route::delete('/{order}', [OrderController::class, 'destroy'])->name('destroy');
         });
+        
         Route::prefix('transactions')->as('transactions.')->group(function () {
-            Route::get('/', [TransactionController::class, 'index'])->name('index');
-            Route::post('/{transaction}/verify', [TransactionController::class, 'verify'])->name('verify');
-            Route::post('/{transaction}/reject', [TransactionController::class, 'reject'])->name('reject');
+            Route::get('/', [TransactionController::class, 'index'])->name('index');Route::post('/{transaction}/reject', [TransactionController::class, 'reject'])->name('reject');
             Route::delete('/{transaction}', [TransactionController::class, 'destroy'])->name('destroy');
         });
 

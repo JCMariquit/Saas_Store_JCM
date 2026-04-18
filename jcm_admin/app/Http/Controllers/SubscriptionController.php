@@ -3,90 +3,109 @@
 namespace App\Http\Controllers;
 
 use App\Models\Subscription;
-use App\Models\User;
-use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
-use Illuminate\Support\Str;
-
+use Inertia\Response;
 
 class SubscriptionController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
         $search = trim((string) $request->query('search', ''));
 
-        $subscriptions = Subscription::with(['user', 'product'])
+        $subscriptions = Subscription::with(['user', 'product', 'plan', 'order'])
             ->when($search !== '', function ($query) use ($search) {
-                $query->whereHas('user', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('subscription_code', 'like', "%{$search}%")
+                        ->orWhere('subscription_type', 'like', "%{$search}%")
+                        ->orWhere('status', 'like', "%{$search}%")
+                        ->orWhereHas('user', function ($subQ) use ($search) {
+                            $subQ->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('product', function ($subQ) use ($search) {
+                            $subQ->where('name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('plan', function ($subQ) use ($search) {
+                            $subQ->where('plan_name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('order', function ($subQ) use ($search) {
+                            $subQ->where('order_code', 'like', "%{$search}%");
+                        });
                 });
             })
-            ->latest()
+            ->latest('id')
             ->paginate(10)
             ->withQueryString()
-            ->through(fn ($sub) => [
-                'id' => $sub->id,
-                'code' => $sub->subscription_code,
-                'user' => $sub->user->name,
-                'product' => $sub->product->name,
-                'type' => $sub->subscription_type,
-                'status' => $sub->status,
-                'start_date' => $sub->start_date,
-                'end_date' => $sub->end_date,
-            ]);
+            ->through(function ($sub) {
+                return [
+                    'id' => $sub->id,
+                    'subscription_code' => $sub->subscription_code,
+                    'order_code' => $sub->order?->order_code,
+                    'user_name' => $sub->user?->name,
+                    'product_name' => $sub->product?->name,
+                    'plan_name' => $sub->plan?->plan_name,
+                    'subscription_type' => $sub->subscription_type,
+                    'status' => $sub->status,
+                    'start_date' => optional($sub->start_date)?->format('Y-m-d'),
+                    'end_date' => optional($sub->end_date)?->format('Y-m-d'),
+                    'duration_days' => $sub->duration_days,
+                    'amount' => $sub->amount,
+                    'notes' => $sub->notes,
+                ];
+            });
 
         return Inertia::render('subscriptions/index', [
             'subscriptions' => $subscriptions,
             'filters' => [
                 'search' => $search,
             ],
-            'users' => User::select('id', 'name')->get(),
-            'products' => Product::select('id', 'name')->get(),
+            'stats' => [
+                'total_subscriptions' => Subscription::count(),
+                'active_subscriptions' => Subscription::where('status', 'active')->count(),
+                'pending_subscriptions' => Subscription::where('status', 'pending')->count(),
+                'expired_subscriptions' => Subscription::where('status', 'expired')->count(),
+            ],
         ]);
     }
 
-    public function store(Request $request)
+    public function destroy(Subscription $subscription): RedirectResponse
     {
-        $data = $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
-            'product_id' => ['required', 'exists:products,id'],
-            'subscription_type' => ['required', 'in:trial,monthly,yearly,custom'],
-            'duration_days' => ['required', 'integer', 'min:1'],
-        ]);
+        if ($subscription->status === 'active') {
+            return back()->with('success', 'Active subscription cannot be deleted directly.');
+        }
 
-        $start = now();
-        $durationDays = (int) $data['duration_days'];
-        $end = now()->addDays($durationDays);
-
-        Subscription::create([
-            'user_id' => $data['user_id'],
-            'product_id' => $data['product_id'],
-            'subscription_code' => 'SUB-' . strtoupper(\Illuminate\Support\Str::random(6)),
-            'subscription_type' => $data['subscription_type'],
-            'status' => 'pending',
-            'start_date' => $start->toDateString(),
-            'end_date' => $end->toDateString(),
-            'duration_days' => $durationDays,
-        ]);
-
-        return back()->with('success', 'Subscription created.');
-    }
-
-    public function verify(Subscription $subscription)
-    {
-        $subscription->update([
-            'status' => 'active',
-            'verified_at' => now(),
-        ]);
-
-        return back()->with('success', 'Subscription verified.');
-    }
-
-    public function destroy(Subscription $subscription)
-    {
         $subscription->delete();
 
-        return back()->with('success', 'Subscription deleted.');
+        return back()->with('success', 'Subscription deleted successfully.');
+    }
+
+    public function cancel(Request $request, Subscription $subscription): RedirectResponse
+    {
+        $validated = $request->validate([
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $subscription->update([
+            'status' => 'cancelled',
+            'notes' => $validated['notes'] ?? $subscription->notes,
+        ]);
+
+        return back()->with('success', 'Subscription cancelled successfully.');
+    }
+
+    public function lock(Request $request, Subscription $subscription): RedirectResponse
+    {
+        $validated = $request->validate([
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        $subscription->update([
+            'status' => 'locked',
+            'notes' => $validated['notes'] ?? $subscription->notes,
+        ]);
+
+        return back()->with('success', 'Subscription locked successfully.');
     }
 }

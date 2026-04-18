@@ -11,7 +11,6 @@ class Order extends Model
         'user_id',
         'product_id',
         'plan_id',
-        'subscription_id',
         'amount',
         'duration_days',
         'status',
@@ -45,16 +44,16 @@ class Order extends Model
 
     public function subscription()
     {
-        return $this->belongsTo(Subscription::class);
+        return $this->hasOne(Subscription::class, 'order_id');
     }
 
     public function transactions()
     {
-        return $this->hasMany(Transaction::class);
+        return $this->hasMany(Transaction::class, 'order_id');
     }
 
     public function latestTransaction()
     {
-        return $this->hasOne(Transaction::class)->latestOfMany();
+        return $this->hasOne(Transaction::class, 'order_id')->latestOfMany();
     }
 }

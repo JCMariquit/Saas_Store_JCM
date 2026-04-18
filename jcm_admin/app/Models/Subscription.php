@@ -9,6 +9,8 @@ class Subscription extends Model
     protected $fillable = [
         'user_id',
         'product_id',
+        'order_id',
+        'plan_id',
         'subscription_code',
         'subscription_type',
         'status',
@@ -16,19 +18,14 @@ class Subscription extends Model
         'end_date',
         'duration_days',
         'amount',
-        'payment_method',
-        'reference_number',
-        'verified_at',
         'notes',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
-        'verified_at' => 'datetime',
+        'amount' => 'decimal:2',
     ];
-
-    // 🔗 RELATIONSHIPS
 
     public function user()
     {
@@ -38,5 +35,15 @@ class Subscription extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function plan()
+    {
+        return $this->belongsTo(Plan::class);
     }
 }

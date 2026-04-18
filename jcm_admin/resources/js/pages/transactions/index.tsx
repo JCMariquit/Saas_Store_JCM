@@ -1,9 +1,8 @@
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { FormEventHandler, useEffect, useMemo, useState } from 'react';
-import { BadgeCheck, Search, Trash2, XCircle } from 'lucide-react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { useEffect, useMemo, useState } from 'react';
+import { ExternalLink, Search, Trash2 } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
-import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +11,9 @@ import { type BreadcrumbItem } from '@/types';
 type TransactionRow = {
     id: number;
     transaction_code: string;
+    order_id: number | null;
     order_code: string | null;
+    order_status: 'pending' | 'paid' | 'verified' | 'failed' | 'cancelled' | null;
     user_name: string | null;
     product_name: string | null;
     plan_name: string | null;
@@ -60,21 +61,11 @@ type PageProps = {
     };
 };
 
-type RejectForm = {
-    notes: string;
-};
-
 export default function TransactionsIndex() {
     const { props } = usePage<PageProps>();
     const { transactions, filters, stats, flash } = props;
 
     const [search, setSearch] = useState(filters.search ?? '');
-    const [openRejectModal, setOpenRejectModal] = useState(false);
-    const [selectedTransaction, setSelectedTransaction] = useState<TransactionRow | null>(null);
-
-    const rejectForm = useForm<RejectForm>({
-        notes: '',
-    });
 
     useEffect(() => {
         const timeout = setTimeout(() => {
@@ -92,36 +83,18 @@ export default function TransactionsIndex() {
         return () => clearTimeout(timeout);
     }, [search]);
 
-    const openReject = (transaction: TransactionRow) => {
-        setSelectedTransaction(transaction);
-        rejectForm.reset();
-        rejectForm.clearErrors();
-        setOpenRejectModal(true);
-    };
-
-    const closeReject = () => {
-        setSelectedTransaction(null);
-        rejectForm.reset();
-        rejectForm.clearErrors();
-        setOpenRejectModal(false);
-    };
-
-    const submitReject: FormEventHandler = (e) => {
-        e.preventDefault();
-        if (!selectedTransaction) return;
-
-        rejectForm.post(route('admin.transactions.reject', selectedTransaction.id), {
-            preserveScroll: true,
-            onSuccess: () => closeReject(),
-        });
-    };
-
-    const verifyTransaction = (transaction: TransactionRow) => {
-        router.post(route('admin.transactions.verify', transaction.id), {}, { preserveScroll: true });
-    };
-
     const deleteTransaction = (transaction: TransactionRow) => {
         router.delete(route('admin.transactions.destroy', transaction.id), { preserveScroll: true });
+    };
+
+    const goToOrder = (transaction: TransactionRow) => {
+        if (!transaction.order_id) return;
+
+        router.get(
+            route('admin.orders.index'),
+            { search: transaction.order_code },
+            { preserveScroll: true }
+        );
     };
 
     const resultsText = useMemo(() => {
@@ -135,7 +108,7 @@ export default function TransactionsIndex() {
             currency: 'PHP',
         }).format(Number(value));
 
-    const statusClass = (status: TransactionRow['status']) => {
+    const txStatusClass = (status: TransactionRow['status']) => {
         switch (status) {
             case 'verified':
                 return 'border-green-200 bg-green-100 text-green-700';
@@ -144,6 +117,27 @@ export default function TransactionsIndex() {
             default:
                 return 'border-yellow-200 bg-yellow-100 text-yellow-700';
         }
+    };
+
+    const orderStatusClass = (status: TransactionRow['order_status']) => {
+        switch (status) {
+            case 'verified':
+                return 'border-green-200 bg-green-100 text-green-700';
+            case 'paid':
+                return 'border-yellow-200 bg-yellow-100 text-yellow-700';
+            case 'failed':
+                return 'border-red-200 bg-red-100 text-red-700';
+            case 'cancelled':
+                return 'border-slate-200 bg-slate-100 text-slate-700';
+            default:
+                return 'border-blue-200 bg-blue-100 text-blue-700';
+        }
+    };
+
+    const orderStatusLabel = (status: TransactionRow['order_status']) => {
+        if (status === 'paid') return 'for verification';
+        if (status === 'failed') return 'failed';
+        return status ?? '-';
     };
 
     const getPaginationAriaLabel = (label: string) => {
@@ -179,7 +173,7 @@ export default function TransactionsIndex() {
                             Transactions
                         </h1>
                         <p className="mt-1 text-sm text-slate-500">
-                            View all payment transactions, references, and verification records.
+                            View all payment transactions, references, and linked order records.
                         </p>
                     </div>
                 </div>
@@ -254,7 +248,8 @@ export default function TransactionsIndex() {
                                     <th className="px-4 py-3 text-left font-medium">Product / Plan</th>
                                     <th className="px-4 py-3 text-left font-medium">Payment</th>
                                     <th className="px-4 py-3 text-left font-medium">Amount</th>
-                                    <th className="px-4 py-3 text-left font-medium">Status</th>
+                                    <th className="px-4 py-3 text-left font-medium">Transaction Status</th>
+                                    <th className="px-4 py-3 text-left font-medium">Order Status</th>
                                     <th className="px-4 py-3 text-center font-medium">Actions</th>
                                 </tr>
                             </thead>
@@ -301,7 +296,7 @@ export default function TransactionsIndex() {
                                             </td>
                                             <td className="px-4 py-3">
                                                 <span
-                                                    className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${statusClass(
+                                                    className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${txStatusClass(
                                                         transaction.status,
                                                     )}`}
                                                 >
@@ -309,43 +304,45 @@ export default function TransactionsIndex() {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3">
+                                                {transaction.order_status ? (
+                                                    <span
+                                                        className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${orderStatusClass(
+                                                            transaction.order_status,
+                                                        )}`}
+                                                    >
+                                                        {orderStatusLabel(transaction.order_status)}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-400">-</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    {transaction.status === 'submitted' && (
-                                                        <>
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                className="h-9 rounded-md border-green-200 px-3 text-green-600 hover:bg-green-50 hover:text-green-700"
-                                                                title="Verify transaction"
-                                                                aria-label={`Verify transaction ${transaction.transaction_code}`}
-                                                                onClick={() => verifyTransaction(transaction)}
-                                                            >
-                                                                <BadgeCheck className="h-4 w-4" />
-                                                            </Button>
-
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                className="h-9 rounded-md border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                                title="Reject transaction"
-                                                                aria-label={`Reject transaction ${transaction.transaction_code}`}
-                                                                onClick={() => openReject(transaction)}
-                                                            >
-                                                                <XCircle className="h-4 w-4" />
-                                                            </Button>
-                                                        </>
+                                                    {transaction.order_id && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            className="h-9 rounded-md border-slate-300 px-3 text-slate-700 hover:bg-slate-50"
+                                                            title="Manage in Orders"
+                                                            aria-label={`Manage order ${transaction.order_code}`}
+                                                            onClick={() => goToOrder(transaction)}
+                                                        >
+                                                            <ExternalLink className="h-4 w-4" />
+                                                        </Button>
                                                     )}
 
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        className="h-9 rounded-md border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                        title="Delete transaction"
-                                                        aria-label={`Delete transaction ${transaction.transaction_code}`}
-                                                        onClick={() => deleteTransaction(transaction)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                                    {transaction.status !== 'verified' && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            className="h-9 rounded-md border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                            title="Delete transaction"
+                                                            aria-label={`Delete transaction ${transaction.transaction_code}`}
+                                                            onClick={() => deleteTransaction(transaction)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -353,7 +350,7 @@ export default function TransactionsIndex() {
                                 ) : (
                                     <tr>
                                         <td
-                                            colSpan={8}
+                                            colSpan={9}
                                             className="px-4 py-10 text-center text-sm text-slate-500"
                                         >
                                             No transactions found.
@@ -397,46 +394,6 @@ export default function TransactionsIndex() {
                     )}
                 </div>
             </div>
-
-            {openRejectModal && selectedTransaction && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
-                        <div className="border-b border-slate-200 px-6 py-4">
-                            <h2 className="text-xl font-semibold text-slate-900">Reject Transaction</h2>
-                            <p className="mt-1 text-sm text-slate-500">
-                                Add a note and reject this transaction.
-                            </p>
-                        </div>
-
-                        <form onSubmit={submitReject} className="space-y-5 px-6 py-5">
-                            <div className="grid gap-2">
-                                <Label htmlFor="reject_notes">Reason / Notes</Label>
-                                <textarea
-                                    id="reject_notes"
-                                    value={rejectForm.data.notes}
-                                    onChange={(e) => rejectForm.setData('notes', e.target.value)}
-                                    className="min-h-[100px] rounded-md border border-slate-300 px-3 py-2 text-sm"
-                                    placeholder="Why are you rejecting this transaction?"
-                                />
-                                <InputError message={rejectForm.errors.notes} />
-                            </div>
-
-                            <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button type="button" variant="outline" onClick={closeReject}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={rejectForm.processing}
-                                    className="bg-red-600 text-white hover:bg-red-700"
-                                >
-                                    {rejectForm.processing ? 'Rejecting...' : 'Reject Transaction'}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </AppLayout>
     );
 }

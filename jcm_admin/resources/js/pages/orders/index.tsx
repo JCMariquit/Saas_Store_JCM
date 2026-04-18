@@ -19,6 +19,13 @@ type PlanOption = {
     label: string;
 };
 
+type UserOption = {
+    id: number;
+    name: string;
+    email: string;
+    label: string;
+};
+
 type OrderRow = {
     id: number;
     order_code: string;
@@ -27,10 +34,13 @@ type OrderRow = {
     plan_name: string | null;
     amount: number;
     duration_days: number;
-    status: 'pending' | 'for_verification' | 'verified' | 'rejected' | 'cancelled';
+    status: 'pending' | 'paid' | 'verified' | 'failed' | 'cancelled';
+    status_label: string;
     ordered_at: string | null;
     paid_at: string | null;
     verified_at: string | null;
+    has_subscription: boolean;
+    subscription_code: string | null;
     transaction: null | {
         id: number;
         transaction_code: string;
@@ -67,6 +77,7 @@ type PageProps = {
     };
     orders: OrdersPagination;
     plans: PlanOption[];
+    users: UserOption[];
     stats: {
         total_orders: number;
         pending_orders: number;
@@ -98,7 +109,7 @@ type RejectForm = {
 
 export default function OrdersIndex() {
     const { props } = usePage<PageProps>();
-    const { orders, plans, filters, stats, flash } = props;
+    const { orders, plans, users, filters, stats, flash } = props;
 
     const [search, setSearch] = useState(filters.search ?? '');
     const [openCreateModal, setOpenCreateModal] = useState(false);
@@ -239,9 +250,9 @@ export default function OrdersIndex() {
         switch (status) {
             case 'verified':
                 return 'border-green-200 bg-green-100 text-green-700';
-            case 'for_verification':
+            case 'paid':
                 return 'border-yellow-200 bg-yellow-100 text-yellow-700';
-            case 'rejected':
+            case 'failed':
                 return 'border-red-200 bg-red-100 text-red-700';
             case 'cancelled':
                 return 'border-slate-200 bg-slate-100 text-slate-700';
@@ -346,6 +357,7 @@ export default function OrdersIndex() {
                                     <th className="px-4 py-3 text-left font-medium">Amount</th>
                                     <th className="px-4 py-3 text-left font-medium">Order Status</th>
                                     <th className="px-4 py-3 text-left font-medium">Transaction</th>
+                                    <th className="px-4 py-3 text-left font-medium">Subscription</th>
                                     <th className="px-4 py-3 text-center font-medium">Actions</th>
                                 </tr>
                             </thead>
@@ -359,9 +371,7 @@ export default function OrdersIndex() {
                                         >
                                             <td className="px-4 py-3">
                                                 <div className="font-medium text-slate-900">{order.order_code}</div>
-                                                <div className="text-xs text-slate-500">
-                                                    {order.ordered_at ?? '-'}
-                                                </div>
+                                                <div className="text-xs text-slate-500">{order.ordered_at ?? '-'}</div>
                                             </td>
                                             <td className="px-4 py-3 text-slate-700">{order.user_name}</td>
                                             <td className="px-4 py-3">
@@ -378,7 +388,7 @@ export default function OrdersIndex() {
                                                         order.status,
                                                     )}`}
                                                 >
-                                                    {order.status.replace('_', ' ')}
+                                                    {order.status_label}
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3">
@@ -405,6 +415,15 @@ export default function OrdersIndex() {
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
+                                                {order.has_subscription ? (
+                                                    <span className="inline-flex rounded-md border border-green-200 bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">
+                                                        {order.subscription_code ?? 'Created'}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-400">Not created</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3">
                                                 <div className="flex items-center justify-center gap-2">
                                                     {order.status === 'pending' && (
                                                         <Button
@@ -418,7 +437,7 @@ export default function OrdersIndex() {
                                                         </Button>
                                                     )}
 
-                                                    {order.status === 'for_verification' && (
+                                                    {order.status === 'paid' && (
                                                         <>
                                                             <Button
                                                                 type="button"
@@ -457,7 +476,7 @@ export default function OrdersIndex() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
+                                        <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">
                                             No orders found.
                                         </td>
                                     </tr>
@@ -490,11 +509,11 @@ export default function OrdersIndex() {
                         <form onSubmit={submitCreate} className="space-y-5 px-6 py-5">
                             <div className="grid gap-5">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="create_user_id">User ID</Label>
-                                    <Input
+                                    <Label htmlFor="create_user_id">User</Label>
+                                    <select
                                         id="create_user_id"
-                                        type="number"
-                                        min="1"
+                                        name="user_id"
+                                        title="Select user"
                                         value={createForm.data.user_id}
                                         onChange={(e) =>
                                             createForm.setData(
@@ -502,26 +521,33 @@ export default function OrdersIndex() {
                                                 e.target.value === '' ? '' : Number(e.target.value),
                                             )
                                         }
-                                        placeholder="Enter user ID"
-                                    />
+                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+                                    >
+                                        <option value="">Select user</option>
+                                        {users.map((user) => (
+                                            <option key={user.id} value={user.id}>
+                                                {user.label}
+                                            </option>
+                                        ))}
+                                    </select>
                                     <InputError message={createForm.errors.user_id} />
                                 </div>
 
                                 <div className="grid gap-2">
                                     <Label htmlFor="create_plan_id">Plan</Label>
-                                        <select
-                                            id="create_plan_id"
-                                            name="plan_id"
-                                            title="Select plan"
-                                            value={createForm.data.plan_id}
-                                            onChange={(e) =>
-                                                createForm.setData(
-                                                    'plan_id',
-                                                    e.target.value === '' ? '' : Number(e.target.value),
-                                                )
-                                            }
-                                            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
-                                        >
+                                    <select
+                                        id="create_plan_id"
+                                        name="plan_id"
+                                        title="Select plan"
+                                        value={createForm.data.plan_id}
+                                        onChange={(e) =>
+                                            createForm.setData(
+                                                'plan_id',
+                                                e.target.value === '' ? '' : Number(e.target.value),
+                                            )
+                                        }
+                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+                                    >
                                         <option value="">Select plan</option>
                                         {plans.map((plan) => (
                                             <option key={plan.id} value={plan.id}>
@@ -581,19 +607,19 @@ export default function OrdersIndex() {
                             <div className="grid gap-5 md:grid-cols-2">
                                 <div className="grid gap-2">
                                     <Label htmlFor="payment_method">Payment Method</Label>
-                                        <select
-                                            id="payment_method"
-                                            name="payment_method"
-                                            title="Select payment method"
-                                            value={paymentForm.data.payment_method}
-                                            onChange={(e) =>
-                                                paymentForm.setData(
-                                                    'payment_method',
-                                                    e.target.value as PaymentForm['payment_method'],
-                                                )
-                                            }
-                                            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
-                                        >
+                                    <select
+                                        id="payment_method"
+                                        name="payment_method"
+                                        title="Select payment method"
+                                        value={paymentForm.data.payment_method}
+                                        onChange={(e) =>
+                                            paymentForm.setData(
+                                                'payment_method',
+                                                e.target.value as PaymentForm['payment_method'],
+                                            )
+                                        }
+                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+                                    >
                                         <option value="gcash">GCash</option>
                                         <option value="maya">Maya</option>
                                         <option value="bank_transfer">Bank Transfer</option>
@@ -608,9 +634,7 @@ export default function OrdersIndex() {
                                     <Input
                                         id="reference_number"
                                         value={paymentForm.data.reference_number}
-                                        onChange={(e) =>
-                                            paymentForm.setData('reference_number', e.target.value)
-                                        }
+                                        onChange={(e) => paymentForm.setData('reference_number', e.target.value)}
                                         placeholder="Enter reference number"
                                     />
                                     <InputError message={paymentForm.errors.reference_number} />
@@ -621,9 +645,7 @@ export default function OrdersIndex() {
                                     <Input
                                         id="account_name"
                                         value={paymentForm.data.account_name}
-                                        onChange={(e) =>
-                                            paymentForm.setData('account_name', e.target.value)
-                                        }
+                                        onChange={(e) => paymentForm.setData('account_name', e.target.value)}
                                         placeholder="Optional account name"
                                     />
                                     <InputError message={paymentForm.errors.account_name} />
@@ -634,9 +656,7 @@ export default function OrdersIndex() {
                                     <Input
                                         id="account_number"
                                         value={paymentForm.data.account_number}
-                                        onChange={(e) =>
-                                            paymentForm.setData('account_number', e.target.value)
-                                        }
+                                        onChange={(e) => paymentForm.setData('account_number', e.target.value)}
                                         placeholder="Optional account number"
                                     />
                                     <InputError message={paymentForm.errors.account_number} />

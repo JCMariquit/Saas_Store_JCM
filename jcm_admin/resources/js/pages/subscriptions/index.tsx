@@ -1,37 +1,45 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, CheckCircle, Trash2, Layers3, Clock3, ShieldCheck } from 'lucide-react';
+import { Search, Trash2, Layers3, Clock3, ShieldCheck, Ban, Lock } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import InputError from '@/components/input-error';
 import { type BreadcrumbItem } from '@/types';
 
 type SubscriptionRow = {
     id: number;
-    code: string;
-    user: string;
-    product: string;
-    type: 'trial' | 'monthly' | 'yearly' | 'custom';
+    subscription_code: string;
+    order_code: string | null;
+    user_name: string | null;
+    product_name: string | null;
+    plan_name: string | null;
+    subscription_type: 'trial' | 'monthly' | 'yearly' | 'custom';
     status: 'pending' | 'active' | 'expired' | 'cancelled' | 'locked';
     start_date: string | null;
     end_date: string | null;
+    duration_days: number;
+    amount: number | string | null;
+    notes: string | null;
+};
+
+type PaginationLink = {
+    url: string | null;
+    label: string;
+    active: boolean;
 };
 
 type SubscriptionPagination = {
     data: SubscriptionRow[];
-    total?: number;
-};
-
-type SelectUser = {
-    id: number;
-    name: string;
-};
-
-type SelectProduct = {
-    id: number;
-    name: string;
+    current_page: number;
+    from: number | null;
+    last_page: number;
+    links: PaginationLink[];
+    per_page: number;
+    to: number | null;
+    total: number;
 };
 
 type PageProps = {
@@ -39,32 +47,32 @@ type PageProps = {
     filters: {
         search: string;
     };
-    users: SelectUser[];
-    products: SelectProduct[];
+    stats: {
+        total_subscriptions: number;
+        active_subscriptions: number;
+        pending_subscriptions: number;
+        expired_subscriptions: number;
+    };
     flash?: {
         success?: string;
     };
 };
 
-type SubscriptionForm = {
-    user_id: number | '';
-    product_id: number | '';
-    subscription_type: 'trial' | 'monthly' | 'yearly' | 'custom';
-    duration_days: number;
+type ActionForm = {
+    notes: string;
 };
 
 export default function SubscriptionsIndex() {
     const { props } = usePage<PageProps>();
-    const { subscriptions, filters, users, products, flash } = props;
+    const { subscriptions, filters, stats, flash } = props;
 
     const [search, setSearch] = useState(filters.search || '');
-    const [open, setOpen] = useState(false);
+    const [openCancelModal, setOpenCancelModal] = useState(false);
+    const [openLockModal, setOpenLockModal] = useState(false);
+    const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionRow | null>(null);
 
-    const form = useForm<SubscriptionForm>({
-        user_id: '',
-        product_id: '',
-        subscription_type: 'trial',
-        duration_days: 7,
+    const actionForm = useForm<ActionForm>({
+        notes: '',
     });
 
     useEffect(() => {
@@ -83,47 +91,19 @@ export default function SubscriptionsIndex() {
         return () => clearTimeout(delay);
     }, [search]);
 
-    const openCreateModal = () => {
-        form.reset();
-        form.setData({
-            user_id: '',
-            product_id: '',
-            subscription_type: 'trial',
-            duration_days: 7,
-        });
-        setOpen(true);
+    const resultsText = useMemo(() => {
+        if (!subscriptions.total) return 'No subscriptions found.';
+        return `Showing ${subscriptions.from ?? 0} to ${subscriptions.to ?? 0} of ${subscriptions.total} subscriptions`;
+    }, [subscriptions.from, subscriptions.to, subscriptions.total]);
+
+    const formatPrice = (value: number | string | null) => {
+        if (value === null || value === undefined) return '-';
+
+        return new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: 'PHP',
+        }).format(Number(value));
     };
-
-    const closeCreateModal = () => {
-        form.reset();
-        setOpen(false);
-    };
-
-    const submit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-
-        form.post(route('admin.subscriptions.store'), {
-            preserveScroll: true,
-            onSuccess: () => {
-                closeCreateModal();
-            },
-        });
-    };
-
-    const totalSubscriptions = useMemo(
-        () => subscriptions.total ?? subscriptions.data.length,
-        [subscriptions],
-    );
-
-    const activeCount = useMemo(
-        () => subscriptions.data.filter((s) => s.status === 'active').length,
-        [subscriptions.data],
-    );
-
-    const pendingCount = useMemo(
-        () => subscriptions.data.filter((s) => s.status === 'pending').length,
-        [subscriptions.data],
-    );
 
     const getStatusBadgeClass = (status: SubscriptionRow['status']) => {
         switch (status) {
@@ -142,17 +122,57 @@ export default function SubscriptionsIndex() {
         }
     };
 
-    const handleTypeChange = (value: SubscriptionForm['subscription_type']) => {
-        let days = form.data.duration_days;
+    const openCancel = (subscription: SubscriptionRow) => {
+        setSelectedSubscription(subscription);
+        actionForm.reset();
+        actionForm.clearErrors();
+        setOpenCancelModal(true);
+    };
 
-        if (value === 'trial') days = 7;
-        if (value === 'monthly') days = 30;
-        if (value === 'yearly') days = 365;
+    const closeCancel = () => {
+        setSelectedSubscription(null);
+        actionForm.reset();
+        actionForm.clearErrors();
+        setOpenCancelModal(false);
+    };
 
-        form.setData({
-            ...form.data,
-            subscription_type: value,
-            duration_days: days,
+    const openLock = (subscription: SubscriptionRow) => {
+        setSelectedSubscription(subscription);
+        actionForm.reset();
+        actionForm.clearErrors();
+        setOpenLockModal(true);
+    };
+
+    const closeLock = () => {
+        setSelectedSubscription(null);
+        actionForm.reset();
+        actionForm.clearErrors();
+        setOpenLockModal(false);
+    };
+
+    const submitCancel = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!selectedSubscription) return;
+
+        actionForm.post(route('admin.subscriptions.cancel', selectedSubscription.id), {
+            preserveScroll: true,
+            onSuccess: () => closeCancel(),
+        });
+    };
+
+    const submitLock = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!selectedSubscription) return;
+
+        actionForm.post(route('admin.subscriptions.lock', selectedSubscription.id), {
+            preserveScroll: true,
+            onSuccess: () => closeLock(),
+        });
+    };
+
+    const deleteSubscription = (subscription: SubscriptionRow) => {
+        router.delete(route('admin.subscriptions.destroy', subscription.id), {
+            preserveScroll: true,
         });
     };
 
@@ -174,23 +194,18 @@ export default function SubscriptionsIndex() {
                             Subscriptions
                         </h1>
                         <p className="mt-1 text-sm text-slate-500">
-                            Manage subscription plans, durations, and manual verification.
+                            View active subscriptions generated from verified orders.
                         </p>
                     </div>
-
-                    <Button onClick={openCreateModal} className="rounded-md">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Subscription
-                    </Button>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-4">
                     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-slate-500">Total Subscriptions</p>
                                 <h3 className="mt-1 text-2xl font-bold text-slate-900">
-                                    {totalSubscriptions}
+                                    {stats.total_subscriptions}
                                 </h3>
                             </div>
                             <div className="rounded-md bg-slate-100 p-3">
@@ -204,7 +219,7 @@ export default function SubscriptionsIndex() {
                             <div>
                                 <p className="text-sm text-slate-500">Active</p>
                                 <h3 className="mt-1 text-2xl font-bold text-green-600">
-                                    {activeCount}
+                                    {stats.active_subscriptions}
                                 </h3>
                             </div>
                             <div className="rounded-md bg-green-50 p-3">
@@ -218,11 +233,25 @@ export default function SubscriptionsIndex() {
                             <div>
                                 <p className="text-sm text-slate-500">Pending</p>
                                 <h3 className="mt-1 text-2xl font-bold text-yellow-600">
-                                    {pendingCount}
+                                    {stats.pending_subscriptions}
                                 </h3>
                             </div>
                             <div className="rounded-md bg-yellow-50 p-3">
                                 <Clock3 className="h-5 w-5 text-yellow-600" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-slate-500">Expired</p>
+                                <h3 className="mt-1 text-2xl font-bold text-red-600">
+                                    {stats.expired_subscriptions}
+                                </h3>
+                            </div>
+                            <div className="rounded-md bg-red-50 p-3">
+                                <Clock3 className="h-5 w-5 text-red-600" />
                             </div>
                         </div>
                     </div>
@@ -233,22 +262,17 @@ export default function SubscriptionsIndex() {
                         {flash.success}
                     </div>
                 )}
+
                 <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
                     <div className="border-b border-slate-200 px-5 py-4">
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                            
-                            {/* LEFT SIDE */}
                             <div>
                                 <h2 className="text-lg font-semibold text-slate-900">
                                     Subscription List
                                 </h2>
-                                <p className="mt-1 text-sm text-slate-500">
-                                    Showing {subscriptions.data.length} record
-                                    {subscriptions.data.length !== 1 ? 's' : ''}
-                                </p>
+                                <p className="mt-1 text-sm text-slate-500">{resultsText}</p>
                             </div>
 
-                            {/* RIGHT SIDE (SEARCH) */}
                             <div className="relative w-full md:max-w-sm">
                                 <Label htmlFor="subscription-search" className="sr-only">
                                     Search subscriptions
@@ -258,11 +282,10 @@ export default function SubscriptionsIndex() {
                                     id="subscription-search"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search subscription..."
+                                    placeholder="Search code, order, user, product, plan..."
                                     className="rounded-md pl-9"
                                 />
                             </div>
-
                         </div>
                     </div>
 
@@ -270,10 +293,12 @@ export default function SubscriptionsIndex() {
                         <table className="w-full text-sm">
                             <thead className="bg-slate-50 text-slate-600">
                                 <tr>
-                                    <th className="px-4 py-3 text-left font-medium">Code</th>
+                                    <th className="px-4 py-3 text-left font-medium">Subscription</th>
+                                    <th className="px-4 py-3 text-left font-medium">Order</th>
                                     <th className="px-4 py-3 text-left font-medium">User</th>
-                                    <th className="px-4 py-3 text-left font-medium">Product</th>
+                                    <th className="px-4 py-3 text-left font-medium">Product / Plan</th>
                                     <th className="px-4 py-3 text-left font-medium">Type</th>
+                                    <th className="px-4 py-3 text-left font-medium">Amount</th>
                                     <th className="px-4 py-3 text-left font-medium">Status</th>
                                     <th className="px-4 py-3 text-left font-medium">Start</th>
                                     <th className="px-4 py-3 text-left font-medium">End</th>
@@ -282,82 +307,98 @@ export default function SubscriptionsIndex() {
                             </thead>
 
                             <tbody>
-                                {subscriptions.data.map((sub) => (
-                                    <tr
-                                        key={sub.id}
-                                        className="border-t border-slate-200 transition hover:bg-slate-50"
-                                    >
-                                        <td className="px-4 py-3 font-medium text-slate-900">
-                                            {sub.code}
-                                        </td>
-                                        <td className="px-4 py-3 text-slate-700">{sub.user}</td>
-                                        <td className="px-4 py-3 text-slate-700">{sub.product}</td>
-                                        <td className="px-4 py-3 capitalize text-slate-700">
-                                            {sub.type}
-                                        </td>
-
-                                        <td className="px-4 py-3">
-                                            <span
-                                                className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${getStatusBadgeClass(
-                                                    sub.status,
-                                                )}`}
-                                            >
-                                                {sub.status}
-                                            </span>
-                                        </td>
-
-                                        <td className="px-4 py-3 text-slate-700">
-                                            {sub.start_date ?? '-'}
-                                        </td>
-                                        <td className="px-4 py-3 text-slate-700">
-                                            {sub.end_date ?? '-'}
-                                        </td>
-
-                                        <td className="px-4 py-3 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                {sub.status === 'pending' && (
-                                                    <Button
-                                                        size="sm"
-                                                        className="rounded-md"
-                                                        title="Verify subscription"
-                                                        aria-label={`Verify subscription ${sub.code}`}
-                                                        onClick={() =>
-                                                            router.post(
-                                                                route(
-                                                                    'admin.subscriptions.verify',
-                                                                    sub.id,
-                                                                ),
-                                                            )
-                                                        }
-                                                    >
-                                                        <CheckCircle className="mr-1 h-4 w-4" />
-                                                        Verify
-                                                    </Button>
-                                                )}
-
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    className="h-9 rounded-md border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                    title="Delete subscription"
-                                                    aria-label={`Delete subscription ${sub.code}`}
-                                                    onClick={() =>
-                                                        router.delete(
-                                                            route('admin.subscriptions.destroy', sub.id)
-                                                        )
-                                                    }
+                                {subscriptions.data.length > 0 ? (
+                                    subscriptions.data.map((sub) => (
+                                        <tr
+                                            key={sub.id}
+                                            className="border-t border-slate-200 transition hover:bg-slate-50"
+                                        >
+                                            <td className="px-4 py-3 font-medium text-slate-900">
+                                                {sub.subscription_code}
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-700">
+                                                {sub.order_code ?? '-'}
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-700">
+                                                {sub.user_name ?? '-'}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="font-medium text-slate-900">
+                                                    {sub.product_name ?? '-'}
+                                                </div>
+                                                <div className="text-xs text-slate-500">
+                                                    {sub.plan_name ?? '-'}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 capitalize text-slate-700">
+                                                {sub.subscription_type}
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-700">
+                                                <div>{formatPrice(sub.amount)}</div>
+                                                <div className="text-xs text-slate-500">
+                                                    {sub.duration_days} days
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span
+                                                    className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${getStatusBadgeClass(
+                                                        sub.status,
+                                                    )}`}
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                                    {sub.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-700">
+                                                {sub.start_date ?? '-'}
+                                            </td>
+                                            <td className="px-4 py-3 text-slate-700">
+                                                {sub.end_date ?? '-'}
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    {sub.status === 'active' && (
+                                                        <>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                className="h-9 rounded-md border-slate-300 px-3 text-slate-700 hover:bg-slate-50"
+                                                                title="Cancel subscription"
+                                                                onClick={() => openCancel(sub)}
+                                                            >
+                                                                <Ban className="h-4 w-4" />
+                                                            </Button>
 
-                                {subscriptions.data.length === 0 && (
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                className="h-9 rounded-md border-orange-200 px-3 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                                                                title="Lock subscription"
+                                                                onClick={() => openLock(sub)}
+                                                            >
+                                                                <Lock className="h-4 w-4" />
+                                                            </Button>
+                                                        </>
+                                                    )}
+
+                                                    {sub.status !== 'active' && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            className="h-9 rounded-md border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                            title="Delete subscription"
+                                                            onClick={() => deleteSubscription(sub)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
                                     <tr>
                                         <td
-                                            colSpan={8}
+                                            colSpan={10}
                                             className="py-8 text-center text-sm text-slate-500"
                                         >
                                             No subscriptions found.
@@ -369,123 +410,79 @@ export default function SubscriptionsIndex() {
                     </div>
                 </div>
 
-                {open && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-                        <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-                            <div className="mb-4">
-                                <h2 className="text-lg font-semibold text-slate-900">
-                                    Create Subscription
-                                </h2>
+                {openCancelModal && selectedSubscription && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
+                        <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
+                            <div className="border-b border-slate-200 px-6 py-4">
+                                <h2 className="text-xl font-semibold text-slate-900">Cancel Subscription</h2>
                                 <p className="mt-1 text-sm text-slate-500">
-                                    Add a new subscription record for a user.
+                                    Add a note and cancel this subscription.
                                 </p>
                             </div>
 
-                            <form onSubmit={submit} className="space-y-4">
-                                <div>
-                                    <Label htmlFor="user_id">User</Label>
-                                    <select
-                                        id="user_id"
-                                        name="user_id"
-                                        title="Select user"
-                                        className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-blue-500"
-                                        value={form.data.user_id}
-                                        onChange={(e) =>
-                                            form.setData(
-                                                'user_id',
-                                                e.target.value ? Number(e.target.value) : '',
-                                            )
-                                        }
-                                    >
-                                        <option value="">Select user</option>
-                                        {users.map((u) => (
-                                            <option key={u.id} value={u.id}>
-                                                {u.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="product_id">Product</Label>
-                                    <select
-                                        id="product_id"
-                                        name="product_id"
-                                        title="Select product"
-                                        className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-blue-500"
-                                        value={form.data.product_id}
-                                        onChange={(e) =>
-                                            form.setData(
-                                                'product_id',
-                                                e.target.value ? Number(e.target.value) : '',
-                                            )
-                                        }
-                                    >
-                                        <option value="">Select product</option>
-                                        {products.map((p) => (
-                                            <option key={p.id} value={p.id}>
-                                                {p.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="subscription_type">Type</Label>
-                                    <select
-                                        id="subscription_type"
-                                        name="subscription_type"
-                                        title="Select subscription type"
-                                        className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-blue-500"
-                                        value={form.data.subscription_type}
-                                        onChange={(e) =>
-                                            handleTypeChange(
-                                                e.target.value as SubscriptionForm['subscription_type'],
-                                            )
-                                        }
-                                    >
-                                        <option value="trial">Trial</option>
-                                        <option value="monthly">Monthly</option>
-                                        <option value="yearly">Yearly</option>
-                                        <option value="custom">Custom</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <Label htmlFor="duration_days">Duration (days)</Label>
-                                    <Input
-                                        id="duration_days"
-                                        type="number"
-                                        min={1}
-                                        value={form.data.duration_days}
-                                        onChange={(e) =>
-                                            form.setData(
-                                                'duration_days',
-                                                Number(e.target.value || 0),
-                                            )
-                                        }
-                                        className="mt-1 rounded-md"
+                            <form onSubmit={submitCancel} className="space-y-5 px-6 py-5">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="cancel_notes">Reason / Notes</Label>
+                                    <textarea
+                                        id="cancel_notes"
+                                        value={actionForm.data.notes}
+                                        onChange={(e) => actionForm.setData('notes', e.target.value)}
+                                        className="min-h-[100px] rounded-md border border-slate-300 px-3 py-2 text-sm"
+                                        placeholder="Why are you cancelling this subscription?"
                                     />
+                                    <InputError message={actionForm.errors.notes} />
                                 </div>
 
-                                <div className="flex justify-end gap-2 pt-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        title="Cancel subscription creation"
-                                        aria-label="Cancel subscription creation"
-                                        onClick={closeCreateModal}
-                                    >
-                                        Cancel
+                                <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                                    <Button type="button" variant="outline" onClick={closeCancel}>
+                                        Close
                                     </Button>
-
                                     <Button
                                         type="submit"
-                                        disabled={form.processing}
-                                        title="Save subscription"
-                                        aria-label="Save subscription"
+                                        disabled={actionForm.processing}
+                                        className="bg-slate-900 text-white hover:bg-slate-800"
                                     >
-                                        {form.processing ? 'Saving...' : 'Save'}
+                                        {actionForm.processing ? 'Cancelling...' : 'Cancel Subscription'}
+                                    </Button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {openLockModal && selectedSubscription && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
+                        <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
+                            <div className="border-b border-slate-200 px-6 py-4">
+                                <h2 className="text-xl font-semibold text-slate-900">Lock Subscription</h2>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Add a note and lock this subscription.
+                                </p>
+                            </div>
+
+                            <form onSubmit={submitLock} className="space-y-5 px-6 py-5">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="lock_notes">Reason / Notes</Label>
+                                    <textarea
+                                        id="lock_notes"
+                                        value={actionForm.data.notes}
+                                        onChange={(e) => actionForm.setData('notes', e.target.value)}
+                                        className="min-h-[100px] rounded-md border border-slate-300 px-3 py-2 text-sm"
+                                        placeholder="Why are you locking this subscription?"
+                                    />
+                                    <InputError message={actionForm.errors.notes} />
+                                </div>
+
+                                <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                                    <Button type="button" variant="outline" onClick={closeLock}>
+                                        Close
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={actionForm.processing}
+                                        className="bg-orange-600 text-white hover:bg-orange-700"
+                                    >
+                                        {actionForm.processing ? 'Locking...' : 'Lock Subscription'}
                                     </Button>
                                 </div>
                             </form>

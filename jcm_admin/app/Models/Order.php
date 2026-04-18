@@ -11,6 +11,7 @@ class Order extends Model
         'user_id',
         'product_id',
         'plan_id',
+        'billing_type',
         'amount',
         'duration_days',
         'status',

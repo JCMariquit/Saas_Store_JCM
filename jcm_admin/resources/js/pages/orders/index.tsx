@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type BreadcrumbItem } from '@/types';
 
+type BillingType = 'trial' | 'monthly' | 'yearly' | 'custom';
+
 type PlanOption = {
     id: number;
     product_id: number;
@@ -32,6 +34,7 @@ type OrderRow = {
     user_name: string | null;
     product_name: string | null;
     plan_name: string | null;
+    billing_type: BillingType;
     amount: number;
     duration_days: number;
     status: 'pending' | 'paid' | 'verified' | 'failed' | 'cancelled';
@@ -92,6 +95,8 @@ type PageProps = {
 type CreateOrderForm = {
     user_id: number | '';
     plan_id: number | '';
+    billing_type: BillingType;
+    duration_days_override: number | '';
     notes: string;
 };
 
@@ -120,6 +125,8 @@ export default function OrdersIndex() {
     const createForm = useForm<CreateOrderForm>({
         user_id: '',
         plan_id: '',
+        billing_type: 'monthly',
+        duration_days_override: '',
         notes: '',
     });
 
@@ -153,6 +160,13 @@ export default function OrdersIndex() {
 
     const openCreate = () => {
         createForm.reset();
+        createForm.setData({
+            user_id: '',
+            plan_id: '',
+            billing_type: 'monthly',
+            duration_days_override: '',
+            notes: '',
+        });
         createForm.clearErrors();
         setOpenCreateModal(true);
     };
@@ -245,6 +259,87 @@ export default function OrdersIndex() {
             style: 'currency',
             currency: 'PHP',
         }).format(Number(value));
+
+    const selectedPlan =
+        createForm.data.plan_id === ''
+            ? null
+            : plans.find((plan) => plan.id === createForm.data.plan_id) ?? null;
+
+    const selectedUser =
+        createForm.data.user_id === ''
+            ? null
+            : users.find((user) => user.id === createForm.data.user_id) ?? null;
+
+    const computedAmount = useMemo(() => {
+        if (!selectedPlan) return 0;
+
+        switch (createForm.data.billing_type) {
+            case 'trial':
+                return 0;
+            case 'monthly':
+                return Number(selectedPlan.price);
+            case 'yearly':
+                return Number(selectedPlan.price) * 12;
+            case 'custom':
+                return Number(selectedPlan.price);
+            default:
+                return Number(selectedPlan.price);
+        }
+    }, [selectedPlan, createForm.data.billing_type]);
+
+    const computedDuration = useMemo(() => {
+        switch (createForm.data.billing_type) {
+            case 'trial':
+                return createForm.data.duration_days_override === '' ? 7 : Number(createForm.data.duration_days_override);
+            case 'monthly':
+                return 30;
+            case 'yearly':
+                return 365;
+            case 'custom':
+                return createForm.data.duration_days_override === '' ? 30 : Number(createForm.data.duration_days_override);
+            default:
+                return 0;
+        }
+    }, [createForm.data.billing_type, createForm.data.duration_days_override]);
+
+    const billingLabel = (type: BillingType) => {
+        switch (type) {
+            case 'trial':
+                return 'Trial';
+            case 'monthly':
+                return 'Monthly';
+            case 'yearly':
+                return 'Yearly';
+            default:
+                return 'Custom';
+        }
+    };
+
+    const handleBillingTypeChange = (value: BillingType) => {
+        if (value === 'trial') {
+            createForm.setData({
+                ...createForm.data,
+                billing_type: value,
+                duration_days_override: 7,
+            });
+            return;
+        }
+
+        if (value === 'custom') {
+            createForm.setData({
+                ...createForm.data,
+                billing_type: value,
+                duration_days_override: 30,
+            });
+            return;
+        }
+
+        createForm.setData({
+            ...createForm.data,
+            billing_type: value,
+            duration_days_override: '',
+        });
+    };
 
     const orderStatusClass = (status: OrderRow['status']) => {
         switch (status) {
@@ -377,6 +472,7 @@ export default function OrdersIndex() {
                                             <td className="px-4 py-3">
                                                 <div className="font-medium text-slate-900">{order.product_name}</div>
                                                 <div className="text-xs text-slate-500">{order.plan_name}</div>
+                                                <div className="text-xs text-slate-400">{billingLabel(order.billing_type)}</div>
                                             </td>
                                             <td className="px-4 py-3 text-slate-700">
                                                 <div>{formatPrice(order.amount)}</div>
@@ -489,12 +585,12 @@ export default function OrdersIndex() {
 
             {openCreateModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl">
+                    <div className="w-full max-w-4xl rounded-xl bg-white shadow-2xl">
                         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                             <div>
                                 <h2 className="text-xl font-semibold text-slate-900">Create Order</h2>
                                 <p className="mt-1 text-sm text-slate-500">
-                                    Create an order by selecting a user and plan.
+                                    Select the user, plan, and billing type. Subscription starts after verification.
                                 </p>
                             </div>
                             <button
@@ -507,67 +603,172 @@ export default function OrdersIndex() {
                         </div>
 
                         <form onSubmit={submitCreate} className="space-y-5 px-6 py-5">
-                            <div className="grid gap-5">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="create_user_id">User</Label>
-                                    <select
-                                        id="create_user_id"
-                                        name="user_id"
-                                        title="Select user"
-                                        value={createForm.data.user_id}
-                                        onChange={(e) =>
-                                            createForm.setData(
-                                                'user_id',
-                                                e.target.value === '' ? '' : Number(e.target.value),
-                                            )
-                                        }
-                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
-                                    >
-                                        <option value="">Select user</option>
-                                        {users.map((user) => (
-                                            <option key={user.id} value={user.id}>
-                                                {user.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <InputError message={createForm.errors.user_id} />
+                            <div className="grid gap-6 lg:grid-cols-[1.3fr_.9fr]">
+                                <div className="space-y-5">
+                                    <div className="grid gap-5 md:grid-cols-2">
+                                        <div className="grid gap-2 md:col-span-2">
+                                            <Label htmlFor="create_user_id">User</Label>
+                                            <select
+                                                id="create_user_id"
+                                                name="user_id"
+                                                title="Select user"
+                                                value={createForm.data.user_id}
+                                                onChange={(e) =>
+                                                    createForm.setData(
+                                                        'user_id',
+                                                        e.target.value === '' ? '' : Number(e.target.value),
+                                                    )
+                                                }
+                                                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+                                            >
+                                                <option value="">Select user</option>
+                                                {users.map((user) => (
+                                                    <option key={user.id} value={user.id}>
+                                                        {user.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <InputError message={createForm.errors.user_id} />
+                                        </div>
+
+                                        <div className="grid gap-2 md:col-span-2">
+                                            <Label htmlFor="create_plan_id">Plan</Label>
+                                            <select
+                                                id="create_plan_id"
+                                                name="plan_id"
+                                                title="Select plan"
+                                                value={createForm.data.plan_id}
+                                                onChange={(e) =>
+                                                    createForm.setData(
+                                                        'plan_id',
+                                                        e.target.value === '' ? '' : Number(e.target.value),
+                                                    )
+                                                }
+                                                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+                                            >
+                                                <option value="">Select plan</option>
+                                                {plans.map((plan) => (
+                                                    <option key={plan.id} value={plan.id}>
+                                                        {plan.label} - {formatPrice(plan.price)}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <InputError message={createForm.errors.plan_id} />
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="billing_type">Billing Type</Label>
+                                            <select
+                                                id="billing_type"
+                                                name="billing_type"
+                                                title="Select billing type"
+                                                value={createForm.data.billing_type}
+                                                onChange={(e) => handleBillingTypeChange(e.target.value as BillingType)}
+                                                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+                                            >
+                                                <option value="trial">Trial</option>
+                                                <option value="monthly">Monthly</option>
+                                                <option value="yearly">Yearly</option>
+                                                <option value="custom">Custom</option>
+                                            </select>
+                                            <InputError message={createForm.errors.billing_type} />
+                                        </div>
+
+                                        {(createForm.data.billing_type === 'trial' || createForm.data.billing_type === 'custom') && (
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="duration_days_override">
+                                                    {createForm.data.billing_type === 'trial'
+                                                        ? 'Trial Duration (days)'
+                                                        : 'Custom Duration (days)'}
+                                                </Label>
+                                                <Input
+                                                    id="duration_days_override"
+                                                    type="number"
+                                                    min={1}
+                                                    value={createForm.data.duration_days_override}
+                                                    onChange={(e) =>
+                                                        createForm.setData(
+                                                            'duration_days_override',
+                                                            e.target.value === '' ? '' : Number(e.target.value),
+                                                        )
+                                                    }
+                                                    placeholder="Enter number of days"
+                                                />
+                                                <InputError message={createForm.errors.duration_days_override} />
+                                            </div>
+                                        )}
+
+                                        <div className="grid gap-2 md:col-span-2">
+                                            <Label htmlFor="create_notes">Notes</Label>
+                                            <textarea
+                                                id="create_notes"
+                                                value={createForm.data.notes}
+                                                onChange={(e) => createForm.setData('notes', e.target.value)}
+                                                className="min-h-[110px] rounded-md border border-slate-300 px-3 py-2 text-sm"
+                                                placeholder="Optional notes"
+                                            />
+                                            <InputError message={createForm.errors.notes} />
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="create_plan_id">Plan</Label>
-                                    <select
-                                        id="create_plan_id"
-                                        name="plan_id"
-                                        title="Select plan"
-                                        value={createForm.data.plan_id}
-                                        onChange={(e) =>
-                                            createForm.setData(
-                                                'plan_id',
-                                                e.target.value === '' ? '' : Number(e.target.value),
-                                            )
-                                        }
-                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
-                                    >
-                                        <option value="">Select plan</option>
-                                        {plans.map((plan) => (
-                                            <option key={plan.id} value={plan.id}>
-                                                {plan.label} - {formatPrice(plan.price)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <InputError message={createForm.errors.plan_id} />
-                                </div>
+                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+                                    <h3 className="text-base font-semibold text-slate-900">Order Summary</h3>
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        Primary order information before saving.
+                                    </p>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="create_notes">Notes</Label>
-                                    <textarea
-                                        id="create_notes"
-                                        value={createForm.data.notes}
-                                        onChange={(e) => createForm.setData('notes', e.target.value)}
-                                        className="min-h-[100px] rounded-md border border-slate-300 px-3 py-2 text-sm"
-                                        placeholder="Optional notes"
-                                    />
-                                    <InputError message={createForm.errors.notes} />
+                                    <div className="mt-5 space-y-4">
+                                        <div className="rounded-lg border border-slate-200 bg-white p-4">
+                                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">User</p>
+                                            <p className="mt-1 text-sm font-medium text-slate-900">
+                                                {selectedUser ? selectedUser.name : 'No user selected'}
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                {selectedUser ? selectedUser.email : '-'}
+                                            </p>
+                                        </div>
+
+                                        <div className="rounded-lg border border-slate-200 bg-white p-4">
+                                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Product / Plan</p>
+                                            <p className="mt-1 text-sm font-medium text-slate-900">
+                                                {selectedPlan ? selectedPlan.product_name : 'No product selected'}
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                {selectedPlan ? selectedPlan.plan_name : '-'}
+                                            </p>
+                                        </div>
+
+                                        <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+                                            <div className="flex items-center justify-between gap-4">
+                                                <span className="text-sm text-slate-500">Billing Type</span>
+                                                <span className="text-sm font-semibold text-slate-900">
+                                                    {billingLabel(createForm.data.billing_type)}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <span className="text-sm text-slate-500">Duration</span>
+                                                <span className="text-sm font-semibold text-slate-900">
+                                                    {computedDuration} day{computedDuration !== 1 ? 's' : ''}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between gap-4">
+                                                <span className="text-sm text-slate-500">Amount</span>
+                                                <span className="text-base font-bold text-slate-900">
+                                                    {formatPrice(computedAmount)}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                                            <p className="text-xs font-medium uppercase tracking-wide text-blue-700">
+                                                Subscription Note
+                                            </p>
+                                            <p className="mt-1 text-sm text-blue-800">
+                                                Subscription starts only after order verification.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 

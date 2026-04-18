@@ -25,6 +25,7 @@ class OrderController extends Controller
                 $query->where(function ($q) use ($search) {
                     $q->where('order_code', 'like', "%{$search}%")
                         ->orWhere('status', 'like', "%{$search}%")
+                        ->orWhere('billing_type', 'like', "%{$search}%")
                         ->orWhereHas('user', function ($subQ) use ($search) {
                             $subQ->where('name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%");
@@ -58,6 +59,7 @@ class OrderController extends Controller
                     'user_name' => $order->user?->name,
                     'product_name' => $order->product?->name,
                     'plan_name' => $order->plan?->plan_name,
+                    'billing_type' => $order->billing_type ?? 'monthly',
                     'amount' => $order->amount,
                     'duration_days' => $order->duration_days,
                     'status' => $order->status,
@@ -95,8 +97,8 @@ class OrderController extends Controller
                     'product_id' => $plan->product_id,
                     'product_name' => $plan->product?->name,
                     'plan_name' => $plan->plan_name,
-                    'price' => $plan->price,
-                    'duration_days' => $plan->duration_days,
+                    'price' => (float) $plan->price,
+                    'duration_days' => (int) $plan->duration_days,
                     'label' => ($plan->product?->name ?? 'Unknown Product') . ' - ' . $plan->plan_name,
                 ]),
             'users' => User::orderBy('name')
@@ -121,18 +123,27 @@ class OrderController extends Controller
         $validated = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
             'plan_id' => ['required', 'exists:plans,id'],
+            'billing_type' => ['required', 'in:trial,monthly,yearly,custom'],
+            'duration_days_override' => ['nullable', 'integer', 'min:1'],
             'notes' => ['nullable', 'string'],
         ]);
 
         $plan = Plan::with('product')->findOrFail($validated['plan_id']);
+
+        [$amount, $durationDays] = $this->resolveOrderAmountAndDuration(
+            (float) $plan->price,
+            $validated['billing_type'],
+            isset($validated['duration_days_override']) ? (int) $validated['duration_days_override'] : null
+        );
 
         Order::create([
             'order_code' => $this->generateOrderCode(),
             'user_id' => $validated['user_id'],
             'product_id' => $plan->product_id,
             'plan_id' => $plan->id,
-            'amount' => $plan->price,
-            'duration_days' => $plan->duration_days,
+            'billing_type' => $validated['billing_type'],
+            'amount' => $amount,
+            'duration_days' => $durationDays,
             'status' => 'pending',
             'ordered_at' => now(),
             'notes' => $validated['notes'] ?? null,
@@ -199,8 +210,14 @@ class OrderController extends Controller
             $existingSubscription = Subscription::where('order_id', $order->id)->first();
 
             if (!$existingSubscription) {
-                $startDate = now()->toDateString();
-                $endDate = now()->addDays((int) $order->duration_days)->toDateString();
+                $startDate = now();
+
+                $endDate = match ($order->billing_type) {
+                    'monthly' => $startDate->copy()->addMonth(),
+                    'yearly' => $startDate->copy()->addYear(),
+                    'trial', 'custom' => $startDate->copy()->addDays((int) $order->duration_days),
+                    default => $startDate->copy()->addDays((int) $order->duration_days),
+                };
 
                 Subscription::create([
                     'user_id' => $order->user_id,
@@ -208,11 +225,11 @@ class OrderController extends Controller
                     'order_id' => $order->id,
                     'plan_id' => $order->plan_id,
                     'subscription_code' => $this->generateSubscriptionCode(),
-                    'subscription_type' => $this->resolveSubscriptionType((int) $order->duration_days),
+                    'subscription_type' => $order->billing_type ?? 'monthly',
                     'status' => 'active',
-                    'start_date' => $startDate,
-                    'end_date' => $endDate,
-                    'duration_days' => $order->duration_days,
+                    'start_date' => $startDate->toDateString(),
+                    'end_date' => $endDate->toDateString(),
+                    'duration_days' => (int) $order->duration_days,
                     'amount' => $order->amount,
                     'notes' => 'Auto-created from verified order: ' . $order->order_code,
                 ]);
@@ -268,6 +285,17 @@ class OrderController extends Controller
             ->with('success', 'Order deleted successfully.');
     }
 
+    private function resolveOrderAmountAndDuration(float $planPrice, string $billingType, ?int $overrideDays = null): array
+    {
+        return match ($billingType) {
+            'trial' => [0, max(1, (int) ($overrideDays ?? 7))],
+            'monthly' => [$planPrice, 30],
+            'yearly' => [$planPrice * 12, 365],
+            'custom' => [$planPrice, max(1, (int) ($overrideDays ?? 30))],
+            default => [$planPrice, 30],
+        };
+    }
+
     private function generateOrderCode(): string
     {
         do {
@@ -293,14 +321,5 @@ class OrderController extends Controller
         } while (Subscription::where('subscription_code', $code)->exists());
 
         return $code;
-    }
-
-    private function resolveSubscriptionType(int $durationDays): string
-    {
-        return match (true) {
-            $durationDays >= 365 => 'yearly',
-            $durationDays >= 28 && $durationDays <= 31 => 'monthly',
-            default => 'custom',
-        };
     }
 }

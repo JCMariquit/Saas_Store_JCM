@@ -59,7 +59,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Transactions',
-        url: '#',
+        url: '/admin/transactions',
         icon: ReceiptText,
     },
     {

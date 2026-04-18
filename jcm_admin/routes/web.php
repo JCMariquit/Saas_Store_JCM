@@ -7,6 +7,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\TransactionController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -55,6 +56,12 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{order}/verify', [OrderController::class, 'verify'])->name('verify');
             Route::post('/{order}/reject', [OrderController::class, 'reject'])->name('reject');
             Route::delete('/{order}', [OrderController::class, 'destroy'])->name('destroy');
+        });
+        Route::prefix('transactions')->as('transactions.')->group(function () {
+            Route::get('/', [TransactionController::class, 'index'])->name('index');
+            Route::post('/{transaction}/verify', [TransactionController::class, 'verify'])->name('verify');
+            Route::post('/{transaction}/reject', [TransactionController::class, 'reject'])->name('reject');
+            Route::delete('/{transaction}', [TransactionController::class, 'destroy'])->name('destroy');
         });
 
     });

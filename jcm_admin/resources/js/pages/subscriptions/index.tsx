@@ -155,6 +155,7 @@ export default function SubscriptionsIndex() {
             duration_days: days,
         });
     };
+
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Subscriptions',
@@ -232,26 +233,37 @@ export default function SubscriptionsIndex() {
                         {flash.success}
                     </div>
                 )}
-
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="relative w-full md:max-w-sm">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <Input
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search user..."
-                            className="rounded-md pl-9"
-                        />
-                    </div>
-                </div>
-
                 <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
                     <div className="border-b border-slate-200 px-5 py-4">
-                        <h2 className="text-lg font-semibold text-slate-900">Subscription List</h2>
-                        <p className="text-sm text-slate-500">
-                            Showing {subscriptions.data.length} record
-                            {subscriptions.data.length !== 1 ? 's' : ''}
-                        </p>
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            
+                            {/* LEFT SIDE */}
+                            <div>
+                                <h2 className="text-lg font-semibold text-slate-900">
+                                    Subscription List
+                                </h2>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Showing {subscriptions.data.length} record
+                                    {subscriptions.data.length !== 1 ? 's' : ''}
+                                </p>
+                            </div>
+
+                            {/* RIGHT SIDE (SEARCH) */}
+                            <div className="relative w-full md:max-w-sm">
+                                <Label htmlFor="subscription-search" className="sr-only">
+                                    Search subscriptions
+                                </Label>
+                                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                                <Input
+                                    id="subscription-search"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Search subscription..."
+                                    className="rounded-md pl-9"
+                                />
+                            </div>
+
+                        </div>
                     </div>
 
                     <div className="overflow-x-auto">
@@ -307,6 +319,8 @@ export default function SubscriptionsIndex() {
                                                     <Button
                                                         size="sm"
                                                         className="rounded-md"
+                                                        title="Verify subscription"
+                                                        aria-label={`Verify subscription ${sub.code}`}
                                                         onClick={() =>
                                                             router.post(
                                                                 route(
@@ -322,20 +336,18 @@ export default function SubscriptionsIndex() {
                                                 )}
 
                                                 <Button
-                                                    size="sm"
-                                                    variant="destructive"
-                                                    className="rounded-md"
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="h-9 rounded-md border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                    title="Delete subscription"
+                                                    aria-label={`Delete subscription ${sub.code}`}
                                                     onClick={() =>
                                                         router.delete(
-                                                            route(
-                                                                'admin.subscriptions.destroy',
-                                                                sub.id,
-                                                            ),
+                                                            route('admin.subscriptions.destroy', sub.id)
                                                         )
                                                     }
                                                 >
-                                                    <Trash2 className="mr-1 h-4 w-4" />
-                                                    Delete
+                                                    <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         </td>
@@ -374,6 +386,8 @@ export default function SubscriptionsIndex() {
                                     <Label htmlFor="user_id">User</Label>
                                     <select
                                         id="user_id"
+                                        name="user_id"
+                                        title="Select user"
                                         className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-blue-500"
                                         value={form.data.user_id}
                                         onChange={(e) =>
@@ -396,6 +410,8 @@ export default function SubscriptionsIndex() {
                                     <Label htmlFor="product_id">Product</Label>
                                     <select
                                         id="product_id"
+                                        name="product_id"
+                                        title="Select product"
                                         className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-blue-500"
                                         value={form.data.product_id}
                                         onChange={(e) =>
@@ -418,6 +434,8 @@ export default function SubscriptionsIndex() {
                                     <Label htmlFor="subscription_type">Type</Label>
                                     <select
                                         id="subscription_type"
+                                        name="subscription_type"
+                                        title="Select subscription type"
                                         className="mt-1 h-10 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-blue-500"
                                         value={form.data.subscription_type}
                                         onChange={(e) =>
@@ -454,12 +472,19 @@ export default function SubscriptionsIndex() {
                                     <Button
                                         type="button"
                                         variant="outline"
+                                        title="Cancel subscription creation"
+                                        aria-label="Cancel subscription creation"
                                         onClick={closeCreateModal}
                                     >
                                         Cancel
                                     </Button>
 
-                                    <Button type="submit" disabled={form.processing}>
+                                    <Button
+                                        type="submit"
+                                        disabled={form.processing}
+                                        title="Save subscription"
+                                        aria-label="Save subscription"
+                                    >
                                         {form.processing ? 'Saving...' : 'Save'}
                                     </Button>
                                 </div>

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\ProductController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -31,6 +32,13 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/', [SubscriptionController::class, 'store'])->name('store');
             Route::post('/{subscription}/verify', [SubscriptionController::class, 'verify'])->name('verify');
             Route::delete('/{subscription}', [SubscriptionController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('products')->as('products.')->group(function () {
+            Route::get('/', [ProductController::class, 'index'])->name('index');
+            Route::post('/', [ProductController::class, 'store'])->name('store');
+            Route::put('/{product}', [ProductController::class, 'update'])->name('update');
+            Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
         });
 
     });

@@ -212,6 +212,21 @@ export default function UsersIndex() {
         },
     ];
 
+    const getPaginationAriaLabel = (label: string) => {
+        const cleaned = label
+            .replace(/&laquo;/g, '')
+            .replace(/&raquo;/g, '')
+            .replace(/&amp;laquo;/g, '')
+            .replace(/&amp;raquo;/g, '')
+            .trim();
+
+        if (label.includes('laquo')) return 'Previous page';
+        if (label.includes('raquo')) return 'Next page';
+        if (cleaned) return `Go to page ${cleaned}`;
+
+        return 'Pagination link';
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Manage Users" />
@@ -240,7 +255,9 @@ export default function UsersIndex() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-slate-500">Total Users</p>
-                                <h3 className="mt-2 text-2xl font-bold text-slate-900">{stats.total_users}</h3>
+                                <h3 className="mt-2 text-2xl font-bold text-slate-900">
+                                    {stats.total_users}
+                                </h3>
                             </div>
                             <div className="rounded-md bg-slate-100 p-3">
                                 <Users className="h-5 w-5 text-slate-700" />
@@ -252,7 +269,9 @@ export default function UsersIndex() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-slate-500">Administrators</p>
-                                <h3 className="mt-2 text-2xl font-bold text-slate-900">{stats.total_admins}</h3>
+                                <h3 className="mt-2 text-2xl font-bold text-slate-900">
+                                    {stats.total_admins}
+                                </h3>
                             </div>
                             <div className="rounded-md bg-blue-50 p-3">
                                 <ShieldCheck className="h-5 w-5 text-blue-600" />
@@ -264,7 +283,9 @@ export default function UsersIndex() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-slate-500">Clients</p>
-                                <h3 className="mt-2 text-2xl font-bold text-slate-900">{stats.total_clients}</h3>
+                                <h3 className="mt-2 text-2xl font-bold text-slate-900">
+                                    {stats.total_clients}
+                                </h3>
                             </div>
                             <div className="rounded-md bg-emerald-50 p-3">
                                 <Users className="h-5 w-5 text-emerald-600" />
@@ -288,8 +309,12 @@ export default function UsersIndex() {
                             </div>
 
                             <div className="relative w-full md:max-w-sm">
+                                <Label htmlFor="user-search" className="sr-only">
+                                    Search users
+                                </Label>
                                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                                 <Input
+                                    id="user-search"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Search by name, email, or role..."
@@ -329,11 +354,17 @@ export default function UsersIndex() {
                                     {users.data.length > 0 ? (
                                         users.data.map((user) => (
                                             <tr key={user.id} className="hover:bg-slate-50">
-                                                <td className="px-4 py-4 text-sm text-slate-700">{user.id}</td>
-                                                <td className="px-4 py-4">
-                                                    <div className="font-medium text-slate-900">{user.name}</div>
+                                                <td className="px-4 py-4 text-sm text-slate-700">
+                                                    {user.id}
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-slate-700">{user.email}</td>
+                                                <td className="px-4 py-4">
+                                                    <div className="font-medium text-slate-900">
+                                                        {user.name}
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-4 text-sm text-slate-700">
+                                                    {user.email}
+                                                </td>
                                                 <td className="px-4 py-4">
                                                     <span
                                                         className={`inline-flex rounded-md px-2.5 py-1 text-xs font-semibold ${
@@ -354,18 +385,22 @@ export default function UsersIndex() {
                                                             type="button"
                                                             variant="outline"
                                                             className="h-9 rounded-md px-3"
+                                                            title={`Edit ${user.name}`}
+                                                            aria-label={`Edit ${user.name}`}
                                                             onClick={() => openEdit(user)}
                                                         >
-                                                            <Pencil className=" h-4 w-4"/>
+                                                            <Pencil className="h-4 w-4" />
                                                         </Button>
 
                                                         <Button
                                                             type="button"
                                                             variant="outline"
                                                             className="h-9 rounded-md border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                            title={`Delete ${user.name}`}
+                                                            aria-label={`Delete ${user.name}`}
                                                             onClick={() => openDelete(user)}
                                                         >
-                                                            <Trash2 className=" h-4 w-4"/>
+                                                            <Trash2 className="h-4 w-4" />
                                                         </Button>
                                                     </div>
                                                 </td>
@@ -373,7 +408,10 @@ export default function UsersIndex() {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-500">
+                                            <td
+                                                colSpan={6}
+                                                className="px-4 py-10 text-center text-sm text-slate-500"
+                                            >
                                                 No users found.
                                             </td>
                                         </tr>
@@ -383,7 +421,14 @@ export default function UsersIndex() {
                         </div>
 
                         <div className="mt-4 flex items-center justify-between gap-3">
-                            <Button type="button" variant="outline" className="rounded-md" onClick={resetSearch}>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="rounded-md"
+                                title="Reset user search"
+                                aria-label="Reset user search"
+                                onClick={resetSearch}
+                            >
                                 Reset Search
                             </Button>
 
@@ -393,6 +438,8 @@ export default function UsersIndex() {
                                         <button
                                             key={`${link.label}-${index}`}
                                             type="button"
+                                            title={getPaginationAriaLabel(link.label)}
+                                            aria-label={getPaginationAriaLabel(link.label)}
                                             disabled={!link.url}
                                             onClick={() => {
                                                 if (link.url) {
@@ -424,12 +471,18 @@ export default function UsersIndex() {
                     <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl">
                         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                             <div>
-                                <h2 className="text-xl font-semibold text-slate-900">Create User</h2>
-                                <p className="mt-1 text-sm text-slate-500">Add a new user account.</p>
+                                <h2 className="text-xl font-semibold text-slate-900">
+                                    Create User
+                                </h2>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Add a new user account.
+                                </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={closeCreate}
+                                title="Close create user modal"
+                                aria-label="Close create user modal"
                                 className="rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                             >
                                 Close
@@ -477,12 +530,16 @@ export default function UsersIndex() {
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="create_password_confirmation">Confirm Password</Label>
+                                    <Label htmlFor="create_password_confirmation">
+                                        Confirm Password
+                                    </Label>
                                     <Input
                                         id="create_password_confirmation"
                                         type="password"
                                         value={createForm.data.password_confirmation}
-                                        onChange={(e) => createForm.setData('password_confirmation', e.target.value)}
+                                        onChange={(e) =>
+                                            createForm.setData('password_confirmation', e.target.value)
+                                        }
                                         placeholder="Confirm password"
                                         className="rounded-md"
                                     />
@@ -492,8 +549,15 @@ export default function UsersIndex() {
                                     <Label htmlFor="create_role">Role</Label>
                                     <select
                                         id="create_role"
+                                        name="role"
+                                        title="Select user role"
                                         value={createForm.data.role}
-                                        onChange={(e) => createForm.setData('role', e.target.value as 'admin' | 'client')}
+                                        onChange={(e) =>
+                                            createForm.setData(
+                                                'role',
+                                                e.target.value as 'admin' | 'client',
+                                            )
+                                        }
                                         className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                                     >
                                         <option value="client">Client</option>
@@ -504,10 +568,19 @@ export default function UsersIndex() {
                             </div>
 
                             <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button type="button" variant="outline" onClick={closeCreate} className="rounded-md">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={closeCreate}
+                                    className="rounded-md"
+                                >
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={createForm.processing} className="rounded-md">
+                                <Button
+                                    type="submit"
+                                    disabled={createForm.processing}
+                                    className="rounded-md"
+                                >
                                     {createForm.processing ? 'Creating...' : 'Create User'}
                                 </Button>
                             </div>
@@ -522,11 +595,15 @@ export default function UsersIndex() {
                         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                             <div>
                                 <h2 className="text-xl font-semibold text-slate-900">Edit User</h2>
-                                <p className="mt-1 text-sm text-slate-500">Update selected user details.</p>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Update selected user details.
+                                </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={closeEdit}
+                                title="Close edit user modal"
+                                aria-label="Close edit user modal"
                                 className="rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                             >
                                 Close
@@ -572,12 +649,16 @@ export default function UsersIndex() {
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="edit_password_confirmation">Confirm New Password</Label>
+                                    <Label htmlFor="edit_password_confirmation">
+                                        Confirm New Password
+                                    </Label>
                                     <Input
                                         id="edit_password_confirmation"
                                         type="password"
                                         value={editForm.data.password_confirmation}
-                                        onChange={(e) => editForm.setData('password_confirmation', e.target.value)}
+                                        onChange={(e) =>
+                                            editForm.setData('password_confirmation', e.target.value)
+                                        }
                                         placeholder="Confirm new password"
                                         className="rounded-md"
                                     />
@@ -587,8 +668,15 @@ export default function UsersIndex() {
                                     <Label htmlFor="edit_role">Role</Label>
                                     <select
                                         id="edit_role"
+                                        name="role"
+                                        title="Select user role"
                                         value={editForm.data.role}
-                                        onChange={(e) => editForm.setData('role', e.target.value as 'admin' | 'client')}
+                                        onChange={(e) =>
+                                            editForm.setData(
+                                                'role',
+                                                e.target.value as 'admin' | 'client',
+                                            )
+                                        }
                                         className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                                     >
                                         <option value="client">Client</option>
@@ -599,10 +687,19 @@ export default function UsersIndex() {
                             </div>
 
                             <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button type="button" variant="outline" onClick={closeEdit} className="rounded-md">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={closeEdit}
+                                    className="rounded-md"
+                                >
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={editForm.processing} className="rounded-md">
+                                <Button
+                                    type="submit"
+                                    disabled={editForm.processing}
+                                    className="rounded-md"
+                                >
                                     {editForm.processing ? 'Updating...' : 'Save Changes'}
                                 </Button>
                             </div>
@@ -623,11 +720,17 @@ export default function UsersIndex() {
 
                         <div className="px-6 py-5">
                             <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                                Are you sure you want to delete <span className="font-semibold">{selectedUser.name}</span>?
+                                Are you sure you want to delete{' '}
+                                <span className="font-semibold">{selectedUser.name}</span>?
                             </div>
 
                             <div className="mt-5 flex justify-end gap-3">
-                                <Button type="button" variant="outline" onClick={closeDelete} className="rounded-md">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={closeDelete}
+                                    className="rounded-md"
+                                >
                                     Cancel
                                 </Button>
                                 <Button

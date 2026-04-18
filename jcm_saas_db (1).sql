@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 17, 2026 at 10:05 PM
+-- Generation Time: Apr 18, 2026 at 05:31 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -141,6 +141,33 @@ CREATE TABLE `password_reset_tokens` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `plans`
+--
+
+CREATE TABLE `plans` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `plan_name` varchar(100) NOT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `duration_days` int(11) NOT NULL,
+  `description` text DEFAULT NULL,
+  `status` enum('active','inactive') DEFAULT 'active',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `plans`
+--
+
+INSERT INTO `plans` (`id`, `product_id`, `plan_name`, `price`, `duration_days`, `description`, `status`, `created_at`, `updated_at`) VALUES
+(1, 1, 'Basic Plan', 699.00, 30, NULL, 'active', '2026-04-18 02:34:16', '2026-04-18 02:34:16'),
+(2, 1, 'Pro Plan', 999.00, 30, NULL, 'active', '2026-04-18 02:34:16', '2026-04-18 02:34:16'),
+(3, 1, 'Premium Plan', 1499.00, 30, NULL, 'active', '2026-04-18 02:34:16', '2026-04-18 02:34:16');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `products`
 --
 
@@ -150,6 +177,7 @@ CREATE TABLE `products` (
   `name` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
+  `pricing_type` enum('plan','custom') DEFAULT 'plan',
   `status` enum('active','inactive') NOT NULL DEFAULT 'active',
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -159,12 +187,12 @@ CREATE TABLE `products` (
 -- Dumping data for table `products`
 --
 
-INSERT INTO `products` (`id`, `product_code`, `name`, `description`, `price`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'PRD-BOOK-001', 'Booking System', 'Online booking and reservation system', 15000.00, 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
-(2, 'PRD-HRIS-001', 'HRIS System', 'Human Resource Information System', 25000.00, 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
-(3, 'PRD-POS-001', 'POS System', 'Point of Sale and inventory management', 20000.00, 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
-(4, 'PRD-CLINIC-001', 'Clinic Management System', 'Patient records and appointment system', 18000.00, 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
-(5, 'PRD-SCHOOL-001', 'School Management System', 'Student information and enrollment system', 30000.00, 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53');
+INSERT INTO `products` (`id`, `product_code`, `name`, `description`, `price`, `pricing_type`, `status`, `created_at`, `updated_at`) VALUES
+(1, 'PRD-BOOK-001', 'Booking System', 'Online booking and reservation system', 15000.00, 'plan', 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
+(2, 'PRD-HRIS-001', 'HRIS System', 'Human Resource Information System', 25000.00, 'plan', 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
+(3, 'PRD-POS-001', 'POS System', 'Point of Sale and inventory management', 20000.00, 'plan', 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
+(4, 'PRD-CLINIC-001', 'Clinic Management System', 'Patient records and appointment system', 18000.00, 'custom', 'active', '2026-04-17 19:26:53', '2026-04-17 19:09:30'),
+(5, 'PRD-SCHOOL-001', 'School Management System', 'Student information and enrollment system', NULL, 'plan', 'active', '2026-04-17 19:26:53', '2026-04-17 19:00:40');
 
 -- --------------------------------------------------------
 
@@ -186,8 +214,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('mZ0aWGUbAFmKKvC7X5IPbO5joYaSOv6wX8KAAIau', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiQ1JyVDdIcU05RE5XRkZEM2VoMEV0SnJ5WXptN3pDbUc2TjhvemtSYiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czozMToiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2Rhc2hib2FyZCI7czo1OiJyb3V0ZSI7czo5OiJkYXNoYm9hcmQiO319', 1776273607),
-('PMIlhGkT2lYPj7s2ytosbcJdfgGzdnceTnoUmNUf', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiSHlHWHBNaWJIWmxHcFZqaXF4U3NaclZiaVNtTnhabmVGY2tQZWNLYSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDk6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9zdWJzY3JpcHRpb25zP3NlYXJjaD0iO3M6NToicm91dGUiO3M6MjU6ImFkbWluLnN1YnNjcmlwdGlvbnMuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1776456304);
+('thwC9fajKvcFx2ibk2NDrn8fPk90VuttnnWHOWt1', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoibk5xTHJVZU5UNW5iOHJzMGdoQ1ZSS0QxQjFLdUJ0RklLam0zb0I5MiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9wcm9kdWN0cz9zZWFyY2g9IjtzOjU6InJvdXRlIjtzOjIwOiJhZG1pbi5wcm9kdWN0cy5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1776482907);
 
 -- --------------------------------------------------------
 
@@ -303,6 +330,13 @@ ALTER TABLE `password_reset_tokens`
   ADD PRIMARY KEY (`email`);
 
 --
+-- Indexes for table `plans`
+--
+ALTER TABLE `plans`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_plans_product` (`product_id`);
+
+--
 -- Indexes for table `products`
 --
 ALTER TABLE `products`
@@ -356,6 +390,12 @@ ALTER TABLE `migrations`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
+-- AUTO_INCREMENT for table `plans`
+--
+ALTER TABLE `plans`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
@@ -376,6 +416,12 @@ ALTER TABLE `users`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `plans`
+--
+ALTER TABLE `plans`
+  ADD CONSTRAINT `fk_plans_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `subscriptions`

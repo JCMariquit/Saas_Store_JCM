@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 18, 2026 at 05:31 AM
+-- Generation Time: Apr 18, 2026 at 08:12 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -129,6 +129,37 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `orders`
+--
+
+CREATE TABLE `orders` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `order_code` varchar(100) NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `plan_id` bigint(20) UNSIGNED NOT NULL,
+  `subscription_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `duration_days` int(11) NOT NULL,
+  `status` enum('pending','paid','verified','failed','cancelled') NOT NULL DEFAULT 'pending',
+  `ordered_at` timestamp NULL DEFAULT NULL,
+  `paid_at` timestamp NULL DEFAULT NULL,
+  `verified_at` timestamp NULL DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `orders`
+--
+
+INSERT INTO `orders` (`id`, `order_code`, `user_id`, `product_id`, `plan_id`, `subscription_id`, `amount`, `duration_days`, `status`, `ordered_at`, `paid_at`, `verified_at`, `notes`, `created_at`, `updated_at`) VALUES
+(1, 'ORD-POSGLP', 2, 1, 1, NULL, 699.00, 30, 'verified', '2026-04-17 21:51:34', NULL, '2026-04-17 22:06:39', NULL, '2026-04-17 21:51:34', '2026-04-17 22:06:39');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `password_reset_tokens`
 --
 
@@ -192,7 +223,7 @@ INSERT INTO `products` (`id`, `product_code`, `name`, `description`, `price`, `p
 (2, 'PRD-HRIS-001', 'HRIS System', 'Human Resource Information System', 25000.00, 'plan', 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
 (3, 'PRD-POS-001', 'POS System', 'Point of Sale and inventory management', 20000.00, 'plan', 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
 (4, 'PRD-CLINIC-001', 'Clinic Management System', 'Patient records and appointment system', 18000.00, 'custom', 'active', '2026-04-17 19:26:53', '2026-04-17 19:09:30'),
-(5, 'PRD-SCHOOL-001', 'School Management System', 'Student information and enrollment system', NULL, 'plan', 'active', '2026-04-17 19:26:53', '2026-04-17 19:00:40');
+(5, 'PRD-SCHOOL-001', 'School Management System', 'Student information and enrollment system', NULL, 'plan', 'inactive', '2026-04-17 19:26:53', '2026-04-17 19:50:01');
 
 -- --------------------------------------------------------
 
@@ -214,7 +245,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('thwC9fajKvcFx2ibk2NDrn8fPk90VuttnnWHOWt1', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoibk5xTHJVZU5UNW5iOHJzMGdoQ1ZSS0QxQjFLdUJ0RklLam0zb0I5MiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9wcm9kdWN0cz9zZWFyY2g9IjtzOjU6InJvdXRlIjtzOjIwOiJhZG1pbi5wcm9kdWN0cy5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1776482907);
+('thwC9fajKvcFx2ibk2NDrn8fPk90VuttnnWHOWt1', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoibk5xTHJVZU5UNW5iOHJzMGdoQ1ZSS0QxQjFLdUJ0RklLam0zb0I5MiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDk6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9zdWJzY3JpcHRpb25zP3NlYXJjaD0iO3M6NToicm91dGUiO3M6MjU6ImFkbWluLnN1YnNjcmlwdGlvbnMuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1776492727);
 
 -- --------------------------------------------------------
 
@@ -247,6 +278,39 @@ CREATE TABLE `subscriptions` (
 
 INSERT INTO `subscriptions` (`id`, `user_id`, `product_id`, `subscription_code`, `subscription_type`, `status`, `start_date`, `end_date`, `duration_days`, `amount`, `payment_method`, `reference_number`, `verified_at`, `notes`, `created_at`, `updated_at`) VALUES
 (2, 1, 1, 'SUB-JI1ZLF', 'monthly', 'active', '2026-04-17', '2026-04-18', 1, NULL, NULL, NULL, '2026-04-17 11:41:30', NULL, '2026-04-17 11:41:16', '2026-04-17 11:41:30');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `transactions`
+--
+
+CREATE TABLE `transactions` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `transaction_code` varchar(100) NOT NULL,
+  `order_id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `payment_method` enum('gcash','maya','bank_transfer','cash','other') NOT NULL DEFAULT 'gcash',
+  `reference_number` varchar(150) DEFAULT NULL,
+  `account_name` varchar(255) DEFAULT NULL,
+  `account_number` varchar(100) DEFAULT NULL,
+  `amount` decimal(10,2) NOT NULL,
+  `payment_proof` varchar(255) DEFAULT NULL,
+  `status` enum('pending','submitted','verified','rejected','failed') NOT NULL DEFAULT 'pending',
+  `paid_at` timestamp NULL DEFAULT NULL,
+  `verified_at` timestamp NULL DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `verified_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `transactions`
+--
+
+INSERT INTO `transactions` (`id`, `transaction_code`, `order_id`, `user_id`, `payment_method`, `reference_number`, `account_name`, `account_number`, `amount`, `payment_proof`, `status`, `paid_at`, `verified_at`, `notes`, `verified_by`, `created_at`, `updated_at`) VALUES
+(1, 'TXN-J7ZHIW', 1, 2, 'gcash', 'gcash0987654321', 'Jcmtesting', NULL, 699.00, NULL, 'verified', '2026-04-17 22:06:18', '2026-04-17 22:06:39', NULL, NULL, '2026-04-17 22:06:18', '2026-04-17 22:06:39');
 
 -- --------------------------------------------------------
 
@@ -324,6 +388,18 @@ ALTER TABLE `migrations`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `orders`
+--
+ALTER TABLE `orders`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `order_code` (`order_code`),
+  ADD KEY `fk_orders_product` (`product_id`),
+  ADD KEY `idx_orders_user_id` (`user_id`),
+  ADD KEY `idx_orders_plan_id` (`plan_id`),
+  ADD KEY `idx_orders_status` (`status`),
+  ADD KEY `idx_orders_subscription_id` (`subscription_id`);
+
+--
 -- Indexes for table `password_reset_tokens`
 --
 ALTER TABLE `password_reset_tokens`
@@ -361,6 +437,17 @@ ALTER TABLE `subscriptions`
   ADD KEY `fk_subscriptions_product` (`product_id`);
 
 --
+-- Indexes for table `transactions`
+--
+ALTER TABLE `transactions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `transaction_code` (`transaction_code`),
+  ADD KEY `idx_transactions_order_id` (`order_id`),
+  ADD KEY `idx_transactions_user_id` (`user_id`),
+  ADD KEY `idx_transactions_status` (`status`),
+  ADD KEY `idx_transactions_payment_method` (`payment_method`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -390,6 +477,12 @@ ALTER TABLE `migrations`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
+-- AUTO_INCREMENT for table `orders`
+--
+ALTER TABLE `orders`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `plans`
 --
 ALTER TABLE `plans`
@@ -408,6 +501,12 @@ ALTER TABLE `subscriptions`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `transactions`
+--
+ALTER TABLE `transactions`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
@@ -416,6 +515,15 @@ ALTER TABLE `users`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `orders`
+--
+ALTER TABLE `orders`
+  ADD CONSTRAINT `fk_orders_plan` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_orders_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_orders_subscription` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `plans`
@@ -429,6 +537,13 @@ ALTER TABLE `plans`
 ALTER TABLE `subscriptions`
   ADD CONSTRAINT `fk_subscriptions_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_subscriptions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `transactions`
+--
+ALTER TABLE `transactions`
+  ADD CONSTRAINT `fk_transactions_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_transactions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

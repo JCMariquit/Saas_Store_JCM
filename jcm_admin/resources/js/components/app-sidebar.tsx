@@ -101,7 +101,7 @@ const menuGroups: MenuGroup[] = [
         items: [
             {
                 title: 'Website Builder',
-                url: '#',
+                url: '/admin/website/builder',
                 icon: Globe,
             },
             {

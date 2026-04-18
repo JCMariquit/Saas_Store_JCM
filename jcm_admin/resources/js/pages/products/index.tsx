@@ -360,7 +360,6 @@ export default function ProductsIndex() {
                                 <tr>
                                     <th className="px-4 py-3 text-left font-medium">Code</th>
                                     <th className="px-4 py-3 text-left font-medium">Name</th>
-                                    <th className="px-4 py-3 text-left font-medium">Description</th>
                                     <th className="px-4 py-3 text-left font-medium">Pricing Type</th>
                                     <th className="px-4 py-3 text-left font-medium">Base Price</th>
                                     <th className="px-4 py-3 text-left font-medium">Status</th>
@@ -381,11 +380,6 @@ export default function ProductsIndex() {
                                             </td>
                                             <td className="px-4 py-3 text-slate-700">
                                                 {product.name}
-                                            </td>
-                                            <td className="px-4 py-3 text-slate-700">
-                                                <div className="max-w-[320px] truncate">
-                                                    {product.description || '-'}
-                                                </div>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <span

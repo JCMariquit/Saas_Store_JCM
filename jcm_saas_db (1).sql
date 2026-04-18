@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 18, 2026 at 08:12 AM
+-- Generation Time: Apr 18, 2026 at 11:05 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -138,6 +138,7 @@ CREATE TABLE `orders` (
   `user_id` bigint(20) UNSIGNED NOT NULL,
   `product_id` bigint(20) UNSIGNED NOT NULL,
   `plan_id` bigint(20) UNSIGNED NOT NULL,
+  `billing_type` enum('trial','monthly','yearly','custom') NOT NULL DEFAULT 'monthly',
   `subscription_id` bigint(20) UNSIGNED DEFAULT NULL,
   `amount` decimal(10,2) NOT NULL,
   `duration_days` int(11) NOT NULL,
@@ -154,8 +155,11 @@ CREATE TABLE `orders` (
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`id`, `order_code`, `user_id`, `product_id`, `plan_id`, `subscription_id`, `amount`, `duration_days`, `status`, `ordered_at`, `paid_at`, `verified_at`, `notes`, `created_at`, `updated_at`) VALUES
-(1, 'ORD-POSGLP', 2, 1, 1, NULL, 699.00, 30, 'verified', '2026-04-17 21:51:34', NULL, '2026-04-17 22:06:39', NULL, '2026-04-17 21:51:34', '2026-04-17 22:06:39');
+INSERT INTO `orders` (`id`, `order_code`, `user_id`, `product_id`, `plan_id`, `billing_type`, `subscription_id`, `amount`, `duration_days`, `status`, `ordered_at`, `paid_at`, `verified_at`, `notes`, `created_at`, `updated_at`) VALUES
+(3, 'ORD-WKQWZG', 1, 1, 1, 'monthly', NULL, 699.00, 30, 'verified', '2026-04-17 23:20:36', '2026-04-17 23:20:44', '2026-04-17 23:49:41', NULL, '2026-04-17 23:20:36', '2026-04-17 23:49:41'),
+(4, 'ORD-BX1QTJ', 3, 1, 1, 'monthly', NULL, 699.00, 30, 'verified', '2026-04-17 23:49:23', '2026-04-17 23:49:33', '2026-04-17 23:49:35', NULL, '2026-04-17 23:49:23', '2026-04-17 23:49:35'),
+(5, 'ORD-KGR1IG', 2, 1, 1, 'monthly', NULL, 0.00, 1, 'verified', '2026-04-18 00:06:27', '2026-04-18 00:06:35', '2026-04-18 00:06:38', NULL, '2026-04-18 00:06:27', '2026-04-18 00:06:38'),
+(6, 'ORD-JT2JHL', 2, 1, 1, 'trial', NULL, 0.00, 7, 'verified', '2026-04-18 00:09:48', '2026-04-18 00:09:58', '2026-04-18 00:10:02', NULL, '2026-04-18 00:09:48', '2026-04-18 00:10:02');
 
 -- --------------------------------------------------------
 
@@ -245,7 +249,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('thwC9fajKvcFx2ibk2NDrn8fPk90VuttnnWHOWt1', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoibk5xTHJVZU5UNW5iOHJzMGdoQ1ZSS0QxQjFLdUJ0RklLam0zb0I5MiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDk6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9zdWJzY3JpcHRpb25zP3NlYXJjaD0iO3M6NToicm91dGUiO3M6MjU6ImFkbWluLnN1YnNjcmlwdGlvbnMuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1776492727);
+('QvkugkmZl9TKteyDA2DWlN2Tfebd0bAerO7Fo3zu', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiektFdFJOQWQyd3d5d3d3QmtrZDZoUkl3WTgxSGJITDVPM1JSTXlLSSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7czo0OiJob21lIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1776502230),
+('thwC9fajKvcFx2ibk2NDrn8fPk90VuttnnWHOWt1', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoibk5xTHJVZU5UNW5iOHJzMGdoQ1ZSS0QxQjFLdUJ0RklLam0zb0I5MiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDM6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi93ZWJzaXRlL2J1aWxkZXIiO3M6NToicm91dGUiO3M6Mjc6ImFkbWluLndlYnNpdGUuYnVpbGRlci5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1776501313);
 
 -- --------------------------------------------------------
 
@@ -257,6 +262,8 @@ CREATE TABLE `subscriptions` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `user_id` bigint(20) UNSIGNED NOT NULL,
   `product_id` bigint(20) UNSIGNED NOT NULL,
+  `order_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `plan_id` bigint(20) UNSIGNED DEFAULT NULL,
   `subscription_code` varchar(100) NOT NULL,
   `subscription_type` enum('trial','monthly','yearly','custom') NOT NULL DEFAULT 'trial',
   `status` enum('pending','active','expired','cancelled','locked') NOT NULL DEFAULT 'pending',
@@ -264,9 +271,6 @@ CREATE TABLE `subscriptions` (
   `end_date` date DEFAULT NULL,
   `duration_days` int(11) NOT NULL DEFAULT 0,
   `amount` decimal(10,2) DEFAULT NULL,
-  `payment_method` varchar(50) DEFAULT NULL,
-  `reference_number` varchar(100) DEFAULT NULL,
-  `verified_at` timestamp NULL DEFAULT NULL,
   `notes` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -276,8 +280,13 @@ CREATE TABLE `subscriptions` (
 -- Dumping data for table `subscriptions`
 --
 
-INSERT INTO `subscriptions` (`id`, `user_id`, `product_id`, `subscription_code`, `subscription_type`, `status`, `start_date`, `end_date`, `duration_days`, `amount`, `payment_method`, `reference_number`, `verified_at`, `notes`, `created_at`, `updated_at`) VALUES
-(2, 1, 1, 'SUB-JI1ZLF', 'monthly', 'active', '2026-04-17', '2026-04-18', 1, NULL, NULL, NULL, '2026-04-17 11:41:30', NULL, '2026-04-17 11:41:16', '2026-04-17 11:41:30');
+INSERT INTO `subscriptions` (`id`, `user_id`, `product_id`, `order_id`, `plan_id`, `subscription_code`, `subscription_type`, `status`, `start_date`, `end_date`, `duration_days`, `amount`, `notes`, `created_at`, `updated_at`) VALUES
+(2, 1, 1, NULL, NULL, 'SUB-JI1ZLF', 'monthly', 'active', '2026-04-17', '2026-04-18', 1, NULL, NULL, '2026-04-17 11:41:16', '2026-04-17 11:41:30'),
+(3, 2, 1, NULL, NULL, 'SUB-RMFN8E', 'monthly', 'active', '2026-04-18', '2026-05-18', 30, 1499.00, 'Auto-created from verified order: ORD-7NMUBM', '2026-04-17 23:14:16', '2026-04-17 23:14:16'),
+(4, 3, 1, 4, 1, 'SUB-LT7RWM', 'monthly', 'active', '2026-04-18', '2026-05-18', 30, 699.00, 'Auto-created from verified order: ORD-BX1QTJ', '2026-04-17 23:49:35', '2026-04-17 23:49:35'),
+(5, 1, 1, 3, 1, 'SUB-NHI0ZI', 'monthly', 'active', '2026-04-18', '2026-05-18', 30, 699.00, 'Auto-created from verified order: ORD-WKQWZG', '2026-04-17 23:49:41', '2026-04-17 23:49:41'),
+(6, 2, 1, 5, 1, 'SUB-ZDJPP3', 'monthly', 'active', '2026-04-18', '2026-05-18', 1, 0.00, 'Auto-created from verified order: ORD-KGR1IG', '2026-04-18 00:06:38', '2026-04-18 00:06:38'),
+(7, 2, 1, 6, 1, 'SUB-VFWZSI', 'trial', 'active', '2026-04-18', '2026-04-25', 7, 0.00, 'Auto-created from verified order: ORD-JT2JHL', '2026-04-18 00:10:02', '2026-04-18 00:10:02');
 
 -- --------------------------------------------------------
 
@@ -310,7 +319,10 @@ CREATE TABLE `transactions` (
 --
 
 INSERT INTO `transactions` (`id`, `transaction_code`, `order_id`, `user_id`, `payment_method`, `reference_number`, `account_name`, `account_number`, `amount`, `payment_proof`, `status`, `paid_at`, `verified_at`, `notes`, `verified_by`, `created_at`, `updated_at`) VALUES
-(1, 'TXN-J7ZHIW', 1, 2, 'gcash', 'gcash0987654321', 'Jcmtesting', NULL, 699.00, NULL, 'verified', '2026-04-17 22:06:18', '2026-04-17 22:06:39', NULL, NULL, '2026-04-17 22:06:18', '2026-04-17 22:06:39');
+(3, 'TXN-HRDCF0', 3, 1, 'maya', '0987654321', NULL, NULL, 699.00, NULL, 'verified', '2026-04-17 23:20:44', '2026-04-17 23:49:41', NULL, NULL, '2026-04-17 23:20:44', '2026-04-17 23:49:41'),
+(4, 'TXN-XVLFDH', 4, 3, 'maya', 'gcash0987654321', NULL, NULL, 699.00, NULL, 'verified', '2026-04-17 23:49:33', '2026-04-17 23:49:35', NULL, NULL, '2026-04-17 23:49:33', '2026-04-17 23:49:35'),
+(5, 'TXN-24BLB6', 5, 2, 'gcash', 'gcash0987654321', NULL, NULL, 0.00, NULL, 'verified', '2026-04-18 00:06:35', '2026-04-18 00:06:38', NULL, NULL, '2026-04-18 00:06:35', '2026-04-18 00:06:38'),
+(6, 'TXN-0I9TWO', 6, 2, 'gcash', 'gcash0987654321', NULL, NULL, 0.00, NULL, 'verified', '2026-04-18 00:09:58', '2026-04-18 00:10:02', NULL, NULL, '2026-04-18 00:09:58', '2026-04-18 00:10:02');
 
 -- --------------------------------------------------------
 
@@ -434,7 +446,9 @@ ALTER TABLE `subscriptions`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `subscription_code` (`subscription_code`),
   ADD KEY `fk_subscriptions_user` (`user_id`),
-  ADD KEY `fk_subscriptions_product` (`product_id`);
+  ADD KEY `fk_subscriptions_product` (`product_id`),
+  ADD KEY `idx_subscriptions_order_id` (`order_id`),
+  ADD KEY `idx_subscriptions_plan_id` (`plan_id`);
 
 --
 -- Indexes for table `transactions`
@@ -480,7 +494,7 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `plans`
@@ -498,13 +512,13 @@ ALTER TABLE `products`
 -- AUTO_INCREMENT for table `subscriptions`
 --
 ALTER TABLE `subscriptions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -535,6 +549,8 @@ ALTER TABLE `plans`
 -- Constraints for table `subscriptions`
 --
 ALTER TABLE `subscriptions`
+  ADD CONSTRAINT `fk_subscriptions_order_id` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_subscriptions_plan_id` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_subscriptions_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_subscriptions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 

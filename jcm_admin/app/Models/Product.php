@@ -19,4 +19,12 @@ class Product extends Model
     {
         return $this->hasMany(Subscription::class);
     }
+    public function plans()
+    {
+        return $this->hasMany(Plan::class);
+    }
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
 }

@@ -1,10 +1,29 @@
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+} from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { LayoutGrid, Users } from 'lucide-react';
+import {
+    LayoutGrid,
+    Users,
+    CreditCard,
+    Boxes,
+    Layers3,
+    FileBarChart2,
+    ReceiptText,
+    Settings,
+    LifeBuoy,
+    ShieldCheck,
+} from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -14,27 +33,58 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Manage Users',
+        title: 'User Management',
         url: '/admin/users',
-        icon: Users,
-    },
-    {
-        title: 'Subscriptions',
-        url: '/admin/subscriptions',
         icon: Users,
     },
     {
         title: 'Products',
         url: '/admin/products',
-        icon: Users,
+        icon: Boxes,
     },
-
-
+    {
+        title: 'Plans',
+        url: '/admin/plans',
+        icon: Layers3,
+    },
+   {
+        title: 'Orders',
+        url: '/admin/orders',
+        icon: ReceiptText,
+    },
+    {
+        title: 'Subscriptions',
+        url: '/admin/subscriptions',
+        icon: CreditCard,
+    },
+    {
+        title: 'Transactions',
+        url: '#',
+        icon: ReceiptText,
+    },
+    {
+        title: 'Reports',
+        url: '#',
+        icon: FileBarChart2,
+    },
 ];
 
-
 const footerNavItems: NavItem[] = [
-
+    {
+        title: 'Security',
+        url: '#',
+        icon: ShieldCheck,
+    },
+    {
+        title: 'Support',
+        url: '#',
+        icon: LifeBuoy,
+    },
+    {
+        title: 'Settings',
+        url: '#',
+        icon: Settings,
+    },
 ];
 
 export function AppSidebar() {
@@ -53,6 +103,12 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
+                <div className="px-2 pt-2">
+                    <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        Platform
+                    </p>
+                </div>
+
                 <NavMain items={mainNavItems} />
             </SidebarContent>
 

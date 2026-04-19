@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 18, 2026 at 11:05 AM
+-- Generation Time: Apr 19, 2026 at 10:55 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -32,14 +32,6 @@ CREATE TABLE `cache` (
   `value` mediumtext NOT NULL,
   `expiration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `cache`
---
-
-INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('laravel_cache_jcm.tc1@gmail.com|127.0.0.1', 'i:1;', 1776450231),
-('laravel_cache_jcm.tc1@gmail.com|127.0.0.1:timer', 'i:1776450231;', 1776450231);
 
 -- --------------------------------------------------------
 
@@ -159,7 +151,9 @@ INSERT INTO `orders` (`id`, `order_code`, `user_id`, `product_id`, `plan_id`, `b
 (3, 'ORD-WKQWZG', 1, 1, 1, 'monthly', NULL, 699.00, 30, 'verified', '2026-04-17 23:20:36', '2026-04-17 23:20:44', '2026-04-17 23:49:41', NULL, '2026-04-17 23:20:36', '2026-04-17 23:49:41'),
 (4, 'ORD-BX1QTJ', 3, 1, 1, 'monthly', NULL, 699.00, 30, 'verified', '2026-04-17 23:49:23', '2026-04-17 23:49:33', '2026-04-17 23:49:35', NULL, '2026-04-17 23:49:23', '2026-04-17 23:49:35'),
 (5, 'ORD-KGR1IG', 2, 1, 1, 'monthly', NULL, 0.00, 1, 'verified', '2026-04-18 00:06:27', '2026-04-18 00:06:35', '2026-04-18 00:06:38', NULL, '2026-04-18 00:06:27', '2026-04-18 00:06:38'),
-(6, 'ORD-JT2JHL', 2, 1, 1, 'trial', NULL, 0.00, 7, 'verified', '2026-04-18 00:09:48', '2026-04-18 00:09:58', '2026-04-18 00:10:02', NULL, '2026-04-18 00:09:48', '2026-04-18 00:10:02');
+(6, 'ORD-JT2JHL', 2, 1, 1, 'trial', NULL, 0.00, 7, 'verified', '2026-04-18 00:09:48', '2026-04-18 00:09:58', '2026-04-18 00:10:02', NULL, '2026-04-18 00:09:48', '2026-04-18 00:10:02'),
+(7, 'ORD-JBYB6A', 2, 4, 4, 'monthly', NULL, 799.00, 30, 'verified', '2026-04-18 17:08:41', '2026-04-18 17:09:26', '2026-04-18 17:09:42', NULL, '2026-04-18 17:08:41', '2026-04-18 17:09:42'),
+(8, 'ORD-EFWUHO', 2, 1, 1, 'trial', NULL, 0.00, 7, 'verified', '2026-04-18 17:09:55', '2026-04-18 17:10:14', '2026-04-18 17:20:08', NULL, '2026-04-18 17:09:55', '2026-04-18 17:20:08');
 
 -- --------------------------------------------------------
 
@@ -198,7 +192,8 @@ CREATE TABLE `plans` (
 INSERT INTO `plans` (`id`, `product_id`, `plan_name`, `price`, `duration_days`, `description`, `status`, `created_at`, `updated_at`) VALUES
 (1, 1, 'Basic Plan', 699.00, 30, NULL, 'active', '2026-04-18 02:34:16', '2026-04-18 02:34:16'),
 (2, 1, 'Pro Plan', 999.00, 30, NULL, 'active', '2026-04-18 02:34:16', '2026-04-18 02:34:16'),
-(3, 1, 'Premium Plan', 1499.00, 30, NULL, 'active', '2026-04-18 02:34:16', '2026-04-18 02:34:16');
+(3, 1, 'Premium Plan', 1499.00, 30, NULL, 'active', '2026-04-18 02:34:16', '2026-04-18 02:34:16'),
+(4, 4, 'Basic', 799.00, 30, NULL, 'active', '2026-04-18 17:08:10', '2026-04-18 17:20:53');
 
 -- --------------------------------------------------------
 
@@ -232,6 +227,36 @@ INSERT INTO `products` (`id`, `product_code`, `name`, `description`, `price`, `p
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `services`
+--
+
+CREATE TABLE `services` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `code` varchar(100) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `service_type` enum('custom','maintenance','support','consulting','implementation','other') NOT NULL DEFAULT 'custom',
+  `pricing_type` enum('fixed','quote') NOT NULL DEFAULT 'quote',
+  `base_price` decimal(12,2) DEFAULT NULL,
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `services`
+--
+
+INSERT INTO `services` (`id`, `code`, `name`, `description`, `service_type`, `pricing_type`, `base_price`, `status`, `sort_order`, `created_at`, `updated_at`) VALUES
+(1, 'SRV-WEB-001', 'Custom Web Development', 'Business websites tailored to your brand and goals.', 'custom', 'quote', NULL, 'active', 1, '2026-04-19 08:38:24', '2026-04-19 08:38:24'),
+(2, 'SRV-SYS-001', 'Custom System Development', 'Built-from-scratch systems for unique workflows.', 'implementation', 'quote', NULL, 'active', 2, '2026-04-19 08:38:24', '2026-04-19 08:38:24'),
+(3, 'SRV-MNT-001', 'Maintenance & Support', 'Ongoing updates, bug fixes, and assistance.', 'maintenance', 'fixed', 2500.00, 'active', 3, '2026-04-19 08:38:24', '2026-04-19 08:38:24'),
+(4, 'SRV-CNS-001', 'IT Consulting', 'Planning and consulting for digital systems.', 'consulting', 'fixed', 5000.00, 'inactive', 4, '2026-04-19 08:38:24', '2026-04-19 08:38:24');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `sessions`
 --
 
@@ -249,8 +274,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('QvkugkmZl9TKteyDA2DWlN2Tfebd0bAerO7Fo3zu', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiektFdFJOQWQyd3d5d3d3QmtrZDZoUkl3WTgxSGJITDVPM1JSTXlLSSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7czo0OiJob21lIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1776502230),
-('thwC9fajKvcFx2ibk2NDrn8fPk90VuttnnWHOWt1', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoibk5xTHJVZU5UNW5iOHJzMGdoQ1ZSS0QxQjFLdUJ0RklLam0zb0I5MiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDM6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi93ZWJzaXRlL2J1aWxkZXIiO3M6NToicm91dGUiO3M6Mjc6ImFkbWluLndlYnNpdGUuYnVpbGRlci5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1776501313);
+('KRdN6pZVodT56hDzCxcsGpY6zSxiM5E2p0hoEVlO', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiazhCQTAydldyS3Ewa2tNdHZZWFM0SkpQRERYY0taMVF1UEVEdmpDZiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTt9', 1776586793),
+('VSEPfg9hEKzODXXojIlcqr7u4t5gcfEeeYYmZ8BB', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiN2hrcHZCRVc0VkZNa2tzS0M3Tm05ZWF5Mk9kNTNTWmU1N21ydjl6SSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo0NDoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL3Byb2R1Y3RzP3NlYXJjaD0iO3M6NToicm91dGUiO3M6MjA6ImFkbWluLnByb2R1Y3RzLmluZGV4Ijt9fQ==', 1776588857);
 
 -- --------------------------------------------------------
 
@@ -286,7 +311,9 @@ INSERT INTO `subscriptions` (`id`, `user_id`, `product_id`, `order_id`, `plan_id
 (4, 3, 1, 4, 1, 'SUB-LT7RWM', 'monthly', 'active', '2026-04-18', '2026-05-18', 30, 699.00, 'Auto-created from verified order: ORD-BX1QTJ', '2026-04-17 23:49:35', '2026-04-17 23:49:35'),
 (5, 1, 1, 3, 1, 'SUB-NHI0ZI', 'monthly', 'active', '2026-04-18', '2026-05-18', 30, 699.00, 'Auto-created from verified order: ORD-WKQWZG', '2026-04-17 23:49:41', '2026-04-17 23:49:41'),
 (6, 2, 1, 5, 1, 'SUB-ZDJPP3', 'monthly', 'active', '2026-04-18', '2026-05-18', 1, 0.00, 'Auto-created from verified order: ORD-KGR1IG', '2026-04-18 00:06:38', '2026-04-18 00:06:38'),
-(7, 2, 1, 6, 1, 'SUB-VFWZSI', 'trial', 'active', '2026-04-18', '2026-04-25', 7, 0.00, 'Auto-created from verified order: ORD-JT2JHL', '2026-04-18 00:10:02', '2026-04-18 00:10:02');
+(7, 2, 1, 6, 1, 'SUB-VFWZSI', 'trial', 'active', '2026-04-18', '2026-04-25', 7, 0.00, 'Auto-created from verified order: ORD-JT2JHL', '2026-04-18 00:10:02', '2026-04-18 00:10:02'),
+(8, 2, 4, 7, 4, 'SUB-RVY3BU', 'monthly', 'active', '2026-04-19', '2026-05-19', 30, 799.00, 'Auto-created from verified order: ORD-JBYB6A', '2026-04-18 17:09:42', '2026-04-18 17:09:42'),
+(9, 2, 1, 8, 1, 'SUB-T3JMYE', 'trial', 'active', '2026-04-19', '2026-04-26', 7, 0.00, 'Auto-created from verified order: ORD-EFWUHO', '2026-04-18 17:20:08', '2026-04-18 17:20:08');
 
 -- --------------------------------------------------------
 
@@ -322,7 +349,9 @@ INSERT INTO `transactions` (`id`, `transaction_code`, `order_id`, `user_id`, `pa
 (3, 'TXN-HRDCF0', 3, 1, 'maya', '0987654321', NULL, NULL, 699.00, NULL, 'verified', '2026-04-17 23:20:44', '2026-04-17 23:49:41', NULL, NULL, '2026-04-17 23:20:44', '2026-04-17 23:49:41'),
 (4, 'TXN-XVLFDH', 4, 3, 'maya', 'gcash0987654321', NULL, NULL, 699.00, NULL, 'verified', '2026-04-17 23:49:33', '2026-04-17 23:49:35', NULL, NULL, '2026-04-17 23:49:33', '2026-04-17 23:49:35'),
 (5, 'TXN-24BLB6', 5, 2, 'gcash', 'gcash0987654321', NULL, NULL, 0.00, NULL, 'verified', '2026-04-18 00:06:35', '2026-04-18 00:06:38', NULL, NULL, '2026-04-18 00:06:35', '2026-04-18 00:06:38'),
-(6, 'TXN-0I9TWO', 6, 2, 'gcash', 'gcash0987654321', NULL, NULL, 0.00, NULL, 'verified', '2026-04-18 00:09:58', '2026-04-18 00:10:02', NULL, NULL, '2026-04-18 00:09:58', '2026-04-18 00:10:02');
+(6, 'TXN-0I9TWO', 6, 2, 'gcash', 'gcash0987654321', NULL, NULL, 0.00, NULL, 'verified', '2026-04-18 00:09:58', '2026-04-18 00:10:02', NULL, NULL, '2026-04-18 00:09:58', '2026-04-18 00:10:02'),
+(7, 'TXN-GXEBC3', 7, 2, 'gcash', '0987654321', NULL, NULL, 799.00, NULL, 'verified', '2026-04-18 17:09:26', '2026-04-18 17:09:42', NULL, NULL, '2026-04-18 17:09:26', '2026-04-18 17:09:42'),
+(8, 'TXN-7WWTMJ', 8, 2, 'gcash', 'Trial0987', NULL, NULL, 0.00, NULL, 'verified', '2026-04-18 17:10:14', '2026-04-18 17:20:08', NULL, NULL, '2026-04-18 17:10:14', '2026-04-18 17:20:08');
 
 -- --------------------------------------------------------
 
@@ -432,6 +461,13 @@ ALTER TABLE `products`
   ADD UNIQUE KEY `product_code` (`product_code`);
 
 --
+-- Indexes for table `services`
+--
+ALTER TABLE `services`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `code` (`code`);
+
+--
 -- Indexes for table `sessions`
 --
 ALTER TABLE `sessions`
@@ -494,13 +530,13 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `plans`
 --
 ALTER TABLE `plans`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -509,16 +545,22 @@ ALTER TABLE `products`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
+-- AUTO_INCREMENT for table `services`
+--
+ALTER TABLE `services`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
 -- AUTO_INCREMENT for table `subscriptions`
 --
 ALTER TABLE `subscriptions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `users`

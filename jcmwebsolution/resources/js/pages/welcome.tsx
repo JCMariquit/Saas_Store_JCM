@@ -1,11 +1,28 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 
 import HeroSlider from '@/components/hero-slider';
 import Navbar from '@/components/navbar';
 import ProductCardSkeleton from '@/components/product-card-skeleton';
 import SectionTitle from '@/components/section-title';
 
+type ProductItem = {
+    id: number;
+    name: string;
+    description: string | null;
+    pricing_type: string;
+    status: string;
+    starting_price: number | null;
+    starting_price_label: string;
+};
+
+type PageProps = {
+    products: ProductItem[];
+};
+
 export default function Welcome() {
+    const { props } = usePage<PageProps>();
+    const { products } = props;
+
     return (
         <>
             <Head title="JCM Web Solution" />
@@ -84,41 +101,45 @@ export default function Welcome() {
                                     <span>✔ Built for real businesses</span>
                                 </div>
                             </div>
+
                             <div className="mx-auto w-full max-w-2xl">
                                 <HeroSlider />
                             </div>
+
                             <br />
                         </div>
                     </section>
+
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <section id="products" className="mt-14">
                             <SectionTitle
                                 badge="Shop Preview"
                                 title="Featured products"
-                                subtitle="Static cards muna ito. Later pwede na itong manggaling sa database."
+                                subtitle="Available products are now loaded from your database."
                             />
 
                             <div className="mt-8 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-                                <ProductCardSkeleton
-                                    title="Booking System"
-                                    description="Online reservations system"
-                                    price="₱15,000+"
-                                />
-                                <ProductCardSkeleton
-                                    title="Inventory System"
-                                    description="Track stocks and reports"
-                                    price="₱18,000+"
-                                />
-                                <ProductCardSkeleton
-                                    title="POS System"
-                                    description="Sales and cashier workflow"
-                                    price="₱20,000+"
-                                />
-                                <ProductCardSkeleton
-                                    title="Custom System"
-                                    description="Tailored for your business"
-                                    price="Custom"
-                                />
+                                {products.length > 0 ? (
+                                    products.map((product) => (
+                                        <ProductCardSkeleton
+                                            key={product.id}
+                                            title={product.name}
+                                            description={
+                                                product.description || 'No description available yet.'
+                                            }
+                                            price={product.starting_price_label}
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="col-span-full rounded-[28px] border border-white/70 bg-white p-8 text-center shadow-[0_18px_50px_rgba(58,95,145,0.10)]">
+                                        <h3 className="text-lg font-bold text-slate-900">
+                                            No active products found
+                                        </h3>
+                                        <p className="mt-2 text-sm text-slate-500">
+                                            Add active products from the admin side first.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </section>
 
@@ -169,18 +190,18 @@ export default function Welcome() {
                             </div>
 
                             <div className="flex flex-wrap gap-4">
-                                <a
+                                <Link
                                     href="/login"
                                     className="rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-blue-700 shadow-md"
                                 >
                                     Login
-                                </a>
-                                <a
+                                </Link>
+                                <Link
                                     href="/register"
                                     className="rounded-2xl border border-white/30 px-6 py-3 text-sm font-semibold text-white"
                                 >
                                     Sign Up
-                                </a>
+                                </Link>
                             </div>
                         </div>
                     </section>

@@ -9,6 +9,7 @@ use App\Http\Controllers\PlanController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WebsiteBuilderController;
+use App\Http\Controllers\ServiceController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -43,6 +44,13 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
         });
 
+        Route::prefix('services')->as('services.')->group(function () {
+            Route::get('/', [ServiceController::class, 'index'])->name('index');
+            Route::post('/', [ServiceController::class, 'store'])->name('store');
+            Route::put('/{service}', [ServiceController::class, 'update'])->name('update');
+            Route::delete('/{service}', [ServiceController::class, 'destroy'])->name('destroy');
+        });
+
         Route::prefix('plans')->as('plans.')->group(function () {
             Route::get('/', [PlanController::class, 'index'])->name('index');
             Route::post('/', [PlanController::class, 'store'])->name('store');
@@ -58,9 +66,10 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{order}/reject', [OrderController::class, 'reject'])->name('reject');
             Route::delete('/{order}', [OrderController::class, 'destroy'])->name('destroy');
         });
-        
+
         Route::prefix('transactions')->as('transactions.')->group(function () {
-            Route::get('/', [TransactionController::class, 'index'])->name('index');Route::post('/{transaction}/reject', [TransactionController::class, 'reject'])->name('reject');
+            Route::get('/', [TransactionController::class, 'index'])->name('index');
+            Route::post('/{transaction}/reject', [TransactionController::class, 'reject'])->name('reject');
             Route::delete('/{transaction}', [TransactionController::class, 'destroy'])->name('destroy');
         });
 
@@ -68,9 +77,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/builder', [WebsiteBuilderController::class, 'index'])->name('builder.index');
             Route::get('/builder/{product}', [WebsiteBuilderController::class, 'show'])->name('builder.show');
         });
-
     });
-
 });
 
 require __DIR__.'/settings.php';

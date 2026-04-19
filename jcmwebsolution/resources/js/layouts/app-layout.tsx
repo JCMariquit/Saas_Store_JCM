@@ -1,8 +1,19 @@
-import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
+import AppLayoutTemplate from '@/layouts/app/app-header-layout';
 import type { AppLayoutProps } from '@/types';
 
-export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => (
-    <AppLayoutTemplate breadcrumbs={breadcrumbs} {...props}>
-        {children}
-    </AppLayoutTemplate>
-);
+type LayoutProps = AppLayoutProps & {
+    fullWidth?: boolean;
+};
+
+export default function AppLayout({
+    children,
+    breadcrumbs,
+    fullWidth = false,
+    ...props
+}: LayoutProps) {
+    return (
+        <AppLayoutTemplate breadcrumbs={breadcrumbs} fullWidth={fullWidth} {...props}>
+            {children}
+        </AppLayoutTemplate>
+    );
+}

@@ -3,14 +3,19 @@ import { AppHeader } from '@/components/app-header';
 import { AppShell } from '@/components/app-shell';
 import type { AppLayoutProps } from '@/types';
 
+type HeaderLayoutProps = AppLayoutProps & {
+    fullWidth?: boolean;
+};
+
 export default function AppHeaderLayout({
     children,
     breadcrumbs,
-}: AppLayoutProps) {
+    fullWidth = false,
+}: HeaderLayoutProps) {
     return (
         <AppShell>
             <AppHeader breadcrumbs={breadcrumbs} />
-            <AppContent>{children}</AppContent>
+            <AppContent fullWidth={fullWidth}>{children}</AppContent>
         </AppShell>
     );
 }

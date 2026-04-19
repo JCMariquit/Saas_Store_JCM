@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Fortify\Features;
 
-class WelcomeController extends Controller
+class PublicController extends Controller
 {
-    public function index(): Response
+    public function home(): Response
     {
         $products = Product::with(['plans' => function ($query) {
                 $query->where('status', 'active')->orderBy('price');
@@ -29,12 +29,15 @@ class WelcomeController extends Controller
                     'starting_price' => $lowestPlan?->price,
                     'starting_price_label' => match ($product->pricing_type) {
                         'custom' => 'Custom',
-                        default => $lowestPlan ? '₱' . number_format((float) $lowestPlan->price, 2) . '+' : 'Contact us',
+                        default => $lowestPlan
+                            ? '₱' . number_format((float) $lowestPlan->price, 2) . '+'
+                            : 'Contact us',
                     },
                 ];
             });
 
         return Inertia::render('welcome', [
+            'canRegister' => Features::enabled(Features::registration()),
             'products' => $products,
         ]);
     }

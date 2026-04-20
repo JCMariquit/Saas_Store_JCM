@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MySubscriptionController;
 use App\Http\Controllers\PublicController;
 use App\Models\Product;
 use Illuminate\Support\Facades\Route;
@@ -67,4 +68,9 @@ Route::get('/dashboard', function () {
         ],
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
-require __DIR__ . '/settings.php'; 
+
+Route::get('/my-subscription', [MySubscriptionController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('my-subscription');
+
+require __DIR__ . '/settings.php';

@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { LogOut, Settings } from 'lucide-react';
+import { CalendarDays, LogOut, Settings } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -31,8 +31,21 @@ export function UserMenuContent({ user }: Props) {
                     <UserInfo user={user} showEmail={true} />
                 </div>
             </DropdownMenuLabel>
+
             <DropdownMenuSeparator />
+
             <DropdownMenuGroup>
+                <DropdownMenuItem asChild>
+                    <Link
+                        className="block w-full cursor-pointer"
+                        href="/my-subscription"
+                        onClick={cleanup}
+                    >
+                        <CalendarDays className="mr-2" />
+                        My Subscription
+                    </Link>
+                </DropdownMenuItem>
+
                 <DropdownMenuItem asChild>
                     <Link
                         className="block w-full cursor-pointer"
@@ -45,7 +58,9 @@ export function UserMenuContent({ user }: Props) {
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
+
             <DropdownMenuSeparator />
+
             <DropdownMenuItem asChild>
                 <Link
                     className="block w-full cursor-pointer"

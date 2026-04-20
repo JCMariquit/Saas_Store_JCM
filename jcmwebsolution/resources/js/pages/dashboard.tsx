@@ -2,7 +2,6 @@ import { Head, router, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
     Boxes,
-    Globe,
     Layers3,
     MonitorSmartphone,
     Sparkles,
@@ -22,8 +21,21 @@ type ProductItem = {
     starting_price_label: string;
 };
 
+type ServiceItem = {
+    id: number;
+    code: string;
+    name: string;
+    description: string | null;
+    service_type: string;
+    pricing_type: string;
+    base_price: number | null;
+    base_price_label: string;
+    status: string;
+};
+
 type PageProps = {
     products: ProductItem[];
+    services: ServiceItem[];
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -35,7 +47,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function Dashboard() {
     const { props } = usePage<PageProps>();
-    const { products } = props;
+    const { products, services } = props;
 
     const pricingTypeBadgeClass = (pricingType: string) => {
         switch (pricingType) {
@@ -43,6 +55,10 @@ export default function Dashboard() {
                 return 'border-blue-200 bg-blue-100 text-blue-700';
             case 'custom':
                 return 'border-purple-200 bg-purple-100 text-purple-700';
+            case 'fixed':
+                return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+            case 'quote':
+                return 'border-amber-200 bg-amber-100 text-amber-700';
             default:
                 return 'border-slate-200 bg-slate-100 text-slate-700';
         }
@@ -54,6 +70,23 @@ export default function Dashboard() {
                 return 'border-green-200 bg-green-100 text-green-700';
             case 'inactive':
                 return 'border-red-200 bg-red-100 text-red-700';
+            default:
+                return 'border-slate-200 bg-slate-100 text-slate-700';
+        }
+    };
+
+    const serviceTypeBadgeClass = (serviceType: string) => {
+        switch (serviceType) {
+            case 'custom':
+                return 'border-purple-200 bg-purple-100 text-purple-700';
+            case 'maintenance':
+                return 'border-amber-200 bg-amber-100 text-amber-700';
+            case 'support':
+                return 'border-sky-200 bg-sky-100 text-sky-700';
+            case 'consulting':
+                return 'border-indigo-200 bg-indigo-100 text-indigo-700';
+            case 'implementation':
+                return 'border-emerald-200 bg-emerald-100 text-emerald-700';
             default:
                 return 'border-slate-200 bg-slate-100 text-slate-700';
         }
@@ -144,7 +177,7 @@ export default function Dashboard() {
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                         {[
                             { label: 'Active Products', value: products.length },
-                            { label: 'Happy Clients', value: '10+' },
+                            { label: 'Active Services', value: services.length },
                             { label: 'Systems Built', value: '20+' },
                             { label: 'Support', value: '24/7' },
                         ].map((item) => (
@@ -307,59 +340,46 @@ export default function Dashboard() {
                         </div>
 
                         <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                            {[
-                                {
-                                    title: 'Custom Web Development',
-                                    description: 'Business websites tailored to your brand and goals.',
-                                    label: 'Custom Service',
-                                    icon: Globe,
-                                },
-                                {
-                                    title: 'Custom System Development',
-                                    description: 'Built-from-scratch systems for your unique workflow.',
-                                    label: 'Made to Order',
-                                    icon: Wrench,
-                                },
-                                {
-                                    title: 'Business Automation',
-                                    description: 'Automate manual work with digital tools and smart processes.',
-                                    label: 'Workflow Upgrade',
-                                    icon: Sparkles,
-                                },
-                                {
-                                    title: 'Maintenance & Support',
-                                    description: 'Ongoing updates, fixes, and support for your systems.',
-                                    label: 'Service Support',
-                                    icon: MonitorSmartphone,
-                                },
-                            ].map((service) => {
-                                const Icon = service.icon;
-
-                                return (
+                            {services.length > 0 ? (
+                                services.map((service) => (
                                     <div
-                                        key={service.title}
+                                        key={service.id}
                                         className="rounded-2xl border border-white/70 bg-[#fdfefe] p-5 shadow-[0_14px_36px_rgba(58,95,145,0.08)] transition hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(58,95,145,0.12)]"
                                     >
-                                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-100 to-blue-100">
-                                            <Icon className="h-5 w-5 text-sky-700" />
+                                        <div className="h-[120px] rounded-[18px] bg-gradient-to-br from-sky-50 to-blue-100" />
+
+                                        <div className="mt-4 flex items-center justify-between gap-2">
+                                            <span
+                                                className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize ${serviceTypeBadgeClass(
+                                                    service.service_type,
+                                                )}`}
+                                            >
+                                                {service.service_type}
+                                            </span>
+
+                                            <span
+                                                className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize ${pricingTypeBadgeClass(
+                                                    service.pricing_type,
+                                                )}`}
+                                            >
+                                                {service.pricing_type}
+                                            </span>
                                         </div>
 
                                         <div className="mt-4">
-                                            <span className="inline-flex rounded-full border border-purple-200 bg-purple-100 px-2.5 py-1 text-[11px] font-semibold text-purple-700">
-                                                {service.label}
-                                            </span>
-
-                                            <h3 className="mt-3 text-[20px] leading-tight font-bold text-slate-900">
-                                                {service.title}
+                                            <h3 className="text-[20px] leading-tight font-bold text-slate-900">
+                                                {service.name}
                                             </h3>
 
-                                            <p className="mt-2 text-sm leading-6 text-slate-500">
-                                                {service.description}
+                                            <p className="mt-2 min-h-[44px] text-sm leading-6 text-slate-500">
+                                                {service.description || 'No description available yet.'}
                                             </p>
                                         </div>
 
                                         <div className="mt-5 flex items-center justify-between">
-                                            <p className="text-sm font-semibold text-blue-600">Custom Quote</p>
+                                            <p className="text-sm font-semibold text-blue-600">
+                                                {service.base_price_label}
+                                            </p>
 
                                             <button
                                                 type="button"
@@ -369,8 +389,21 @@ export default function Dashboard() {
                                             </button>
                                         </div>
                                     </div>
-                                );
-                            })}
+                                ))
+                            ) : (
+                                <div className="col-span-full rounded-[28px] border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center">
+                                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+                                        <Wrench className="h-6 w-6 text-slate-500" />
+                                    </div>
+
+                                    <h3 className="mt-4 text-lg font-bold text-slate-900">
+                                        No services found
+                                    </h3>
+                                    <p className="mt-2 text-sm text-slate-500">
+                                        Add active services first so they can appear in your public store.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </section>
                 </div>
@@ -427,8 +460,6 @@ export default function Dashboard() {
                 </section>
 
                 <section className="relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen overflow-x-hidden border-t border-slate-800 bg-gradient-to-r from-slate-900 to-slate-800 text-white">
-
-                    {/* TOP CTA */}
                     <div className="mx-auto max-w-7xl px-6 py-10 md:px-8">
                         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                             <div className="max-w-2xl">
@@ -456,13 +487,9 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* DIVIDER */}
                     <div className="border-t border-white/10" />
 
-                    {/* FOOTER CONTENT */}
                     <div className="mx-auto grid max-w-7xl gap-8 px-6 py-10 md:px-8 md:grid-cols-2 lg:grid-cols-4">
-
-                        {/* ABOUT */}
                         <div>
                             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
                                 JCM Web Solution
@@ -474,7 +501,6 @@ export default function Dashboard() {
                             </p>
                         </div>
 
-                        {/* PAYMENTS */}
                         <div>
                             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
                                 Payment Methods
@@ -487,7 +513,6 @@ export default function Dashboard() {
                             </ul>
                         </div>
 
-                        {/* SUPPORT */}
                         <div>
                             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
                                 Customer Service
@@ -500,7 +525,6 @@ export default function Dashboard() {
                             </ul>
                         </div>
 
-                        {/* SOCIAL */}
                         <div>
                             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
                                 Follow Us
@@ -509,22 +533,17 @@ export default function Dashboard() {
                             <ul className="mt-3 space-y-2 text-sm text-slate-400">
                                 <li>Facebook</li>
                                 <li>Instagram</li>
-                <li>Email: jcmwebsolution@gmail.com</li>
-            </ul>
-        </div>
-    </div>
+                                <li>Email: jcmwebsolution@gmail.com</li>
+                            </ul>
+                        </div>
+                    </div>
 
-    {/* BOTTOM */}
-    <div className="border-t border-white/10">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-6 text-sm text-slate-400 md:flex-row md:items-center md:justify-between md:px-8">
-            <p>© {new Date().getFullYear()} JCM Web Solution. All rights reserved.</p>
-
-            {/* <p className="text-xs">
-                Built with Laravel & React 
-            </p> */}
-        </div>
-    </div>
-</section>
+                    <div className="border-t border-white/10">
+                        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-6 text-sm text-slate-400 md:flex-row md:items-center md:justify-between md:px-8">
+                            <p>© {new Date().getFullYear()} JCM Web Solution. All rights reserved.</p>
+                        </div>
+                    </div>
+                </section>
             </div>
         </AppLayout>
     );

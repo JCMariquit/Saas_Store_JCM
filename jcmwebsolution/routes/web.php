@@ -8,9 +8,11 @@ use Inertia\Inertia;
 Route::get('/', [PublicController::class, 'home'])->name('home');
 
 Route::get('/dashboard', function () {
-    $products = Product::with(['plans' => function ($query) {
-            $query->where('status', 'active')->orderBy('price');
-        }])
+    $products = Product::with([
+            'plans' => function ($query) {
+                $query->where('status', 'active')->orderBy('price');
+            }
+        ])
         ->where('status', 'active')
         ->orderBy('name')
         ->get()
@@ -33,8 +35,27 @@ Route::get('/dashboard', function () {
             ];
         });
 
+    $services = \App\Models\Service::query()
+        ->where('status', 'active')
+        ->orderBy('name')
+        ->get()
+        ->map(function ($service) {
+            return [
+                'id' => $service->id,
+                'code' => $service->code,
+                'name' => $service->name,
+                'description' => $service->description,
+                'service_type' => $service->service_type,
+                'pricing_type' => $service->pricing_type,
+                'base_price' => $service->base_price,
+                'base_price_label' => $service->base_price_label,
+                'status' => $service->status,
+            ];
+        });
+
     return Inertia::render('dashboard', [
         'products' => $products,
+        'services' => $services,
         'stats' => [
             'total_products' => Product::where('status', 'active')->count(),
             'plan_products' => Product::where('status', 'active')
@@ -46,5 +67,4 @@ Route::get('/dashboard', function () {
         ],
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
-
-require __DIR__ . '/settings.php';
+require __DIR__ . '/settings.php'; 

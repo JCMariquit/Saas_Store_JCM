@@ -70,6 +70,7 @@ export default function SubscriptionsIndex() {
     const [openCancelModal, setOpenCancelModal] = useState(false);
     const [openLockModal, setOpenLockModal] = useState(false);
     const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionRow | null>(null);
+    const [viewingSubscription, setViewingSubscription] = useState<SubscriptionRow | null>(null);
 
     const actionForm = useForm<ActionForm>({
         notes: '',
@@ -148,6 +149,14 @@ export default function SubscriptionsIndex() {
         actionForm.reset();
         actionForm.clearErrors();
         setOpenLockModal(false);
+    };
+
+    const openViewDrawer = (subscription: SubscriptionRow) => {
+        setViewingSubscription(subscription);
+    };
+
+    const closeViewDrawer = () => {
+        setViewingSubscription(null);
     };
 
     const submitCancel = (e: React.FormEvent<HTMLFormElement>) => {
@@ -294,14 +303,11 @@ export default function SubscriptionsIndex() {
                             <thead className="bg-slate-50 text-slate-600">
                                 <tr>
                                     <th className="px-4 py-3 text-left font-medium">Subscription</th>
-                                    <th className="px-4 py-3 text-left font-medium">Order</th>
                                     <th className="px-4 py-3 text-left font-medium">User</th>
                                     <th className="px-4 py-3 text-left font-medium">Product / Plan</th>
                                     <th className="px-4 py-3 text-left font-medium">Type</th>
-                                    <th className="px-4 py-3 text-left font-medium">Amount</th>
                                     <th className="px-4 py-3 text-left font-medium">Status</th>
-                                    <th className="px-4 py-3 text-left font-medium">Start</th>
-                                    <th className="px-4 py-3 text-left font-medium">End</th>
+                                    <th className="px-4 py-3 text-left font-medium">End Date</th>
                                     <th className="px-4 py-3 text-center font-medium">Actions</th>
                                 </tr>
                             </thead>
@@ -311,17 +317,22 @@ export default function SubscriptionsIndex() {
                                     subscriptions.data.map((sub) => (
                                         <tr
                                             key={sub.id}
-                                            className="border-t border-slate-200 transition hover:bg-slate-50"
+                                            className="cursor-pointer border-t border-slate-200 transition hover:bg-slate-50"
+                                            onClick={() => openViewDrawer(sub)}
                                         >
-                                            <td className="px-4 py-3 font-medium text-slate-900">
-                                                {sub.subscription_code}
+                                            <td className="px-4 py-3">
+                                                <div className="font-medium text-slate-900">
+                                                    {sub.subscription_code}
+                                                </div>
+                                                <div className="text-xs text-slate-500">
+                                                    Order: {sub.order_code ?? '-'}
+                                                </div>
                                             </td>
-                                            <td className="px-4 py-3 text-slate-700">
-                                                {sub.order_code ?? '-'}
-                                            </td>
+
                                             <td className="px-4 py-3 text-slate-700">
                                                 {sub.user_name ?? '-'}
                                             </td>
+
                                             <td className="px-4 py-3">
                                                 <div className="font-medium text-slate-900">
                                                     {sub.product_name ?? '-'}
@@ -330,15 +341,11 @@ export default function SubscriptionsIndex() {
                                                     {sub.plan_name ?? '-'}
                                                 </div>
                                             </td>
+
                                             <td className="px-4 py-3 capitalize text-slate-700">
                                                 {sub.subscription_type}
                                             </td>
-                                            <td className="px-4 py-3 text-slate-700">
-                                                <div>{formatPrice(sub.amount)}</div>
-                                                <div className="text-xs text-slate-500">
-                                                    {sub.duration_days} days
-                                                </div>
-                                            </td>
+
                                             <td className="px-4 py-3">
                                                 <span
                                                     className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${getStatusBadgeClass(
@@ -348,14 +355,16 @@ export default function SubscriptionsIndex() {
                                                     {sub.status}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-slate-700">
-                                                {sub.start_date ?? '-'}
-                                            </td>
+
                                             <td className="px-4 py-3 text-slate-700">
                                                 {sub.end_date ?? '-'}
                                             </td>
+
                                             <td className="px-4 py-3 text-center">
-                                                <div className="flex items-center justify-center gap-2">
+                                                <div
+                                                    className="flex items-center justify-center gap-2"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
                                                     {sub.status === 'active' && (
                                                         <>
                                                             <Button
@@ -398,7 +407,7 @@ export default function SubscriptionsIndex() {
                                 ) : (
                                     <tr>
                                         <td
-                                            colSpan={10}
+                                            colSpan={7}
                                             className="py-8 text-center text-sm text-slate-500"
                                         >
                                             No subscriptions found.
@@ -486,6 +495,145 @@ export default function SubscriptionsIndex() {
                                     </Button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                )}
+
+                {viewingSubscription && (
+                    <div className="fixed inset-0 z-50">
+                        <div
+                            className="absolute inset-0 bg-slate-950/40"
+                            onClick={closeViewDrawer}
+                        />
+
+                        <div className="absolute right-0 top-0 flex h-screen w-full max-w-md flex-col bg-white shadow-2xl">
+                            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                                <div>
+                                    <h2 className="text-lg font-bold text-slate-900">Subscription Details</h2>
+                                    <p className="text-sm text-slate-500">View full subscription information</p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={closeViewDrawer}
+                                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                                >
+                                    Close
+                                </button>
+                            </div>
+
+                            <div className="flex-1 space-y-5 overflow-y-auto p-6">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Subscription Code</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">{viewingSubscription.subscription_code}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Order Code</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">{viewingSubscription.order_code ?? '-'}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">User</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">{viewingSubscription.user_name ?? '-'}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Product</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">{viewingSubscription.product_name ?? '-'}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Plan</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">{viewingSubscription.plan_name ?? '-'}</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Type</p>
+                                        <p className="mt-1 text-sm capitalize text-slate-900">{viewingSubscription.subscription_type}</p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Status</p>
+                                        <p className="mt-1 text-sm capitalize text-slate-900">{viewingSubscription.status}</p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</p>
+                                        <p className="mt-1 text-sm text-slate-900">{formatPrice(viewingSubscription.amount)}</p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Duration</p>
+                                        <p className="mt-1 text-sm text-slate-900">{viewingSubscription.duration_days} days</p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Start Date</p>
+                                        <p className="mt-1 text-sm text-slate-900">{viewingSubscription.start_date ?? '-'}</p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">End Date</p>
+                                        <p className="mt-1 text-sm text-slate-900">{viewingSubscription.end_date ?? '-'}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Notes</p>
+                                    <p className="mt-1 text-sm leading-6 text-slate-900">
+                                        {viewingSubscription.notes || 'No notes'}
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-5">
+                                    {viewingSubscription.status === 'active' && (
+                                        <>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="inline-flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
+                                                onClick={() => {
+                                                    closeViewDrawer();
+                                                    openCancel(viewingSubscription);
+                                                }}
+                                            >
+                                                <Ban className="h-4 w-4" />
+                                                Cancel
+                                            </Button>
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="inline-flex items-center gap-2 border-orange-200 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                                                onClick={() => {
+                                                    closeViewDrawer();
+                                                    openLock(viewingSubscription);
+                                                }}
+                                            >
+                                                <Lock className="h-4 w-4" />
+                                                Lock
+                                            </Button>
+                                        </>
+                                    )}
+
+                                    {viewingSubscription.status !== 'active' && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="inline-flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                            onClick={() => {
+                                                closeViewDrawer();
+                                                deleteSubscription(viewingSubscription);
+                                            }}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                            Delete
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

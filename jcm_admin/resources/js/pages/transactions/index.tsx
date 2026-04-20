@@ -66,6 +66,7 @@ export default function TransactionsIndex() {
     const { transactions, filters, stats, flash } = props;
 
     const [search, setSearch] = useState(filters.search ?? '');
+    const [viewingTransaction, setViewingTransaction] = useState<TransactionRow | null>(null);
 
     useEffect(() => {
         const timeout = setTimeout(() => {
@@ -84,17 +85,23 @@ export default function TransactionsIndex() {
     }, [search]);
 
     const deleteTransaction = (transaction: TransactionRow) => {
-        router.delete(route('admin.transactions.destroy', transaction.id), { preserveScroll: true });
+        router.delete(route('admin.transactions.destroy', transaction.id), {
+            preserveScroll: true,
+        });
     };
 
     const goToOrder = (transaction: TransactionRow) => {
         if (!transaction.order_id) return;
 
-        router.get(
-            route('admin.orders.index'),
-            { search: transaction.order_code },
-            { preserveScroll: true }
-        );
+        router.get(route('admin.orders.index'), { search: transaction.order_code }, { preserveScroll: true });
+    };
+
+    const openViewDrawer = (transaction: TransactionRow) => {
+        setViewingTransaction(transaction);
+    };
+
+    const closeViewDrawer = () => {
+        setViewingTransaction(null);
     };
 
     const resultsText = useMemo(() => {
@@ -259,7 +266,8 @@ export default function TransactionsIndex() {
                                     transactions.data.map((transaction) => (
                                         <tr
                                             key={transaction.id}
-                                            className="border-t border-slate-200 transition hover:bg-slate-50"
+                                            className="cursor-pointer border-t border-slate-200 transition hover:bg-slate-50"
+                                            onClick={() => openViewDrawer(transaction)}
                                         >
                                             <td className="px-4 py-3">
                                                 <div className="font-medium text-slate-900">
@@ -269,12 +277,15 @@ export default function TransactionsIndex() {
                                                     {transaction.paid_at ?? '-'}
                                                 </div>
                                             </td>
+
                                             <td className="px-4 py-3 text-slate-700">
                                                 {transaction.order_code ?? '-'}
                                             </td>
+
                                             <td className="px-4 py-3 text-slate-700">
                                                 {transaction.user_name ?? '-'}
                                             </td>
+
                                             <td className="px-4 py-3">
                                                 <div className="font-medium text-slate-900">
                                                     {transaction.product_name ?? '-'}
@@ -283,6 +294,7 @@ export default function TransactionsIndex() {
                                                     {transaction.plan_name ?? '-'}
                                                 </div>
                                             </td>
+
                                             <td className="px-4 py-3">
                                                 <div className="text-slate-700">
                                                     {transaction.payment_method?.toUpperCase() ?? '-'}
@@ -291,9 +303,11 @@ export default function TransactionsIndex() {
                                                     Ref: {transaction.reference_number ?? '-'}
                                                 </div>
                                             </td>
+
                                             <td className="px-4 py-3 text-slate-700">
                                                 {formatPrice(transaction.amount)}
                                             </td>
+
                                             <td className="px-4 py-3">
                                                 <span
                                                     className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${txStatusClass(
@@ -303,6 +317,7 @@ export default function TransactionsIndex() {
                                                     {transaction.status}
                                                 </span>
                                             </td>
+
                                             <td className="px-4 py-3">
                                                 {transaction.order_status ? (
                                                     <span
@@ -316,8 +331,12 @@ export default function TransactionsIndex() {
                                                     <span className="text-slate-400">-</span>
                                                 )}
                                             </td>
+
                                             <td className="px-4 py-3">
-                                                <div className="flex items-center justify-center gap-2">
+                                                <div
+                                                    className="flex items-center justify-center gap-2"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
                                                     {transaction.order_id && (
                                                         <Button
                                                             type="button"
@@ -393,6 +412,173 @@ export default function TransactionsIndex() {
                         </div>
                     )}
                 </div>
+
+                {viewingTransaction && (
+                    <div className="fixed inset-0 z-50">
+                        <div
+                            className="absolute inset-0 bg-slate-950/40"
+                            onClick={closeViewDrawer}
+                        />
+
+                        <div className="absolute right-0 top-0 flex h-screen w-full max-w-md flex-col bg-white shadow-2xl">
+                            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                                <div>
+                                    <h2 className="text-lg font-bold text-slate-900">Transaction Details</h2>
+                                    <p className="text-sm text-slate-500">View full transaction information</p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={closeViewDrawer}
+                                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                                >
+                                    Close
+                                </button>
+                            </div>
+
+                            <div className="flex-1 space-y-5 overflow-y-auto p-6">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Transaction Code</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">
+                                        {viewingTransaction.transaction_code}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Order Code</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">
+                                        {viewingTransaction.order_code ?? '-'}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">User</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">
+                                        {viewingTransaction.user_name ?? '-'}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Product</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">
+                                        {viewingTransaction.product_name ?? '-'}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Plan</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">
+                                        {viewingTransaction.plan_name ?? '-'}
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Payment Method</p>
+                                        <p className="mt-1 text-sm text-slate-900">
+                                            {viewingTransaction.payment_method?.toUpperCase() ?? '-'}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Reference Number</p>
+                                        <p className="mt-1 text-sm text-slate-900">
+                                            {viewingTransaction.reference_number ?? '-'}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</p>
+                                        <p className="mt-1 text-sm text-slate-900">
+                                            {formatPrice(viewingTransaction.amount)}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Transaction Status</p>
+                                        <p className="mt-1 text-sm capitalize text-slate-900">
+                                            {viewingTransaction.status}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Order Status</p>
+                                        <p className="mt-1 text-sm capitalize text-slate-900">
+                                            {orderStatusLabel(viewingTransaction.order_status)}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Paid At</p>
+                                        <p className="mt-1 text-sm text-slate-900">
+                                            {viewingTransaction.paid_at ?? '-'}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Verified At</p>
+                                        <p className="mt-1 text-sm text-slate-900">
+                                            {viewingTransaction.verified_at ?? '-'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Account Name</p>
+                                    <p className="mt-1 text-sm text-slate-900">
+                                        {viewingTransaction.account_name ?? '-'}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Account Number</p>
+                                    <p className="mt-1 text-sm text-slate-900">
+                                        {viewingTransaction.account_number ?? '-'}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Notes</p>
+                                    <p className="mt-1 text-sm leading-6 text-slate-900">
+                                        {viewingTransaction.notes || 'No notes'}
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-5">
+                                    {viewingTransaction.order_id && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="inline-flex items-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50"
+                                            onClick={() => {
+                                                closeViewDrawer();
+                                                goToOrder(viewingTransaction);
+                                            }}
+                                        >
+                                            <ExternalLink className="h-4 w-4" />
+                                            Manage Order
+                                        </Button>
+                                    )}
+
+                                    {viewingTransaction.status !== 'verified' && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="inline-flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                            onClick={() => {
+                                                closeViewDrawer();
+                                                deleteTransaction(viewingTransaction);
+                                            }}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                            Delete
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </AppLayout>
     );

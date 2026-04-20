@@ -396,14 +396,6 @@ export default function PlansIndex() {
                                                     className="flex items-center justify-center gap-2"
                                                     onClick={(e) => e.stopPropagation()}
                                                 >
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        className="h-9 rounded-md px-3"
-                                                        onClick={() => openViewDrawer(plan)}
-                                                    >
-                                                        View
-                                                    </Button>
 
                                                     <Button
                                                         type="button"

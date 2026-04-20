@@ -121,6 +121,7 @@ export default function OrdersIndex() {
     const [openPaymentModal, setOpenPaymentModal] = useState(false);
     const [openRejectModal, setOpenRejectModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
+    const [viewingOrder, setViewingOrder] = useState<OrderRow | null>(null);
 
     const createForm = useForm<CreateOrderForm>({
         user_id: '',
@@ -210,6 +211,14 @@ export default function OrdersIndex() {
         rejectForm.reset();
         rejectForm.clearErrors();
         setOpenRejectModal(false);
+    };
+
+    const openViewDrawer = (order: OrderRow) => {
+        setViewingOrder(order);
+    };
+
+    const closeViewDrawer = () => {
+        setViewingOrder(null);
     };
 
     const submitCreate: FormEventHandler = (e) => {
@@ -450,9 +459,8 @@ export default function OrdersIndex() {
                                     <th className="px-4 py-3 text-left font-medium">User</th>
                                     <th className="px-4 py-3 text-left font-medium">Product / Plan</th>
                                     <th className="px-4 py-3 text-left font-medium">Amount</th>
-                                    <th className="px-4 py-3 text-left font-medium">Order Status</th>
-                                    <th className="px-4 py-3 text-left font-medium">Transaction</th>
-                                    <th className="px-4 py-3 text-left font-medium">Subscription</th>
+                                    <th className="px-4 py-3 text-left font-medium">Status</th>
+                                    <th className="px-4 py-3 text-left font-medium">Payment</th>
                                     <th className="px-4 py-3 text-center font-medium">Actions</th>
                                 </tr>
                             </thead>
@@ -462,22 +470,26 @@ export default function OrdersIndex() {
                                     orders.data.map((order) => (
                                         <tr
                                             key={order.id}
-                                            className="border-t border-slate-200 transition hover:bg-slate-50"
+                                            className="cursor-pointer border-t border-slate-200 transition hover:bg-slate-50"
+                                            onClick={() => openViewDrawer(order)}
                                         >
                                             <td className="px-4 py-3">
                                                 <div className="font-medium text-slate-900">{order.order_code}</div>
                                                 <div className="text-xs text-slate-500">{order.ordered_at ?? '-'}</div>
                                             </td>
-                                            <td className="px-4 py-3 text-slate-700">{order.user_name}</td>
+
+                                            <td className="px-4 py-3 text-slate-700">{order.user_name || '-'}</td>
+
                                             <td className="px-4 py-3">
-                                                <div className="font-medium text-slate-900">{order.product_name}</div>
-                                                <div className="text-xs text-slate-500">{order.plan_name}</div>
-                                                <div className="text-xs text-slate-400">{billingLabel(order.billing_type)}</div>
+                                                <div className="font-medium text-slate-900">{order.product_name || '-'}</div>
+                                                <div className="text-xs text-slate-500">{order.plan_name || '-'}</div>
                                             </td>
+
                                             <td className="px-4 py-3 text-slate-700">
                                                 <div>{formatPrice(order.amount)}</div>
-                                                <div className="text-xs text-slate-500">{order.duration_days} days</div>
+                                                <div className="text-xs text-slate-500">{billingLabel(order.billing_type)}</div>
                                             </td>
+
                                             <td className="px-4 py-3">
                                                 <span
                                                     className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${orderStatusClass(
@@ -487,40 +499,27 @@ export default function OrdersIndex() {
                                                     {order.status_label}
                                                 </span>
                                             </td>
+
                                             <td className="px-4 py-3">
                                                 {order.transaction ? (
-                                                    <div>
-                                                        <div className="text-sm font-medium text-slate-900">
-                                                            {order.transaction.payment_method?.toUpperCase()}
-                                                        </div>
-                                                        <div className="text-xs text-slate-500">
-                                                            Ref: {order.transaction.reference_number}
-                                                        </div>
-                                                        <div className="mt-1">
-                                                            <span
-                                                                className={`inline-flex rounded-md border px-2 py-0.5 text-[11px] font-medium capitalize ${txStatusClass(
-                                                                    order.transaction.status,
-                                                                )}`}
-                                                            >
-                                                                {order.transaction.status}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-slate-400">No payment yet</span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                {order.has_subscription ? (
-                                                    <span className="inline-flex rounded-md border border-green-200 bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">
-                                                        {order.subscription_code ?? 'Created'}
+                                                    <span
+                                                        className={`inline-flex rounded-md border px-2 py-0.5 text-[11px] font-medium capitalize ${txStatusClass(
+                                                            order.transaction.status,
+                                                        )}`}
+                                                    >
+                                                        {order.transaction.status}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-slate-400">Not created</span>
+                                                    <span className="text-slate-400">No payment</span>
                                                 )}
                                             </td>
+
                                             <td className="px-4 py-3">
-                                                <div className="flex items-center justify-center gap-2">
+                                                <div
+                                                    className="flex items-center justify-center gap-2"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+
                                                     {order.status === 'pending' && (
                                                         <Button
                                                             type="button"
@@ -572,7 +571,7 @@ export default function OrdersIndex() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-500">
+                                        <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
                                             No orders found.
                                         </td>
                                     </tr>
@@ -739,7 +738,7 @@ export default function OrdersIndex() {
                                             </p>
                                         </div>
 
-                                        <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
+                                        <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
                                             <div className="flex items-center justify-between gap-4">
                                                 <span className="text-sm text-slate-500">Billing Type</span>
                                                 <span className="text-sm font-semibold text-slate-900">
@@ -925,6 +924,221 @@ export default function OrdersIndex() {
                                 </Button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {viewingOrder && (
+                <div className="fixed inset-0 z-50">
+                    <div
+                        className="absolute inset-0 bg-slate-950/40"
+                        onClick={closeViewDrawer}
+                    />
+
+                    <div className="absolute right-0 top-0 flex h-screen w-full max-w-md flex-col bg-white shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">Order Details</h2>
+                                <p className="text-sm text-slate-500">View full order information</p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeViewDrawer}
+                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                            >
+                                Close
+                            </button>
+                        </div>
+
+                        <div className="flex-1 space-y-5 overflow-y-auto p-6">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Order Code</p>
+                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingOrder.order_code}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">User</p>
+                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingOrder.user_name || '-'}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Product</p>
+                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingOrder.product_name || '-'}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Plan</p>
+                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingOrder.plan_name || '-'}</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Billing Type</p>
+                                    <p className="mt-1 text-sm text-slate-900">{billingLabel(viewingOrder.billing_type)}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</p>
+                                    <p className="mt-1 text-sm text-slate-900">{formatPrice(viewingOrder.amount)}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Duration</p>
+                                    <p className="mt-1 text-sm text-slate-900">{viewingOrder.duration_days} days</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Order Status</p>
+                                    <p className="mt-1 text-sm text-slate-900">{viewingOrder.status_label}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Ordered At</p>
+                                    <p className="mt-1 text-sm text-slate-900">{viewingOrder.ordered_at || '-'}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Paid At</p>
+                                    <p className="mt-1 text-sm text-slate-900">{viewingOrder.paid_at || '-'}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Verified At</p>
+                                    <p className="mt-1 text-sm text-slate-900">{viewingOrder.verified_at || '-'}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Subscription</p>
+                                    <p className="mt-1 text-sm text-slate-900">
+                                        {viewingOrder.has_subscription ? viewingOrder.subscription_code ?? 'Created' : 'Not created'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="rounded-xl border border-slate-200 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Transaction</p>
+
+                                {viewingOrder.transaction ? (
+                                    <div className="mt-3 space-y-3">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-xs text-slate-500">Transaction Code</p>
+                                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                                    {viewingOrder.transaction.transaction_code}
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <p className="text-xs text-slate-500">Status</p>
+                                                <p className="mt-1 text-sm font-medium text-slate-900 capitalize">
+                                                    {viewingOrder.transaction.status}
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <p className="text-xs text-slate-500">Payment Method</p>
+                                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                                    {viewingOrder.transaction.payment_method?.toUpperCase() || '-'}
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <p className="text-xs text-slate-500">Reference Number</p>
+                                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                                    {viewingOrder.transaction.reference_number || '-'}
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <p className="text-xs text-slate-500">Amount</p>
+                                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                                    {formatPrice(viewingOrder.transaction.amount)}
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <p className="text-xs text-slate-500">Verified At</p>
+                                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                                    {viewingOrder.transaction.verified_at || '-'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-xs text-slate-500">Notes</p>
+                                            <p className="mt-1 text-sm leading-6 text-slate-900">
+                                                {viewingOrder.transaction.notes || 'No notes'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="mt-3 text-sm text-slate-500">No payment transaction yet.</p>
+                                )}
+                            </div>
+
+                            <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-5">
+                                {viewingOrder.status === 'pending' && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="inline-flex items-center gap-2"
+                                        onClick={() => {
+                                            closeViewDrawer();
+                                            openPayment(viewingOrder);
+                                        }}
+                                    >
+                                        <CreditCard className="h-4 w-4" />
+                                        Submit Payment
+                                    </Button>
+                                )}
+
+                                {viewingOrder.status === 'paid' && (
+                                    <>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="inline-flex items-center gap-2 border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700"
+                                            onClick={() => {
+                                                closeViewDrawer();
+                                                verifyOrder(viewingOrder);
+                                            }}
+                                        >
+                                            <BadgeCheck className="h-4 w-4" />
+                                            Verify
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="inline-flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                            onClick={() => {
+                                                closeViewDrawer();
+                                                openReject(viewingOrder);
+                                            }}
+                                        >
+                                            <XCircle className="h-4 w-4" />
+                                            Reject
+                                        </Button>
+                                    </>
+                                )}
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="inline-flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    onClick={() => {
+                                        closeViewDrawer();
+                                        deleteOrder(viewingOrder);
+                                    }}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

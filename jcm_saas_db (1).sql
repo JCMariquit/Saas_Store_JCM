@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 19, 2026 at 10:55 AM
+-- Generation Time: Apr 20, 2026 at 09:46 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -32,6 +32,16 @@ CREATE TABLE `cache` (
   `value` mediumtext NOT NULL,
   `expiration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `cache`
+--
+
+INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
+('laravel-cache-696d286ffe0da48445dcbf8fb537c827', 'i:1;', 1776667251),
+('laravel-cache-696d286ffe0da48445dcbf8fb537c827:timer', 'i:1776667251;', 1776667251),
+('laravel-cache-7a239e18a46bf0f277309f974829ab02', 'i:1;', 1776668022),
+('laravel-cache-7a239e18a46bf0f277309f974829ab02:timer', 'i:1776668022;', 1776668022);
 
 -- --------------------------------------------------------
 
@@ -148,12 +158,10 @@ CREATE TABLE `orders` (
 --
 
 INSERT INTO `orders` (`id`, `order_code`, `user_id`, `product_id`, `plan_id`, `billing_type`, `subscription_id`, `amount`, `duration_days`, `status`, `ordered_at`, `paid_at`, `verified_at`, `notes`, `created_at`, `updated_at`) VALUES
-(3, 'ORD-WKQWZG', 1, 1, 1, 'monthly', NULL, 699.00, 30, 'verified', '2026-04-17 23:20:36', '2026-04-17 23:20:44', '2026-04-17 23:49:41', NULL, '2026-04-17 23:20:36', '2026-04-17 23:49:41'),
-(4, 'ORD-BX1QTJ', 3, 1, 1, 'monthly', NULL, 699.00, 30, 'verified', '2026-04-17 23:49:23', '2026-04-17 23:49:33', '2026-04-17 23:49:35', NULL, '2026-04-17 23:49:23', '2026-04-17 23:49:35'),
-(5, 'ORD-KGR1IG', 2, 1, 1, 'monthly', NULL, 0.00, 1, 'verified', '2026-04-18 00:06:27', '2026-04-18 00:06:35', '2026-04-18 00:06:38', NULL, '2026-04-18 00:06:27', '2026-04-18 00:06:38'),
-(6, 'ORD-JT2JHL', 2, 1, 1, 'trial', NULL, 0.00, 7, 'verified', '2026-04-18 00:09:48', '2026-04-18 00:09:58', '2026-04-18 00:10:02', NULL, '2026-04-18 00:09:48', '2026-04-18 00:10:02'),
-(7, 'ORD-JBYB6A', 2, 4, 4, 'monthly', NULL, 799.00, 30, 'verified', '2026-04-18 17:08:41', '2026-04-18 17:09:26', '2026-04-18 17:09:42', NULL, '2026-04-18 17:08:41', '2026-04-18 17:09:42'),
-(8, 'ORD-EFWUHO', 2, 1, 1, 'trial', NULL, 0.00, 7, 'verified', '2026-04-18 17:09:55', '2026-04-18 17:10:14', '2026-04-18 17:20:08', NULL, '2026-04-18 17:09:55', '2026-04-18 17:20:08');
+(9, 'ORD-OXITNY', 2, 1, 1, 'monthly', NULL, 699.00, 30, 'verified', '2026-04-19 17:01:54', '2026-04-19 17:02:09', '2026-04-19 17:02:26', NULL, '2026-04-19 17:01:54', '2026-04-19 17:02:26'),
+(10, 'ORD-NYIAD9', 3, 1, 3, 'monthly', NULL, 1499.00, 30, 'verified', '2026-04-19 17:06:05', '2026-04-19 17:06:10', '2026-04-19 22:54:41', NULL, '2026-04-19 17:06:05', '2026-04-19 22:54:41'),
+(11, 'ORD-YSY7KJ', 1, 4, 4, 'monthly', NULL, 799.00, 30, 'verified', '2026-04-19 22:54:52', '2026-04-19 22:54:56', '2026-04-19 22:54:58', NULL, '2026-04-19 22:54:52', '2026-04-19 22:54:58'),
+(12, 'ORD-N1RJHN', 2, 1, 2, 'monthly', NULL, 999.00, 30, 'verified', '2026-04-19 23:29:49', '2026-04-19 23:29:53', '2026-04-19 23:29:54', NULL, '2026-04-19 23:29:49', '2026-04-19 23:29:54');
 
 -- --------------------------------------------------------
 
@@ -274,8 +282,10 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('KRdN6pZVodT56hDzCxcsGpY6zSxiM5E2p0hoEVlO', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiazhCQTAydldyS3Ewa2tNdHZZWFM0SkpQRERYY0taMVF1UEVEdmpDZiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTt9', 1776586793),
-('VSEPfg9hEKzODXXojIlcqr7u4t5gcfEeeYYmZ8BB', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiN2hrcHZCRVc0VkZNa2tzS0M3Tm05ZWF5Mk9kNTNTWmU1N21ydjl6SSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo0NDoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL3Byb2R1Y3RzP3NlYXJjaD0iO3M6NToicm91dGUiO3M6MjA6ImFkbWluLnByb2R1Y3RzLmluZGV4Ijt9fQ==', 1776588857);
+('8n99mpOwNb772JEjUEhs6TA2Y9gynZtvAzc36USD', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiRmpHVkFJbFhKcVdRUnJITDByRnB2Q2tDR05JWGJWSmR6cWxsR3dzQyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czozOiJ1cmwiO2E6MDp7fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI3OiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvbG9naW4iO3M6NToicm91dGUiO3M6NToibG9naW4iO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1776670198),
+('EOYf5Cux5Q6u5keQlSHowwRfHIk60uZmEmgnyaTZ', 2, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiZ0NTVWp5azFwbGpkMmRQS3FoYXJabnFNUG13M2xhblRteW9WdG5aaSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MjtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDAwIjtzOjU6InJvdXRlIjtzOjQ6ImhvbWUiO319', 1776671076),
+('gM1q3cukZ5S8KoyMEM1yXB6k1cnT00gXFMqCI8XG', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiVWtzeG9FYlRhNlJHRkxBcGV3MU1sZzM1NElsZGlZZG01RGphNVFEOSI7czozOiJ1cmwiO2E6MDp7fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjMxOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvZGFzaGJvYXJkIjtzOjU6InJvdXRlIjtzOjk6ImRhc2hib2FyZCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1776652917),
+('XSN2lgAXzEgrCDKgVipl0oxGzrTAXgIXrAq6qaO0', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiTFltNWFVSlZJR2xUVTlPUnQ1S2JGZjF0dmdkU3ZIOFpEdUFqc1BKYiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi91c2Vycz9zZWFyY2g9IjtzOjU6InJvdXRlIjtzOjE3OiJhZG1pbi51c2Vycy5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1776651545);
 
 -- --------------------------------------------------------
 
@@ -306,14 +316,10 @@ CREATE TABLE `subscriptions` (
 --
 
 INSERT INTO `subscriptions` (`id`, `user_id`, `product_id`, `order_id`, `plan_id`, `subscription_code`, `subscription_type`, `status`, `start_date`, `end_date`, `duration_days`, `amount`, `notes`, `created_at`, `updated_at`) VALUES
-(2, 1, 1, NULL, NULL, 'SUB-JI1ZLF', 'monthly', 'active', '2026-04-17', '2026-04-18', 1, NULL, NULL, '2026-04-17 11:41:16', '2026-04-17 11:41:30'),
-(3, 2, 1, NULL, NULL, 'SUB-RMFN8E', 'monthly', 'active', '2026-04-18', '2026-05-18', 30, 1499.00, 'Auto-created from verified order: ORD-7NMUBM', '2026-04-17 23:14:16', '2026-04-17 23:14:16'),
-(4, 3, 1, 4, 1, 'SUB-LT7RWM', 'monthly', 'active', '2026-04-18', '2026-05-18', 30, 699.00, 'Auto-created from verified order: ORD-BX1QTJ', '2026-04-17 23:49:35', '2026-04-17 23:49:35'),
-(5, 1, 1, 3, 1, 'SUB-NHI0ZI', 'monthly', 'active', '2026-04-18', '2026-05-18', 30, 699.00, 'Auto-created from verified order: ORD-WKQWZG', '2026-04-17 23:49:41', '2026-04-17 23:49:41'),
-(6, 2, 1, 5, 1, 'SUB-ZDJPP3', 'monthly', 'active', '2026-04-18', '2026-05-18', 1, 0.00, 'Auto-created from verified order: ORD-KGR1IG', '2026-04-18 00:06:38', '2026-04-18 00:06:38'),
-(7, 2, 1, 6, 1, 'SUB-VFWZSI', 'trial', 'active', '2026-04-18', '2026-04-25', 7, 0.00, 'Auto-created from verified order: ORD-JT2JHL', '2026-04-18 00:10:02', '2026-04-18 00:10:02'),
-(8, 2, 4, 7, 4, 'SUB-RVY3BU', 'monthly', 'active', '2026-04-19', '2026-05-19', 30, 799.00, 'Auto-created from verified order: ORD-JBYB6A', '2026-04-18 17:09:42', '2026-04-18 17:09:42'),
-(9, 2, 1, 8, 1, 'SUB-T3JMYE', 'trial', 'active', '2026-04-19', '2026-04-26', 7, 0.00, 'Auto-created from verified order: ORD-EFWUHO', '2026-04-18 17:20:08', '2026-04-18 17:20:08');
+(10, 2, 1, 9, 1, 'SUB-O18YTS', 'monthly', 'active', '2026-04-20', '2026-05-20', 30, 699.00, 'Auto-created from verified order: ORD-OXITNY', '2026-04-19 17:02:26', '2026-04-19 17:02:26'),
+(11, 3, 1, 10, 3, 'SUB-RJOYLG', 'monthly', 'active', '2026-04-20', '2026-05-20', 30, 1499.00, 'Auto-created from verified order: ORD-NYIAD9', '2026-04-19 22:54:41', '2026-04-19 22:54:41'),
+(12, 1, 4, 11, 4, 'SUB-TXN6O1', 'monthly', 'active', '2026-04-20', '2026-05-20', 30, 799.00, 'Auto-created from verified order: ORD-YSY7KJ', '2026-04-19 22:54:58', '2026-04-19 22:54:58'),
+(13, 2, 1, 12, 2, 'SUB-CMIAMB', 'monthly', 'active', '2026-04-20', '2026-05-20', 30, 999.00, 'Auto-created from verified order: ORD-N1RJHN', '2026-04-19 23:29:54', '2026-04-19 23:29:54');
 
 -- --------------------------------------------------------
 
@@ -346,12 +352,10 @@ CREATE TABLE `transactions` (
 --
 
 INSERT INTO `transactions` (`id`, `transaction_code`, `order_id`, `user_id`, `payment_method`, `reference_number`, `account_name`, `account_number`, `amount`, `payment_proof`, `status`, `paid_at`, `verified_at`, `notes`, `verified_by`, `created_at`, `updated_at`) VALUES
-(3, 'TXN-HRDCF0', 3, 1, 'maya', '0987654321', NULL, NULL, 699.00, NULL, 'verified', '2026-04-17 23:20:44', '2026-04-17 23:49:41', NULL, NULL, '2026-04-17 23:20:44', '2026-04-17 23:49:41'),
-(4, 'TXN-XVLFDH', 4, 3, 'maya', 'gcash0987654321', NULL, NULL, 699.00, NULL, 'verified', '2026-04-17 23:49:33', '2026-04-17 23:49:35', NULL, NULL, '2026-04-17 23:49:33', '2026-04-17 23:49:35'),
-(5, 'TXN-24BLB6', 5, 2, 'gcash', 'gcash0987654321', NULL, NULL, 0.00, NULL, 'verified', '2026-04-18 00:06:35', '2026-04-18 00:06:38', NULL, NULL, '2026-04-18 00:06:35', '2026-04-18 00:06:38'),
-(6, 'TXN-0I9TWO', 6, 2, 'gcash', 'gcash0987654321', NULL, NULL, 0.00, NULL, 'verified', '2026-04-18 00:09:58', '2026-04-18 00:10:02', NULL, NULL, '2026-04-18 00:09:58', '2026-04-18 00:10:02'),
-(7, 'TXN-GXEBC3', 7, 2, 'gcash', '0987654321', NULL, NULL, 799.00, NULL, 'verified', '2026-04-18 17:09:26', '2026-04-18 17:09:42', NULL, NULL, '2026-04-18 17:09:26', '2026-04-18 17:09:42'),
-(8, 'TXN-7WWTMJ', 8, 2, 'gcash', 'Trial0987', NULL, NULL, 0.00, NULL, 'verified', '2026-04-18 17:10:14', '2026-04-18 17:20:08', NULL, NULL, '2026-04-18 17:10:14', '2026-04-18 17:20:08');
+(9, 'TXN-HAZHXO', 9, 2, 'gcash', 'gcash0987654321', NULL, NULL, 699.00, NULL, 'verified', '2026-04-19 17:02:09', '2026-04-19 17:02:26', NULL, NULL, '2026-04-19 17:02:09', '2026-04-19 17:02:26'),
+(10, 'TXN-MLAWLX', 10, 3, 'gcash', 'gcash0987654321', NULL, NULL, 1499.00, NULL, 'verified', '2026-04-19 17:06:10', '2026-04-19 22:54:41', NULL, NULL, '2026-04-19 17:06:10', '2026-04-19 22:54:41'),
+(11, 'TXN-NC7205', 11, 1, 'gcash', 'gcash0987654321', NULL, NULL, 799.00, NULL, 'verified', '2026-04-19 22:54:56', '2026-04-19 22:54:58', NULL, NULL, '2026-04-19 22:54:56', '2026-04-19 22:54:58'),
+(12, 'TXN-E5MUYQ', 12, 2, 'gcash', 'gcash0987654321', NULL, NULL, 999.00, NULL, 'verified', '2026-04-19 23:29:53', '2026-04-19 23:29:54', NULL, NULL, '2026-04-19 23:29:53', '2026-04-19 23:29:54');
 
 -- --------------------------------------------------------
 
@@ -530,7 +534,7 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `plans`
@@ -554,13 +558,13 @@ ALTER TABLE `services`
 -- AUTO_INCREMENT for table `subscriptions`
 --
 ALTER TABLE `subscriptions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `users`

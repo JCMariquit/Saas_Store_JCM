@@ -14,12 +14,22 @@ export function Breadcrumbs({ breadcrumbs }: { breadcrumbs: BreadcrumbItemType[]
                                 <Fragment key={index}>
                                     <BreadcrumbItem>
                                         {isLast ? (
-                                            <BreadcrumbPage>{item.title}</BreadcrumbPage>
+                                            <BreadcrumbPage className="text-white font-semibold">
+                                                {item.title}
+                                            </BreadcrumbPage>
                                         ) : (
-                                            <BreadcrumbLink href={item.href}>{item.title}</BreadcrumbLink>
+                                            <BreadcrumbLink
+                                                href={item.href}
+                                                className="text-slate-400 hover:text-white"
+                                            >
+                                                {item.title}
+                                            </BreadcrumbLink>
                                         )}
                                     </BreadcrumbItem>
-                                    {!isLast && <BreadcrumbSeparator />}
+
+                                    {!isLast && (
+                                        <BreadcrumbSeparator className="text-slate-500" />
+                                    )}
                                 </Fragment>
                             );
                         })}

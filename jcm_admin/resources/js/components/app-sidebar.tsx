@@ -164,11 +164,15 @@ export function AppSidebar() {
             variant="sidebar"
             className="border-r-0 bg-[#0f1115] text-slate-200 shadow-none"
         >
-            <div className="flex h-full flex-col bg-gradient-to-r from-[#0b0d10] via-[#11151b] to-[#171b21]">
+            <div className="flex h-full flex-col bg-[#0f1115]">
                 <SidebarHeader className="border-b border-white/5 bg-transparent">
                     <SidebarMenu>
                         <SidebarMenuItem>
-                            <SidebarMenuButton size="lg" asChild>
+                            <SidebarMenuButton
+                                size="lg"
+                                asChild
+                                className="hover:bg-transparent data-[active]:bg-transparent"
+                            >
                                 <Link href="/dashboard" prefetch className="text-white">
                                     <AppLogo />
                                 </Link>

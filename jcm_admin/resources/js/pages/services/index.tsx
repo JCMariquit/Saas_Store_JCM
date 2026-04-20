@@ -62,6 +62,7 @@ export default function ServicesIndex() {
     const [search, setSearch] = useState(filters.search || '');
     const [openModal, setOpenModal] = useState(false);
     const [editingService, setEditingService] = useState<ServiceItem | null>(null);
+    const [viewingService, setViewingService] = useState<ServiceItem | null>(null);
 
     const { data, setData, processing, reset, errors } = useForm({
         ...emptyForm,
@@ -112,6 +113,14 @@ export default function ServicesIndex() {
         reset();
     };
 
+    const openViewDrawer = (service: ServiceItem) => {
+        setViewingService(service);
+    };
+
+    const closeViewDrawer = () => {
+        setViewingService(null);
+    };
+
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -142,34 +151,6 @@ export default function ServicesIndex() {
         });
     };
 
-    const serviceTypeBadgeClass = (type: string) => {
-        switch (type) {
-            case 'custom':
-                return 'border-purple-200 bg-purple-100 text-purple-700';
-            case 'maintenance':
-                return 'border-amber-200 bg-amber-100 text-amber-700';
-            case 'support':
-                return 'border-sky-200 bg-sky-100 text-sky-700';
-            case 'consulting':
-                return 'border-indigo-200 bg-indigo-100 text-indigo-700';
-            case 'implementation':
-                return 'border-emerald-200 bg-emerald-100 text-emerald-700';
-            default:
-                return 'border-slate-200 bg-slate-100 text-slate-700';
-        }
-    };
-
-    const pricingTypeBadgeClass = (type: string) => {
-        switch (type) {
-            case 'fixed':
-                return 'border-green-200 bg-green-100 text-green-700';
-            case 'quote':
-                return 'border-blue-200 bg-blue-100 text-blue-700';
-            default:
-                return 'border-slate-200 bg-slate-100 text-slate-700';
-        }
-    };
-
     const statusBadgeClass = (status: string) => {
         switch (status) {
             case 'active':
@@ -189,7 +170,7 @@ export default function ServicesIndex() {
                 <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div>
-                            <h1 className="text-3xl font-bold text-slate-900">Services</h1>
+                            <h1 className="text-2xl font-bold text-slate-900">Services</h1>
                             <p className="mt-2 text-sm text-slate-500">
                                 Manage your business services before publishing them to your public page.
                             </p>
@@ -211,7 +192,7 @@ export default function ServicesIndex() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-slate-500">Total Services</p>
-                                <p className="mt-2 text-4xl font-bold text-slate-900">{stats.total}</p>
+                                <p className="mt-2 text-2xl font-bold text-slate-900">{stats.total}</p>
                             </div>
                             <div className="rounded-xl bg-slate-100 p-3 text-slate-600">
                                 <BriefcaseBusiness className="h-6 w-6" />
@@ -223,7 +204,7 @@ export default function ServicesIndex() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-slate-500">Active Services</p>
-                                <p className="mt-2 text-4xl font-bold text-green-600">{stats.active}</p>
+                                <p className="mt-2 text-2xl font-bold text-green-600">{stats.active}</p>
                             </div>
                             <div className="rounded-xl bg-green-100 p-3 text-green-600">
                                 <CheckCircle2 className="h-6 w-6" />
@@ -235,7 +216,7 @@ export default function ServicesIndex() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-slate-500">Inactive Services</p>
-                                <p className="mt-2 text-4xl font-bold text-slate-900">{stats.inactive}</p>
+                                <p className="mt-2 text-2xl font-bold text-slate-900">{stats.inactive}</p>
                             </div>
                             <div className="rounded-xl bg-slate-100 p-3 text-slate-500">
                                 <XCircle className="h-6 w-6" />
@@ -247,7 +228,7 @@ export default function ServicesIndex() {
                 <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div className="flex flex-col gap-4 border-b border-slate-200 p-5 md:flex-row md:items-center md:justify-between">
                         <div>
-                            <h2 className="text-2xl font-bold text-slate-900">Service List</h2>
+                            <h2 className="text-1xl font-bold text-slate-900">Service List</h2>
                             <p className="mt-1 text-sm text-slate-500">
                                 Showing {filteredServices.length} of {services.length} services
                             </p>
@@ -270,45 +251,30 @@ export default function ServicesIndex() {
                             <thead className="bg-slate-50 text-left text-slate-600">
                                 <tr>
                                     <th className="px-5 py-4 font-semibold">Code</th>
-                                    <th className="px-5 py-4 font-semibold">Name</th>
-                                    <th className="px-5 py-4 font-semibold">Service Type</th>
-                                    <th className="px-5 py-4 font-semibold">Pricing Type</th>
-                                    <th className="px-5 py-4 font-semibold">Base Price</th>
+                                    <th className="px-5 py-4 font-semibold">Service</th>
                                     <th className="px-5 py-4 font-semibold">Status</th>
-                                    <th className="px-5 py-4 font-semibold">Created At</th>
                                     <th className="px-5 py-4 text-center font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredServices.length > 0 ? (
                                     filteredServices.map((service) => (
-                                        <tr key={service.id} className="border-t border-slate-200">
+                                        <tr
+                                            key={service.id}
+                                            className="cursor-pointer border-t border-slate-200 transition hover:bg-slate-50"
+                                            onClick={() => openViewDrawer(service)}
+                                        >
                                             <td className="px-5 py-4 font-medium text-slate-900">
                                                 {service.code}
                                             </td>
+
                                             <td className="px-5 py-4">
                                                 <div className="font-medium text-slate-900">{service.name}</div>
-                                                <div className="mt-1 max-w-[280px] truncate text-xs text-slate-500">
+                                                <div className="mt-1 max-w-[320px] truncate text-xs text-slate-500">
                                                     {service.description || 'No description'}
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-4">
-                                                <span
-                                                    className={`inline-flex rounded-lg border px-3 py-1 text-xs font-semibold capitalize ${serviceTypeBadgeClass(service.service_type)}`}
-                                                >
-                                                    {service.service_type}
-                                                </span>
-                                            </td>
-                                            <td className="px-5 py-4">
-                                                <span
-                                                    className={`inline-flex rounded-lg border px-3 py-1 text-xs font-semibold capitalize ${pricingTypeBadgeClass(service.pricing_type)}`}
-                                                >
-                                                    {service.pricing_type}
-                                                </span>
-                                            </td>
-                                            <td className="px-5 py-4 font-medium text-slate-900">
-                                                {service.base_price_label}
-                                            </td>
+
                                             <td className="px-5 py-4">
                                                 <span
                                                     className={`inline-flex rounded-lg border px-3 py-1 text-xs font-semibold capitalize ${statusBadgeClass(service.status)}`}
@@ -316,9 +282,20 @@ export default function ServicesIndex() {
                                                     {service.status}
                                                 </span>
                                             </td>
-                                            <td className="px-5 py-4 text-slate-600">{service.created_at}</td>
+
                                             <td className="px-5 py-4">
-                                                <div className="flex items-center justify-center gap-2">
+                                                <div
+                                                    className="flex items-center justify-center gap-2"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openViewDrawer(service)}
+                                                        className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                                                    >
+                                                        View
+                                                    </button>
+
                                                     <button
                                                         type="button"
                                                         title="Edit service"
@@ -344,7 +321,7 @@ export default function ServicesIndex() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={8} className="px-5 py-12 text-center text-slate-500">
+                                        <td colSpan={4} className="px-5 py-12 text-center text-slate-500">
                                             No services found.
                                         </td>
                                     </tr>
@@ -570,6 +547,109 @@ export default function ServicesIndex() {
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                )}
+
+                {viewingService && (
+                    <div className="fixed inset-0 z-50">
+                        <div
+                            className="absolute inset-0 bg-slate-950/40"
+                            onClick={closeViewDrawer}
+                        />
+
+                        <div className="absolute top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl">
+                            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                                <div>
+                                    <h2 className="text-lg font-bold text-slate-900">Service Details</h2>
+                                    <p className="text-sm text-slate-500">View full service information</p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={closeViewDrawer}
+                                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                                >
+                                    Close
+                                </button>
+                            </div>
+
+                            <div className="space-y-5 overflow-y-auto p-6">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Code</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">{viewingService.code}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Name</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">{viewingService.name}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Description</p>
+                                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                                        {viewingService.description || 'No description'}
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Service Type</p>
+                                        <p className="mt-1 text-sm text-slate-900 capitalize">{viewingService.service_type}</p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Pricing Type</p>
+                                        <p className="mt-1 text-sm text-slate-900 capitalize">{viewingService.pricing_type}</p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Base Price</p>
+                                        <p className="mt-1 text-sm text-slate-900">{viewingService.base_price_label}</p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Status</p>
+                                        <p className="mt-1 text-sm text-slate-900 capitalize">{viewingService.status}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Sort Order</p>
+                                    <p className="mt-1 text-sm text-slate-900">{viewingService.sort_order}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Created At</p>
+                                    <p className="mt-1 text-sm text-slate-900">{viewingService.created_at || '-'}</p>
+                                </div>
+
+                                <div className="flex gap-3 border-t border-slate-200 pt-5">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            closeViewDrawer();
+                                            openEditModal(viewingService);
+                                        }}
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                        Edit
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            closeViewDrawer();
+                                            deleteService(viewingService);
+                                        }}
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

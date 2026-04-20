@@ -69,6 +69,7 @@ export default function ProductsIndex() {
     const [openEditModal, setOpenEditModal] = useState(false);
     const [openDeleteModal, setOpenDeleteModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<ProductRow | null>(null);
+    const [viewingProduct, setViewingProduct] = useState<ProductRow | null>(null);
 
     const createForm = useForm<ProductForm>({
         name: '',
@@ -151,6 +152,14 @@ export default function ProductsIndex() {
         setOpenDeleteModal(false);
     };
 
+    const openViewDrawer = (product: ProductRow) => {
+        setViewingProduct(product);
+    };
+
+    const closeViewDrawer = () => {
+        setViewingProduct(null);
+    };
+
     const submitCreate: FormEventHandler = (e) => {
         e.preventDefault();
 
@@ -197,14 +206,6 @@ export default function ProductsIndex() {
         }
 
         return 'border-slate-200 bg-slate-100 text-slate-700';
-    };
-
-    const getPricingTypeBadgeClass = (type: ProductRow['pricing_type']) => {
-        if (type === 'custom') {
-            return 'border-purple-200 bg-purple-100 text-purple-700';
-        }
-
-        return 'border-blue-200 bg-blue-100 text-blue-700';
     };
 
     const formatPrice = (value: string | number | null) => {
@@ -259,7 +260,7 @@ export default function ProductsIndex() {
     ];
 
     return (
-        <AppLayout  breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Products" />
 
             <div className="space-y-6 p-4 md:p-6">
@@ -352,18 +353,14 @@ export default function ProductsIndex() {
                             </div>
                         </div>
                     </div>
-                    
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead className="bg-slate-50 text-slate-600">
                                 <tr>
                                     <th className="px-4 py-3 text-left font-medium">Code</th>
-                                    <th className="px-4 py-3 text-left font-medium">Name</th>
-                                    <th className="px-4 py-3 text-left font-medium">Pricing Type</th>
-                                    <th className="px-4 py-3 text-left font-medium">Base Price</th>
+                                    <th className="px-4 py-3 text-left font-medium">Product</th>
                                     <th className="px-4 py-3 text-left font-medium">Status</th>
-                                    <th className="px-4 py-3 text-left font-medium">Created At</th>
                                     <th className="px-4 py-3 text-center font-medium">Actions</th>
                                 </tr>
                             </thead>
@@ -373,28 +370,20 @@ export default function ProductsIndex() {
                                     products.data.map((product) => (
                                         <tr
                                             key={product.id}
-                                            className="border-t border-slate-200 transition hover:bg-slate-50"
+                                            className="cursor-pointer border-t border-slate-200 transition hover:bg-slate-50"
+                                            onClick={() => openViewDrawer(product)}
                                         >
                                             <td className="px-4 py-3 font-medium text-slate-900">
                                                 {product.product_code}
                                             </td>
-                                            <td className="px-4 py-3 text-slate-700">
-                                                {product.name}
-                                            </td>
+
                                             <td className="px-4 py-3">
-                                                <span
-                                                    className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${getPricingTypeBadgeClass(
-                                                        product.pricing_type,
-                                                    )}`}
-                                                >
-                                                    {product.pricing_type}
-                                                </span>
+                                                <div className="font-medium text-slate-900">{product.name}</div>
+                                                <div className="mt-1 max-w-[320px] truncate text-xs text-slate-500">
+                                                    {product.description || 'No description'}
+                                                </div>
                                             </td>
-                                            <td className="px-4 py-3 text-slate-700">
-                                                {product.pricing_type === 'plan'
-                                                    ? 'See plans'
-                                                    : formatPrice(product.price)}
-                                            </td>
+
                                             <td className="px-4 py-3">
                                                 <span
                                                     className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${getStatusBadgeClass(
@@ -404,11 +393,21 @@ export default function ProductsIndex() {
                                                     {product.status}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-slate-700">
-                                                {product.created_at ?? '-'}
-                                            </td>
+
                                             <td className="px-4 py-3">
-                                                <div className="flex items-center justify-center gap-2">
+                                                <div
+                                                    className="flex items-center justify-center gap-2"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className="h-9 rounded-md px-3"
+                                                        onClick={() => openViewDrawer(product)}
+                                                    >
+                                                        View
+                                                    </Button>
+
                                                     <Button
                                                         type="button"
                                                         variant="outline"
@@ -433,7 +432,7 @@ export default function ProductsIndex() {
                                 ) : (
                                     <tr>
                                         <td
-                                            colSpan={8}
+                                            colSpan={4}
                                             className="px-4 py-10 text-center text-sm text-slate-500"
                                         >
                                             No products found.
@@ -758,6 +757,115 @@ export default function ProductsIndex() {
                                     className="bg-red-600 text-white hover:bg-red-700"
                                 >
                                     Delete Product
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {viewingProduct && (
+                <div className="fixed inset-0 z-50">
+                    <div
+                        className="absolute inset-0 bg-slate-950/40"
+                        onClick={closeViewDrawer}
+                    />
+
+                    <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">Product Details</h2>
+                                <p className="text-sm text-slate-500">View full product information</p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeViewDrawer}
+                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                            >
+                                Close
+                            </button>
+                        </div>
+
+                        <div className="space-y-5 overflow-y-auto p-6">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Code</p>
+                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                    {viewingProduct.product_code}
+                                </p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Name</p>
+                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                    {viewingProduct.name}
+                                </p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Description</p>
+                                <p className="mt-1 text-sm leading-6 text-slate-600">
+                                    {viewingProduct.description || 'No description'}
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Pricing Type</p>
+                                    <p className="mt-1 text-sm capitalize text-slate-900">
+                                        {viewingProduct.pricing_type}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Status</p>
+                                    <p className="mt-1 text-sm capitalize text-slate-900">
+                                        {viewingProduct.status}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Base Price</p>
+                                    <p className="mt-1 text-sm text-slate-900">
+                                        {viewingProduct.pricing_type === 'plan'
+                                            ? 'See plans'
+                                            : formatPrice(viewingProduct.price)}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Created At</p>
+                                    <p className="mt-1 text-sm text-slate-900">
+                                        {viewingProduct.created_at ?? '-'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 border-t border-slate-200 pt-5">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="inline-flex items-center gap-2"
+                                    onClick={() => {
+                                        closeViewDrawer();
+                                        openEdit(viewingProduct);
+                                    }}
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                    Edit
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="inline-flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    onClick={() => {
+                                        closeViewDrawer();
+                                        openDelete(viewingProduct);
+                                    }}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete
                                 </Button>
                             </div>
                         </div>

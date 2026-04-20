@@ -77,6 +77,7 @@ export default function PlansIndex() {
     const [openEditModal, setOpenEditModal] = useState(false);
     const [openDeleteModal, setOpenDeleteModal] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<PlanRow | null>(null);
+    const [viewingPlan, setViewingPlan] = useState<PlanRow | null>(null);
 
     const createForm = useForm<PlanForm>({
         product_id: '',
@@ -161,6 +162,14 @@ export default function PlansIndex() {
     const closeDelete = () => {
         setSelectedPlan(null);
         setOpenDeleteModal(false);
+    };
+
+    const openViewDrawer = (plan: PlanRow) => {
+        setViewingPlan(plan);
+    };
+
+    const closeViewDrawer = () => {
+        setViewingPlan(null);
     };
 
     const submitCreate: FormEventHandler = (e) => {
@@ -345,12 +354,8 @@ export default function PlansIndex() {
                                 <tr>
                                     <th className="px-4 py-3 text-left font-medium">ID</th>
                                     <th className="px-4 py-3 text-left font-medium">Product</th>
-                                    <th className="px-4 py-3 text-left font-medium">Plan Name</th>
-                                    <th className="px-4 py-3 text-left font-medium">Price</th>
-                                    <th className="px-4 py-3 text-left font-medium">Duration</th>
-                                    <th className="px-4 py-3 text-left font-medium">Description</th>
+                                    <th className="px-4 py-3 text-left font-medium">Plan</th>
                                     <th className="px-4 py-3 text-left font-medium">Status</th>
-                                    <th className="px-4 py-3 text-left font-medium">Created At</th>
                                     <th className="px-4 py-3 text-center font-medium">Actions</th>
                                 </tr>
                             </thead>
@@ -360,26 +365,22 @@ export default function PlansIndex() {
                                     plans.data.map((plan) => (
                                         <tr
                                             key={plan.id}
-                                            className="border-t border-slate-200 transition hover:bg-slate-50"
+                                            className="cursor-pointer border-t border-slate-200 transition hover:bg-slate-50"
+                                            onClick={() => openViewDrawer(plan)}
                                         >
                                             <td className="px-4 py-3 text-slate-700">{plan.id}</td>
+
                                             <td className="px-4 py-3 font-medium text-slate-900">
                                                 {plan.product_name}
                                             </td>
-                                            <td className="px-4 py-3 text-slate-700">
-                                                {plan.plan_name}
-                                            </td>
-                                            <td className="px-4 py-3 text-slate-700">
-                                                {formatPrice(plan.price)}
-                                            </td>
-                                            <td className="px-4 py-3 text-slate-700">
-                                                {plan.duration_days} days
-                                            </td>
-                                            <td className="px-4 py-3 text-slate-700">
-                                                <div className="max-w-[260px] truncate">
-                                                    {plan.description || '-'}
+
+                                            <td className="px-4 py-3">
+                                                <div className="font-medium text-slate-900">{plan.plan_name}</div>
+                                                <div className="mt-1 max-w-[320px] truncate text-xs text-slate-500">
+                                                    {plan.description || 'No description'}
                                                 </div>
                                             </td>
+
                                             <td className="px-4 py-3">
                                                 <span
                                                     className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${getStatusBadgeClass(
@@ -389,11 +390,21 @@ export default function PlansIndex() {
                                                     {plan.status}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-slate-700">
-                                                {plan.created_at ?? '-'}
-                                            </td>
+
                                             <td className="px-4 py-3">
-                                                <div className="flex items-center justify-center gap-2">
+                                                <div
+                                                    className="flex items-center justify-center gap-2"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className="h-9 rounded-md px-3"
+                                                        onClick={() => openViewDrawer(plan)}
+                                                    >
+                                                        View
+                                                    </Button>
+
                                                     <Button
                                                         type="button"
                                                         variant="outline"
@@ -422,7 +433,7 @@ export default function PlansIndex() {
                                 ) : (
                                     <tr>
                                         <td
-                                            colSpan={9}
+                                            colSpan={5}
                                             className="px-4 py-10 text-center text-sm text-slate-500"
                                         >
                                             No plans found.
@@ -802,6 +813,106 @@ export default function PlansIndex() {
                                     className="rounded-md bg-red-600 text-white hover:bg-red-700"
                                 >
                                     Delete Plan
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {viewingPlan && (
+                <div className="fixed inset-0 z-50">
+                    <div
+                        className="absolute inset-0 bg-slate-950/40"
+                        onClick={closeViewDrawer}
+                    />
+
+                    <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                            <div>
+                                <h2 className="text-lg font-bold text-slate-900">Plan Details</h2>
+                                <p className="text-sm text-slate-500">View full plan information</p>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeViewDrawer}
+                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                            >
+                                Close
+                            </button>
+                        </div>
+
+                        <div className="space-y-5 overflow-y-auto p-6">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">ID</p>
+                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingPlan.id}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Product</p>
+                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingPlan.product_name}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Plan Name</p>
+                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingPlan.plan_name}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Description</p>
+                                <p className="mt-1 text-sm leading-6 text-slate-600">
+                                    {viewingPlan.description || 'No description'}
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Price</p>
+                                    <p className="mt-1 text-sm text-slate-900">{formatPrice(viewingPlan.price)}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Duration</p>
+                                    <p className="mt-1 text-sm text-slate-900">{viewingPlan.duration_days} days</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Status</p>
+                                    <p className="mt-1 text-sm capitalize text-slate-900">{viewingPlan.status}</p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Created At</p>
+                                    <p className="mt-1 text-sm text-slate-900">{viewingPlan.created_at ?? '-'}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 border-t border-slate-200 pt-5">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="inline-flex items-center gap-2"
+                                    onClick={() => {
+                                        closeViewDrawer();
+                                        openEdit(viewingPlan);
+                                    }}
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                    Edit
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="inline-flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    onClick={() => {
+                                        closeViewDrawer();
+                                        openDelete(viewingPlan);
+                                    }}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete
                                 </Button>
                             </div>
                         </div>

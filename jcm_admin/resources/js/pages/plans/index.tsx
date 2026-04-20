@@ -257,7 +257,7 @@ export default function PlansIndex() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Plans" />
 
-            <div className="space-y-6 p-4 md:p-6">
+            <div className="min-h-screen space-y-6 bg-slate-100 p-4 md:p-6">
                 <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-slate-900">

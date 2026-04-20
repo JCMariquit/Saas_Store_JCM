@@ -231,7 +231,7 @@ export default function UsersIndex() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Manage Users" />
 
-            <div className="space-y-6 p-4 md:p-6">
+            <div className="space-y-6 bg-slate-100 p-4 md:p-6 min-h-screen">
                 <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div>

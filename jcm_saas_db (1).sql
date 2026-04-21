@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 20, 2026 at 09:46 AM
+-- Generation Time: Apr 22, 2026 at 01:14 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -38,8 +38,8 @@ CREATE TABLE `cache` (
 --
 
 INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('laravel-cache-696d286ffe0da48445dcbf8fb537c827', 'i:1;', 1776667251),
-('laravel-cache-696d286ffe0da48445dcbf8fb537c827:timer', 'i:1776667251;', 1776667251),
+('laravel-cache-696d286ffe0da48445dcbf8fb537c827', 'i:1;', 1776811894),
+('laravel-cache-696d286ffe0da48445dcbf8fb537c827:timer', 'i:1776811894;', 1776811894),
 ('laravel-cache-7a239e18a46bf0f277309f974829ab02', 'i:1;', 1776668022),
 ('laravel-cache-7a239e18a46bf0f277309f974829ab02:timer', 'i:1776668022;', 1776668022);
 
@@ -214,6 +214,7 @@ CREATE TABLE `products` (
   `product_code` varchar(100) NOT NULL,
   `name` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
+  `thumbnail` varchar(255) DEFAULT NULL,
   `price` decimal(10,2) DEFAULT NULL,
   `pricing_type` enum('plan','custom') DEFAULT 'plan',
   `status` enum('active','inactive') NOT NULL DEFAULT 'active',
@@ -225,12 +226,61 @@ CREATE TABLE `products` (
 -- Dumping data for table `products`
 --
 
-INSERT INTO `products` (`id`, `product_code`, `name`, `description`, `price`, `pricing_type`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'PRD-BOOK-001', 'Booking System', 'Online booking and reservation system', 15000.00, 'plan', 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
-(2, 'PRD-HRIS-001', 'HRIS System', 'Human Resource Information System', 25000.00, 'plan', 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
-(3, 'PRD-POS-001', 'POS System', 'Point of Sale and inventory management', 20000.00, 'plan', 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
-(4, 'PRD-CLINIC-001', 'Clinic Management System', 'Patient records and appointment system', 18000.00, 'custom', 'active', '2026-04-17 19:26:53', '2026-04-17 19:09:30'),
-(5, 'PRD-SCHOOL-001', 'School Management System', 'Student information and enrollment system', NULL, 'plan', 'inactive', '2026-04-17 19:26:53', '2026-04-17 19:50:01');
+INSERT INTO `products` (`id`, `product_code`, `name`, `description`, `thumbnail`, `price`, `pricing_type`, `status`, `created_at`, `updated_at`) VALUES
+(1, 'PRD-BOOK-001', 'Booking System', 'Online booking and reservation system', NULL, 15000.00, 'plan', 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
+(2, 'PRD-HRIS-001', 'HRIS System', 'Human Resource Information System', NULL, 25000.00, 'plan', 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
+(3, 'PRD-POS-001', 'POS System', 'Point of Sale and inventory management', NULL, 20000.00, 'plan', 'active', '2026-04-17 19:26:53', '2026-04-17 19:26:53'),
+(4, 'PRD-CLINIC-001', 'Clinic Management System', 'Patient records and appointment system', NULL, 18000.00, 'custom', 'active', '2026-04-17 19:26:53', '2026-04-17 19:09:30'),
+(5, 'PRD-SCHOOL-001', 'School Management System', 'Student information and enrollment system', NULL, NULL, 'plan', 'inactive', '2026-04-17 19:26:53', '2026-04-17 19:50:01');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `product_features`
+--
+
+CREATE TABLE `product_features` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `feature_title` varchar(255) NOT NULL,
+  `feature_description` text DEFAULT NULL,
+  `icon` varchar(100) DEFAULT NULL,
+  `sort_order` int(11) DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `product_images`
+--
+
+CREATE TABLE `product_images` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `image_path` varchar(255) NOT NULL,
+  `alt_text` varchar(255) DEFAULT NULL,
+  `sort_order` int(11) DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `product_overview`
+--
+
+CREATE TABLE `product_overview` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `content` text NOT NULL,
+  `sort_order` int(11) DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -243,6 +293,7 @@ CREATE TABLE `services` (
   `code` varchar(100) NOT NULL,
   `name` varchar(255) NOT NULL,
   `description` text DEFAULT NULL,
+  `thumbnail` varchar(255) DEFAULT NULL,
   `service_type` enum('custom','maintenance','support','consulting','implementation','other') NOT NULL DEFAULT 'custom',
   `pricing_type` enum('fixed','quote') NOT NULL DEFAULT 'quote',
   `base_price` decimal(12,2) DEFAULT NULL,
@@ -256,11 +307,60 @@ CREATE TABLE `services` (
 -- Dumping data for table `services`
 --
 
-INSERT INTO `services` (`id`, `code`, `name`, `description`, `service_type`, `pricing_type`, `base_price`, `status`, `sort_order`, `created_at`, `updated_at`) VALUES
-(1, 'SRV-WEB-001', 'Custom Web Development', 'Business websites tailored to your brand and goals.', 'custom', 'quote', NULL, 'active', 1, '2026-04-19 08:38:24', '2026-04-19 08:38:24'),
-(2, 'SRV-SYS-001', 'Custom System Development', 'Built-from-scratch systems for unique workflows.', 'implementation', 'quote', NULL, 'active', 2, '2026-04-19 08:38:24', '2026-04-19 08:38:24'),
-(3, 'SRV-MNT-001', 'Maintenance & Support', 'Ongoing updates, bug fixes, and assistance.', 'maintenance', 'fixed', 2500.00, 'active', 3, '2026-04-19 08:38:24', '2026-04-19 08:38:24'),
-(4, 'SRV-CNS-001', 'IT Consulting', 'Planning and consulting for digital systems.', 'consulting', 'fixed', 5000.00, 'inactive', 4, '2026-04-19 08:38:24', '2026-04-19 08:38:24');
+INSERT INTO `services` (`id`, `code`, `name`, `description`, `thumbnail`, `service_type`, `pricing_type`, `base_price`, `status`, `sort_order`, `created_at`, `updated_at`) VALUES
+(1, 'SRV-WEB-001', 'Custom Web Development', 'Business websites tailored to your brand and goals.', NULL, 'custom', 'quote', NULL, 'active', 1, '2026-04-19 08:38:24', '2026-04-19 08:38:24'),
+(2, 'SRV-SYS-001', 'Custom System Development', 'Built-from-scratch systems for unique workflows.', NULL, 'implementation', 'quote', NULL, 'active', 2, '2026-04-19 08:38:24', '2026-04-19 08:38:24'),
+(3, 'SRV-MNT-001', 'Maintenance & Support', 'Ongoing updates, bug fixes, and assistance.', NULL, 'maintenance', 'fixed', 2500.00, 'active', 3, '2026-04-19 08:38:24', '2026-04-19 08:38:24'),
+(4, 'SRV-CNS-001', 'IT Consulting', 'Planning and consulting for digital systems.', NULL, 'consulting', 'fixed', 5000.00, 'inactive', 4, '2026-04-19 08:38:24', '2026-04-19 08:38:24');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `service_features`
+--
+
+CREATE TABLE `service_features` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `service_id` bigint(20) UNSIGNED NOT NULL,
+  `feature_title` varchar(255) NOT NULL,
+  `feature_description` text DEFAULT NULL,
+  `icon` varchar(100) DEFAULT NULL,
+  `sort_order` int(11) DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `service_images`
+--
+
+CREATE TABLE `service_images` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `service_id` bigint(20) UNSIGNED NOT NULL,
+  `image_path` varchar(255) NOT NULL,
+  `alt_text` varchar(255) DEFAULT NULL,
+  `sort_order` int(11) DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `service_overview`
+--
+
+CREATE TABLE `service_overview` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `service_id` bigint(20) UNSIGNED NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `content` text NOT NULL,
+  `sort_order` int(11) DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -282,10 +382,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('8n99mpOwNb772JEjUEhs6TA2Y9gynZtvAzc36USD', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiRmpHVkFJbFhKcVdRUnJITDByRnB2Q2tDR05JWGJWSmR6cWxsR3dzQyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czozOiJ1cmwiO2E6MDp7fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI3OiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvbG9naW4iO3M6NToicm91dGUiO3M6NToibG9naW4iO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1776670198),
-('EOYf5Cux5Q6u5keQlSHowwRfHIk60uZmEmgnyaTZ', 2, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiZ0NTVWp5azFwbGpkMmRQS3FoYXJabnFNUG13M2xhblRteW9WdG5aaSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MjtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czoyMToiaHR0cDovLzEyNy4wLjAuMTo4MDAwIjtzOjU6InJvdXRlIjtzOjQ6ImhvbWUiO319', 1776671076),
-('gM1q3cukZ5S8KoyMEM1yXB6k1cnT00gXFMqCI8XG', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiVWtzeG9FYlRhNlJHRkxBcGV3MU1sZzM1NElsZGlZZG01RGphNVFEOSI7czozOiJ1cmwiO2E6MDp7fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjMxOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvZGFzaGJvYXJkIjtzOjU6InJvdXRlIjtzOjk6ImRhc2hib2FyZCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1776652917),
-('XSN2lgAXzEgrCDKgVipl0oxGzrTAXgIXrAq6qaO0', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiTFltNWFVSlZJR2xUVTlPUnQ1S2JGZjF0dmdkU3ZIOFpEdUFqc1BKYiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi91c2Vycz9zZWFyY2g9IjtzOjU6InJvdXRlIjtzOjE3OiJhZG1pbi51c2Vycy5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1776651545);
+('4J6VIBJolFa49B1IsV3J05b2DGBIJWPX7YvOmco1', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiTllpaktXcUVGdVFOZENXeGREWWFlOWgyNFpUV3dCY0RYeVA2TVZ6SSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9kYXNoYm9hcmQiO3M6NToicm91dGUiO3M6OToiZGFzaGJvYXJkIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTt9', 1776811924),
+('GvWrQF31wdIN1GVw4Bdf6XjiNhnQxHVTcXjPquCK', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoib0RCZlNVN1JQWVR1R1EwWEFRSWdsZEs3RDJCaUFaRk9IRUIxaGxwaSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9wcm9kdWN0cz9zZWFyY2g9IjtzOjU6InJvdXRlIjtzOjIwOiJhZG1pbi5wcm9kdWN0cy5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==', 1776694467);
 
 -- --------------------------------------------------------
 
@@ -465,11 +563,53 @@ ALTER TABLE `products`
   ADD UNIQUE KEY `product_code` (`product_code`);
 
 --
+-- Indexes for table `product_features`
+--
+ALTER TABLE `product_features`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_product_features_product` (`product_id`);
+
+--
+-- Indexes for table `product_images`
+--
+ALTER TABLE `product_images`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_product_images_product` (`product_id`);
+
+--
+-- Indexes for table `product_overview`
+--
+ALTER TABLE `product_overview`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_product_overview_product` (`product_id`);
+
+--
 -- Indexes for table `services`
 --
 ALTER TABLE `services`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `code` (`code`);
+
+--
+-- Indexes for table `service_features`
+--
+ALTER TABLE `service_features`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_service_features_service` (`service_id`);
+
+--
+-- Indexes for table `service_images`
+--
+ALTER TABLE `service_images`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_service_images_service` (`service_id`);
+
+--
+-- Indexes for table `service_overview`
+--
+ALTER TABLE `service_overview`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_service_overview_service` (`service_id`);
 
 --
 -- Indexes for table `sessions`
@@ -549,10 +689,46 @@ ALTER TABLE `products`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
+-- AUTO_INCREMENT for table `product_features`
+--
+ALTER TABLE `product_features`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `product_images`
+--
+ALTER TABLE `product_images`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `product_overview`
+--
+ALTER TABLE `product_overview`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `services`
 --
 ALTER TABLE `services`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `service_features`
+--
+ALTER TABLE `service_features`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `service_images`
+--
+ALTER TABLE `service_images`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `service_overview`
+--
+ALTER TABLE `service_overview`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `subscriptions`
@@ -590,6 +766,42 @@ ALTER TABLE `orders`
 --
 ALTER TABLE `plans`
   ADD CONSTRAINT `fk_plans_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `product_features`
+--
+ALTER TABLE `product_features`
+  ADD CONSTRAINT `fk_product_features_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `product_images`
+--
+ALTER TABLE `product_images`
+  ADD CONSTRAINT `fk_product_images_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `product_overview`
+--
+ALTER TABLE `product_overview`
+  ADD CONSTRAINT `fk_product_overview_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `service_features`
+--
+ALTER TABLE `service_features`
+  ADD CONSTRAINT `fk_service_features_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `service_images`
+--
+ALTER TABLE `service_images`
+  ADD CONSTRAINT `fk_service_images_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `service_overview`
+--
+ALTER TABLE `service_overview`
+  ADD CONSTRAINT `fk_service_overview_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `subscriptions`

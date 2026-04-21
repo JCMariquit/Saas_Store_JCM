@@ -1,13 +1,23 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
-import { Pencil, Search, Trash2, UserPlus, Users, ShieldCheck } from 'lucide-react';
+import { UserPlus, Users, ShieldCheck, CircleUserRound } from 'lucide-react';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
+
+import { PageHero } from '@/components/jcm-ui/page-hero';
+import { StatsCard } from '@/components/jcm-ui/stats-card';
+import { SectionCard } from '@/components/jcm-ui/section-card';
+import { SearchInput } from '@/components/jcm-ui/search-input';
+import { RoleBadge } from '@/components/jcm-ui/role-badge';
+import { TableActionButtons } from '@/components/jcm-ui/table-action-buttons';
+import { UserAvatarInitials } from '@/components/jcm-ui/user-avatar-initials';
+import { FormModal } from '@/components/jcm-ui/form-modal';
+import { ConfirmModal } from '@/components/jcm-ui/confirm-modal';
+import { DataTable } from '@/components/jcm-ui/data-table';
 
 type UserRow = {
     id: number;
@@ -66,6 +76,15 @@ type EditUserForm = {
     password_confirmation: string;
     role: 'admin' | 'client';
 };
+
+const userTableColumns = [
+    { key: 'id', label: 'ID' },
+    { key: 'name', label: 'Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'role', label: 'Role' },
+    { key: 'created_at', label: 'Created At' },
+    { key: 'actions', label: 'Actions', align: 'center' as const },
+];
 
 export default function UsersIndex() {
     const { props } = usePage<PageProps>();
@@ -231,520 +250,373 @@ export default function UsersIndex() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Manage Users" />
 
-            <div className="space-y-6 bg-slate-100 p-4 md:p-6 min-h-screen">
-                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                                Manage Users
-                            </h1>
-                            <p className="mt-1 text-sm text-slate-500">
-                                Create, update, and manage administrator and client accounts.
-                            </p>
+            <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/40 to-indigo-100/50 p-4 md:p-6">
+                <div className="space-y-6">
+                    <PageHero
+                        title="Manage Users"
+                        description="Create, update, and manage administrator and client accounts with a cleaner and more polished control panel experience."
+                        actionLabel="Create User"
+                        onAction={openCreate}
+                        actionIcon={<UserPlus className="h-4 w-4" />}
+                    />
+
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <StatsCard
+                            title="Total Users"
+                            value={stats.total_users}
+                            description="All registered accounts in the platform."
+                            icon={<Users className="h-5 w-5" />}
+                            tone="blue"
+                        />
+
+                        <StatsCard
+                            title="Administrators"
+                            value={stats.total_admins}
+                            description="Users with full access and management privileges."
+                            icon={<ShieldCheck className="h-5 w-5" />}
+                            tone="indigo"
+                        />
+
+                        <StatsCard
+                            title="Clients"
+                            value={stats.total_clients}
+                            description="Customer accounts currently using the system."
+                            icon={<CircleUserRound className="h-5 w-5" />}
+                            tone="emerald"
+                        />
+                    </div>
+
+                    {flash?.success && (
+                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm">
+                            {flash.success}
                         </div>
+                    )}
 
-                        <Button type="button" onClick={openCreate} className="rounded-md">
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            Create User
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-slate-500">Total Users</p>
-                                <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                                    {stats.total_users}
-                                </h3>
-                            </div>
-                            <div className="rounded-md bg-slate-100 p-3">
-                                <Users className="h-5 w-5 text-slate-700" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-slate-500">Administrators</p>
-                                <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                                    {stats.total_admins}
-                                </h3>
-                            </div>
-                            <div className="rounded-md bg-blue-50 p-3">
-                                <ShieldCheck className="h-5 w-5 text-blue-600" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-slate-500">Clients</p>
-                                <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                                    {stats.total_clients}
-                                </h3>
-                            </div>
-                            <div className="rounded-md bg-emerald-50 p-3">
-                                <Users className="h-5 w-5 text-emerald-600" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {flash?.success && (
-                    <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
-                        {flash.success}
-                    </div>
-                )}
-
-                <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <div className="border-b border-slate-200 p-5">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                            <div>
-                                <h2 className="text-lg font-semibold text-slate-900">User List</h2>
-                                <p className="mt-1 text-sm text-slate-500">{resultsText}</p>
-                            </div>
-
-                            <div className="relative w-full md:max-w-sm">
-                                <Label htmlFor="user-search" className="sr-only">
-                                    Search users
-                                </Label>
-                                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                <Input
+                    <SectionCard
+                        title="User List"
+                        description={resultsText}
+                        actions={
+                            <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
+                                <SearchInput
                                     id="user-search"
                                     value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
+                                    onChange={setSearch}
                                     placeholder="Search by name, email, or role..."
-                                    className="h-10 rounded-md pl-9"
                                 />
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={resetSearch}
+                                    className="h-11 rounded-xl border-slate-200 bg-white px-4 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                >
+                                    Reset Search
+                                </Button>
                             </div>
-                        </div>
-                    </div>
+                        }
+                    >
+                        <DataTable
+                            columns={userTableColumns}
+                            empty={users.data.length === 0}
+                            emptyMessage="No users found."
+                            colSpan={6}
+                        >
+                            {users.data.map((user) => (
+                                <tr
+                                    key={user.id}
+                                    className="border-t border-slate-200 transition hover:bg-blue-50/40"
+                                >
+                                    <td className="px-4 py-4 text-sm font-medium text-slate-600">
+                                        #{user.id}
+                                    </td>
 
-                    <div className="p-5">
-                        <div className="overflow-x-auto rounded-lg border border-slate-200">
-                            <table className="min-w-full divide-y divide-slate-200">
-                                <thead className="bg-slate-50">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                            ID
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                            Name
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                            Email
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                            Role
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                            Created At
-                                        </th>
-                                        <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-600">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
+                                    <td className="px-4 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <UserAvatarInitials name={user.name} />
+                                            <div>
+                                                <div className="font-semibold text-slate-900">
+                                                    {user.name}
+                                                </div>
+                                                <div className="text-xs text-slate-500">
+                                                    User account profile
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
 
-                                <tbody className="divide-y divide-slate-200 bg-white">
-                                    {users.data.length > 0 ? (
-                                        users.data.map((user) => (
-                                            <tr key={user.id} className="hover:bg-slate-50">
-                                                <td className="px-4 py-4 text-sm text-slate-700">
-                                                    {user.id}
-                                                </td>
-                                                <td className="px-4 py-4">
-                                                    <div className="font-medium text-slate-900">
-                                                        {user.name}
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-4 text-sm text-slate-700">
-                                                    {user.email}
-                                                </td>
-                                                <td className="px-4 py-4">
-                                                    <span
-                                                        className={`inline-flex rounded-md px-2.5 py-1 text-xs font-semibold ${
-                                                            user.role === 'admin'
-                                                                ? 'bg-blue-100 text-blue-700'
-                                                                : 'bg-slate-100 text-slate-700'
-                                                        }`}
-                                                    >
-                                                        {user.role}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-4 text-sm text-slate-700">
-                                                    {user.created_at ?? '-'}
-                                                </td>
-                                                <td className="px-4 py-4">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            className="h-9 rounded-md px-3"
-                                                            title={`Edit ${user.name}`}
-                                                            aria-label={`Edit ${user.name}`}
-                                                            onClick={() => openEdit(user)}
-                                                        >
-                                                            <Pencil className="h-4 w-4" />
-                                                        </Button>
+                                    <td className="px-4 py-4 text-sm text-slate-700">
+                                        {user.email}
+                                    </td>
 
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            className="h-9 rounded-md border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                            title={`Delete ${user.name}`}
-                                                            aria-label={`Delete ${user.name}`}
-                                                            onClick={() => openDelete(user)}
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td
-                                                colSpan={6}
-                                                className="px-4 py-10 text-center text-sm text-slate-500"
-                                            >
-                                                No users found.
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                    <td className="px-4 py-4">
+                                        <RoleBadge role={user.role} />
+                                    </td>
 
-                        <div className="mt-4 flex items-center justify-between gap-3">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="rounded-md"
-                                title="Reset user search"
-                                aria-label="Reset user search"
-                                onClick={resetSearch}
-                            >
-                                Reset Search
-                            </Button>
+                                    <td className="px-4 py-4 text-sm text-slate-700">
+                                        {user.created_at ?? '-'}
+                                    </td>
 
-                            {users.links.length > 3 && (
-                                <div className="flex flex-wrap gap-2">
-                                    {users.links.map((link, index) => (
-                                        <button
-                                            key={`${link.label}-${index}`}
-                                            type="button"
-                                            title={getPaginationAriaLabel(link.label)}
-                                            aria-label={getPaginationAriaLabel(link.label)}
-                                            disabled={!link.url}
-                                            onClick={() => {
-                                                if (link.url) {
-                                                    router.visit(link.url, {
-                                                        preserveScroll: true,
-                                                        preserveState: true,
-                                                    });
-                                                }
-                                            }}
-                                            className={`rounded-md border px-3 py-2 text-sm transition ${
-                                                link.active
-                                                    ? 'border-blue-600 bg-blue-600 text-white'
-                                                    : link.url
-                                                      ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                                                      : 'cursor-not-allowed border-slate-100 bg-slate-100 text-slate-400'
-                                            }`}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
+                                    <td className="px-4 py-4">
+                                        <TableActionButtons
+                                            name={user.name}
+                                            onEdit={() => openEdit(user)}
+                                            onDelete={() => openDelete(user)}
                                         />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </DataTable>
+
+                        {users.links.length > 3 && (
+                            <div className="mt-5 flex flex-wrap justify-end gap-2">
+                                {users.links.map((link, index) => (
+                                    <button
+                                        key={`${link.label}-${index}`}
+                                        type="button"
+                                        title={getPaginationAriaLabel(link.label)}
+                                        aria-label={getPaginationAriaLabel(link.label)}
+                                        disabled={!link.url}
+                                        onClick={() => {
+                                            if (link.url) {
+                                                router.visit(link.url, {
+                                                    preserveScroll: true,
+                                                    preserveState: true,
+                                                });
+                                            }
+                                        }}
+                                        className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
+                                            link.active
+                                                ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                                                : link.url
+                                                  ? 'border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700'
+                                                  : 'cursor-not-allowed border-slate-100 bg-slate-100 text-slate-400'
+                                        }`}
+                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </SectionCard>
                 </div>
             </div>
 
-            {openCreateModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-                            <div>
-                                <h2 className="text-xl font-semibold text-slate-900">
-                                    Create User
-                                </h2>
-                                <p className="mt-1 text-sm text-slate-500">
-                                    Add a new user account.
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={closeCreate}
-                                title="Close create user modal"
-                                aria-label="Close create user modal"
-                                className="rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            <FormModal
+                open={openCreateModal}
+                title="Create User"
+                description="Add a new user account to the platform."
+                onClose={closeCreate}
+                tone="blue"
+            >
+                <form onSubmit={submitCreateUser} className="space-y-5">
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <div className="grid gap-2">
+                            <Label htmlFor="create_name">Full Name</Label>
+                            <input
+                                id="create_name"
+                                value={createForm.data.name}
+                                onChange={(e) => createForm.setData('name', e.target.value)}
+                                placeholder="Enter full name"
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                            />
+                            <InputError message={createForm.errors.name} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="create_email">Email Address</Label>
+                            <input
+                                id="create_email"
+                                type="email"
+                                value={createForm.data.email}
+                                onChange={(e) => createForm.setData('email', e.target.value)}
+                                placeholder="Enter email address"
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                            />
+                            <InputError message={createForm.errors.email} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="create_password">Password</Label>
+                            <input
+                                id="create_password"
+                                type="password"
+                                value={createForm.data.password}
+                                onChange={(e) => createForm.setData('password', e.target.value)}
+                                placeholder="Enter password"
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                            />
+                            <InputError message={createForm.errors.password} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="create_password_confirmation">
+                                Confirm Password
+                            </Label>
+                            <input
+                                id="create_password_confirmation"
+                                type="password"
+                                value={createForm.data.password_confirmation}
+                                onChange={(e) =>
+                                    createForm.setData('password_confirmation', e.target.value)
+                                }
+                                placeholder="Confirm password"
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                            />
+                        </div>
+
+                        <div className="grid gap-2 md:col-span-2">
+                            <Label htmlFor="create_role">Role</Label>
+                            <select
+                                id="create_role"
+                                name="role"
+                                title="Select user role"
+                                value={createForm.data.role}
+                                onChange={(e) =>
+                                    createForm.setData(
+                                        'role',
+                                        e.target.value as 'admin' | 'client',
+                                    )
+                                }
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                             >
-                                Close
-                            </button>
+                                <option value="client">Client</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            <InputError message={createForm.errors.role} />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={closeCreate}
+                            className="rounded-xl"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={createForm.processing}
+                            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                        >
+                            {createForm.processing ? 'Creating...' : 'Create User'}
+                        </Button>
+                    </div>
+                </form>
+            </FormModal>
+
+            <FormModal
+                open={openEditModal && !!selectedUser}
+                title="Edit User"
+                description="Update selected user details."
+                onClose={closeEdit}
+                tone="indigo"
+            >
+                <form onSubmit={submitEditUser} className="space-y-5">
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <div className="grid gap-2">
+                            <Label htmlFor="edit_name">Full Name</Label>
+                            <input
+                                id="edit_name"
+                                value={editForm.data.name}
+                                onChange={(e) => editForm.setData('name', e.target.value)}
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                            />
+                            <InputError message={editForm.errors.name} />
                         </div>
 
-                        <form onSubmit={submitCreateUser} className="space-y-5 px-6 py-5">
-                            <div className="grid gap-5 md:grid-cols-2">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="create_name">Full Name</Label>
-                                    <Input
-                                        id="create_name"
-                                        value={createForm.data.name}
-                                        onChange={(e) => createForm.setData('name', e.target.value)}
-                                        placeholder="Enter full name"
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={createForm.errors.name} />
-                                </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="edit_email">Email Address</Label>
+                            <input
+                                id="edit_email"
+                                type="email"
+                                value={editForm.data.email}
+                                onChange={(e) => editForm.setData('email', e.target.value)}
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                            />
+                            <InputError message={editForm.errors.email} />
+                        </div>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="create_email">Email Address</Label>
-                                    <Input
-                                        id="create_email"
-                                        type="email"
-                                        value={createForm.data.email}
-                                        onChange={(e) => createForm.setData('email', e.target.value)}
-                                        placeholder="Enter email address"
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={createForm.errors.email} />
-                                </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="edit_password">New Password</Label>
+                            <input
+                                id="edit_password"
+                                type="password"
+                                value={editForm.data.password}
+                                onChange={(e) => editForm.setData('password', e.target.value)}
+                                placeholder="Leave blank to keep current password"
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                            />
+                            <InputError message={editForm.errors.password} />
+                        </div>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="create_password">Password</Label>
-                                    <Input
-                                        id="create_password"
-                                        type="password"
-                                        value={createForm.data.password}
-                                        onChange={(e) => createForm.setData('password', e.target.value)}
-                                        placeholder="Enter password"
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={createForm.errors.password} />
-                                </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="edit_password_confirmation">
+                                Confirm New Password
+                            </Label>
+                            <input
+                                id="edit_password_confirmation"
+                                type="password"
+                                value={editForm.data.password_confirmation}
+                                onChange={(e) =>
+                                    editForm.setData('password_confirmation', e.target.value)
+                                }
+                                placeholder="Confirm new password"
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                            />
+                        </div>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="create_password_confirmation">
-                                        Confirm Password
-                                    </Label>
-                                    <Input
-                                        id="create_password_confirmation"
-                                        type="password"
-                                        value={createForm.data.password_confirmation}
-                                        onChange={(e) =>
-                                            createForm.setData('password_confirmation', e.target.value)
-                                        }
-                                        placeholder="Confirm password"
-                                        className="rounded-md"
-                                    />
-                                </div>
-
-                                <div className="grid gap-2 md:col-span-2">
-                                    <Label htmlFor="create_role">Role</Label>
-                                    <select
-                                        id="create_role"
-                                        name="role"
-                                        title="Select user role"
-                                        value={createForm.data.role}
-                                        onChange={(e) =>
-                                            createForm.setData(
-                                                'role',
-                                                e.target.value as 'admin' | 'client',
-                                            )
-                                        }
-                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                                    >
-                                        <option value="client">Client</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
-                                    <InputError message={createForm.errors.role} />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={closeCreate}
-                                    className="rounded-md"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={createForm.processing}
-                                    className="rounded-md"
-                                >
-                                    {createForm.processing ? 'Creating...' : 'Create User'}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {openEditModal && selectedUser && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-                            <div>
-                                <h2 className="text-xl font-semibold text-slate-900">Edit User</h2>
-                                <p className="mt-1 text-sm text-slate-500">
-                                    Update selected user details.
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={closeEdit}
-                                title="Close edit user modal"
-                                aria-label="Close edit user modal"
-                                className="rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                        <div className="grid gap-2 md:col-span-2">
+                            <Label htmlFor="edit_role">Role</Label>
+                            <select
+                                id="edit_role"
+                                name="role"
+                                title="Select user role"
+                                value={editForm.data.role}
+                                onChange={(e) =>
+                                    editForm.setData(
+                                        'role',
+                                        e.target.value as 'admin' | 'client',
+                                    )
+                                }
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                             >
-                                Close
-                            </button>
-                        </div>
-
-                        <form onSubmit={submitEditUser} className="space-y-5 px-6 py-5">
-                            <div className="grid gap-5 md:grid-cols-2">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit_name">Full Name</Label>
-                                    <Input
-                                        id="edit_name"
-                                        value={editForm.data.name}
-                                        onChange={(e) => editForm.setData('name', e.target.value)}
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={editForm.errors.name} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit_email">Email Address</Label>
-                                    <Input
-                                        id="edit_email"
-                                        type="email"
-                                        value={editForm.data.email}
-                                        onChange={(e) => editForm.setData('email', e.target.value)}
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={editForm.errors.email} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit_password">New Password</Label>
-                                    <Input
-                                        id="edit_password"
-                                        type="password"
-                                        value={editForm.data.password}
-                                        onChange={(e) => editForm.setData('password', e.target.value)}
-                                        placeholder="Leave blank to keep current password"
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={editForm.errors.password} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit_password_confirmation">
-                                        Confirm New Password
-                                    </Label>
-                                    <Input
-                                        id="edit_password_confirmation"
-                                        type="password"
-                                        value={editForm.data.password_confirmation}
-                                        onChange={(e) =>
-                                            editForm.setData('password_confirmation', e.target.value)
-                                        }
-                                        placeholder="Confirm new password"
-                                        className="rounded-md"
-                                    />
-                                </div>
-
-                                <div className="grid gap-2 md:col-span-2">
-                                    <Label htmlFor="edit_role">Role</Label>
-                                    <select
-                                        id="edit_role"
-                                        name="role"
-                                        title="Select user role"
-                                        value={editForm.data.role}
-                                        onChange={(e) =>
-                                            editForm.setData(
-                                                'role',
-                                                e.target.value as 'admin' | 'client',
-                                            )
-                                        }
-                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                                    >
-                                        <option value="client">Client</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
-                                    <InputError message={editForm.errors.role} />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={closeEdit}
-                                    className="rounded-md"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={editForm.processing}
-                                    className="rounded-md"
-                                >
-                                    {editForm.processing ? 'Updating...' : 'Save Changes'}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {openDeleteModal && selectedUser && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
-                        <div className="border-b border-slate-200 px-6 py-4">
-                            <h2 className="text-xl font-semibold text-slate-900">Delete User</h2>
-                            <p className="mt-1 text-sm text-slate-500">
-                                This action will permanently remove the selected user.
-                            </p>
-                        </div>
-
-                        <div className="px-6 py-5">
-                            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                                Are you sure you want to delete{' '}
-                                <span className="font-semibold">{selectedUser.name}</span>?
-                            </div>
-
-                            <div className="mt-5 flex justify-end gap-3">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={closeDelete}
-                                    className="rounded-md"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={confirmDeleteUser}
-                                    className="rounded-md bg-red-600 text-white hover:bg-red-700"
-                                >
-                                    Delete User
-                                </Button>
-                            </div>
+                                <option value="client">Client</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            <InputError message={editForm.errors.role} />
                         </div>
                     </div>
-                </div>
-            )}
+
+                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={closeEdit}
+                            className="rounded-xl"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={editForm.processing}
+                            className="rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:from-indigo-700 hover:to-blue-700"
+                        >
+                            {editForm.processing ? 'Updating...' : 'Save Changes'}
+                        </Button>
+                    </div>
+                </form>
+            </FormModal>
+
+            <ConfirmModal
+                open={openDeleteModal && !!selectedUser}
+                title="Delete User"
+                description="This action will permanently remove the selected user."
+                message={`Are you sure you want to delete ${selectedUser?.name ?? ''}?`}
+                confirmLabel="Delete User"
+                onClose={closeDelete}
+                onConfirm={confirmDeleteUser}
+            />
         </AppLayout>
     );
 }

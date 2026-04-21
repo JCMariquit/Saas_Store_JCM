@@ -1,6 +1,6 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
-import { Layers3, Plus, Pencil, Trash2, Search, CheckCircle2, XCircle } from 'lucide-react';
+import { Layers3, Plus, Pencil, Trash2, CheckCircle2, XCircle } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
 import InputError from '@/components/input-error';
@@ -8,6 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type BreadcrumbItem } from '@/types';
+
+import { PageHero } from '@/components/jcm-ui/page-hero';
+import { StatsCard } from '@/components/jcm-ui/stats-card';
+import { SectionCard } from '@/components/jcm-ui/section-card';
+import { SearchInput } from '@/components/jcm-ui/search-input';
+import { DataTable } from '@/components/jcm-ui/data-table';
+import { TableActionButtons } from '@/components/jcm-ui/table-action-buttons';
+import { FormModal } from '@/components/jcm-ui/form-modal';
+import { ConfirmModal } from '@/components/jcm-ui/confirm-modal';
 
 type ProductOption = {
     id: number;
@@ -67,6 +76,14 @@ type PlanForm = {
     description: string;
     status: 'active' | 'inactive';
 };
+
+const planTableColumns = [
+    { key: 'id', label: 'ID' },
+    { key: 'product', label: 'Product' },
+    { key: 'plan', label: 'Plan' },
+    { key: 'status', label: 'Status' },
+    { key: 'actions', label: 'Actions', align: 'center' as const },
+];
 
 export default function PlansIndex() {
     const { props } = usePage<PageProps>();
@@ -207,6 +224,19 @@ export default function PlansIndex() {
         });
     };
 
+    const resetSearch = () => {
+        setSearch('');
+        router.get(
+            route('admin.plans.index'),
+            {},
+            {
+                preserveState: true,
+                replace: true,
+                preserveScroll: true,
+            },
+        );
+    };
+
     const resultsText = useMemo(() => {
         if (!plans.total) return 'No plans found.';
         return `Showing ${plans.from ?? 0} to ${plans.to ?? 0} of ${plans.total} plans`;
@@ -214,7 +244,7 @@ export default function PlansIndex() {
 
     const getStatusBadgeClass = (status: PlanRow['status']) => {
         if (status === 'active') {
-            return 'border-green-200 bg-green-100 text-green-700';
+            return 'border-emerald-200 bg-emerald-50 text-emerald-700';
         }
 
         return 'border-slate-200 bg-slate-100 text-slate-700';
@@ -257,188 +287,124 @@ export default function PlansIndex() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Plans" />
 
-            <div className="min-h-screen space-y-6 bg-slate-100 p-4 md:p-6">
-                <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                            Plans
-                        </h1>
-                        <p className="mt-1 text-sm text-slate-500">
-                            Manage pricing tiers and duration for each product.
-                        </p>
+            <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/40 to-indigo-100/50 p-4 md:p-6">
+                <div className="space-y-6">
+                    <PageHero
+                        title="Plans"
+                        description="Manage pricing tiers and duration for each product."
+                        actionLabel="Create Plan"
+                        actionIcon={<Plus className="h-4 w-4" />}
+                        onAction={openCreate}
+                    />
+
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <StatsCard
+                            title="Total Plans"
+                            value={stats.total_plans}
+                            description="All plans currently available in the system."
+                            icon={<Layers3 className="h-5 w-5" />}
+                            tone="blue"
+                        />
+
+                        <StatsCard
+                            title="Active Plans"
+                            value={stats.active_plans}
+                            description="Plans currently available for subscriptions and orders."
+                            icon={<CheckCircle2 className="h-5 w-5" />}
+                            tone="emerald"
+                        />
+
+                        <StatsCard
+                            title="Inactive Plans"
+                            value={stats.inactive_plans}
+                            description="Plans currently hidden or disabled from active use."
+                            icon={<XCircle className="h-5 w-5" />}
+                            tone="indigo"
+                        />
                     </div>
 
-                    <Button type="button" onClick={openCreate} className="rounded-md">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Plan
-                    </Button>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-slate-500">Total Plans</p>
-                                <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                                    {stats.total_plans}
-                                </h3>
-                            </div>
-                            <div className="rounded-md bg-slate-100 p-3">
-                                <Layers3 className="h-5 w-5 text-slate-700" />
-                            </div>
+                    {flash?.success && (
+                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm">
+                            {flash.success}
                         </div>
-                    </div>
+                    )}
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-slate-500">Active Plans</p>
-                                <h3 className="mt-2 text-2xl font-bold text-green-600">
-                                    {stats.active_plans}
-                                </h3>
-                            </div>
-                            <div className="rounded-md bg-green-50 p-3">
-                                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-slate-500">Inactive Plans</p>
-                                <h3 className="mt-2 text-2xl font-bold text-slate-600">
-                                    {stats.inactive_plans}
-                                </h3>
-                            </div>
-                            <div className="rounded-md bg-slate-100 p-3">
-                                <XCircle className="h-5 w-5 text-slate-600" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {flash?.success && (
-                    <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
-                        {flash.success}
-                    </div>
-                )}
-
-                <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <div className="border-b border-slate-200 px-5 py-4">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                            <div>
-                                <h2 className="text-lg font-semibold text-slate-900">Plan List</h2>
-                                <p className="mt-1 text-sm text-slate-500">{resultsText}</p>
-                            </div>
-
-                            <div className="relative w-full md:max-w-sm">
-                                <Label htmlFor="plan-search" className="sr-only">
-                                    Search plans
-                                </Label>
-                                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                <Input
+                    <SectionCard
+                        title="Plan List"
+                        description={resultsText}
+                        actions={
+                            <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
+                                <SearchInput
                                     id="plan-search"
                                     value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
+                                    onChange={setSearch}
                                     placeholder="Search plan or product..."
-                                    className="rounded-md pl-9"
                                 />
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={resetSearch}
+                                    className="h-11 rounded-xl border-slate-200 bg-white px-4 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                >
+                                    Reset Search
+                                </Button>
                             </div>
-                        </div>
-                    </div>
+                        }
+                    >
+                        <DataTable
+                            columns={planTableColumns}
+                            empty={plans.data.length === 0}
+                            emptyMessage="No plans found."
+                            colSpan={5}
+                            striped
+                            hoverable
+                        >
+                            {plans.data.map((plan) => (
+                                <tr
+                                    key={plan.id}
+                                    className="cursor-pointer"
+                                    onClick={() => openViewDrawer(plan)}
+                                >
+                                    <td className="px-4 py-4 text-sm text-slate-700">{plan.id}</td>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-slate-600">
-                                <tr>
-                                    <th className="px-4 py-3 text-left font-medium">ID</th>
-                                    <th className="px-4 py-3 text-left font-medium">Product</th>
-                                    <th className="px-4 py-3 text-left font-medium">Plan</th>
-                                    <th className="px-4 py-3 text-left font-medium">Status</th>
-                                    <th className="px-4 py-3 text-center font-medium">Actions</th>
+                                    <td className="px-4 py-4 font-medium text-slate-900">
+                                        {plan.product_name}
+                                    </td>
+
+                                    <td className="px-4 py-4">
+                                        <div className="font-medium text-slate-900">{plan.plan_name}</div>
+                                        <div className="mt-1 max-w-[320px] truncate text-xs text-slate-500">
+                                            {plan.description || 'No description'}
+                                        </div>
+                                    </td>
+
+                                    <td className="px-4 py-4">
+                                        <span
+                                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(
+                                                plan.status,
+                                            )}`}
+                                        >
+                                            {plan.status}
+                                        </span>
+                                    </td>
+
+                                    <td
+                                        className="px-4 py-4"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <TableActionButtons
+                                            name={plan.plan_name}
+                                            onEdit={() => openEdit(plan)}
+                                            onDelete={() => openDelete(plan)}
+                                        />
+                                    </td>
                                 </tr>
-                            </thead>
+                            ))}
+                        </DataTable>
 
-                            <tbody>
-                                {plans.data.length > 0 ? (
-                                    plans.data.map((plan) => (
-                                        <tr
-                                            key={plan.id}
-                                            className="cursor-pointer border-t border-slate-200 transition hover:bg-slate-50"
-                                            onClick={() => openViewDrawer(plan)}
-                                        >
-                                            <td className="px-4 py-3 text-slate-700">{plan.id}</td>
-
-                                            <td className="px-4 py-3 font-medium text-slate-900">
-                                                {plan.product_name}
-                                            </td>
-
-                                            <td className="px-4 py-3">
-                                                <div className="font-medium text-slate-900">{plan.plan_name}</div>
-                                                <div className="mt-1 max-w-[320px] truncate text-xs text-slate-500">
-                                                    {plan.description || 'No description'}
-                                                </div>
-                                            </td>
-
-                                            <td className="px-4 py-3">
-                                                <span
-                                                    className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${getStatusBadgeClass(
-                                                        plan.status,
-                                                    )}`}
-                                                >
-                                                    {plan.status}
-                                                </span>
-                                            </td>
-
-                                            <td className="px-4 py-3">
-                                                <div
-                                                    className="flex items-center justify-center gap-2"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        className="h-9 rounded-md px-3"
-                                                        title={`Edit ${plan.plan_name}`}
-                                                        aria-label={`Edit ${plan.plan_name}`}
-                                                        onClick={() => openEdit(plan)}
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        className="h-9 rounded-md border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                        title={`Delete ${plan.plan_name}`}
-                                                        aria-label={`Delete ${plan.plan_name}`}
-                                                        onClick={() => openDelete(plan)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td
-                                            colSpan={5}
-                                            className="px-4 py-10 text-center text-sm text-slate-500"
-                                        >
-                                            No plans found.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {plans.links.length > 3 && (
-                        <div className="border-t border-slate-200 px-5 py-4">
-                            <div className="flex flex-wrap gap-2">
+                        {plans.links.length > 3 && (
+                            <div className="mt-5 flex flex-wrap gap-2">
                                 {plans.links.map((link, index) => (
                                     <button
                                         key={`${link.label}-${index}`}
@@ -454,373 +420,322 @@ export default function PlansIndex() {
                                                 });
                                             }
                                         }}
-                                        className={`rounded-md border px-3 py-2 text-sm transition ${
+                                        className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
                                             link.active
-                                                ? 'border-blue-600 bg-blue-600 text-white'
+                                                ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
                                                 : link.url
-                                                  ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                                  ? 'border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700'
                                                   : 'cursor-not-allowed border-slate-100 bg-slate-100 text-slate-400'
                                         }`}
                                         dangerouslySetInnerHTML={{ __html: link.label }}
                                     />
                                 ))}
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </SectionCard>
                 </div>
             </div>
 
-            {openCreateModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-                            <div>
-                                <h2 className="text-xl font-semibold text-slate-900">
-                                    Create Plan
-                                </h2>
-                                <p className="mt-1 text-sm text-slate-500">
-                                    Add a new pricing plan for a product.
-                                </p>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={closeCreate}
-                                title="Close create plan modal"
-                                aria-label="Close create plan modal"
-                                className="rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+            <FormModal
+                open={openCreateModal}
+                title="Create Plan"
+                description="Add a new pricing plan for a product."
+                onClose={closeCreate}
+                tone="blue"
+            >
+                <form onSubmit={submitCreate} className="space-y-5">
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <div className="grid gap-2">
+                            <Label htmlFor="create_product_id">Product</Label>
+                            <select
+                                id="create_product_id"
+                                name="product_id"
+                                title="Select product"
+                                value={createForm.data.product_id}
+                                onChange={(e) =>
+                                    createForm.setData(
+                                        'product_id',
+                                        e.target.value ? Number(e.target.value) : '',
+                                    )
+                                }
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                             >
-                                Close
-                            </button>
+                                <option value="">Select product</option>
+                                {products.map((product) => (
+                                    <option key={product.id} value={product.id}>
+                                        {product.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <InputError message={createForm.errors.product_id} />
                         </div>
 
-                        <form onSubmit={submitCreate} className="space-y-5 px-6 py-5">
-                            <div className="grid gap-5 md:grid-cols-2">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="create_product_id">Product</Label>
-                                    <select
-                                        id="create_product_id"
-                                        name="product_id"
-                                        title="Select product"
-                                        value={createForm.data.product_id}
-                                        onChange={(e) =>
-                                            createForm.setData(
-                                                'product_id',
-                                                e.target.value ? Number(e.target.value) : '',
-                                            )
-                                        }
-                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                                    >
-                                        <option value="">Select product</option>
-                                        {products.map((product) => (
-                                            <option key={product.id} value={product.id}>
-                                                {product.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <InputError message={createForm.errors.product_id} />
-                                </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="create_plan_name">Plan Name</Label>
+                            <Input
+                                id="create_plan_name"
+                                value={createForm.data.plan_name}
+                                onChange={(e) => createForm.setData('plan_name', e.target.value)}
+                                placeholder="Enter plan name"
+                                className="rounded-xl"
+                            />
+                            <InputError message={createForm.errors.plan_name} />
+                        </div>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="create_plan_name">Plan Name</Label>
-                                    <Input
-                                        id="create_plan_name"
-                                        value={createForm.data.plan_name}
-                                        onChange={(e) =>
-                                            createForm.setData('plan_name', e.target.value)
-                                        }
-                                        placeholder="Enter plan name"
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={createForm.errors.plan_name} />
-                                </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="create_price">Price</Label>
+                            <Input
+                                id="create_price"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={createForm.data.price}
+                                onChange={(e) =>
+                                    createForm.setData(
+                                        'price',
+                                        e.target.value === '' ? '' : Number(e.target.value),
+                                    )
+                                }
+                                placeholder="0.00"
+                                className="rounded-xl"
+                            />
+                            <InputError message={createForm.errors.price} />
+                        </div>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="create_price">Price</Label>
-                                    <Input
-                                        id="create_price"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={createForm.data.price}
-                                        onChange={(e) =>
-                                            createForm.setData(
-                                                'price',
-                                                e.target.value === '' ? '' : Number(e.target.value),
-                                            )
-                                        }
-                                        placeholder="0.00"
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={createForm.errors.price} />
-                                </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="create_duration_days">Duration (days)</Label>
+                            <Input
+                                id="create_duration_days"
+                                type="number"
+                                min="1"
+                                value={createForm.data.duration_days}
+                                onChange={(e) =>
+                                    createForm.setData(
+                                        'duration_days',
+                                        e.target.value === '' ? '' : Number(e.target.value),
+                                    )
+                                }
+                                placeholder="30"
+                                className="rounded-xl"
+                            />
+                            <InputError message={createForm.errors.duration_days} />
+                        </div>
 
-                                <div className="grid gap-2">
-                                    <Label htmlFor="create_duration_days">Duration (days)</Label>
-                                    <Input
-                                        id="create_duration_days"
-                                        type="number"
-                                        min="1"
-                                        value={createForm.data.duration_days}
-                                        onChange={(e) =>
-                                            createForm.setData(
-                                                'duration_days',
-                                                e.target.value === '' ? '' : Number(e.target.value),
-                                            )
-                                        }
-                                        placeholder="30"
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={createForm.errors.duration_days} />
-                                </div>
+                        <div className="grid gap-2 md:col-span-2">
+                            <Label htmlFor="create_description">Description</Label>
+                            <textarea
+                                id="create_description"
+                                name="description"
+                                title="Plan description"
+                                placeholder="Enter plan description"
+                                value={createForm.data.description}
+                                onChange={(e) => createForm.setData('description', e.target.value)}
+                                className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
+                            />
+                            <InputError message={createForm.errors.description} />
+                        </div>
 
-                                <div className="grid gap-2 md:col-span-2">
-                                    <Label htmlFor="create_description">Description</Label>
-                                    <textarea
-                                        id="create_description"
-                                        name="description"
-                                        title="Plan description"
-                                        placeholder="Enter plan description"
-                                        value={createForm.data.description}
-                                        onChange={(e) =>
-                                            createForm.setData('description', e.target.value)
-                                        }
-                                        className="min-h-[110px] rounded-md border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
-                                    />
-                                    <InputError message={createForm.errors.description} />
-                                </div>
-
-                                <div className="grid gap-2 md:col-span-2">
-                                    <Label htmlFor="create_status">Status</Label>
-                                    <select
-                                        id="create_status"
-                                        name="status"
-                                        title="Select plan status"
-                                        value={createForm.data.status}
-                                        onChange={(e) =>
-                                            createForm.setData(
-                                                'status',
-                                                e.target.value as 'active' | 'inactive',
-                                            )
-                                        }
-                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                                    >
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
-                                    <InputError message={createForm.errors.status} />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button type="button" variant="outline" onClick={closeCreate}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={createForm.processing}>
-                                    {createForm.processing ? 'Creating...' : 'Create Plan'}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {openEditModal && selectedPlan && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-                            <div>
-                                <h2 className="text-xl font-semibold text-slate-900">
-                                    Edit Plan
-                                </h2>
-                                <p className="mt-1 text-sm text-slate-500">
-                                    Update selected plan details.
-                                </p>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={closeEdit}
-                                title="Close edit plan modal"
-                                aria-label="Close edit plan modal"
-                                className="rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                        <div className="grid gap-2 md:col-span-2">
+                            <Label htmlFor="create_status">Status</Label>
+                            <select
+                                id="create_status"
+                                name="status"
+                                title="Select plan status"
+                                value={createForm.data.status}
+                                onChange={(e) =>
+                                    createForm.setData(
+                                        'status',
+                                        e.target.value as 'active' | 'inactive',
+                                    )
+                                }
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                             >
-                                Close
-                            </button>
-                        </div>
-
-                        <form onSubmit={submitEdit} className="space-y-5 px-6 py-5">
-                            <div className="grid gap-5 md:grid-cols-2">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit_product_id">Product</Label>
-                                    <select
-                                        id="edit_product_id"
-                                        name="product_id"
-                                        title="Select product"
-                                        value={editForm.data.product_id}
-                                        onChange={(e) =>
-                                            editForm.setData(
-                                                'product_id',
-                                                e.target.value ? Number(e.target.value) : '',
-                                            )
-                                        }
-                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                                    >
-                                        <option value="">Select product</option>
-                                        {products.map((product) => (
-                                            <option key={product.id} value={product.id}>
-                                                {product.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <InputError message={editForm.errors.product_id} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit_plan_name">Plan Name</Label>
-                                    <Input
-                                        id="edit_plan_name"
-                                        value={editForm.data.plan_name}
-                                        onChange={(e) =>
-                                            editForm.setData('plan_name', e.target.value)
-                                        }
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={editForm.errors.plan_name} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit_price">Price</Label>
-                                    <Input
-                                        id="edit_price"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        value={editForm.data.price}
-                                        onChange={(e) =>
-                                            editForm.setData(
-                                                'price',
-                                                e.target.value === '' ? '' : Number(e.target.value),
-                                            )
-                                        }
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={editForm.errors.price} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit_duration_days">Duration (days)</Label>
-                                    <Input
-                                        id="edit_duration_days"
-                                        type="number"
-                                        min="1"
-                                        value={editForm.data.duration_days}
-                                        onChange={(e) =>
-                                            editForm.setData(
-                                                'duration_days',
-                                                e.target.value === '' ? '' : Number(e.target.value),
-                                            )
-                                        }
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={editForm.errors.duration_days} />
-                                </div>
-
-                                <div className="grid gap-2 md:col-span-2">
-                                    <Label htmlFor={`edit_description_${selectedPlan.id}`}>
-                                        Description
-                                    </Label>
-                                    <textarea
-                                        id={`edit_description_${selectedPlan.id}`}
-                                        name="description"
-                                        title="Plan description"
-                                        placeholder="Enter plan description"
-                                        value={editForm.data.description}
-                                        onChange={(e) =>
-                                            editForm.setData('description', e.target.value)
-                                        }
-                                        className="min-h-[110px] rounded-md border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
-                                    />
-                                    <InputError message={editForm.errors.description} />
-                                </div>
-
-                                <div className="grid gap-2 md:col-span-2">
-                                    <Label htmlFor="edit_status">Status</Label>
-                                    <select
-                                        id="edit_status"
-                                        name="status"
-                                        title="Select plan status"
-                                        value={editForm.data.status}
-                                        onChange={(e) =>
-                                            editForm.setData(
-                                                'status',
-                                                e.target.value as 'active' | 'inactive',
-                                            )
-                                        }
-                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                                    >
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
-                                    <InputError message={editForm.errors.status} />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button type="button" variant="outline" onClick={closeEdit}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={editForm.processing}>
-                                    {editForm.processing ? 'Updating...' : 'Save Changes'}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {openDeleteModal && selectedPlan && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
-                        <div className="border-b border-slate-200 px-6 py-4">
-                            <h2 className="text-xl font-semibold text-slate-900">Delete Plan</h2>
-                            <p className="mt-1 text-sm text-slate-500">
-                                This action will permanently remove the selected plan.
-                            </p>
-                        </div>
-
-                        <div className="px-6 py-5">
-                            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                                Are you sure you want to delete{' '}
-                                <span className="font-semibold">{selectedPlan.plan_name}</span>?
-                            </div>
-
-                            <div className="mt-5 flex justify-end gap-3">
-                                <Button type="button" variant="outline" onClick={closeDelete}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={confirmDelete}
-                                    className="rounded-md bg-red-600 text-white hover:bg-red-700"
-                                >
-                                    Delete Plan
-                                </Button>
-                            </div>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                            <InputError message={createForm.errors.status} />
                         </div>
                     </div>
-                </div>
-            )}
+
+                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={closeCreate}
+                            className="rounded-xl"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={createForm.processing}
+                            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                        >
+                            {createForm.processing ? 'Creating...' : 'Create Plan'}
+                        </Button>
+                    </div>
+                </form>
+            </FormModal>
+
+            <FormModal
+                open={openEditModal && !!selectedPlan}
+                title="Edit Plan"
+                description="Update selected plan details."
+                onClose={closeEdit}
+                tone="indigo"
+            >
+                <form onSubmit={submitEdit} className="space-y-5">
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <div className="grid gap-2">
+                            <Label htmlFor="edit_product_id">Product</Label>
+                            <select
+                                id="edit_product_id"
+                                name="product_id"
+                                title="Select product"
+                                value={editForm.data.product_id}
+                                onChange={(e) =>
+                                    editForm.setData(
+                                        'product_id',
+                                        e.target.value ? Number(e.target.value) : '',
+                                    )
+                                }
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                            >
+                                <option value="">Select product</option>
+                                {products.map((product) => (
+                                    <option key={product.id} value={product.id}>
+                                        {product.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <InputError message={editForm.errors.product_id} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="edit_plan_name">Plan Name</Label>
+                            <Input
+                                id="edit_plan_name"
+                                value={editForm.data.plan_name}
+                                onChange={(e) => editForm.setData('plan_name', e.target.value)}
+                                className="rounded-xl"
+                            />
+                            <InputError message={editForm.errors.plan_name} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="edit_price">Price</Label>
+                            <Input
+                                id="edit_price"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={editForm.data.price}
+                                onChange={(e) =>
+                                    editForm.setData(
+                                        'price',
+                                        e.target.value === '' ? '' : Number(e.target.value),
+                                    )
+                                }
+                                className="rounded-xl"
+                            />
+                            <InputError message={editForm.errors.price} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="edit_duration_days">Duration (days)</Label>
+                            <Input
+                                id="edit_duration_days"
+                                type="number"
+                                min="1"
+                                value={editForm.data.duration_days}
+                                onChange={(e) =>
+                                    editForm.setData(
+                                        'duration_days',
+                                        e.target.value === '' ? '' : Number(e.target.value),
+                                    )
+                                }
+                                className="rounded-xl"
+                            />
+                            <InputError message={editForm.errors.duration_days} />
+                        </div>
+
+                        <div className="grid gap-2 md:col-span-2">
+                            <Label htmlFor={`edit_description_${selectedPlan?.id ?? 'plan'}`}>
+                                Description
+                            </Label>
+                            <textarea
+                                id={`edit_description_${selectedPlan?.id ?? 'plan'}`}
+                                name="description"
+                                title="Plan description"
+                                placeholder="Enter plan description"
+                                value={editForm.data.description}
+                                onChange={(e) => editForm.setData('description', e.target.value)}
+                                className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
+                            />
+                            <InputError message={editForm.errors.description} />
+                        </div>
+
+                        <div className="grid gap-2 md:col-span-2">
+                            <Label htmlFor="edit_status">Status</Label>
+                            <select
+                                id="edit_status"
+                                name="status"
+                                title="Select plan status"
+                                value={editForm.data.status}
+                                onChange={(e) =>
+                                    editForm.setData(
+                                        'status',
+                                        e.target.value as 'active' | 'inactive',
+                                    )
+                                }
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                            <InputError message={editForm.errors.status} />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={closeEdit}
+                            className="rounded-xl"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={editForm.processing}
+                            className="rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:from-indigo-700 hover:to-blue-700"
+                        >
+                            {editForm.processing ? 'Updating...' : 'Save Changes'}
+                        </Button>
+                    </div>
+                </form>
+            </FormModal>
+
+            <ConfirmModal
+                open={openDeleteModal && !!selectedPlan}
+                title="Delete Plan"
+                description="This action will permanently remove the selected plan."
+                message={`Are you sure you want to delete ${selectedPlan?.plan_name ?? ''}?`}
+                confirmLabel="Delete Plan"
+                onClose={closeDelete}
+                onConfirm={confirmDelete}
+            />
 
             {viewingPlan && (
                 <div className="fixed inset-0 z-50">
                     <div
-                        className="absolute inset-0 bg-slate-950/40"
+                        className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1px]"
                         onClick={closeViewDrawer}
                     />
 
-                    <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                    <div className="absolute right-0 top-0 h-full w-full max-w-md border-l border-slate-200 bg-white shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4">
                             <div>
                                 <h2 className="text-lg font-bold text-slate-900">Plan Details</h2>
                                 <p className="text-sm text-slate-500">View full plan information</p>
@@ -829,7 +744,7 @@ export default function PlansIndex() {
                             <button
                                 type="button"
                                 onClick={closeViewDrawer}
-                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                                className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
                             >
                                 Close
                             </button>
@@ -884,7 +799,7 @@ export default function PlansIndex() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="inline-flex items-center gap-2"
+                                    className="inline-flex items-center gap-2 rounded-xl"
                                     onClick={() => {
                                         closeViewDrawer();
                                         openEdit(viewingPlan);
@@ -897,7 +812,7 @@ export default function PlansIndex() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="inline-flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    className="inline-flex items-center gap-2 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                                     onClick={() => {
                                         closeViewDrawer();
                                         openDelete(viewingPlan);

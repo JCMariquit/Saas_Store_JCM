@@ -1,6 +1,15 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
-import { BadgeCheck, CreditCard, Plus, Search, Trash2, XCircle } from 'lucide-react';
+import {
+    BadgeCheck,
+    CreditCard,
+    Plus,
+    Trash2,
+    XCircle,
+    ShoppingCart,
+    Clock3,
+    ShieldCheck,
+} from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
 import InputError from '@/components/input-error';
@@ -8,6 +17,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type BreadcrumbItem } from '@/types';
+
+import { PageHero } from '@/components/jcm-ui/page-hero';
+import { StatsCard } from '@/components/jcm-ui/stats-card';
+import { SectionCard } from '@/components/jcm-ui/section-card';
+import { SearchInput } from '@/components/jcm-ui/search-input';
+import { DataTable } from '@/components/jcm-ui/data-table';
+import { FormModal } from '@/components/jcm-ui/form-modal';
+import { ConfirmModal } from '@/components/jcm-ui/confirm-modal';
 
 type BillingType = 'trial' | 'monthly' | 'yearly' | 'custom';
 
@@ -112,6 +129,16 @@ type RejectForm = {
     notes: string;
 };
 
+const orderTableColumns = [
+    { key: 'order', label: 'Order' },
+    { key: 'user', label: 'User' },
+    { key: 'product_plan', label: 'Product / Plan' },
+    { key: 'amount', label: 'Amount' },
+    { key: 'status', label: 'Status' },
+    { key: 'payment', label: 'Payment' },
+    { key: 'actions', label: 'Actions', align: 'center' as const },
+];
+
 export default function OrdersIndex() {
     const { props } = usePage<PageProps>();
     const { orders, plans, users, filters, stats, flash } = props;
@@ -120,6 +147,7 @@ export default function OrdersIndex() {
     const [openCreateModal, setOpenCreateModal] = useState(false);
     const [openPaymentModal, setOpenPaymentModal] = useState(false);
     const [openRejectModal, setOpenRejectModal] = useState(false);
+    const [openDeleteModal, setOpenDeleteModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
     const [viewingOrder, setViewingOrder] = useState<OrderRow | null>(null);
 
@@ -213,6 +241,16 @@ export default function OrdersIndex() {
         setOpenRejectModal(false);
     };
 
+    const openDelete = (order: OrderRow) => {
+        setSelectedOrder(order);
+        setOpenDeleteModal(true);
+    };
+
+    const closeDelete = () => {
+        setSelectedOrder(null);
+        setOpenDeleteModal(false);
+    };
+
     const openViewDrawer = (order: OrderRow) => {
         setViewingOrder(order);
     };
@@ -254,8 +292,26 @@ export default function OrdersIndex() {
         router.post(route('admin.orders.verify', order.id), {}, { preserveScroll: true });
     };
 
-    const deleteOrder = (order: OrderRow) => {
-        router.delete(route('admin.orders.destroy', order.id), { preserveScroll: true });
+    const confirmDelete = () => {
+        if (!selectedOrder) return;
+
+        router.delete(route('admin.orders.destroy', selectedOrder.id), {
+            preserveScroll: true,
+            onSuccess: () => closeDelete(),
+        });
+    };
+
+    const resetSearch = () => {
+        setSearch('');
+        router.get(
+            route('admin.orders.index'),
+            {},
+            {
+                preserveState: true,
+                replace: true,
+                preserveScroll: true,
+            },
+        );
     };
 
     const resultsText = useMemo(() => {
@@ -353,26 +409,26 @@ export default function OrdersIndex() {
     const orderStatusClass = (status: OrderRow['status']) => {
         switch (status) {
             case 'verified':
-                return 'border-green-200 bg-green-100 text-green-700';
+                return 'border-emerald-200 bg-emerald-50 text-emerald-700';
             case 'paid':
-                return 'border-yellow-200 bg-yellow-100 text-yellow-700';
+                return 'border-amber-200 bg-amber-50 text-amber-700';
             case 'failed':
-                return 'border-red-200 bg-red-100 text-red-700';
+                return 'border-red-200 bg-red-50 text-red-700';
             case 'cancelled':
                 return 'border-slate-200 bg-slate-100 text-slate-700';
             default:
-                return 'border-blue-200 bg-blue-100 text-blue-700';
+                return 'border-blue-200 bg-blue-50 text-blue-700';
         }
     };
 
     const txStatusClass = (status: 'submitted' | 'verified' | 'rejected') => {
         switch (status) {
             case 'verified':
-                return 'border-green-200 bg-green-100 text-green-700';
+                return 'border-emerald-200 bg-emerald-50 text-emerald-700';
             case 'rejected':
-                return 'border-red-200 bg-red-100 text-red-700';
+                return 'border-red-200 bg-red-50 text-red-700';
             default:
-                return 'border-yellow-200 bg-yellow-100 text-yellow-700';
+                return 'border-amber-200 bg-amber-50 text-amber-700';
         }
     };
 
@@ -387,556 +443,542 @@ export default function OrdersIndex() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Orders" />
 
-            <div className="min-h-screen space-y-6 bg-slate-100 p-4 md:p-6">
-                <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Orders</h1>
-                        <p className="mt-1 text-sm text-slate-500">
-                            Manage order records, payment references, and transaction verification.
-                        </p>
+            <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/40 to-indigo-100/50 p-4 md:p-6">
+                <div className="space-y-6">
+                    <PageHero
+                        title="Orders"
+                        description="Manage order records, payment references, and transaction verification."
+                        actionLabel="Create Order"
+                        actionIcon={<Plus className="h-4 w-4" />}
+                        onAction={openCreate}
+                    />
+
+                    <div className="grid gap-4 md:grid-cols-4">
+                        <StatsCard
+                            title="Total Orders"
+                            value={stats.total_orders}
+                            description="All orders recorded in the system."
+                            icon={<ShoppingCart className="h-5 w-5" />}
+                            tone="blue"
+                        />
+
+                        <StatsCard
+                            title="Pending"
+                            value={stats.pending_orders}
+                            description="Pending payments."
+                            icon={<Clock3 className="h-5 w-5" />}
+                            tone="indigo"
+                        />
+
+                        <StatsCard
+                            title="For Verification"
+                            value={stats.for_verification_orders}
+                            description="To review payments."
+                            icon={<CreditCard className="h-5 w-5" />}
+                            tone="amber"
+                        />
+
+                        <StatsCard
+                            title="Verified"
+                            value={stats.verified_orders}
+                            description="Approved orders."
+                            icon={<ShieldCheck className="h-5 w-5" />}
+                            tone="emerald"
+                        />
                     </div>
 
-                    <Button type="button" onClick={openCreate} className="rounded-md">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Order
-                    </Button>
-                </div>
+                    {flash?.success && (
+                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm">
+                            {flash.success}
+                        </div>
+                    )}
 
-                <div className="grid gap-4 md:grid-cols-4">
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <p className="text-sm text-slate-500">Total Orders</p>
-                        <h3 className="mt-2 text-2xl font-bold text-slate-900">{stats.total_orders}</h3>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <p className="text-sm text-slate-500">Pending</p>
-                        <h3 className="mt-2 text-2xl font-bold text-blue-600">{stats.pending_orders}</h3>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <p className="text-sm text-slate-500">For Verification</p>
-                        <h3 className="mt-2 text-2xl font-bold text-yellow-600">{stats.for_verification_orders}</h3>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <p className="text-sm text-slate-500">Verified</p>
-                        <h3 className="mt-2 text-2xl font-bold text-green-600">{stats.verified_orders}</h3>
-                    </div>
-                </div>
-
-                {flash?.success && (
-                    <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
-                        {flash.success}
-                    </div>
-                )}
-
-                <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <div className="border-b border-slate-200 px-5 py-4">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                            <div>
-                                <h2 className="text-lg font-semibold text-slate-900">Order List</h2>
-                                <p className="mt-1 text-sm text-slate-500">{resultsText}</p>
-                            </div>
-
-                            <div className="relative w-full md:max-w-sm">
-                                <Label htmlFor="order-search" className="sr-only">
-                                    Search orders
-                                </Label>
-                                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                <Input
+                    <SectionCard
+                        title="Order List"
+                        description={resultsText}
+                        actions={
+                            <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
+                                <SearchInput
                                     id="order-search"
                                     value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
+                                    onChange={setSearch}
                                     placeholder="Search order, user, product, plan, ref..."
-                                    className="rounded-md pl-9"
                                 />
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={resetSearch}
+                                    className="h-11 rounded-xl border-slate-200 bg-white px-4 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                >
+                                    Reset Search
+                                </Button>
                             </div>
-                        </div>
-                    </div>
+                        }
+                    >
+                        <DataTable
+                            columns={orderTableColumns}
+                            empty={orders.data.length === 0}
+                            emptyMessage="No orders found."
+                            colSpan={7}
+                            striped
+                            hoverable
+                        >
+                            {orders.data.map((order) => (
+                                <tr
+                                    key={order.id}
+                                    className="cursor-pointer"
+                                    onClick={() => openViewDrawer(order)}
+                                >
+                                    <td className="px-4 py-4">
+                                        <div className="font-medium text-slate-900">{order.order_code}</div>
+                                        <div className="text-xs text-slate-500">{order.ordered_at ?? '-'}</div>
+                                    </td>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-slate-600">
-                                <tr>
-                                    <th className="px-4 py-3 text-left font-medium">Order</th>
-                                    <th className="px-4 py-3 text-left font-medium">User</th>
-                                    <th className="px-4 py-3 text-left font-medium">Product / Plan</th>
-                                    <th className="px-4 py-3 text-left font-medium">Amount</th>
-                                    <th className="px-4 py-3 text-left font-medium">Status</th>
-                                    <th className="px-4 py-3 text-left font-medium">Payment</th>
-                                    <th className="px-4 py-3 text-center font-medium">Actions</th>
-                                </tr>
-                            </thead>
+                                    <td className="px-4 py-4 text-slate-700">
+                                        {order.user_name || '-'}
+                                    </td>
 
-                            <tbody>
-                                {orders.data.length > 0 ? (
-                                    orders.data.map((order) => (
-                                        <tr
-                                            key={order.id}
-                                            className="cursor-pointer border-t border-slate-200 transition hover:bg-slate-50"
-                                            onClick={() => openViewDrawer(order)}
+                                    <td className="px-4 py-4">
+                                        <div className="font-medium text-slate-900">{order.product_name || '-'}</div>
+                                        <div className="text-xs text-slate-500">{order.plan_name || '-'}</div>
+                                    </td>
+
+                                    <td className="px-4 py-4 text-slate-700">
+                                        <div>{formatPrice(order.amount)}</div>
+                                        <div className="text-xs text-slate-500">{billingLabel(order.billing_type)}</div>
+                                    </td>
+
+                                    <td className="px-4 py-4">
+                                        <span
+                                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold capitalize ${orderStatusClass(
+                                                order.status,
+                                            )}`}
                                         >
-                                            <td className="px-4 py-3">
-                                                <div className="font-medium text-slate-900">{order.order_code}</div>
-                                                <div className="text-xs text-slate-500">{order.ordered_at ?? '-'}</div>
-                                            </td>
+                                            {order.status_label}
+                                        </span>
+                                    </td>
 
-                                            <td className="px-4 py-3 text-slate-700">{order.user_name || '-'}</td>
+                                    <td className="px-4 py-4">
+                                        {order.transaction ? (
+                                            <span
+                                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold capitalize ${txStatusClass(
+                                                    order.transaction.status,
+                                                )}`}
+                                            >
+                                                {order.transaction.status}
+                                            </span>
+                                        ) : (
+                                            <span className="text-slate-400">No payment</span>
+                                        )}
+                                    </td>
 
-                                            <td className="px-4 py-3">
-                                                <div className="font-medium text-slate-900">{order.product_name || '-'}</div>
-                                                <div className="text-xs text-slate-500">{order.plan_name || '-'}</div>
-                                            </td>
-
-                                            <td className="px-4 py-3 text-slate-700">
-                                                <div>{formatPrice(order.amount)}</div>
-                                                <div className="text-xs text-slate-500">{billingLabel(order.billing_type)}</div>
-                                            </td>
-
-                                            <td className="px-4 py-3">
-                                                <span
-                                                    className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${orderStatusClass(
-                                                        order.status,
-                                                    )}`}
+                                    <td
+                                        className="px-4 py-4"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <div className="flex items-center justify-center gap-2">
+                                            {order.status === 'pending' && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="h-10 rounded-xl border-blue-200 bg-white px-3 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                                                    title="Submit payment details"
+                                                    onClick={() => openPayment(order)}
                                                 >
-                                                    {order.status_label}
-                                                </span>
-                                            </td>
+                                                    <CreditCard className="h-4 w-4" />
+                                                </Button>
+                                            )}
 
-                                            <td className="px-4 py-3">
-                                                {order.transaction ? (
-                                                    <span
-                                                        className={`inline-flex rounded-md border px-2 py-0.5 text-[11px] font-medium capitalize ${txStatusClass(
-                                                            order.transaction.status,
-                                                        )}`}
+                                            {order.status === 'paid' && (
+                                                <>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className="h-10 rounded-xl border-emerald-200 bg-white px-3 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                                                        title="Verify order"
+                                                        onClick={() => verifyOrder(order)}
                                                     >
-                                                        {order.transaction.status}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-slate-400">No payment</span>
-                                                )}
-                                            </td>
-
-                                            <td className="px-4 py-3">
-                                                <div
-                                                    className="flex items-center justify-center gap-2"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-
-                                                    {order.status === 'pending' && (
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            className="h-9 rounded-md px-3"
-                                                            title="Submit payment details"
-                                                            onClick={() => openPayment(order)}
-                                                        >
-                                                            <CreditCard className="h-4 w-4" />
-                                                        </Button>
-                                                    )}
-
-                                                    {order.status === 'paid' && (
-                                                        <>
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                className="h-9 rounded-md border-green-200 px-3 text-green-600 hover:bg-green-50 hover:text-green-700"
-                                                                title="Verify order"
-                                                                onClick={() => verifyOrder(order)}
-                                                            >
-                                                                <BadgeCheck className="h-4 w-4" />
-                                                            </Button>
-
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                className="h-9 rounded-md border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                                title="Reject order"
-                                                                onClick={() => openReject(order)}
-                                                            >
-                                                                <XCircle className="h-4 w-4" />
-                                                            </Button>
-                                                        </>
-                                                    )}
+                                                        <BadgeCheck className="h-4 w-4" />
+                                                    </Button>
 
                                                     <Button
                                                         type="button"
                                                         variant="outline"
-                                                        className="h-9 rounded-md border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                        title="Delete order"
-                                                        onClick={() => deleteOrder(order)}
+                                                        className="h-10 rounded-xl border-red-200 bg-white px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                        title="Reject order"
+                                                        onClick={() => openReject(order)}
                                                     >
-                                                        <Trash2 className="h-4 w-4" />
+                                                        <XCircle className="h-4 w-4" />
                                                     </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-500">
-                                            No orders found.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                                </>
+                                            )}
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="h-10 rounded-xl border-red-200 bg-white px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                title="Delete order"
+                                                onClick={() => openDelete(order)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </DataTable>
+                    </SectionCard>
                 </div>
             </div>
 
-            {openCreateModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-4xl rounded-xl bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-                            <div>
-                                <h2 className="text-xl font-semibold text-slate-900">Create Order</h2>
-                                <p className="mt-1 text-sm text-slate-500">
-                                    Select the user, plan, and billing type. Subscription starts after verification.
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={closeCreate}
-                                className="rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                            >
-                                Close
-                            </button>
-                        </div>
-
-                        <form onSubmit={submitCreate} className="space-y-5 px-6 py-5">
-                            <div className="grid gap-6 lg:grid-cols-[1.3fr_.9fr]">
-                                <div className="space-y-5">
-                                    <div className="grid gap-5 md:grid-cols-2">
-                                        <div className="grid gap-2 md:col-span-2">
-                                            <Label htmlFor="create_user_id">User</Label>
-                                            <select
-                                                id="create_user_id"
-                                                name="user_id"
-                                                title="Select user"
-                                                value={createForm.data.user_id}
-                                                onChange={(e) =>
-                                                    createForm.setData(
-                                                        'user_id',
-                                                        e.target.value === '' ? '' : Number(e.target.value),
-                                                    )
-                                                }
-                                                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
-                                            >
-                                                <option value="">Select user</option>
-                                                {users.map((user) => (
-                                                    <option key={user.id} value={user.id}>
-                                                        {user.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <InputError message={createForm.errors.user_id} />
-                                        </div>
-
-                                        <div className="grid gap-2 md:col-span-2">
-                                            <Label htmlFor="create_plan_id">Plan</Label>
-                                            <select
-                                                id="create_plan_id"
-                                                name="plan_id"
-                                                title="Select plan"
-                                                value={createForm.data.plan_id}
-                                                onChange={(e) =>
-                                                    createForm.setData(
-                                                        'plan_id',
-                                                        e.target.value === '' ? '' : Number(e.target.value),
-                                                    )
-                                                }
-                                                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
-                                            >
-                                                <option value="">Select plan</option>
-                                                {plans.map((plan) => (
-                                                    <option key={plan.id} value={plan.id}>
-                                                        {plan.label} - {formatPrice(plan.price)}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <InputError message={createForm.errors.plan_id} />
-                                        </div>
-
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="billing_type">Billing Type</Label>
-                                            <select
-                                                id="billing_type"
-                                                name="billing_type"
-                                                title="Select billing type"
-                                                value={createForm.data.billing_type}
-                                                onChange={(e) => handleBillingTypeChange(e.target.value as BillingType)}
-                                                className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
-                                            >
-                                                <option value="trial">Trial</option>
-                                                <option value="monthly">Monthly</option>
-                                                <option value="yearly">Yearly</option>
-                                                <option value="custom">Custom</option>
-                                            </select>
-                                            <InputError message={createForm.errors.billing_type} />
-                                        </div>
-
-                                        {(createForm.data.billing_type === 'trial' || createForm.data.billing_type === 'custom') && (
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="duration_days_override">
-                                                    {createForm.data.billing_type === 'trial'
-                                                        ? 'Trial Duration (days)'
-                                                        : 'Custom Duration (days)'}
-                                                </Label>
-                                                <Input
-                                                    id="duration_days_override"
-                                                    type="number"
-                                                    min={1}
-                                                    value={createForm.data.duration_days_override}
-                                                    onChange={(e) =>
-                                                        createForm.setData(
-                                                            'duration_days_override',
-                                                            e.target.value === '' ? '' : Number(e.target.value),
-                                                        )
-                                                    }
-                                                    placeholder="Enter number of days"
-                                                />
-                                                <InputError message={createForm.errors.duration_days_override} />
-                                            </div>
-                                        )}
-
-                                        <div className="grid gap-2 md:col-span-2">
-                                            <Label htmlFor="create_notes">Notes</Label>
-                                            <textarea
-                                                id="create_notes"
-                                                value={createForm.data.notes}
-                                                onChange={(e) => createForm.setData('notes', e.target.value)}
-                                                className="min-h-[110px] rounded-md border border-slate-300 px-3 py-2 text-sm"
-                                                placeholder="Optional notes"
-                                            />
-                                            <InputError message={createForm.errors.notes} />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-                                    <h3 className="text-base font-semibold text-slate-900">Order Summary</h3>
-                                    <p className="mt-1 text-sm text-slate-500">
-                                        Primary order information before saving.
-                                    </p>
-
-                                    <div className="mt-5 space-y-4">
-                                        <div className="rounded-lg border border-slate-200 bg-white p-4">
-                                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">User</p>
-                                            <p className="mt-1 text-sm font-medium text-slate-900">
-                                                {selectedUser ? selectedUser.name : 'No user selected'}
-                                            </p>
-                                            <p className="text-xs text-slate-500">
-                                                {selectedUser ? selectedUser.email : '-'}
-                                            </p>
-                                        </div>
-
-                                        <div className="rounded-lg border border-slate-200 bg-white p-4">
-                                            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Product / Plan</p>
-                                            <p className="mt-1 text-sm font-medium text-slate-900">
-                                                {selectedPlan ? selectedPlan.product_name : 'No product selected'}
-                                            </p>
-                                            <p className="text-xs text-slate-500">
-                                                {selectedPlan ? selectedPlan.plan_name : '-'}
-                                            </p>
-                                        </div>
-
-                                        <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-                                            <div className="flex items-center justify-between gap-4">
-                                                <span className="text-sm text-slate-500">Billing Type</span>
-                                                <span className="text-sm font-semibold text-slate-900">
-                                                    {billingLabel(createForm.data.billing_type)}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center justify-between gap-4">
-                                                <span className="text-sm text-slate-500">Duration</span>
-                                                <span className="text-sm font-semibold text-slate-900">
-                                                    {computedDuration} day{computedDuration !== 1 ? 's' : ''}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center justify-between gap-4">
-                                                <span className="text-sm text-slate-500">Amount</span>
-                                                <span className="text-base font-bold text-slate-900">
-                                                    {formatPrice(computedAmount)}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                                            <p className="text-xs font-medium uppercase tracking-wide text-blue-700">
-                                                Subscription Note
-                                            </p>
-                                            <p className="mt-1 text-sm text-blue-800">
-                                                Subscription starts only after order verification.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button type="button" variant="outline" onClick={closeCreate}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={createForm.processing}>
-                                    {createForm.processing ? 'Creating...' : 'Create Order'}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {openPaymentModal && selectedOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-                            <div>
-                                <h2 className="text-xl font-semibold text-slate-900">Submit Payment</h2>
-                                <p className="mt-1 text-sm text-slate-500">
-                                    Submit payment details for {selectedOrder.order_code}.
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={closePayment}
-                                className="rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                            >
-                                Close
-                            </button>
-                        </div>
-
-                        <form onSubmit={submitPayment} className="space-y-5 px-6 py-5">
+            <FormModal
+                open={openCreateModal}
+                title="Create Order"
+                description="Select the user, plan, and billing type. Subscription starts after verification."
+                onClose={closeCreate}
+                tone="blue"
+                maxWidthClass="max-w-4xl"
+            >
+                <form onSubmit={submitCreate} className="space-y-5">
+                    <div className="grid gap-6 lg:grid-cols-[1.3fr_.9fr]">
+                        <div className="space-y-5">
                             <div className="grid gap-5 md:grid-cols-2">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="payment_method">Payment Method</Label>
+                                <div className="grid gap-2 md:col-span-2">
+                                    <Label htmlFor="create_user_id">User</Label>
                                     <select
-                                        id="payment_method"
-                                        name="payment_method"
-                                        title="Select payment method"
-                                        value={paymentForm.data.payment_method}
+                                        id="create_user_id"
+                                        name="user_id"
+                                        title="Select user"
+                                        value={createForm.data.user_id}
                                         onChange={(e) =>
-                                            paymentForm.setData(
-                                                'payment_method',
-                                                e.target.value as PaymentForm['payment_method'],
+                                            createForm.setData(
+                                                'user_id',
+                                                e.target.value === '' ? '' : Number(e.target.value),
                                             )
                                         }
-                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+                                        className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm"
                                     >
-                                        <option value="gcash">GCash</option>
-                                        <option value="maya">Maya</option>
-                                        <option value="bank_transfer">Bank Transfer</option>
-                                        <option value="cash">Cash</option>
-                                        <option value="other">Other</option>
+                                        <option value="">Select user</option>
+                                        {users.map((user) => (
+                                            <option key={user.id} value={user.id}>
+                                                {user.label}
+                                            </option>
+                                        ))}
                                     </select>
-                                    <InputError message={paymentForm.errors.payment_method} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="reference_number">Reference Number</Label>
-                                    <Input
-                                        id="reference_number"
-                                        value={paymentForm.data.reference_number}
-                                        onChange={(e) => paymentForm.setData('reference_number', e.target.value)}
-                                        placeholder="Enter reference number"
-                                    />
-                                    <InputError message={paymentForm.errors.reference_number} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="account_name">Account Name</Label>
-                                    <Input
-                                        id="account_name"
-                                        value={paymentForm.data.account_name}
-                                        onChange={(e) => paymentForm.setData('account_name', e.target.value)}
-                                        placeholder="Optional account name"
-                                    />
-                                    <InputError message={paymentForm.errors.account_name} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="account_number">Account Number</Label>
-                                    <Input
-                                        id="account_number"
-                                        value={paymentForm.data.account_number}
-                                        onChange={(e) => paymentForm.setData('account_number', e.target.value)}
-                                        placeholder="Optional account number"
-                                    />
-                                    <InputError message={paymentForm.errors.account_number} />
+                                    <InputError message={createForm.errors.user_id} />
                                 </div>
 
                                 <div className="grid gap-2 md:col-span-2">
-                                    <Label htmlFor="payment_notes">Notes</Label>
+                                    <Label htmlFor="create_plan_id">Plan</Label>
+                                    <select
+                                        id="create_plan_id"
+                                        name="plan_id"
+                                        title="Select plan"
+                                        value={createForm.data.plan_id}
+                                        onChange={(e) =>
+                                            createForm.setData(
+                                                'plan_id',
+                                                e.target.value === '' ? '' : Number(e.target.value),
+                                            )
+                                        }
+                                        className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm"
+                                    >
+                                        <option value="">Select plan</option>
+                                        {plans.map((plan) => (
+                                            <option key={plan.id} value={plan.id}>
+                                                {plan.label} - {formatPrice(plan.price)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <InputError message={createForm.errors.plan_id} />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="billing_type">Billing Type</Label>
+                                    <select
+                                        id="billing_type"
+                                        name="billing_type"
+                                        title="Select billing type"
+                                        value={createForm.data.billing_type}
+                                        onChange={(e) => handleBillingTypeChange(e.target.value as BillingType)}
+                                        className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm"
+                                    >
+                                        <option value="trial">Trial</option>
+                                        <option value="monthly">Monthly</option>
+                                        <option value="yearly">Yearly</option>
+                                        <option value="custom">Custom</option>
+                                    </select>
+                                    <InputError message={createForm.errors.billing_type} />
+                                </div>
+
+                                {(createForm.data.billing_type === 'trial' ||
+                                    createForm.data.billing_type === 'custom') && (
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="duration_days_override">
+                                            {createForm.data.billing_type === 'trial'
+                                                ? 'Trial Duration (days)'
+                                                : 'Custom Duration (days)'}
+                                        </Label>
+                                        <Input
+                                            id="duration_days_override"
+                                            type="number"
+                                            min={1}
+                                            value={createForm.data.duration_days_override}
+                                            onChange={(e) =>
+                                                createForm.setData(
+                                                    'duration_days_override',
+                                                    e.target.value === '' ? '' : Number(e.target.value),
+                                                )
+                                            }
+                                            placeholder="Enter number of days"
+                                            className="rounded-xl"
+                                        />
+                                        <InputError message={createForm.errors.duration_days_override} />
+                                    </div>
+                                )}
+
+                                <div className="grid gap-2 md:col-span-2">
+                                    <Label htmlFor="create_notes">Notes</Label>
                                     <textarea
-                                        id="payment_notes"
-                                        value={paymentForm.data.notes}
-                                        onChange={(e) => paymentForm.setData('notes', e.target.value)}
-                                        className="min-h-[100px] rounded-md border border-slate-300 px-3 py-2 text-sm"
-                                        placeholder="Optional payment notes"
+                                        id="create_notes"
+                                        value={createForm.data.notes}
+                                        onChange={(e) => createForm.setData('notes', e.target.value)}
+                                        className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                                        placeholder="Optional notes"
                                     />
-                                    <InputError message={paymentForm.errors.notes} />
+                                    <InputError message={createForm.errors.notes} />
                                 </div>
                             </div>
-
-                            <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button type="button" variant="outline" onClick={closePayment}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={paymentForm.processing}>
-                                    {paymentForm.processing ? 'Submitting...' : 'Submit Payment'}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {openRejectModal && selectedOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
-                        <div className="border-b border-slate-200 px-6 py-4">
-                            <h2 className="text-xl font-semibold text-slate-900">Reject Order</h2>
-                            <p className="mt-1 text-sm text-slate-500">
-                                Add a note and reject this order.
-                            </p>
                         </div>
 
-                        <form onSubmit={submitReject} className="space-y-5 px-6 py-5">
-                            <div className="grid gap-2">
-                                <Label htmlFor="reject_notes">Reason / Notes</Label>
-                                <textarea
-                                    id="reject_notes"
-                                    value={rejectForm.data.notes}
-                                    onChange={(e) => rejectForm.setData('notes', e.target.value)}
-                                    className="min-h-[100px] rounded-md border border-slate-300 px-3 py-2 text-sm"
-                                    placeholder="Why are you rejecting this order?"
-                                />
-                                <InputError message={rejectForm.errors.notes} />
-                            </div>
+                        <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-5">
+                            <h3 className="text-base font-semibold text-slate-900">Order Summary</h3>
+                            <p className="mt-1 text-sm text-slate-500">
+                                Primary order information before saving.
+                            </p>
 
-                            <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button type="button" variant="outline" onClick={closeReject}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={rejectForm.processing}
-                                    className="bg-red-600 text-white hover:bg-red-700"
-                                >
-                                    {rejectForm.processing ? 'Rejecting...' : 'Reject Order'}
-                                </Button>
+                            <div className="mt-5 space-y-4">
+                                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">User</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">
+                                        {selectedUser ? selectedUser.name : 'No user selected'}
+                                    </p>
+                                    <p className="text-xs text-slate-500">
+                                        {selectedUser ? selectedUser.email : '-'}
+                                    </p>
+                                </div>
+
+                                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Product / Plan</p>
+                                    <p className="mt-1 text-sm font-medium text-slate-900">
+                                        {selectedPlan ? selectedPlan.product_name : 'No product selected'}
+                                    </p>
+                                    <p className="text-xs text-slate-500">
+                                        {selectedPlan ? selectedPlan.plan_name : '-'}
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <span className="text-sm text-slate-500">Billing Type</span>
+                                        <span className="text-sm font-semibold text-slate-900">
+                                            {billingLabel(createForm.data.billing_type)}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4">
+                                        <span className="text-sm text-slate-500">Duration</span>
+                                        <span className="text-sm font-semibold text-slate-900">
+                                            {computedDuration} day{computedDuration !== 1 ? 's' : ''}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4">
+                                        <span className="text-sm text-slate-500">Amount</span>
+                                        <span className="text-base font-bold text-slate-900">
+                                            {formatPrice(computedAmount)}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                                    <p className="text-xs font-medium uppercase tracking-wide text-blue-700">
+                                        Subscription Note
+                                    </p>
+                                    <p className="mt-1 text-sm text-blue-800">
+                                        Subscription starts only after order verification.
+                                    </p>
+                                </div>
                             </div>
-                        </form>
+                        </div>
                     </div>
-                </div>
-            )}
+
+                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                        <Button type="button" variant="outline" onClick={closeCreate} className="rounded-xl">
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={createForm.processing}
+                            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                        >
+                            {createForm.processing ? 'Creating...' : 'Create Order'}
+                        </Button>
+                    </div>
+                </form>
+            </FormModal>
+
+            <FormModal
+                open={openPaymentModal && !!selectedOrder}
+                title="Submit Payment"
+                description={`Submit payment details for ${selectedOrder?.order_code ?? ''}.`}
+                onClose={closePayment}
+                tone="blue"
+            >
+                <form onSubmit={submitPayment} className="space-y-5">
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <div className="grid gap-2">
+                            <Label htmlFor="payment_method">Payment Method</Label>
+                            <select
+                                id="payment_method"
+                                name="payment_method"
+                                title="Select payment method"
+                                value={paymentForm.data.payment_method}
+                                onChange={(e) =>
+                                    paymentForm.setData(
+                                        'payment_method',
+                                        e.target.value as PaymentForm['payment_method'],
+                                    )
+                                }
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm"
+                            >
+                                <option value="gcash">GCash</option>
+                                <option value="maya">Maya</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="cash">Cash</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <InputError message={paymentForm.errors.payment_method} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="reference_number">Reference Number</Label>
+                            <Input
+                                id="reference_number"
+                                value={paymentForm.data.reference_number}
+                                onChange={(e) => paymentForm.setData('reference_number', e.target.value)}
+                                placeholder="Enter reference number"
+                                className="rounded-xl"
+                            />
+                            <InputError message={paymentForm.errors.reference_number} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="account_name">Account Name</Label>
+                            <Input
+                                id="account_name"
+                                value={paymentForm.data.account_name}
+                                onChange={(e) => paymentForm.setData('account_name', e.target.value)}
+                                placeholder="Optional account name"
+                                className="rounded-xl"
+                            />
+                            <InputError message={paymentForm.errors.account_name} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor="account_number">Account Number</Label>
+                            <Input
+                                id="account_number"
+                                value={paymentForm.data.account_number}
+                                onChange={(e) => paymentForm.setData('account_number', e.target.value)}
+                                placeholder="Optional account number"
+                                className="rounded-xl"
+                            />
+                            <InputError message={paymentForm.errors.account_number} />
+                        </div>
+
+                        <div className="grid gap-2 md:col-span-2">
+                            <Label htmlFor="payment_notes">Notes</Label>
+                            <textarea
+                                id="payment_notes"
+                                value={paymentForm.data.notes}
+                                onChange={(e) => paymentForm.setData('notes', e.target.value)}
+                                className="min-h-[100px] rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                                placeholder="Optional payment notes"
+                            />
+                            <InputError message={paymentForm.errors.notes} />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                        <Button type="button" variant="outline" onClick={closePayment} className="rounded-xl">
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={paymentForm.processing}
+                            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                        >
+                            {paymentForm.processing ? 'Submitting...' : 'Submit Payment'}
+                        </Button>
+                    </div>
+                </form>
+            </FormModal>
+
+            <FormModal
+                open={openRejectModal && !!selectedOrder}
+                title="Reject Order"
+                description="Add a note and reject this order."
+                onClose={closeReject}
+                tone="red"
+                maxWidthClass="max-w-md"
+            >
+                <form onSubmit={submitReject} className="space-y-5">
+                    <div className="grid gap-2">
+                        <Label htmlFor="reject_notes">Reason / Notes</Label>
+                        <textarea
+                            id="reject_notes"
+                            value={rejectForm.data.notes}
+                            onChange={(e) => rejectForm.setData('notes', e.target.value)}
+                            className="min-h-[100px] rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                            placeholder="Why are you rejecting this order?"
+                        />
+                        <InputError message={rejectForm.errors.notes} />
+                    </div>
+
+                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                        <Button type="button" variant="outline" onClick={closeReject} className="rounded-xl">
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={rejectForm.processing}
+                            className="rounded-xl bg-red-600 text-white hover:bg-red-700"
+                        >
+                            {rejectForm.processing ? 'Rejecting...' : 'Reject Order'}
+                        </Button>
+                    </div>
+                </form>
+            </FormModal>
+
+            <ConfirmModal
+                open={openDeleteModal && !!selectedOrder}
+                title="Delete Order"
+                description="This action will permanently remove the selected order."
+                message={`Are you sure you want to delete ${selectedOrder?.order_code ?? ''}?`}
+                confirmLabel="Delete Order"
+                onClose={closeDelete}
+                onConfirm={confirmDelete}
+            />
 
             {viewingOrder && (
                 <div className="fixed inset-0 z-50">
                     <div
-                        className="absolute inset-0 bg-slate-950/40"
+                        className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1px]"
                         onClick={closeViewDrawer}
                     />
 
-                    <div className="absolute right-0 top-0 flex h-screen w-full max-w-md flex-col bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                    <div className="absolute right-0 top-0 flex h-screen w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4">
                             <div>
                                 <h2 className="text-lg font-bold text-slate-900">Order Details</h2>
                                 <p className="text-sm text-slate-500">View full order information</p>
@@ -945,7 +987,7 @@ export default function OrdersIndex() {
                             <button
                                 type="button"
                                 onClick={closeViewDrawer}
-                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                                className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
                             >
                                 Close
                             </button>
@@ -1013,7 +1055,9 @@ export default function OrdersIndex() {
                                 <div>
                                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Subscription</p>
                                     <p className="mt-1 text-sm text-slate-900">
-                                        {viewingOrder.has_subscription ? viewingOrder.subscription_code ?? 'Created' : 'Not created'}
+                                        {viewingOrder.has_subscription
+                                            ? viewingOrder.subscription_code ?? 'Created'
+                                            : 'Not created'}
                                     </p>
                                 </div>
                             </div>
@@ -1033,7 +1077,7 @@ export default function OrdersIndex() {
 
                                             <div>
                                                 <p className="text-xs text-slate-500">Status</p>
-                                                <p className="mt-1 text-sm font-medium text-slate-900 capitalize">
+                                                <p className="mt-1 text-sm font-medium capitalize text-slate-900">
                                                     {viewingOrder.transaction.status}
                                                 </p>
                                             </div>
@@ -1084,7 +1128,7 @@ export default function OrdersIndex() {
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        className="inline-flex items-center gap-2"
+                                        className="inline-flex items-center gap-2 rounded-xl"
                                         onClick={() => {
                                             closeViewDrawer();
                                             openPayment(viewingOrder);
@@ -1100,7 +1144,7 @@ export default function OrdersIndex() {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            className="inline-flex items-center gap-2 border-green-200 text-green-600 hover:bg-green-50 hover:text-green-700"
+                                            className="inline-flex items-center gap-2 rounded-xl border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
                                             onClick={() => {
                                                 closeViewDrawer();
                                                 verifyOrder(viewingOrder);
@@ -1113,7 +1157,7 @@ export default function OrdersIndex() {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            className="inline-flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                            className="inline-flex items-center gap-2 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                                             onClick={() => {
                                                 closeViewDrawer();
                                                 openReject(viewingOrder);
@@ -1128,10 +1172,10 @@ export default function OrdersIndex() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="inline-flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    className="inline-flex items-center gap-2 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                                     onClick={() => {
                                         closeViewDrawer();
-                                        deleteOrder(viewingOrder);
+                                        openDelete(viewingOrder);
                                     }}
                                 >
                                     <Trash2 className="h-4 w-4" />

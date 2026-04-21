@@ -1,6 +1,6 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
-import { Box, CheckCircle2, Pencil, Plus, Search, Trash2, XCircle } from 'lucide-react';
+import { Box, CheckCircle2, Pencil, Plus, Trash2, XCircle } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
 import InputError from '@/components/input-error';
@@ -9,6 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type BreadcrumbItem } from '@/types';
 
+import { PageHero } from '@/components/jcm-ui/page-hero';
+import { StatsCard } from '@/components/jcm-ui/stats-card';
+import { SectionCard } from '@/components/jcm-ui/section-card';
+import { SearchInput } from '@/components/jcm-ui/search-input';
+import { TableActionButtons } from '@/components/jcm-ui/table-action-buttons';
+import { FormModal } from '@/components/jcm-ui/form-modal';
+import { ConfirmModal } from '@/components/jcm-ui/confirm-modal';
+import { DataTable } from '@/components/jcm-ui/data-table';
 type ProductRow = {
     id: number;
     product_code: string;
@@ -59,6 +67,13 @@ type ProductForm = {
     pricing_type: 'plan' | 'custom';
     status: 'active' | 'inactive';
 };
+
+const productTableColumns = [
+    { key: 'code', label: 'Code' },
+    { key: 'product', label: 'Product' },
+    { key: 'status', label: 'Status' },
+    { key: 'actions', label: 'Actions', align: 'center' as const },
+];
 
 export default function ProductsIndex() {
     const { props } = usePage<PageProps>();
@@ -202,7 +217,7 @@ export default function ProductsIndex() {
 
     const getStatusBadgeClass = (status: ProductRow['status']) => {
         if (status === 'active') {
-            return 'border-green-200 bg-green-100 text-green-700';
+            return 'border-emerald-200 bg-emerald-50 text-emerald-700';
         }
 
         return 'border-slate-200 bg-slate-100 text-slate-700';
@@ -263,181 +278,122 @@ export default function ProductsIndex() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Products" />
 
-            <div className="min-h-screen space-y-6 bg-slate-100 p-4 md:p-6">
-                <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                            Products
-                        </h1>
-                        <p className="mt-1 text-sm text-slate-500">
-                            Manage your SaaS products before assigning plans and subscriptions.
-                        </p>
+            <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/40 to-indigo-100/50 p-4 md:p-6">
+                <div className="space-y-6">
+                    <PageHero
+                        title="Products"
+                        description="Manage your SaaS products before assigning plans and subscriptions."
+                        actionLabel="Create Product"
+                        onAction={openCreate}
+                        actionIcon={<Plus className="h-4 w-4" />}
+                    />
+
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <StatsCard
+                            title="Total Products"
+                            value={stats.total_products}
+                            description="All products currently listed in your SaaS catalog."
+                            icon={<Box className="h-5 w-5" />}
+                            tone="blue"
+                        />
+
+                        <StatsCard
+                            title="Active Products"
+                            value={stats.active_products}
+                            description="Products available for plans, subscriptions, and orders."
+                            icon={<CheckCircle2 className="h-5 w-5" />}
+                            tone="emerald"
+                        />
+
+                        <StatsCard
+                            title="Inactive Products"
+                            value={stats.inactive_products}
+                            description="Products currently hidden or disabled from active use."
+                            icon={<XCircle className="h-5 w-5" />}
+                            tone="indigo"
+                        />
                     </div>
 
-                    <Button type="button" onClick={openCreate} className="rounded-md">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Product
-                    </Button>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-slate-500">Total Products</p>
-                                <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                                    {stats.total_products}
-                                </h3>
-                            </div>
-                            <div className="rounded-md bg-slate-100 p-3">
-                                <Box className="h-5 w-5 text-slate-700" />
-                            </div>
+                    {flash?.success && (
+                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm">
+                            {flash.success}
                         </div>
-                    </div>
+                    )}
 
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-slate-500">Active Products</p>
-                                <h3 className="mt-2 text-2xl font-bold text-green-600">
-                                    {stats.active_products}
-                                </h3>
-                            </div>
-                            <div className="rounded-md bg-green-50 p-3">
-                                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-slate-500">Inactive Products</p>
-                                <h3 className="mt-2 text-2xl font-bold text-slate-600">
-                                    {stats.inactive_products}
-                                </h3>
-                            </div>
-                            <div className="rounded-md bg-slate-100 p-3">
-                                <XCircle className="h-5 w-5 text-slate-600" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {flash?.success && (
-                    <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
-                        {flash.success}
-                    </div>
-                )}
-
-                <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <div className="border-b border-slate-200 px-5 py-4">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                            <div>
-                                <h2 className="text-lg font-semibold text-slate-900">Product List</h2>
-                                <p className="text-sm text-slate-500">{resultsText}</p>
-                            </div>
-
-                            <div className="relative w-full md:max-w-sm">
-                                <Label htmlFor="product-search" className="sr-only">
-                                    Search products
-                                </Label>
-                                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                <Input
+                    <SectionCard
+                        title="Product List"
+                        description={resultsText}
+                        actions={
+                            <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
+                                <SearchInput
                                     id="product-search"
                                     value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
+                                    onChange={setSearch}
                                     placeholder="Search product..."
-                                    className="rounded-md pl-9"
                                 />
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setSearch('')}
+                                    className="h-11 rounded-xl border-slate-200 bg-white px-4 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                >
+                                    Reset Search
+                                </Button>
                             </div>
-                        </div>
-                    </div>
+                        }
+                    >
+                        <DataTable
+                            columns={productTableColumns}
+                            empty={products.data.length === 0}
+                            emptyMessage="No products found."
+                            colSpan={4}
+                            striped
+                            hoverable
+                        >
+                            {products.data.map((product) => (
+                                <tr
+                                    key={product.id}
+                                    className="cursor-pointer"
+                                    onClick={() => openViewDrawer(product)}
+                                >
+                                    <td className="px-4 py-4 font-medium text-slate-900">
+                                        {product.product_code}
+                                    </td>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-slate-600">
-                                <tr>
-                                    <th className="px-4 py-3 text-left font-medium">Code</th>
-                                    <th className="px-4 py-3 text-left font-medium">Product</th>
-                                    <th className="px-4 py-3 text-left font-medium">Status</th>
-                                    <th className="px-4 py-3 text-center font-medium">Actions</th>
+                                    <td className="px-4 py-4">
+                                        <div className="font-medium text-slate-900">{product.name}</div>
+                                        <div className="mt-1 max-w-[320px] truncate text-xs text-slate-500">
+                                            {product.description || 'No description'}
+                                        </div>
+                                    </td>
+
+                                    <td className="px-4 py-4">
+                                        <span
+                                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(
+                                                product.status,
+                                            )}`}
+                                        >
+                                            {product.status}
+                                        </span>
+                                    </td>
+
+                                    <td
+                                        className="px-4 py-4"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <TableActionButtons
+                                            name={product.name}
+                                            onEdit={() => openEdit(product)}
+                                            onDelete={() => openDelete(product)}
+                                        />
+                                    </td>
                                 </tr>
-                            </thead>
+                            ))}
+                        </DataTable>
 
-                            <tbody>
-                                {products.data.length > 0 ? (
-                                    products.data.map((product) => (
-                                        <tr
-                                            key={product.id}
-                                            className="cursor-pointer border-t border-slate-200 transition hover:bg-slate-50"
-                                            onClick={() => openViewDrawer(product)}
-                                        >
-                                            <td className="px-4 py-3 font-medium text-slate-900">
-                                                {product.product_code}
-                                            </td>
-
-                                            <td className="px-4 py-3">
-                                                <div className="font-medium text-slate-900">{product.name}</div>
-                                                <div className="mt-1 max-w-[320px] truncate text-xs text-slate-500">
-                                                    {product.description || 'No description'}
-                                                </div>
-                                            </td>
-
-                                            <td className="px-4 py-3">
-                                                <span
-                                                    className={`inline-flex rounded-md border px-2.5 py-1 text-xs font-medium capitalize ${getStatusBadgeClass(
-                                                        product.status,
-                                                    )}`}
-                                                >
-                                                    {product.status}
-                                                </span>
-                                            </td>
-
-                                            <td className="px-4 py-3">
-                                                <div
-                                                    className="flex items-center justify-center gap-2"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        className="h-9 rounded-md px-3"
-                                                        onClick={() => openEdit(product)}
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        className="h-9 rounded-md border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                        onClick={() => openDelete(product)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td
-                                            colSpan={4}
-                                            className="px-4 py-10 text-center text-sm text-slate-500"
-                                        >
-                                            No products found.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {products.links.length > 3 && (
-                        <div className="border-t border-slate-200 px-5 py-4">
-                            <div className="flex flex-wrap gap-2">
+                        {products.links.length > 3 && (
+                            <div className="mt-5 flex flex-wrap gap-2">
                                 {products.links.map((link, index) => (
                                     <button
                                         key={`${link.label}-${index}`}
@@ -453,318 +409,272 @@ export default function ProductsIndex() {
                                                 });
                                             }
                                         }}
-                                        className={`rounded-md border px-3 py-2 text-sm transition ${
+                                        className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
                                             link.active
-                                                ? 'border-blue-600 bg-blue-600 text-white'
+                                                ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
                                                 : link.url
-                                                  ? 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                                  ? 'border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700'
                                                   : 'cursor-not-allowed border-slate-100 bg-slate-100 text-slate-400'
                                         }`}
                                         dangerouslySetInnerHTML={{ __html: link.label }}
                                     />
                                 ))}
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </SectionCard>
                 </div>
             </div>
 
-            {openCreateModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-                            <div>
-                                <h2 className="text-xl font-semibold text-slate-900">
-                                    Create Product
-                                </h2>
-                                <p className="mt-1 text-sm text-slate-500">
-                                    Add a new product to your SaaS catalog.
-                                </p>
-                            </div>
+            <FormModal
+                open={openCreateModal}
+                title="Create Product"
+                description="Add a new product to your SaaS catalog."
+                onClose={closeCreate}
+                tone="blue"
+            >
+                <form onSubmit={submitCreate} className="space-y-5">
+                    <div className="grid gap-5">
+                        <div className="grid gap-2">
+                            <Label htmlFor="create_name">Product Name</Label>
+                            <Input
+                                id="create_name"
+                                value={createForm.data.name}
+                                onChange={(e) => createForm.setData('name', e.target.value)}
+                                placeholder="Enter product name"
+                                className="rounded-xl"
+                            />
+                            <InputError message={createForm.errors.name} />
+                        </div>
 
-                            <button
-                                type="button"
-                                onClick={closeCreate}
-                                aria-label="Close create product modal"
-                                title="Close"
-                                className="rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                        <div className="grid gap-2">
+                            <Label htmlFor="create_description">Description</Label>
+                            <textarea
+                                id="create_description"
+                                name="description"
+                                title="Product description"
+                                placeholder="Enter product description"
+                                value={createForm.data.description}
+                                onChange={(e) => createForm.setData('description', e.target.value)}
+                                className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
+                            />
+                            <InputError message={createForm.errors.description} />
+                        </div>
+
+                        <div className="grid gap-2 md:max-w-xs">
+                            <Label htmlFor="create_pricing_type">Pricing Type</Label>
+                            <select
+                                id="create_pricing_type"
+                                value={createForm.data.pricing_type}
+                                onChange={(e) =>
+                                    handleCreatePricingTypeChange(
+                                        e.target.value as 'plan' | 'custom',
+                                    )
+                                }
+                                title="Select pricing type"
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                             >
-                                Close
-                            </button>
+                                <option value="plan">Plan Based</option>
+                                <option value="custom">Custom Price</option>
+                            </select>
+                            <InputError message={createForm.errors.pricing_type} />
                         </div>
 
-                        <form onSubmit={submitCreate} className="space-y-5 px-6 py-5">
-                            <div className="grid gap-5">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="create_name">Product Name</Label>
-                                    <Input
-                                        id="create_name"
-                                        value={createForm.data.name}
-                                        onChange={(e) => createForm.setData('name', e.target.value)}
-                                        placeholder="Enter product name"
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={createForm.errors.name} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor="create_description">Description</Label>
-                                    <textarea
-                                        id="create_description"
-                                        name="description"
-                                        title="Product description"
-                                        placeholder="Enter product description"
-                                        value={createForm.data.description}
-                                        onChange={(e) => createForm.setData('description', e.target.value)}
-                                        className="min-h-[110px] rounded-md border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
-                                    />
-                                    <InputError message={createForm.errors.description} />
-                                </div>
-
-                                <div className="grid gap-2 md:max-w-xs">
-                                    <Label htmlFor="create_pricing_type">Pricing Type</Label>
-                                    <select
-                                        id="create_pricing_type"
-                                        value={createForm.data.pricing_type}
-                                        onChange={(e) =>
-                                            handleCreatePricingTypeChange(
-                                                e.target.value as 'plan' | 'custom',
-                                            )
-                                        }
-                                        title="Select pricing type"
-                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                                    >
-                                        <option value="plan">Plan Based</option>
-                                        <option value="custom">Custom Price</option>
-                                    </select>
-                                    <InputError message={createForm.errors.pricing_type} />
-                                </div>
-
-                                {createForm.data.pricing_type === 'custom' && (
-                                    <div className="grid gap-2 md:max-w-xs">
-                                        <Label htmlFor="create_price">Base Price</Label>
-                                        <Input
-                                            id="create_price"
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={createForm.data.price}
-                                            onChange={(e) =>
-                                                createForm.setData(
-                                                    'price',
-                                                    e.target.value === '' ? '' : Number(e.target.value),
-                                                )
-                                            }
-                                            placeholder="0.00"
-                                            className="rounded-md"
-                                        />
-                                        <InputError message={createForm.errors.price} />
-                                    </div>
-                                )}
-
-                                <div className="grid gap-2 md:max-w-xs">
-                                    <Label htmlFor="create_status">Status</Label>
-                                    <select
-                                        id="create_status"
-                                        value={createForm.data.status}
-                                        onChange={(e) =>
-                                            createForm.setData(
-                                                'status',
-                                                e.target.value as 'active' | 'inactive',
-                                            )
-                                        }
-                                        title="Select product status"
-                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                                    >
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
-                                    <InputError message={createForm.errors.status} />
-                                </div>
+                        {createForm.data.pricing_type === 'custom' && (
+                            <div className="grid gap-2 md:max-w-xs">
+                                <Label htmlFor="create_price">Base Price</Label>
+                                <Input
+                                    id="create_price"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={createForm.data.price}
+                                    onChange={(e) =>
+                                        createForm.setData(
+                                            'price',
+                                            e.target.value === '' ? '' : Number(e.target.value),
+                                        )
+                                    }
+                                    placeholder="0.00"
+                                    className="rounded-xl"
+                                />
+                                <InputError message={createForm.errors.price} />
                             </div>
+                        )}
 
-                            <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button type="button" variant="outline" onClick={closeCreate}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={createForm.processing}>
-                                    {createForm.processing ? 'Creating...' : 'Create Product'}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {openEditModal && selectedProduct && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-2xl rounded-xl bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-                            <div>
-                                <h2 className="text-xl font-semibold text-slate-900">
-                                    Edit Product
-                                </h2>
-                                <p className="mt-1 text-sm text-slate-500">
-                                    Update selected product information.
-                                </p>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={closeEdit}
-                                aria-label="Close edit product modal"
-                                title="Close"
-                                className="rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                        <div className="grid gap-2 md:max-w-xs">
+                            <Label htmlFor="create_status">Status</Label>
+                            <select
+                                id="create_status"
+                                value={createForm.data.status}
+                                onChange={(e) =>
+                                    createForm.setData(
+                                        'status',
+                                        e.target.value as 'active' | 'inactive',
+                                    )
+                                }
+                                title="Select product status"
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
                             >
-                                Close
-                            </button>
-                        </div>
-
-                        <form onSubmit={submitEdit} className="space-y-5 px-6 py-5">
-                            <div className="grid gap-5">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="edit_name">Product Name</Label>
-                                    <Input
-                                        id="edit_name"
-                                        value={editForm.data.name}
-                                        onChange={(e) => editForm.setData('name', e.target.value)}
-                                        className="rounded-md"
-                                    />
-                                    <InputError message={editForm.errors.name} />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label htmlFor={`edit_description_${selectedProduct?.id ?? 'product'}`}>
-                                        Description
-                                    </Label>
-                                    <textarea
-                                        id={`edit_description_${selectedProduct?.id ?? 'product'}`}
-                                        name="description"
-                                        title="Product description"
-                                        placeholder="Enter product description"
-                                        value={editForm.data.description}
-                                        onChange={(e) => editForm.setData('description', e.target.value)}
-                                        className="min-h-[110px] rounded-md border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
-                                    />
-                                    <InputError message={editForm.errors.description} />
-                                </div>
-
-                                <div className="grid gap-2 md:max-w-xs">
-                                    <Label htmlFor="edit_pricing_type">Pricing Type</Label>
-                                    <select
-                                        id="edit_pricing_type"
-                                        value={editForm.data.pricing_type}
-                                        onChange={(e) =>
-                                            handleEditPricingTypeChange(
-                                                e.target.value as 'plan' | 'custom',
-                                            )
-                                        }
-                                        title="Select pricing type"
-                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                                    >
-                                        <option value="plan">Plan Based</option>
-                                        <option value="custom">Custom Price</option>
-                                    </select>
-                                    <InputError message={editForm.errors.pricing_type} />
-                                </div>
-
-                                {editForm.data.pricing_type === 'custom' && (
-                                    <div className="grid gap-2 md:max-w-xs">
-                                        <Label htmlFor="edit_price">Base Price</Label>
-                                        <Input
-                                            id="edit_price"
-                                            type="number"
-                                            min="0"
-                                            step="0.01"
-                                            value={editForm.data.price}
-                                            onChange={(e) =>
-                                                editForm.setData(
-                                                    'price',
-                                                    e.target.value === '' ? '' : Number(e.target.value),
-                                                )
-                                            }
-                                            className="rounded-md"
-                                        />
-                                        <InputError message={editForm.errors.price} />
-                                    </div>
-                                )}
-
-                                <div className="grid gap-2 md:max-w-xs">
-                                    <Label htmlFor="edit_status">Status</Label>
-                                    <select
-                                        id="edit_status"
-                                        value={editForm.data.status}
-                                        onChange={(e) =>
-                                            editForm.setData(
-                                                'status',
-                                                e.target.value as 'active' | 'inactive',
-                                            )
-                                        }
-                                        title="Select product status"
-                                        className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                                    >
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
-                                    <InputError message={editForm.errors.status} />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                                <Button type="button" variant="outline" onClick={closeEdit}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={editForm.processing}>
-                                    {editForm.processing ? 'Updating...' : 'Save Changes'}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {openDeleteModal && selectedProduct && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
-                    <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
-                        <div className="border-b border-slate-200 px-6 py-4">
-                            <h2 className="text-xl font-semibold text-slate-900">Delete Product</h2>
-                            <p className="mt-1 text-sm text-slate-500">
-                                This action will permanently remove the selected product.
-                            </p>
-                        </div>
-
-                        <div className="px-6 py-5">
-                            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                                Are you sure you want to delete{' '}
-                                <span className="font-semibold">{selectedProduct.name}</span>?
-                            </div>
-
-                            <div className="mt-5 flex justify-end gap-3">
-                                <Button type="button" variant="outline" onClick={closeDelete}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={confirmDelete}
-                                    className="bg-red-600 text-white hover:bg-red-700"
-                                >
-                                    Delete Product
-                                </Button>
-                            </div>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                            <InputError message={createForm.errors.status} />
                         </div>
                     </div>
-                </div>
-            )}
+
+                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={closeCreate}
+                            className="rounded-xl"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={createForm.processing}
+                            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                        >
+                            {createForm.processing ? 'Creating...' : 'Create Product'}
+                        </Button>
+                    </div>
+                </form>
+            </FormModal>
+
+            <FormModal
+                open={openEditModal && !!selectedProduct}
+                title="Edit Product"
+                description="Update selected product information."
+                onClose={closeEdit}
+                tone="indigo"
+            >
+                <form onSubmit={submitEdit} className="space-y-5">
+                    <div className="grid gap-5">
+                        <div className="grid gap-2">
+                            <Label htmlFor="edit_name">Product Name</Label>
+                            <Input
+                                id="edit_name"
+                                value={editForm.data.name}
+                                onChange={(e) => editForm.setData('name', e.target.value)}
+                                className="rounded-xl"
+                            />
+                            <InputError message={editForm.errors.name} />
+                        </div>
+
+                        <div className="grid gap-2">
+                            <Label htmlFor={`edit_description_${selectedProduct?.id ?? 'product'}`}>
+                                Description
+                            </Label>
+                            <textarea
+                                id={`edit_description_${selectedProduct?.id ?? 'product'}`}
+                                name="description"
+                                title="Product description"
+                                placeholder="Enter product description"
+                                value={editForm.data.description}
+                                onChange={(e) => editForm.setData('description', e.target.value)}
+                                className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
+                            />
+                            <InputError message={editForm.errors.description} />
+                        </div>
+
+                        <div className="grid gap-2 md:max-w-xs">
+                            <Label htmlFor="edit_pricing_type">Pricing Type</Label>
+                            <select
+                                id="edit_pricing_type"
+                                value={editForm.data.pricing_type}
+                                onChange={(e) =>
+                                    handleEditPricingTypeChange(
+                                        e.target.value as 'plan' | 'custom',
+                                    )
+                                }
+                                title="Select pricing type"
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                            >
+                                <option value="plan">Plan Based</option>
+                                <option value="custom">Custom Price</option>
+                            </select>
+                            <InputError message={editForm.errors.pricing_type} />
+                        </div>
+
+                        {editForm.data.pricing_type === 'custom' && (
+                            <div className="grid gap-2 md:max-w-xs">
+                                <Label htmlFor="edit_price">Base Price</Label>
+                                <Input
+                                    id="edit_price"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={editForm.data.price}
+                                    onChange={(e) =>
+                                        editForm.setData(
+                                            'price',
+                                            e.target.value === '' ? '' : Number(e.target.value),
+                                        )
+                                    }
+                                    className="rounded-xl"
+                                />
+                                <InputError message={editForm.errors.price} />
+                            </div>
+                        )}
+
+                        <div className="grid gap-2 md:max-w-xs">
+                            <Label htmlFor="edit_status">Status</Label>
+                            <select
+                                id="edit_status"
+                                value={editForm.data.status}
+                                onChange={(e) =>
+                                    editForm.setData(
+                                        'status',
+                                        e.target.value as 'active' | 'inactive',
+                                    )
+                                }
+                                title="Select product status"
+                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                            >
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                            <InputError message={editForm.errors.status} />
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={closeEdit}
+                            className="rounded-xl"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            disabled={editForm.processing}
+                            className="rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:from-indigo-700 hover:to-blue-700"
+                        >
+                            {editForm.processing ? 'Updating...' : 'Save Changes'}
+                        </Button>
+                    </div>
+                </form>
+            </FormModal>
+
+            <ConfirmModal
+                open={openDeleteModal && !!selectedProduct}
+                title="Delete Product"
+                description="This action will permanently remove the selected product."
+                message={`Are you sure you want to delete ${selectedProduct?.name ?? ''}?`}
+                confirmLabel="Delete Product"
+                onClose={closeDelete}
+                onConfirm={confirmDelete}
+            />
 
             {viewingProduct && (
                 <div className="fixed inset-0 z-50">
-                    <div
-                        className="absolute inset-0 bg-slate-950/40"
-                        onClick={closeViewDrawer}
-                    />
+                    <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1px]" onClick={closeViewDrawer} />
 
-                    <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                    <div className="absolute right-0 top-0 h-full w-full max-w-md border-l border-slate-200 bg-white shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4">
                             <div>
                                 <h2 className="text-lg font-bold text-slate-900">Product Details</h2>
                                 <p className="text-sm text-slate-500">View full product information</p>
@@ -773,7 +683,7 @@ export default function ProductsIndex() {
                             <button
                                 type="button"
                                 onClick={closeViewDrawer}
-                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                                className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
                             >
                                 Close
                             </button>
@@ -837,7 +747,7 @@ export default function ProductsIndex() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="inline-flex items-center gap-2"
+                                    className="inline-flex items-center gap-2 rounded-xl"
                                     onClick={() => {
                                         closeViewDrawer();
                                         openEdit(viewingProduct);
@@ -850,7 +760,7 @@ export default function ProductsIndex() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="inline-flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    className="inline-flex items-center gap-2 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                                     onClick={() => {
                                         closeViewDrawer();
                                         openDelete(viewingProduct);

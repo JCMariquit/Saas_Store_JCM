@@ -67,7 +67,7 @@ export function StatsCard({
                         {title}
                     </p>
 
-                    <h3 className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+                    <h3 className="mt-2 text-2xl md:text-2xl font-bold tracking-tight text-slate-900">
                         {value}
                     </h3>
 

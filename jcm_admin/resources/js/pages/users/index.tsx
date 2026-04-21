@@ -1,6 +1,6 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
-import { UserPlus, Users, ShieldCheck, CircleUserRound } from 'lucide-react';
+import { UserPlus, Users, ShieldCheck, CircleUserRound, Pencil, Trash2, Mail, CalendarDays, Hash } from 'lucide-react';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import { UserAvatarInitials } from '@/components/jcm-ui/user-avatar-initials';
 import { FormModal } from '@/components/jcm-ui/form-modal';
 import { ConfirmModal } from '@/components/jcm-ui/confirm-modal';
 import { DataTable } from '@/components/jcm-ui/data-table';
+import { SideDrawer } from '@/components/jcm-ui/side-drawer';
 
 type UserRow = {
     id: number;
@@ -95,6 +96,7 @@ export default function UsersIndex() {
     const [openEditModal, setOpenEditModal] = useState(false);
     const [openDeleteModal, setOpenDeleteModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
+    const [viewingUser, setViewingUser] = useState<UserRow | null>(null);
 
     const createForm = useForm<CreateUserForm>({
         name: '',
@@ -182,6 +184,14 @@ export default function UsersIndex() {
     const closeDelete = () => {
         setSelectedUser(null);
         setOpenDeleteModal(false);
+    };
+
+    const openViewDrawer = (user: UserRow) => {
+        setViewingUser(user);
+    };
+
+    const closeViewDrawer = () => {
+        setViewingUser(null);
     };
 
     const submitCreateUser: FormEventHandler = (e) => {
@@ -324,7 +334,8 @@ export default function UsersIndex() {
                             {users.data.map((user) => (
                                 <tr
                                     key={user.id}
-                                    className="border-t border-slate-200 transition hover:bg-blue-50/40"
+                                    className="cursor-pointer border-t border-slate-200 transition hover:bg-blue-50/40"
+                                    onClick={() => openViewDrawer(user)}
                                 >
                                     <td className="px-4 py-4 text-sm font-medium text-slate-600">
                                         #{user.id}
@@ -356,7 +367,10 @@ export default function UsersIndex() {
                                         {user.created_at ?? '-'}
                                     </td>
 
-                                    <td className="px-4 py-4">
+                                    <td
+                                        className="px-4 py-4"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
                                         <TableActionButtons
                                             name={user.name}
                                             onEdit={() => openEdit(user)}
@@ -617,6 +631,130 @@ export default function UsersIndex() {
                 onClose={closeDelete}
                 onConfirm={confirmDeleteUser}
             />
+
+            <SideDrawer
+                open={!!viewingUser}
+                onClose={closeViewDrawer}
+                title="User Details"
+                description="View more information about this user account."
+            >
+                {viewingUser && (
+                    <>
+                        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <div className="flex items-start gap-4">
+                                <UserAvatarInitials name={viewingUser.name} />
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <h3 className="text-lg font-bold text-slate-900">
+                                            {viewingUser.name}
+                                        </h3>
+                                        <RoleBadge role={viewingUser.role} />
+                                    </div>
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        User account overview
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-4">
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <div className="flex items-start gap-3">
+                                    <div className="rounded-xl bg-blue-50 p-2 text-blue-700">
+                                        <Hash className="h-4 w-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                            User ID
+                                        </p>
+                                        <p className="mt-1 text-sm font-medium text-slate-900">
+                                            #{viewingUser.id}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <div className="flex items-start gap-3">
+                                    <div className="rounded-xl bg-indigo-50 p-2 text-indigo-700">
+                                        <Mail className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                            Email Address
+                                        </p>
+                                        <p className="mt-1 break-all text-sm font-medium text-slate-900">
+                                            {viewingUser.email}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <div className="flex items-start gap-3">
+                                    <div className="rounded-xl bg-emerald-50 p-2 text-emerald-700">
+                                        <ShieldCheck className="h-4 w-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                            Account Role
+                                        </p>
+                                        <div className="mt-2">
+                                            <RoleBadge role={viewingUser.role} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                <div className="flex items-start gap-3">
+                                    <div className="rounded-xl bg-amber-50 p-2 text-amber-700">
+                                        <CalendarDays className="h-4 w-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                            Created At
+                                        </p>
+                                        <p className="mt-1 text-sm font-medium text-slate-900">
+                                            {viewingUser.created_at ?? '-'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="sticky bottom-0 -mx-6 border-t border-slate-200 bg-white px-6 py-4">
+                            <div className="flex gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="inline-flex items-center gap-2 rounded-xl"
+                                    onClick={() => {
+                                        closeViewDrawer();
+                                        openEdit(viewingUser);
+                                    }}
+                                >
+                                    <Pencil className="h-4 w-4" />
+                                    
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="inline-flex items-center gap-2 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    onClick={() => {
+                                        closeViewDrawer();
+                                        openDelete(viewingUser);
+                                    }}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    
+                                </Button>
+                            </div>
+                        </div>
+                    </>
+                )}
+            </SideDrawer>
         </AppLayout>
     );
 }

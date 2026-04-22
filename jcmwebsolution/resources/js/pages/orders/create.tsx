@@ -2,11 +2,15 @@ import { Head, router, useForm } from '@inertiajs/react';
 import {
     ArrowLeft,
     CheckCircle2,
+    House,
     ImageOff,
+    LoaderCircle,
     Package,
     ShoppingCart,
     Wallet,
+    XCircle,
 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
@@ -47,6 +51,8 @@ type PageProps = {
     billing_type_options: BillingTypeOption[];
 };
 
+type SubmitModalState = 'idle' | 'submitting' | 'success' | 'error';
+
 export default function Create({
     product,
     plans,
@@ -57,7 +63,13 @@ export default function Create({
     const isPlanProduct = product.pricing_type === 'plan';
     const isCustomProduct = product.pricing_type === 'custom';
 
-    const { data, setData, post, processing, errors } = useForm({
+    const [showSubmitModal, setShowSubmitModal] = useState(false);
+    const [submitModalState, setSubmitModalState] =
+        useState<SubmitModalState>('idle');
+    const [countdown, setCountdown] = useState(10);
+    const [successOrderCode, setSuccessOrderCode] = useState<string | null>(null);
+
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         product_id: product.id,
         plan_id: selected_plan_id ? String(selected_plan_id) : '',
         billing_type: isPlanProduct ? 'monthly' : 'custom',
@@ -70,19 +82,89 @@ export default function Create({
     const selectedPlan =
         plans.find((plan) => String(plan.id) === String(data.plan_id)) ?? null;
 
+    const computedPriceLabel = useMemo(() => {
+        if (!selectedPlan) return '—';
+
+        if (data.billing_type === 'yearly' && selectedPlan.price !== null) {
+            return `₱${Number(selectedPlan.price * 12).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            })}`;
+        }
+
+        return selectedPlan.price_label;
+    }, [selectedPlan, data.billing_type]);
+
     const disableSubmit =
         processing ||
         (isPlanProduct && !data.plan_id) ||
         !data.payment_method ||
         !data.reference_number;
 
+    const closeModal = () => {
+        if (submitModalState === 'submitting') return;
+        setShowSubmitModal(false);
+        setSubmitModalState('idle');
+        setCountdown(10);
+    };
+
     const submit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
+        clearErrors();
+        setShowSubmitModal(true);
+        setSubmitModalState('submitting');
+        setCountdown(10);
+        setSuccessOrderCode(null);
+
         post('/orders', {
             forceFormData: true,
+            preserveScroll: true,
+            onSuccess: (page) => {
+                reset('notes', 'reference_number', 'payment_proof');
+                setSubmitModalState('success');
+                setCountdown(10);
+
+                const props = page.props as Record<string, unknown>;
+                const flash =
+                    props.flash && typeof props.flash === 'object'
+                        ? (props.flash as Record<string, unknown>)
+                        : null;
+
+                const orderCode =
+                    flash && typeof flash.order_code === 'string'
+                        ? flash.order_code
+                        : null;
+
+                setSuccessOrderCode(orderCode);
+            },
+            onError: () => {
+                setSubmitModalState('idle');
+                setShowSubmitModal(false);
+                setCountdown(10);
+            },
+            onCancel: () => {
+                setSubmitModalState('idle');
+                setShowSubmitModal(false);
+                setCountdown(10);
+            },
         });
     };
+
+    useEffect(() => {
+        if (!showSubmitModal || submitModalState !== 'success') return;
+
+        if (countdown <= 0) {
+            router.visit('/');
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            setCountdown((prev) => prev - 1);
+        }, 1000);
+
+        return () => window.clearTimeout(timer);
+    }, [showSubmitModal, submitModalState, countdown]);
 
     return (
         <AppLayout fullWidth>
@@ -92,7 +174,7 @@ export default function Create({
                 <div className="mx-auto max-w-6xl px-4 py-6 md:px-6">
                     <button
                         type="button"
-                        onClick={() => router.get('/dashboard')}
+                        onClick={() => router.visit('/dashboard')}
                         className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                     >
                         <ArrowLeft className="h-4 w-4" />
@@ -352,7 +434,7 @@ export default function Create({
                                                 Price
                                             </p>
                                             <p className="mt-1 text-2xl font-extrabold text-blue-600">
-                                                {selectedPlan?.price_label || '—'}
+                                                {computedPriceLabel}
                                             </p>
                                         </div>
 
@@ -388,6 +470,130 @@ export default function Create({
                     </div>
                 </div>
             </div>
+
+            {showSubmitModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 px-4 backdrop-blur-sm">
+                    <div className="w-full max-w-xl rounded-[28px] border border-slate-200 bg-white p-8 shadow-2xl">
+                        {submitModalState === 'submitting' && (
+                            <>
+                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-blue-50">
+                                    <LoaderCircle className="h-11 w-11 animate-spin text-blue-600" />
+                                </div>
+
+                                <div className="mt-5 text-center">
+                                    <h2 className="text-2xl font-bold text-slate-900">
+                                        Processing your order
+                                    </h2>
+                                    <p className="mt-3 text-sm leading-7 text-slate-500">
+                                        Please wait while we submit your order and payment details.
+                                        Do not close this window while processing is in progress.
+                                    </p>
+                                </div>
+
+                                <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4">
+                                    <p className="text-sm font-semibold text-blue-800">
+                                        Submitting...
+                                    </p>
+                                    <p className="mt-1 text-sm leading-6 text-blue-700">
+                                        Your order is currently being saved. The success confirmation
+                                        will appear automatically once submission is completed.
+                                    </p>
+                                </div>
+                            </>
+                        )}
+
+                        {submitModalState === 'success' && (
+                            <>
+                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-50">
+                                    <CheckCircle2 className="h-11 w-11 text-green-600" />
+                                </div>
+
+                                <div className="mt-5 text-center">
+                                    <h2 className="text-2xl font-bold text-slate-900">
+                                        Order submitted successfully
+                                    </h2>
+
+                                    <p className="mt-3 text-sm leading-7 text-slate-500">
+                                        Your order has been submitted successfully. Please make sure
+                                        your reference number is correct and matches your payment
+                                        transaction. Incorrect or unmatched payment details may
+                                        result in rejection during verification.
+                                    </p>
+                                </div>
+
+                                {successOrderCode && (
+                                    <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
+                                        <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
+                                            Order Reference
+                                        </p>
+                                        <p className="mt-1 text-lg font-bold text-slate-900">
+                                            {successOrderCode}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+                                    <p className="text-sm font-semibold text-amber-800">
+                                        Important Reminder
+                                    </p>
+                                    <p className="mt-1 text-sm leading-6 text-amber-700">
+                                        Please ensure that your submitted reference number is accurate
+                                        and matches your payment transaction. Invalid or incorrect
+                                        reference details may cause your order to be rejected during
+                                        the verification process.
+                                    </p>
+                                </div>
+
+                                <div className="mt-6 rounded-2xl bg-slate-900 px-4 py-3 text-center text-white">
+                                    <p className="text-sm font-medium">
+                                        Redirecting back to home page in{' '}
+                                        <span className="font-bold text-green-400">{countdown}</span>{' '}
+                                        second{countdown === 1 ? '' : 's'}...
+                                    </p>
+                                </div>
+
+                                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                                    <Button
+                                        type="button"
+                                        onClick={() => router.visit('/dashboard')}
+                                        className="flex-1 rounded-2xl bg-slate-950 px-5 py-3 text-white hover:bg-slate-800"
+                                    >
+                                        <House className="mr-2 h-4 w-4" />
+                                        Back to Home Page
+                                    </Button>
+                                </div>
+                            </>
+                        )}
+
+                        {submitModalState === 'error' && (
+                            <>
+                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-50">
+                                    <XCircle className="h-11 w-11 text-red-600" />
+                                </div>
+
+                                <div className="mt-5 text-center">
+                                    <h2 className="text-2xl font-bold text-slate-900">
+                                        Submission failed
+                                    </h2>
+                                    <p className="mt-3 text-sm leading-7 text-slate-500">
+                                        Please review the form fields and try again.
+                                    </p>
+                                </div>
+
+                                <div className="mt-6">
+                                    <Button
+                                        type="button"
+                                        onClick={closeModal}
+                                        className="w-full rounded-2xl px-5 py-3"
+                                    >
+                                        Close
+                                    </Button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }

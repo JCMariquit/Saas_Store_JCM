@@ -1,5 +1,9 @@
 <?php
 
+// ==============================================
+// FILE: app/Http/Controllers/OrderController.php
+// ==============================================
+
 namespace App\Http\Controllers;
 
 use App\Models\Order;
@@ -103,6 +107,11 @@ class OrderController extends Controller
         }
 
         $amount = $plan?->price ?? 0;
+
+        if ($billingType === 'yearly' && $amount > 0) {
+            $amount = $amount * 12;
+        }
+
         $durationDays = match ($billingType) {
             'monthly' => 30,
             'yearly' => 365,
@@ -115,6 +124,8 @@ class OrderController extends Controller
             $paymentProofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
         }
 
+        $order = null;
+
         DB::transaction(function () use (
             $product,
             $plan,
@@ -122,7 +133,8 @@ class OrderController extends Controller
             $amount,
             $durationDays,
             $validated,
-            $paymentProofPath
+            $paymentProofPath,
+            &$order
         ) {
             $order = Order::create([
                 'order_code' => $this->generateOrderCode(),
@@ -151,9 +163,17 @@ class OrderController extends Controller
             ]);
         });
 
-        return redirect()
-            ->route('dashboard')
-            ->with('success', 'Your order has been submitted successfully. Redirecting...');
+        return redirect()->route('orders.create', [
+            'product_id' => $product->id,
+            'plan_id' => $plan?->id,
+        ])->with([
+            'order_success' => true,
+            'success_title' => 'Order submitted successfully',
+            'success_message' => 'Your order has been submitted successfully. Please make sure your reference number is correct and matches your payment transaction. Incorrect or unmatched payment details may result in rejection during verification.',
+            'redirect_to' => route('home'),
+            'redirect_after' => 5,
+            'order_code' => $order?->order_code,
+        ]);
     }
 
     private function generateOrderCode(): string

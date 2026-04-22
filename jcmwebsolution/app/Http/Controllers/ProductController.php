@@ -24,6 +24,19 @@ class ProductController extends Controller
             },
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | LOCAL ADMIN STORAGE BASE URL
+        |--------------------------------------------------------------------------
+        | Habang local pa, dito kukunin ng store project ang images mula sa admin.
+        | Palitan mo later pag naka-live na.
+        |
+        | Example local:
+        | http://localhost/jcmwebsolution/jcm_admin/public/storage
+        |
+        */
+        $mediaBaseUrl = 'https://jcmwebsolution.com/storage';
+
         $pricingTypeLabel = match ($product->pricing_type) {
             'plan' => 'Plan Based',
             'custom' => 'Custom Pricing',
@@ -53,11 +66,13 @@ class ProductController extends Controller
             ];
         })->values();
 
-        $images = $product->images->map(function ($image) {
+        $images = $product->images->map(function ($image) use ($mediaBaseUrl) {
             return [
                 'id' => $image->id,
                 'image_path' => $image->image_path,
-                'image_url' => $image->image_path ? asset('storage/' . $image->image_path) : null,
+                'image_url' => $image->image_path
+                    ? rtrim($mediaBaseUrl, '/') . '/' . ltrim($image->image_path, '/')
+                    : null,
                 'alt_text' => $image->alt_text,
                 'sort_order' => $image->sort_order,
             ];
@@ -83,7 +98,7 @@ class ProductController extends Controller
         })->values();
 
         $thumbnailUrl = $product->thumbnail
-            ? asset('storage/' . $product->thumbnail)
+            ? rtrim($mediaBaseUrl, '/') . '/' . ltrim($product->thumbnail, '/')
             : ($images->first()['image_url'] ?? null);
 
         $startingPrice = $product->plans->count() > 0

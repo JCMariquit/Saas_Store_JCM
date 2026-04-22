@@ -6,12 +6,12 @@ import {
     Boxes,
     CheckCircle2,
     ClipboardList,
-    Layers3,
-    Package,
+    ImageIcon,
+    ScrollText,
     ShoppingCart,
     Sparkles,
 } from 'lucide-react';
-
+import { useMemo, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -26,18 +26,45 @@ type PlanItem = {
     features: string[];
 };
 
+type ProductImageItem = {
+    id: number;
+    image_path: string | null;
+    image_url: string | null;
+    alt_text: string | null;
+    sort_order: number;
+};
+
+type ProductFeatureItem = {
+    id: number;
+    title: string;
+    description: string | null;
+    icon: string | null;
+    sort_order: number;
+};
+
+type ProductOverviewItem = {
+    id: number;
+    title: string;
+    content: string;
+    sort_order: number;
+};
+
 type ProductDetail = {
     id: number;
     name: string;
     code: string | null;
     description: string | null;
+    thumbnail: string | null;
+    thumbnail_url: string | null;
     pricing_type: string;
     pricing_type_label: string;
     status: string;
     status_label: string;
     starting_price: number | null;
     starting_price_label: string;
-    features: string[];
+    images: ProductImageItem[];
+    features: ProductFeatureItem[];
+    overviews: ProductOverviewItem[];
     plans: PlanItem[];
 };
 
@@ -56,6 +83,45 @@ export default function Show({ product }: PageProps) {
             href: `/products/${product.id}`,
         },
     ];
+
+    const galleryImages = useMemo(() => {
+        const images = product.images?.filter((item) => item.image_url) ?? [];
+
+        if (images.length > 0) {
+            return images;
+        }
+
+        if (product.thumbnail_url) {
+            return [
+                {
+                    id: 0,
+                    image_path: product.thumbnail,
+                    image_url: product.thumbnail_url,
+                    alt_text: product.name,
+                    sort_order: 0,
+                },
+            ];
+        }
+
+        return [];
+    }, [product.images, product.thumbnail, product.thumbnail_url, product.name]);
+
+    const [activeIndex, setActiveIndex] = useState(0);
+
+    const safeActiveIndex = activeIndex >= galleryImages.length ? 0 : activeIndex;
+
+    const activeImage =
+        galleryImages[safeActiveIndex]?.image_url ?? product.thumbnail_url ?? null;
+
+    const showPrevImage = () => {
+        if (galleryImages.length <= 1) return;
+        setActiveIndex((prev) => (prev === 0 ? galleryImages.length - 1 : prev - 1));
+    };
+
+    const showNextImage = () => {
+        if (galleryImages.length <= 1) return;
+        setActiveIndex((prev) => (prev === galleryImages.length - 1 ? 0 : prev + 1));
+    };
 
     const pricingTypeBadgeClass = (pricingType: string) => {
         switch (pricingType) {
@@ -98,20 +164,11 @@ export default function Show({ product }: PageProps) {
         <AppLayout breadcrumbs={breadcrumbs} fullWidth>
             <Head title={product.name} />
 
-            <div className="min-h-screen space-y-6 bg-[#f6f8fb] pb-10">
-                <section className="relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen overflow-x-hidden border-b border-slate-800 bg-gradient-to-r from-slate-900 to-slate-800 text-white">
-                    <div className="mx-auto max-w-7xl px-5 py-8 md:px-7 md:py-10">
-                        <button
-                            type="button"
-                            onClick={() => router.get('/dashboard')}
-                            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                            Back to Store
-                        </button>
-
-                        <div className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-                            <div>
+            <div className="min-h-screen bg-[#f6f8fb] pb-10">
+                <section className="relative mb-10 left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen overflow-x-hidden border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 text-white">
+                    <div className="mx-auto max-w-7xl px-2 py-4 md:px-3 md:py-5">
+                        <div className="mt-6 mb-0 grid gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
+                            <div className="pt-2">
                                 <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-100">
                                     <Sparkles className="h-3.5 w-3.5" />
                                     Product Details
@@ -159,26 +216,28 @@ export default function Show({ product }: PageProps) {
                                         </p>
                                     </div>
 
-                                    <div className="h-10 w-px bg-white/10" />
+                                    <div className="hidden h-10 w-px bg-white/10 md:block" />
 
-                                    <div className="text-sm text-slate-300">
-                                        <p>✔ Ready for product detail presentation</p>
-                                        <p>✔ Can connect to ordering flow next</p>
-                                        <p>✔ Good for SaaS-style storefront</p>
+                                    <div className="space-y-1 text-sm text-slate-300">
+                                        <p>✔ Professional product presentation</p>
+                                        <p>✔ Structured images, features, and overview content</p>
+                                        <p>✔ Ready for SaaS-style ordering flow</p>
                                     </div>
                                 </div>
 
                                 <div className="mt-6 flex flex-wrap gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const el = document.getElementById('plans-section');
-                                            el?.scrollIntoView({ behavior: 'smooth' });
-                                        }}
-                                        className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-md transition hover:bg-slate-100"
-                                    >
-                                        View Plans
-                                    </button>
+                                    {product.plans.length > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const el = document.getElementById('plans-section');
+                                                el?.scrollIntoView({ behavior: 'smooth' });
+                                            }}
+                                            className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-md transition hover:bg-slate-100"
+                                        >
+                                            View Plans
+                                        </button>
+                                    )}
 
                                     <button
                                         type="button"
@@ -194,41 +253,70 @@ export default function Show({ product }: PageProps) {
                             </div>
 
                             <div className="rounded-[28px] border border-white/10 bg-white/5 p-4 shadow-lg backdrop-blur-sm">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                                            Preview Card
-                                        </p>
-                                        <h3 className="mt-1.5 text-lg font-bold text-white">
-                                            {product.name}
-                                        </h3>
+                                <div className="mt-4">
+                                    <div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-white/5">
+                                        {activeImage ? (
+                                            <img
+                                                src={activeImage}
+                                                alt={galleryImages[safeActiveIndex]?.alt_text || product.name}
+                                                className="h-[360px] w-full object-cover md:h-[420px]"
+                                            />
+                                        ) : (
+                                            <div className="flex h-[360px] items-center justify-center bg-gradient-to-br from-sky-500/20 via-blue-400/10 to-indigo-500/20 md:h-[420px]">
+                                                <div className="text-center text-slate-300">
+                                                    <ImageIcon className="mx-auto h-10 w-10 opacity-80" />
+                                                    <p className="mt-3 text-sm">No product image available</p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {galleryImages.length > 1 && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={showPrevImage}
+                                                    className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full border border-white/20 bg-slate-900/70 p-2 text-white backdrop-blur transition hover:bg-slate-800"
+                                                >
+                                                    <ArrowLeft className="h-4 w-4" />
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={showNextImage}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full border border-white/20 bg-slate-900/70 p-2 text-white backdrop-blur transition hover:bg-slate-800"
+                                                >
+                                                    <ArrowRight className="h-4 w-4" />
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
 
-                                    <div className="rounded-2xl bg-white/10 p-3">
-                                        <Package className="h-5 w-5 text-white" />
-                                    </div>
-                                </div>
+                                    {galleryImages.length > 1 && (
+                                        <div className="mt-3 flex items-center justify-center gap-2 overflow-x-auto pb-1">
+                                            {galleryImages.map((image, index) => {
+                                                const isActive = index === safeActiveIndex;
 
-                                <div className="mt-4 h-[220px] rounded-[22px] border border-white/10 bg-gradient-to-br from-sky-500/20 via-blue-400/10 to-indigo-500/20" />
-
-                                <div className="mt-4 grid grid-cols-2 gap-3">
-                                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                        <p className="text-xs uppercase tracking-wide text-slate-400">
-                                            Pricing Type
-                                        </p>
-                                        <p className="mt-2 text-sm font-semibold text-white">
-                                            {product.pricing_type_label}
-                                        </p>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                                        <p className="text-xs uppercase tracking-wide text-slate-400">
-                                            Plans Available
-                                        </p>
-                                        <p className="mt-2 text-sm font-semibold text-white">
-                                            {product.plans.length}
-                                        </p>
-                                    </div>
+                                                return (
+                                                    <button
+                                                        key={image.id}
+                                                        type="button"
+                                                        onClick={() => setActiveIndex(index)}
+                                                        className={`shrink-0 overflow-hidden rounded-xl border transition ${
+                                                            isActive
+                                                                ? 'border-white ring-2 ring-white/25'
+                                                                : 'border-white/10 opacity-75 hover:opacity-100'
+                                                        }`}
+                                                    >
+                                                        <img
+                                                            src={image.image_url ?? ''}
+                                                            alt={image.alt_text || product.name}
+                                                            className="h-12 w-12 object-cover md:h-14 md:w-14"
+                                                        />
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -238,27 +326,27 @@ export default function Show({ product }: PageProps) {
                 <div className="mx-auto max-w-7xl space-y-6 px-4 md:px-6">
                     <section className="grid gap-6 lg:grid-cols-[1fr_360px]">
                         <div className="space-y-6">
-                            <section
-                                id="plans-section"
-                                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-                            >
-                                <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-                                    <div>
-                                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-600">
-                                            Plans
-                                        </p>
-                                        <h2 className="mt-1 text-lg font-bold text-slate-900">
-                                            Available pricing plans
-                                        </h2>
-                                        <p className="mt-1 text-sm text-slate-500">
-                                            Choose a package before placing an order.
-                                        </p>
+                            {product.plans.length > 0 && (
+                                <section
+                                    id="plans-section"
+                                    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                                >
+                                    <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                                        <div>
+                                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-600">
+                                                Plans
+                                            </p>
+                                            <h2 className="mt-1 text-lg font-bold text-slate-900">
+                                                Available pricing plans
+                                            </h2>
+                                            <p className="mt-1 text-sm text-slate-500">
+                                                Choose a package before placing an order.
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                                    {product.plans.length > 0 ? (
-                                        product.plans.map((plan) => (
+                                    <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                        {product.plans.map((plan) => (
                                             <div
                                                 key={plan.id}
                                                 className="rounded-2xl border border-slate-200 bg-[#fdfefe] p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
@@ -294,6 +382,20 @@ export default function Show({ product }: PageProps) {
                                                     </p>
                                                 </div>
 
+                                                {plan.features.length > 0 && (
+                                                    <div className="mt-4 space-y-2">
+                                                        {plan.features.slice(0, 4).map((feature, index) => (
+                                                            <div
+                                                                key={`${plan.id}-feature-${index}`}
+                                                                className="flex items-start gap-2 text-sm text-slate-600"
+                                                            >
+                                                                <CheckCircle2 className="mt-0.5 h-4 w-4 text-green-600" />
+                                                                <span>{feature}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
                                                 <button
                                                     type="button"
                                                     onClick={() =>
@@ -307,25 +409,12 @@ export default function Show({ product }: PageProps) {
                                                     <ArrowRight className="ml-2 h-4 w-4" />
                                                 </button>
                                             </div>
-                                        ))
-                                    ) : (
-                                        <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center">
-                                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
-                                                <Layers3 className="h-5 w-5 text-slate-500" />
-                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
 
-                                            <h3 className="mt-4 text-base font-bold text-slate-900">
-                                                No plans found
-                                            </h3>
-                                            <p className="mt-2 text-sm text-slate-500">
-                                                Add active plans for this product so customers can choose a package.
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </section>
-
-                            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                                 <div className="flex items-center gap-3">
                                     <div className="rounded-2xl bg-slate-900 p-2.5 text-white">
                                         <Boxes className="h-5 w-5" />
@@ -336,18 +425,18 @@ export default function Show({ product }: PageProps) {
                                             About this product
                                         </h2>
                                         <p className="text-sm text-slate-500">
-                                            Product overview and what clients can expect.
+                                            Quick overview and what clients can expect.
                                         </p>
                                     </div>
                                 </div>
 
                                 <p className="mt-5 text-sm leading-7 text-slate-600 md:text-[15px]">
                                     {product.description ||
-                                        'This product is designed to help businesses digitize operations with a practical and scalable web-based solution. You can add more detailed business context, workflow explanation, and selling points here later.'}
+                                        'This product is designed to help businesses digitize operations with a practical and scalable web-based solution.'}
                                 </p>
-                            </div>
+                            </section>
 
-                            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                                 <div className="flex items-center gap-3">
                                     <div className="rounded-2xl bg-blue-600 p-2.5 text-white">
                                         <ClipboardList className="h-5 w-5" />
@@ -365,23 +454,68 @@ export default function Show({ product }: PageProps) {
 
                                 {product.features.length > 0 ? (
                                     <div className="mt-5 grid gap-3 md:grid-cols-2">
-                                        {product.features.map((feature, index) => (
+                                        {product.features.map((feature) => (
                                             <div
-                                                key={`${feature}-${index}`}
-                                                className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                                                key={feature.id}
+                                                className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                                             >
-                                                <CheckCircle2 className="mt-0.5 h-5 w-5 text-green-600" />
-                                                <p className="text-sm leading-6 text-slate-700">{feature}</p>
+                                                <div className="flex items-start gap-3">
+                                                    <CheckCircle2 className="mt-0.5 h-5 w-5 text-green-600" />
+                                                    <div>
+                                                        <p className="text-sm font-semibold text-slate-800">
+                                                            {feature.title}
+                                                        </p>
+                                                        {feature.description && (
+                                                            <p className="mt-1 text-xs leading-6 text-slate-500">
+                                                                {feature.description}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
                                     <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">
-                                        No features added yet. You can later store features in the product table
-                                        and display them here automatically.
+                                        No features added yet.
                                     </div>
                                 )}
-                            </div>
+                            </section>
+
+                            {product.overviews.length > 0 && (
+                                <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                        <div className="rounded-2xl bg-indigo-600 p-2.5 text-white">
+                                            <ScrollText className="h-5 w-5" />
+                                        </div>
+
+                                        <div>
+                                            <h2 className="text-xl font-bold text-slate-900">
+                                                Detailed overview
+                                            </h2>
+                                            <p className="text-sm text-slate-500">
+                                                Structured sections that explain the product in more detail.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 space-y-6">
+                                        {product.overviews.map((overview) => (
+                                            <div
+                                                key={overview.id}
+                                                className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
+                                            >
+                                                <h3 className="text-lg font-bold text-slate-900">
+                                                    {overview.title}
+                                                </h3>
+                                                <p className="mt-2 whitespace-pre-line text-sm leading-7 text-slate-600">
+                                                    {overview.content}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
                         </div>
 
                         <aside id="order-section" className="lg:sticky lg:top-6 lg:self-start">

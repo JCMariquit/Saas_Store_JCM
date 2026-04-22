@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Bell, LayoutGrid, Menu, MessageCircle, ShoppingCart } from 'lucide-react';
+import { Bell, ChevronLeft, Menu, MessageCircle, ShoppingCart } from 'lucide-react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -8,12 +8,6 @@ import {
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-    NavigationMenu,
-    NavigationMenuItem,
-    NavigationMenuList,
-    navigationMenuTriggerStyle,
-} from '@/components/ui/navigation-menu';
 import {
     Sheet,
     SheetContent,
@@ -28,25 +22,14 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { UserMenuContent } from '@/components/user-menu-content';
-import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
-import { cn } from '@/lib/utils';
-import { dashboard } from '@/routes';
-import type { BreadcrumbItem, NavItem, SharedData } from '@/types';
+import type { BreadcrumbItem, SharedData } from '@/types';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
 
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
 };
-
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
 
 const headerActionItems = [
     {
@@ -66,14 +49,13 @@ const headerActionItems = [
     },
 ];
 
-const activeItemStyles =
-    'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
-
 export function AppHeader({ breadcrumbs = [] }: Props) {
     const page = usePage<SharedData>();
     const { auth } = page.props;
     const getInitials = useInitials();
-    const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+
+    const previousBreadcrumb =
+        breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 2] : null;
 
     return (
         <>
@@ -90,6 +72,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     <Menu className="h-5 w-5" />
                                 </Button>
                             </SheetTrigger>
+
                             <SheetContent
                                 side="left"
                                 className="flex h-full w-64 flex-col items-stretch justify-between bg-sidebar"
@@ -103,32 +86,50 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 </SheetHeader>
 
                                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
-                                    <div className="flex h-full flex-col justify-between text-sm">
-                                        <div className="flex flex-col space-y-4">
-                                            {mainNavItems.map((item) => (
-                                                <Link
-                                                    key={item.title}
-                                                    href={item.href}
-                                                    className="flex items-center space-x-2 font-medium"
-                                                >
-                                                    {item.icon && <item.icon className="h-5 w-5" />}
-                                                    <span>{item.title}</span>
-                                                </Link>
-                                            ))}
-                                        </div>
+                                    <div className="flex flex-col space-y-3 text-sm">
+                                        {breadcrumbs.length > 0 && (
+                                            <div className="rounded-xl border border-sidebar-border/70 px-3 py-3">
+                                                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
+                                                    Current Path
+                                                </p>
 
-                                        <div className="flex flex-col space-y-4">
-                                            {headerActionItems.map((item) => (
-                                                <a
-                                                    key={item.title}
-                                                    href={item.href}
-                                                    className="flex items-center space-x-2 font-medium"
-                                                >
-                                                    <item.icon className="h-5 w-5" />
-                                                    <span>{item.title}</span>
-                                                </a>
-                                            ))}
-                                        </div>
+                                                <div className="space-y-2">
+                                                    {breadcrumbs.map((item, index) => {
+                                                        const isLast = index === breadcrumbs.length - 1;
+
+                                                        return isLast ? (
+                                                            <div
+                                                                key={`${item.title}-${index}`}
+                                                                className="font-medium text-foreground"
+                                                            >
+                                                                {item.title}
+                                                            </div>
+                                                        ) : (
+                                                            <Link
+                                                                key={`${item.title}-${index}`}
+                                                                href={item.href}
+                                                                className="block text-neutral-600 transition hover:text-foreground"
+                                                            >
+                                                                {item.title}
+                                                            </Link>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="mt-auto flex flex-col space-y-4 text-sm">
+                                        {headerActionItems.map((item) => (
+                                            <a
+                                                key={item.title}
+                                                href={item.href}
+                                                className="flex items-center space-x-2 font-medium"
+                                            >
+                                                <item.icon className="h-5 w-5" />
+                                                <span>{item.title}</span>
+                                            </a>
+                                        ))}
                                     </div>
                                 </div>
                             </SheetContent>
@@ -136,42 +137,31 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
 
                     <Link
-                        href={dashboard()}
+                        href={breadcrumbs[0]?.href || '/dashboard'}
                         prefetch
                         className="flex items-center space-x-2"
                     >
                         <AppLogo />
                     </Link>
 
-                    <div className="ml-6 hidden h-full items-center space-x-6 lg:flex">
-                        <NavigationMenu className="flex h-full items-stretch">
-                            <NavigationMenuList className="flex h-full items-stretch space-x-2">
-                                {mainNavItems.map((item, index) => (
-                                    <NavigationMenuItem
-                                        key={index}
-                                        className="relative flex h-full items-center"
+                    <div className="ml-4 hidden min-w-0 flex-1 items-center lg:flex">
+                        {breadcrumbs.length > 1 ? (
+                            <div className="flex min-w-0 items-center gap-3">
+                                {previousBreadcrumb && (
+                                    <Link
+                                        href={previousBreadcrumb.href}
+                                        className="inline-flex items-center gap-1 rounded-md border border-sidebar-border/70 px-2.5 py-1.5 text-sm font-medium text-neutral-600 transition hover:bg-accent hover:text-foreground"
                                     >
-                                        <Link
-                                            href={item.href}
-                                            className={cn(
-                                                navigationMenuTriggerStyle(),
-                                                whenCurrentUrl(item.href, activeItemStyles),
-                                                'h-9 cursor-pointer px-3',
-                                            )}
-                                        >
-                                            {item.icon && (
-                                                <item.icon className="mr-2 h-4 w-4" />
-                                            )}
-                                            {item.title}
-                                        </Link>
+                                        <ChevronLeft className="h-4 w-4" />
+                                        Back
+                                    </Link>
+                                )}
 
-                                        {isCurrentUrl(item.href) && (
-                                            <div className="absolute bottom-0 left-0 h-0.5 w-full translate-y-px bg-black dark:bg-white"></div>
-                                        )}
-                                    </NavigationMenuItem>
-                                ))}
-                            </NavigationMenuList>
-                        </NavigationMenu>
+                                <div className="min-w-0">
+                                    <Breadcrumbs breadcrumbs={breadcrumbs} />
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
 
                     <div className="ml-auto flex items-center space-x-2">
@@ -221,14 +211,6 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
                 </div>
             </div>
-
-            {breadcrumbs.length > 1 && (
-                <div className="flex w-full border-b border-sidebar-border/70">
-                    <div className="mx-auto flex h-12 w-full items-center justify-start px-4 text-neutral-500 md:max-w-7xl">
-                        <Breadcrumbs breadcrumbs={breadcrumbs} />
-                    </div>
-                </div>
-            )}
         </>
     );
 }

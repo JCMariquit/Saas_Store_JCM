@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ProductController extends Controller
@@ -11,9 +10,18 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load([
+            'images' => function ($query) {
+                $query->orderBy('sort_order');
+            },
+            'features' => function ($query) {
+                $query->orderBy('sort_order');
+            },
+            'overviews' => function ($query) {
+                $query->orderBy('sort_order');
+            },
             'plans' => function ($query) {
-                $query->orderBy('price');
-            }
+                $query->where('status', 'active')->orderBy('price');
+            },
         ]);
 
         $pricingTypeLabel = match ($product->pricing_type) {
@@ -36,34 +44,77 @@ class ProductController extends Controller
                 'name' => $plan->name,
                 'description' => $plan->description,
                 'price' => $plan->price,
-                'price_label' => '₱' . number_format((float) $plan->price, 2),
+                'price_label' => $plan->price !== null
+                    ? '₱' . number_format((float) $plan->price, 2)
+                    : 'Custom Quote',
                 'billing_cycle' => $plan->billing_cycle,
                 'status' => $plan->status,
-                'features' => $this->normalizeFeatures($plan->features ?? null),
+                'features' => $this->normalizePlanFeatures($plan->features ?? null),
             ];
         })->values();
+
+        $images = $product->images->map(function ($image) {
+            return [
+                'id' => $image->id,
+                'image_path' => $image->image_path,
+                'image_url' => $image->image_path ? asset('storage/' . $image->image_path) : null,
+                'alt_text' => $image->alt_text,
+                'sort_order' => $image->sort_order,
+            ];
+        })->values();
+
+        $features = $product->features->map(function ($feature) {
+            return [
+                'id' => $feature->id,
+                'title' => $feature->feature_title,
+                'description' => $feature->feature_description,
+                'icon' => $feature->icon,
+                'sort_order' => $feature->sort_order,
+            ];
+        })->values();
+
+        $overviews = $product->overviews->map(function ($overview) {
+            return [
+                'id' => $overview->id,
+                'title' => $overview->title,
+                'content' => $overview->content,
+                'sort_order' => $overview->sort_order,
+            ];
+        })->values();
+
+        $thumbnailUrl = $product->thumbnail
+            ? asset('storage/' . $product->thumbnail)
+            : ($images->first()['image_url'] ?? null);
+
+        $startingPrice = $product->plans->count() > 0
+            ? $product->plans->min('price')
+            : $product->price;
 
         return Inertia::render('products/show', [
             'product' => [
                 'id' => $product->id,
                 'name' => $product->name,
-                'code' => $product->code ?? null,
+                'code' => $product->product_code ?? null,
                 'description' => $product->description,
+                'thumbnail' => $product->thumbnail,
+                'thumbnail_url' => $thumbnailUrl,
                 'pricing_type' => $product->pricing_type,
                 'pricing_type_label' => $pricingTypeLabel,
                 'status' => $product->status,
                 'status_label' => $statusLabel,
-                'starting_price' => $product->starting_price,
-                'starting_price_label' => $product->starting_price !== null
-                    ? '₱' . number_format((float) $product->starting_price, 2)
+                'starting_price' => $startingPrice,
+                'starting_price_label' => $startingPrice !== null
+                    ? '₱' . number_format((float) $startingPrice, 2)
                     : 'Custom Quote',
-                'features' => $this->normalizeFeatures($product->features ?? null),
+                'images' => $images,
+                'features' => $features,
+                'overviews' => $overviews,
                 'plans' => $plans,
             ],
         ]);
     }
 
-    private function normalizeFeatures($features): array
+    private function normalizePlanFeatures($features): array
     {
         if (is_array($features)) {
             return array_values(array_filter(array_map(

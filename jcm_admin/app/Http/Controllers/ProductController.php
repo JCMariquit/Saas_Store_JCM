@@ -16,6 +16,8 @@ use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
+    private string $mediaBaseUrl = 'https://jcmwebsolution.com/storage';
+
     public function index(Request $request): Response
     {
         $search = trim((string) $request->query('search', ''));
@@ -39,6 +41,7 @@ class ProductController extends Controller
                 'name' => $product->name,
                 'description' => $product->description,
                 'thumbnail' => $product->thumbnail,
+                'thumbnail_url' => $this->buildMediaUrl($product->thumbnail),
                 'price' => $product->price,
                 'pricing_type' => $product->pricing_type,
                 'status' => $product->status,
@@ -194,6 +197,19 @@ class ProductController extends Controller
         return redirect()
             ->route('admin.products.index')
             ->with('success', 'Product deleted successfully.');
+    }
+
+    private function buildMediaUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        if (Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
+        }
+
+        return rtrim($this->mediaBaseUrl, '/') . '/' . ltrim($path, '/');
     }
 
     private function generateProductCode(): string

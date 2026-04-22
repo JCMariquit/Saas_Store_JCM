@@ -264,7 +264,7 @@ export default function UsersIndex() {
                 <div className="space-y-6">
                     <PageHero
                         title="Manage Users"
-                        description="Create, update, and manage administrator and client accounts with a cleaner and more polished control panel experience."
+                        description="Create, update, and manage administrator and client accounts"
                         actionLabel="Create User"
                         onAction={openCreate}
                         actionIcon={<UserPlus className="h-4 w-4" />}

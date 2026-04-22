@@ -77,8 +77,27 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/builder', [WebsiteBuilderController::class, 'index'])->name('builder.index');
             Route::get('/builder/{product}', [WebsiteBuilderController::class, 'show'])->name('builder.show');
         });
+
+        Route::prefix('products')->as('products.')->group(function () {
+            Route::get('/', [ProductController::class, 'index'])->name('index');
+            Route::get('/create', [ProductController::class, 'create'])->name('create');
+            Route::post('/', [ProductController::class, 'store'])->name('store');
+            Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('edit');
+            Route::put('/{product}', [ProductController::class, 'update'])->name('update');
+            Route::delete('/{product}', [ProductController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('services')->as('services.')->group(function () {
+            Route::get('/', [ServiceController::class, 'index'])->name('index');
+            Route::get('/create', [ServiceController::class, 'create'])->name('create');
+            Route::post('/', [ServiceController::class, 'store'])->name('store');
+            Route::get('/{service}/edit', [ServiceController::class, 'edit'])->name('edit');
+            Route::put('/{service}', [ServiceController::class, 'update'])->name('update');
+            Route::delete('/{service}', [ServiceController::class, 'destroy'])->name('destroy');
+        });
     });
 });
+
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

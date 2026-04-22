@@ -3,8 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductFeature;
+use App\Models\ProductImage;
+use App\Models\ProductOverview;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Str;
@@ -33,6 +38,7 @@ class ProductController extends Controller
                 'product_code' => $product->product_code,
                 'name' => $product->name,
                 'description' => $product->description,
+                'thumbnail' => $product->thumbnail,
                 'price' => $product->price,
                 'pricing_type' => $product->pricing_type,
                 'status' => $product->status,
@@ -52,6 +58,11 @@ class ProductController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('products/create');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -60,20 +71,79 @@ class ProductController extends Controller
             'pricing_type' => ['required', 'in:plan,custom'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'status' => ['required', 'in:active,inactive'],
+
+            'features' => ['nullable', 'array'],
+            'features.*.title' => ['required_with:features', 'string'],
+
+            'overviews' => ['nullable', 'array'],
+            'overviews.*.title' => ['required_with:overviews', 'string'],
+            'overviews.*.content' => ['required_with:overviews', 'string'],
+
+            'images' => ['nullable', 'array'],
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
-        $price = $validated['pricing_type'] === 'custom'
-            ? ($validated['price'] ?? null)
-            : null;
+        DB::transaction(function () use ($validated, $request) {
+            $price = $validated['pricing_type'] === 'custom'
+                ? ($validated['price'] ?? null)
+                : null;
 
-        Product::create([
-            'product_code' => $this->generateProductCode(),
-            'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
-            'pricing_type' => $validated['pricing_type'],
-            'price' => $price,
-            'status' => $validated['status'],
-        ]);
+            $thumbnailPath = null;
+
+            $product = Product::create([
+                'product_code' => $this->generateProductCode(),
+                'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
+                'thumbnail' => null,
+                'pricing_type' => $validated['pricing_type'],
+                'price' => $price,
+                'status' => $validated['status'],
+            ]);
+
+            if (!empty($validated['features'])) {
+                foreach ($validated['features'] as $index => $feature) {
+                    ProductFeature::create([
+                        'product_id' => $product->id,
+                        'feature_title' => $feature['title'],
+                        'sort_order' => $index,
+                    ]);
+                }
+            }
+
+            if (!empty($validated['overviews'])) {
+                foreach ($validated['overviews'] as $index => $overview) {
+                    ProductOverview::create([
+                        'product_id' => $product->id,
+                        'title' => $overview['title'],
+                        'content' => $overview['content'],
+                        'sort_order' => $index,
+                    ]);
+                }
+            }
+
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $index => $imageFile) {
+                    $path = $imageFile->store('products', 'public');
+
+                    if ($index === 0) {
+                        $thumbnailPath = $path;
+                    }
+
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_path' => $path,
+                        'alt_text' => $validated['name'] . ' image ' . ($index + 1),
+                        'sort_order' => $index,
+                    ]);
+                }
+            }
+
+            if ($thumbnailPath) {
+                $product->update([
+                    'thumbnail' => $thumbnailPath,
+                ]);
+            }
+        });
 
         return redirect()
             ->route('admin.products.index')
@@ -109,6 +179,16 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
+        if ($product->thumbnail && Storage::disk('public')->exists($product->thumbnail)) {
+            Storage::disk('public')->delete($product->thumbnail);
+        }
+
+        foreach ($product->images as $image) {
+            if ($image->image_path && Storage::disk('public')->exists($image->image_path)) {
+                Storage::disk('public')->delete($image->image_path);
+            }
+        }
+
         $product->delete();
 
         return redirect()

@@ -71,19 +71,21 @@ Route::get('/dashboard', function () {
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/my-subscription', [MySubscriptionController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('my-subscription');
+    Route::get('/my-subscription', [MySubscriptionController::class, 'index'])
+        ->middleware(['auth', 'verified'])
+        ->name('my-subscription');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/products/{product}', [ProductController::class, 'show'])
-        ->name('products.show');
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::get('/products/{product}', [ProductController::class, 'show'])
+            ->name('products.show');
 
-    Route::get('/orders/create', [OrderController::class, 'create'])
-        ->name('orders.create');
+        Route::get('/orders/create', [OrderController::class, 'create'])
+            ->name('orders.create');
 
-    Route::post('/orders', [OrderController::class, 'store'])
-        ->name('orders.store');
+        Route::post('/orders', [OrderController::class, 'store'])
+            ->name('orders.store');
+
+    
 });
 
 require __DIR__ . '/settings.php';

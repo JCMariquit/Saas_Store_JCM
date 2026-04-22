@@ -17,6 +17,7 @@ import { TableActionButtons } from '@/components/jcm-ui/table-action-buttons';
 import { FormModal } from '@/components/jcm-ui/form-modal';
 import { ConfirmModal } from '@/components/jcm-ui/confirm-modal';
 import { DataTable } from '@/components/jcm-ui/data-table';
+
 type ProductRow = {
     id: number;
     product_code: string;
@@ -60,12 +61,33 @@ type PageProps = {
     };
 };
 
+type ProductFeatureForm = {
+    title: string;
+};
+
+type ProductOverviewForm = {
+    title: string;
+    content: string;
+};
+
 type ProductForm = {
     name: string;
     description: string;
     price: number | '';
     pricing_type: 'plan' | 'custom';
     status: 'active' | 'inactive';
+    features: ProductFeatureForm[];
+    overviews: ProductOverviewForm[];
+};
+
+const emptyProductForm: ProductForm = {
+    name: '',
+    description: '',
+    price: '',
+    pricing_type: 'plan',
+    status: 'active',
+    features: [],
+    overviews: [],
 };
 
 const productTableColumns = [
@@ -80,27 +102,12 @@ export default function ProductsIndex() {
     const { products, filters, stats, flash } = props;
 
     const [search, setSearch] = useState(filters.search ?? '');
-    const [openCreateModal, setOpenCreateModal] = useState(false);
     const [openEditModal, setOpenEditModal] = useState(false);
     const [openDeleteModal, setOpenDeleteModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<ProductRow | null>(null);
     const [viewingProduct, setViewingProduct] = useState<ProductRow | null>(null);
 
-    const createForm = useForm<ProductForm>({
-        name: '',
-        description: '',
-        price: '',
-        pricing_type: 'plan',
-        status: 'active',
-    });
-
-    const editForm = useForm<ProductForm>({
-        name: '',
-        description: '',
-        price: '',
-        pricing_type: 'plan',
-        status: 'active',
-    });
+    const editForm = useForm<ProductForm>(emptyProductForm);
 
     useEffect(() => {
         const timeout = setTimeout(() => {
@@ -118,25 +125,6 @@ export default function ProductsIndex() {
         return () => clearTimeout(timeout);
     }, [search]);
 
-    const openCreate = () => {
-        createForm.reset();
-        createForm.clearErrors();
-        createForm.setData({
-            name: '',
-            description: '',
-            price: '',
-            pricing_type: 'plan',
-            status: 'active',
-        });
-        setOpenCreateModal(true);
-    };
-
-    const closeCreate = () => {
-        createForm.reset();
-        createForm.clearErrors();
-        setOpenCreateModal(false);
-    };
-
     const openEdit = (product: ProductRow) => {
         setSelectedProduct(product);
         editForm.clearErrors();
@@ -146,6 +134,8 @@ export default function ProductsIndex() {
             price: product.price === null ? '' : Number(product.price),
             pricing_type: product.pricing_type,
             status: product.status,
+            features: [],
+            overviews: [],
         });
         setOpenEditModal(true);
     };
@@ -173,17 +163,6 @@ export default function ProductsIndex() {
 
     const closeViewDrawer = () => {
         setViewingProduct(null);
-    };
-
-    const submitCreate: FormEventHandler = (e) => {
-        e.preventDefault();
-
-        createForm.post(route('admin.products.store'), {
-            preserveScroll: true,
-            onSuccess: () => {
-                closeCreate();
-            },
-        });
     };
 
     const submitEdit: FormEventHandler = (e) => {
@@ -251,20 +230,51 @@ export default function ProductsIndex() {
         return 'Pagination link';
     };
 
-    const handleCreatePricingTypeChange = (value: 'plan' | 'custom') => {
-        createForm.setData({
-            ...createForm.data,
-            pricing_type: value,
-            price: value === 'plan' ? '' : createForm.data.price,
-        });
-    };
-
     const handleEditPricingTypeChange = (value: 'plan' | 'custom') => {
         editForm.setData({
             ...editForm.data,
             pricing_type: value,
             price: value === 'plan' ? '' : editForm.data.price,
         });
+    };
+
+    const addEditFeature = () => {
+        editForm.setData('features', [...editForm.data.features, { title: '' }]);
+    };
+
+    const removeEditFeature = (index: number) => {
+        const updated = [...editForm.data.features];
+        updated.splice(index, 1);
+        editForm.setData('features', updated);
+    };
+
+    const updateEditFeature = (index: number, value: string) => {
+        const updated = [...editForm.data.features];
+        updated[index] = { ...updated[index], title: value };
+        editForm.setData('features', updated);
+    };
+
+    const addEditOverview = () => {
+        editForm.setData('overviews', [
+            ...editForm.data.overviews,
+            { title: '', content: '' },
+        ]);
+    };
+
+    const removeEditOverview = (index: number) => {
+        const updated = [...editForm.data.overviews];
+        updated.splice(index, 1);
+        editForm.setData('overviews', updated);
+    };
+
+    const updateEditOverview = (
+        index: number,
+        field: keyof ProductOverviewForm,
+        value: string,
+    ) => {
+        const updated = [...editForm.data.overviews];
+        updated[index] = { ...updated[index], [field]: value };
+        editForm.setData('overviews', updated);
     };
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -284,7 +294,7 @@ export default function ProductsIndex() {
                         title="Products"
                         description="Manage your SaaS products before assigning plans and subscriptions."
                         actionLabel="Create Product"
-                        onAction={openCreate}
+                        onAction={() => router.visit(route('admin.products.create'))}
                         actionIcon={<Plus className="h-4 w-4" />}
                     />
 
@@ -426,123 +436,6 @@ export default function ProductsIndex() {
             </div>
 
             <FormModal
-                open={openCreateModal}
-                title="Create Product"
-                description="Add a new product to your SaaS catalog."
-                onClose={closeCreate}
-                tone="blue"
-            >
-                <form onSubmit={submitCreate} className="space-y-5">
-                    <div className="grid gap-5">
-                        <div className="grid gap-2">
-                            <Label htmlFor="create_name">Product Name</Label>
-                            <Input
-                                id="create_name"
-                                value={createForm.data.name}
-                                onChange={(e) => createForm.setData('name', e.target.value)}
-                                placeholder="Enter product name"
-                                className="rounded-xl"
-                            />
-                            <InputError message={createForm.errors.name} />
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label htmlFor="create_description">Description</Label>
-                            <textarea
-                                id="create_description"
-                                name="description"
-                                title="Product description"
-                                placeholder="Enter product description"
-                                value={createForm.data.description}
-                                onChange={(e) => createForm.setData('description', e.target.value)}
-                                className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
-                            />
-                            <InputError message={createForm.errors.description} />
-                        </div>
-
-                        <div className="grid gap-2 md:max-w-xs">
-                            <Label htmlFor="create_pricing_type">Pricing Type</Label>
-                            <select
-                                id="create_pricing_type"
-                                value={createForm.data.pricing_type}
-                                onChange={(e) =>
-                                    handleCreatePricingTypeChange(
-                                        e.target.value as 'plan' | 'custom',
-                                    )
-                                }
-                                title="Select pricing type"
-                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                            >
-                                <option value="plan">Plan Based</option>
-                                <option value="custom">Custom Price</option>
-                            </select>
-                            <InputError message={createForm.errors.pricing_type} />
-                        </div>
-
-                        {createForm.data.pricing_type === 'custom' && (
-                            <div className="grid gap-2 md:max-w-xs">
-                                <Label htmlFor="create_price">Base Price</Label>
-                                <Input
-                                    id="create_price"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={createForm.data.price}
-                                    onChange={(e) =>
-                                        createForm.setData(
-                                            'price',
-                                            e.target.value === '' ? '' : Number(e.target.value),
-                                        )
-                                    }
-                                    placeholder="0.00"
-                                    className="rounded-xl"
-                                />
-                                <InputError message={createForm.errors.price} />
-                            </div>
-                        )}
-
-                        <div className="grid gap-2 md:max-w-xs">
-                            <Label htmlFor="create_status">Status</Label>
-                            <select
-                                id="create_status"
-                                value={createForm.data.status}
-                                onChange={(e) =>
-                                    createForm.setData(
-                                        'status',
-                                        e.target.value as 'active' | 'inactive',
-                                    )
-                                }
-                                title="Select product status"
-                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
-                            >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                            <InputError message={createForm.errors.status} />
-                        </div>
-                    </div>
-
-                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={closeCreate}
-                            className="rounded-xl"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={createForm.processing}
-                            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
-                        >
-                            {createForm.processing ? 'Creating...' : 'Create Product'}
-                        </Button>
-                    </div>
-                </form>
-            </FormModal>
-
-            <FormModal
                 open={openEditModal && !!selectedProduct}
                 title="Edit Product"
                 description="Update selected product information."
@@ -564,18 +457,176 @@ export default function ProductsIndex() {
 
                         <div className="grid gap-2">
                             <Label htmlFor={`edit_description_${selectedProduct?.id ?? 'product'}`}>
-                                Description
+                                Short Description
                             </Label>
                             <textarea
                                 id={`edit_description_${selectedProduct?.id ?? 'product'}`}
                                 name="description"
                                 title="Product description"
-                                placeholder="Enter product description"
+                                placeholder="Enter short product description"
                                 value={editForm.data.description}
                                 onChange={(e) => editForm.setData('description', e.target.value)}
                                 className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
                             />
                             <InputError message={editForm.errors.description} />
+                        </div>
+
+                        <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-900">Product Features</h3>
+                                    <p className="text-xs text-slate-500">
+                                        Manage short feature highlights for this product.
+                                    </p>
+                                </div>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={addEditFeature}
+                                    className="rounded-xl"
+                                >
+                                    Add Feature
+                                </Button>
+                            </div>
+
+                            {editForm.data.features.length === 0 ? (
+                                <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500">
+                                    No features added yet.
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {editForm.data.features.map((feature, index) => (
+                                        <div
+                                            key={`edit-feature-${index}`}
+                                            className="rounded-xl border border-slate-200 bg-white p-3"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className="flex-1">
+                                                    <Input
+                                                        value={feature.title}
+                                                        onChange={(e) =>
+                                                            updateEditFeature(index, e.target.value)
+                                                        }
+                                                        placeholder={`Feature ${index + 1}`}
+                                                        className="rounded-xl"
+                                                    />
+                                                    <InputError
+                                                        message={
+                                                            (editForm.errors as Record<string, string>)[
+                                                                `features.${index}.title`
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={() => removeEditFeature(index)}
+                                                    className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                >
+                                                    Remove
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 className="text-sm font-semibold text-slate-900">Product Overview</h3>
+                                    <p className="text-xs text-slate-500">
+                                        Manage long-form sections for this product.
+                                    </p>
+                                </div>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={addEditOverview}
+                                    className="rounded-xl"
+                                >
+                                    Add Section
+                                </Button>
+                            </div>
+
+                            {editForm.data.overviews.length === 0 ? (
+                                <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500">
+                                    No overview sections added yet.
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {editForm.data.overviews.map((overview, index) => (
+                                        <div
+                                            key={`edit-overview-${index}`}
+                                            className="rounded-xl border border-slate-200 bg-white p-4"
+                                        >
+                                            <div className="space-y-3">
+                                                <div className="grid gap-2">
+                                                    <Label>Section Title</Label>
+                                                    <Input
+                                                        value={overview.title}
+                                                        onChange={(e) =>
+                                                            updateEditOverview(
+                                                                index,
+                                                                'title',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="e.g. About this product"
+                                                        className="rounded-xl"
+                                                    />
+                                                    <InputError
+                                                        message={
+                                                            (editForm.errors as Record<string, string>)[
+                                                                `overviews.${index}.title`
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <div className="grid gap-2">
+                                                    <Label>Content</Label>
+                                                    <textarea
+                                                        value={overview.content}
+                                                        onChange={(e) =>
+                                                            updateEditOverview(
+                                                                index,
+                                                                'content',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="Write the full section content here..."
+                                                        className="min-h-[140px] rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
+                                                    />
+                                                    <InputError
+                                                        message={
+                                                            (editForm.errors as Record<string, string>)[
+                                                                `overviews.${index}.content`
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <div className="flex justify-end">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        onClick={() => removeEditOverview(index)}
+                                                        className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                    >
+                                                        Remove Section
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <div className="grid gap-2 md:max-w-xs">
@@ -671,7 +722,10 @@ export default function ProductsIndex() {
 
             {viewingProduct && (
                 <div className="fixed inset-0 z-50">
-                    <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1px]" onClick={closeViewDrawer} />
+                    <div
+                        className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1px]"
+                        onClick={closeViewDrawer}
+                    />
 
                     <div className="absolute right-0 top-0 h-full w-full max-w-md border-l border-slate-200 bg-white shadow-2xl">
                         <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4">

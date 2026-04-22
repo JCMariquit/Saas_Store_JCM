@@ -27,4 +27,19 @@ class Product extends Model
     {
         return $this->hasMany(Order::class);
     }
-}
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('sort_order');
+    }
+
+    public function features()
+    {
+        return $this->hasMany(ProductFeature::class);
+    }
+
+    public function overviews()
+    {
+        return $this->hasMany(ProductOverview::class);
+    }
+    
+} 

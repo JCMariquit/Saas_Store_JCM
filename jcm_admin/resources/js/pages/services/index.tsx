@@ -1,12 +1,12 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
-    Plus,
     Pencil,
     Trash2,
     BriefcaseBusiness,
     CheckCircle2,
     XCircle,
+    Plus,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -15,11 +15,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import InputError from '@/components/input-error';
 
-import { PageHero } from '@/components/jcm-ui/page-hero';
 import { StatsCard } from '@/components/jcm-ui/stats-card';
 import { SectionCard } from '@/components/jcm-ui/section-card';
 import { SearchInput } from '@/components/jcm-ui/search-input';
 import { DataTable } from '@/components/jcm-ui/data-table';
+import { PageHero } from '@/components/jcm-ui/page-hero';
 import { TableActionButtons } from '@/components/jcm-ui/table-action-buttons';
 import { FormModal } from '@/components/jcm-ui/form-modal';
 import { ConfirmModal } from '@/components/jcm-ui/confirm-modal';
@@ -29,6 +29,7 @@ type ServiceItem = {
     code: string;
     name: string;
     description: string | null;
+    thumbnail?: string | null;
     service_type: string;
     pricing_type: string;
     base_price: number | null;
@@ -47,6 +48,9 @@ type PageProps = {
     };
     filters: {
         search: string;
+    };
+    flash?: {
+        success?: string;
     };
 };
 
@@ -77,10 +81,10 @@ const serviceTableColumns = [
 
 export default function ServicesIndex() {
     const { props } = usePage<PageProps>();
-    const { services, stats, filters } = props;
+    const { services, stats, filters, flash } = props;
 
     const [search, setSearch] = useState(filters.search || '');
-    const [openModal, setOpenModal] = useState(false);
+    const [openEditModal, setOpenEditModal] = useState(false);
     const [openDeleteModal, setOpenDeleteModal] = useState(false);
     const [editingService, setEditingService] = useState<ServiceItem | null>(null);
     const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
@@ -107,14 +111,7 @@ export default function ServicesIndex() {
         );
     }, [services, search]);
 
-    const openCreateModal = () => {
-        setEditingService(null);
-        reset();
-        setData({ ...emptyForm });
-        setOpenModal(true);
-    };
-
-    const openEditModal = (service: ServiceItem) => {
+    const openEditServiceModal = (service: ServiceItem) => {
         setEditingService(service);
         setData({
             code: service.code ?? '',
@@ -126,11 +123,11 @@ export default function ServicesIndex() {
             status: service.status ?? 'active',
             sort_order: String(service.sort_order ?? 0),
         });
-        setOpenModal(true);
+        setOpenEditModal(true);
     };
 
-    const closeModal = () => {
-        setOpenModal(false);
+    const closeEditModal = () => {
+        setOpenEditModal(false);
         setEditingService(null);
         reset();
     };
@@ -153,25 +150,19 @@ export default function ServicesIndex() {
         setViewingService(null);
     };
 
-    const submit = (e: React.FormEvent) => {
+    const submitEdit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!editingService) return;
 
         const payload = {
             ...data,
             base_price: data.pricing_type === 'quote' ? null : data.base_price,
         };
 
-        if (editingService) {
-            router.put(route('admin.services.update', editingService.id), payload, {
-                preserveScroll: true,
-                onSuccess: () => closeModal(),
-            });
-            return;
-        }
-
-        router.post(route('admin.services.store'), payload, {
+        router.put(route('admin.services.update', editingService.id), payload, {
             preserveScroll: true,
-            onSuccess: () => closeModal(),
+            onSuccess: () => closeEditModal(),
         });
     };
 
@@ -208,10 +199,11 @@ export default function ServicesIndex() {
             <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/40 to-indigo-100/50 p-4 md:p-6">
                 <div className="space-y-6">
                     <PageHero
+                        eyebrow="JCM Admin"
                         title="Services"
                         description="Manage your business services before publishing them to your public page."
                         actionLabel="Create Service"
-                        onAction={openCreateModal}
+                        onAction={() => router.visit(route('admin.services.create'))}
                         actionIcon={<Plus className="h-4 w-4" />}
                     />
 
@@ -240,6 +232,12 @@ export default function ServicesIndex() {
                             tone="indigo"
                         />
                     </div>
+
+                    {flash?.success && (
+                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm">
+                            {flash.success}
+                        </div>
+                    )}
 
                     <SectionCard
                         title="Service List"
@@ -305,7 +303,7 @@ export default function ServicesIndex() {
                                     >
                                         <TableActionButtons
                                             name={service.name}
-                                            onEdit={() => openEditModal(service)}
+                                            onEdit={() => openEditServiceModal(service)}
                                             onDelete={() => openDelete(service)}
                                         />
                                     </td>
@@ -317,13 +315,13 @@ export default function ServicesIndex() {
             </div>
 
             <FormModal
-                open={openModal}
-                title={editingService ? 'Edit Service' : 'Create Service'}
-                description="Fill out the service details below."
-                onClose={closeModal}
-                tone={editingService ? 'indigo' : 'blue'}
+                open={openEditModal}
+                title="Edit Service"
+                description="Update the service details below."
+                onClose={closeEditModal}
+                tone="indigo"
             >
-                <form onSubmit={submit} className="space-y-5">
+                <form onSubmit={submitEdit} className="space-y-5">
                     <div className="grid gap-5 md:grid-cols-2">
                         <div className="grid gap-2">
                             <Label htmlFor="code">Code</Label>
@@ -443,7 +441,7 @@ export default function ServicesIndex() {
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={closeModal}
+                            onClick={closeEditModal}
                             className="rounded-xl"
                         >
                             Cancel
@@ -454,11 +452,7 @@ export default function ServicesIndex() {
                             disabled={processing}
                             className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 disabled:opacity-70"
                         >
-                            {processing
-                                ? 'Saving...'
-                                : editingService
-                                  ? 'Update Service'
-                                  : 'Create Service'}
+                            {processing ? 'Saving...' : 'Update Service'}
                         </Button>
                     </div>
                 </form>
@@ -554,7 +548,7 @@ export default function ServicesIndex() {
                                     className="inline-flex items-center justify-center gap-2 rounded-xl"
                                     onClick={() => {
                                         closeViewDrawer();
-                                        openEditModal(viewingService);
+                                        openEditServiceModal(viewingService);
                                     }}
                                 >
                                     <Pencil className="h-4 w-4" />

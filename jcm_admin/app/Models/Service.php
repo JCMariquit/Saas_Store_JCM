@@ -37,4 +37,19 @@ class Service extends Model
             ? '₱' . number_format((float) $this->base_price, 2)
             : 'Not set';
     }
+
+    public function images()
+    {
+        return $this->hasMany(ServiceImage::class)->orderBy('sort_order');
+    }
+
+    public function features()
+    {
+        return $this->hasMany(ServiceFeature::class)->orderBy('sort_order');
+    }
+
+    public function overviews()
+    {
+        return $this->hasMany(ServiceOverview::class)->orderBy('sort_order');
+    }
 }

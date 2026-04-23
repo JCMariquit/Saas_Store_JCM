@@ -95,6 +95,7 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/{service}', [ServiceController::class, 'update'])->name('update');
             Route::delete('/{service}', [ServiceController::class, 'destroy'])->name('destroy');
         });
+        
     });
 });
 

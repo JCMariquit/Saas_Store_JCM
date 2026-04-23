@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Bell, ChevronLeft, Menu, MessageCircle, ShoppingCart } from 'lucide-react';
+import { Bell, ChevronLeft, Menu, MessageCircle, ShoppingCart, Sparkles } from 'lucide-react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -165,6 +165,13 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
 
                     <div className="ml-auto flex items-center space-x-2">
+                        <div className="hidden lg:flex">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-700">
+                                <Sparkles className="h-3.5 w-3.5" />
+                                Ready for your business
+                            </div>
+                        </div>
+
                         <div className="hidden items-center gap-1 lg:flex">
                             {headerActionItems.map((item) => (
                                 <TooltipProvider key={item.title} delayDuration={0}>

@@ -20,14 +20,27 @@ type ProductItem = {
     starting_price_label: string;
 };
 
+type ServiceItem = {
+    id: number;
+    code: string;
+    name: string;
+    description: string | null;
+    service_type: string;
+    pricing_type: string;
+    base_price: number | null;
+    base_price_label: string;
+    status: string;
+};
+
 type PageProps = {
     products: ProductItem[];
+    services: ServiceItem[];
     canRegister?: boolean;
 };
 
 export default function Welcome() {
     const { props } = usePage<PageProps>();
-    const { products, canRegister } = props;
+    const { products, services, canRegister } = props;
 
     const pricingTypeBadgeClass = (pricingType: string) => {
         switch (pricingType) {
@@ -35,6 +48,10 @@ export default function Welcome() {
                 return 'border-blue-200 bg-blue-100 text-blue-700';
             case 'custom':
                 return 'border-purple-200 bg-purple-100 text-purple-700';
+            case 'fixed':
+                return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+            case 'quote':
+                return 'border-amber-200 bg-amber-100 text-amber-700';
             default:
                 return 'border-slate-200 bg-slate-100 text-slate-700';
         }
@@ -51,11 +68,45 @@ export default function Welcome() {
         }
     };
 
+    const serviceTypeBadgeClass = (serviceType: string) => {
+        switch (serviceType) {
+            case 'custom':
+                return 'border-purple-200 bg-purple-100 text-purple-700';
+            case 'maintenance':
+                return 'border-amber-200 bg-amber-100 text-amber-700';
+            case 'support':
+                return 'border-sky-200 bg-sky-100 text-sky-700';
+            case 'consulting':
+                return 'border-indigo-200 bg-indigo-100 text-indigo-700';
+            case 'implementation':
+                return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+            default:
+                return 'border-slate-200 bg-slate-100 text-slate-700';
+        }
+    };
+
+    const serviceIcon = (serviceType: string) => {
+        switch (serviceType) {
+            case 'custom':
+                return Wrench;
+            case 'maintenance':
+                return MonitorSmartphone;
+            case 'support':
+                return Sparkles;
+            case 'consulting':
+                return Globe;
+            case 'implementation':
+                return Layers3;
+            default:
+                return Wrench;
+        }
+    };
+
     return (
         <>
             <Head title="JCM Web Solution" />
 
-            <div className="min-h-screen overflow-x-hidden bg-[#f6f8fb] text-slate-900">
+            <div className="min-h-screen overflow-x-hidden bg-[#e8e9eb] text-slate-900">
                 <div className="fixed inset-0 -z-10 bg-[linear-gradient(to_bottom,_#edf5fc,_#f6f9fd)]" />
 
                 <Navbar />
@@ -143,7 +194,7 @@ export default function Welcome() {
                         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                             {[
                                 { label: 'Active Products', value: products.length },
-                                { label: 'Happy Clients', value: '10+' },
+                                { label: 'Active Services', value: services.length },
                                 { label: 'Systems Built', value: '20+' },
                                 { label: 'Support', value: '24/7' },
                             ].map((item) => (
@@ -170,11 +221,11 @@ export default function Welcome() {
                                     },
                                     {
                                         title: 'Place Order',
-                                        desc: 'Send your inquiry, order details, and payment reference.',
+                                        desc: 'Send your order details, payment reference, and proof of payment.',
                                     },
                                     {
-                                        title: 'We Build & Deploy',
-                                        desc: 'We set up your system and help prepare it for launch.',
+                                        title: 'Activation & Setup',
+                                        desc: 'After verification, we activate your access and prepare your system.',
                                     },
                                 ].map((step, i) => (
                                     <div key={i} className="text-center">
@@ -308,76 +359,77 @@ export default function Welcome() {
                             </div>
 
                             <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                                {[
-                                    {
-                                        title: 'Custom Web Development',
-                                        description:
-                                            'Business websites tailored to your brand and goals.',
-                                        label: 'Custom Service',
-                                        icon: Globe,
-                                    },
-                                    {
-                                        title: 'Custom System Development',
-                                        description:
-                                            'Built-from-scratch systems for your unique workflow.',
-                                        label: 'Made to Order',
-                                        icon: Wrench,
-                                    },
-                                    {
-                                        title: 'Business Automation',
-                                        description:
-                                            'Automate manual work with digital tools and smart processes.',
-                                        label: 'Workflow Upgrade',
-                                        icon: Sparkles,
-                                    },
-                                    {
-                                        title: 'Maintenance & Support',
-                                        description:
-                                            'Ongoing updates, fixes, and support for your systems.',
-                                        label: 'Service Support',
-                                        icon: MonitorSmartphone,
-                                    },
-                                ].map((service) => {
-                                    const Icon = service.icon;
+                                {services.length > 0 ? (
+                                    services.map((service) => {
+                                        const Icon = serviceIcon(service.service_type);
 
-                                    return (
-                                        <div
-                                            key={service.title}
-                                            className="rounded-2xl border border-white/70 bg-[#fdfefe] p-5 shadow-[0_14px_36px_rgba(58,95,145,0.08)] transition hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(58,95,145,0.12)]"
-                                        >
-                                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-100 to-blue-100">
-                                                <Icon className="h-5 w-5 text-sky-700" />
+                                        return (
+                                            <div
+                                                key={service.id}
+                                                className="rounded-2xl border border-white/70 bg-[#fdfefe] p-5 shadow-[0_14px_36px_rgba(58,95,145,0.08)] transition hover:-translate-y-1 hover:shadow-[0_18px_44px_rgba(58,95,145,0.12)]"
+                                            >
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-100 to-blue-100">
+                                                    <Icon className="h-5 w-5 text-sky-700" />
+                                                </div>
+
+                                                <div className="mt-4 flex items-center justify-between gap-2">
+                                                    <span
+                                                        className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize ${serviceTypeBadgeClass(
+                                                            service.service_type,
+                                                        )}`}
+                                                    >
+                                                        {service.service_type}
+                                                    </span>
+
+                                                    <span
+                                                        className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize ${pricingTypeBadgeClass(
+                                                            service.pricing_type,
+                                                        )}`}
+                                                    >
+                                                        {service.pricing_type}
+                                                    </span>
+                                                </div>
+
+                                                <div className="mt-4">
+                                                    <h3 className="text-[20px] leading-tight font-bold text-slate-900">
+                                                        {service.name}
+                                                    </h3>
+
+                                                    <p className="mt-2 min-h-[44px] text-sm leading-6 text-slate-500">
+                                                        {service.description ||
+                                                            'No description available yet.'}
+                                                    </p>
+                                                </div>
+
+                                                <div className="mt-5 flex items-center justify-between">
+                                                    <p className="text-sm font-semibold text-blue-600">
+                                                        {service.base_price_label || 'Custom Quote'}
+                                                    </p>
+
+                                                    <button
+                                                        type="button"
+                                                        className="inline-flex items-center justify-center rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                                                    >
+                                                        Inquire
+                                                    </button>
+                                                </div>
                                             </div>
-
-                                            <div className="mt-4">
-                                                <span className="inline-flex rounded-full border border-purple-200 bg-purple-100 px-2.5 py-1 text-[11px] font-semibold text-purple-700">
-                                                    {service.label}
-                                                </span>
-
-                                                <h3 className="mt-3 text-[20px] leading-tight font-bold text-slate-900">
-                                                    {service.title}
-                                                </h3>
-
-                                                <p className="mt-2 text-sm leading-6 text-slate-500">
-                                                    {service.description}
-                                                </p>
-                                            </div>
-
-                                            <div className="mt-5 flex items-center justify-between">
-                                                <p className="text-sm font-semibold text-blue-600">
-                                                    Custom Quote
-                                                </p>
-
-                                                <button
-                                                    type="button"
-                                                    className="inline-flex items-center justify-center rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
-                                                >
-                                                    Inquire
-                                                </button>
-                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="col-span-full rounded-[28px] border border-dashed border-slate-300 bg-slate-50 px-6 py-16 text-center">
+                                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+                                            <Wrench className="h-6 w-6 text-slate-500" />
                                         </div>
-                                    );
-                                })}
+
+                                        <h3 className="mt-4 text-lg font-bold text-slate-900">
+                                            No active services found
+                                        </h3>
+                                        <p className="mt-2 text-sm text-slate-500">
+                                            Add active services from the admin side first.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </section>
                     </div>

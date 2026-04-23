@@ -96,7 +96,7 @@ export default function Dashboard() {
         <AppLayout breadcrumbs={breadcrumbs} fullWidth>
             <Head title="Store" />
 
-            <div className="space-y-6 overflow-x-hidden bg-[#f6f8fb]">
+            <div className="space-y-6 overflow-x-hidden bg-[#e8e9eb]">
                 <section className="relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen overflow-x-hidden border-b border-slate-800 bg-gradient-to-r from-slate-900 to-slate-800 text-white">
                     <div className="mx-auto max-w-7xl px-5 py-6 md:px-7 md:py-8 lg:grid lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-6">
                         <div className="max-w-3xl">
@@ -110,9 +110,9 @@ export default function Dashboard() {
                             </h1>
 
                             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 md:text-[15px]">
-                                Explore plan-based systems and custom-made services designed for
-                                real businesses. This store view is built to showcase your digital
-                                products like a modern online shop.
+                                Explore ready-made SaaS products and custom-built digital solutions
+                                designed for real businesses. Find the right system to help your
+                                operations become more organized, efficient, and scalable.
                             </p>
 
                             <div className="mt-5 flex flex-wrap gap-3">
@@ -151,10 +151,10 @@ export default function Dashboard() {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                                            Promo Visual
+                                            Featured Solution
                                         </p>
                                         <h3 className="mt-1.5 text-lg font-bold text-white">
-                                            Your own product ad section
+                                            Professional systems built for growing businesses
                                         </h3>
                                     </div>
                                     <div className="rounded-2xl bg-white/10 p-2.5">
@@ -163,11 +163,6 @@ export default function Dashboard() {
                                 </div>
 
                                 <div className="mt-4 h-[190px] rounded-[20px] border border-white/10 bg-white/10" />
-
-                                <p className="mt-3 text-sm leading-6 text-slate-300">
-                                    Placeholder muna ito. Later ikaw na maglalagay ng own promo
-                                    image, school-like mockup, booking preview, or system visuals.
-                                </p>
                             </div>
                         </div>
                     </div>
@@ -199,16 +194,16 @@ export default function Dashboard() {
                         <div className="mt-6 grid gap-6 md:grid-cols-3">
                             {[
                                 {
-                                    title: 'Choose Product',
-                                    desc: 'Select a system that fits your business needs.',
+                                    title: 'Choose a Solution',
+                                    desc: 'Browse available products and services based on what your business needs most.',
                                 },
                                 {
-                                    title: 'Place Order',
-                                    desc: 'Submit order and send your payment details.',
+                                    title: 'Place Your Order',
+                                    desc: 'Submit your order details and follow the payment process to get started.',
                                 },
                                 {
-                                    title: 'We Build & Deploy',
-                                    desc: 'We setup your system and make it live.',
+                                    title: 'Launch with Confidence',
+                                    desc: 'We help you move forward with a system built for real operations and growth.',
                                 },
                             ].map((step, i) => (
                                 <div key={i} className="text-center">
@@ -299,7 +294,7 @@ export default function Dashboard() {
 
                                         <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-400">
                                             <Layers3 className="h-3.5 w-3.5" />
-                                            <span>More product details later</span>
+                                            <span>Explore product details and available options</span>
                                         </div>
                                     </div>
                                 ))
@@ -412,32 +407,33 @@ export default function Dashboard() {
                     <div className="mx-auto max-w-7xl px-4 md:px-6">
                         <div className="max-w-3xl">
                             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-700">
-                                Why Choose JCM
+                                Why Businesses Choose JCM
                             </p>
 
                             <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
-                                Built to be practical, scalable, and business-ready
+                                Modern systems built for real business needs
                             </h2>
 
                             <p className="mt-3 text-sm leading-7 text-slate-500 md:text-base">
-                                We create digital solutions that are not only clean and modern, but also
-                                structured for real business operations, long-term use, and future growth.
+                                We help businesses move from manual processes to smarter digital
+                                solutions with systems that are practical, scalable, and ready for
+                                daily operations.
                             </p>
                         </div>
 
                         <div className="mt-10 grid gap-6 md:grid-cols-3">
                             {[
                                 {
-                                    title: 'Clear Pricing Structure',
-                                    desc: 'Plan-based products and flexible custom options that make it easier to choose the right solution.',
+                                    title: 'Simple and Clear Pricing',
+                                    desc: 'Choose from ready-made SaaS products or request custom-built systems based on your business needs and budget.',
                                 },
                                 {
-                                    title: 'Business-Focused Development',
-                                    desc: 'Every system is designed around your workflow, actual needs, and the way your operations run.',
+                                    title: 'Built for Actual Operations',
+                                    desc: 'Our systems are designed to support real workflows such as bookings, orders, records, payments, and daily business management.',
                                 },
                                 {
-                                    title: 'Reliable Setup and Support',
-                                    desc: 'From delivery to deployment, the goal is to help you launch smoothly and continue with confidence.',
+                                    title: 'Reliable Support and Setup',
+                                    desc: 'From onboarding to system setup and after-sales support, we help you start smoothly and use your system with confidence.',
                                 },
                             ].map((item) => (
                                 <div
@@ -464,24 +460,25 @@ export default function Dashboard() {
                         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                             <div className="max-w-2xl">
                                 <p className="text-sm uppercase tracking-[0.18em] text-slate-300">
-                                    Next Step
+                                    Start Your Digital System
                                 </p>
 
                                 <h2 className="mt-3 text-2xl font-bold md:text-3xl">
-                                    Connect products and services to their own detail pages
+                                    Upgrade your business with a modern system today
                                 </h2>
 
                                 <p className="mt-2 text-sm leading-7 text-slate-300">
-                                    Each product will soon have its own page with features, pricing,
-                                    inquiry flow, and ordering system.
+                                    Choose from ready-made products or request a custom-built
+                                    system tailored to your business needs. Simple, scalable, and
+                                    built for real operations.
                                 </p>
                             </div>
 
                             <button
                                 type="button"
-                                className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-md"
+                                className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-md transition hover:bg-slate-100"
                             >
-                                Continue Building
+                                Get Started Now
                                 <ArrowRight className="ml-2 h-4 w-4" />
                             </button>
                         </div>
@@ -496,8 +493,8 @@ export default function Dashboard() {
                             </h3>
 
                             <p className="mt-3 text-sm leading-6 text-slate-400">
-                                We build modern web systems and digital solutions designed for real businesses,
-                                helping you go digital and scale efficiently.
+                                We provide modern web systems solutions designed to help businesses
+                                go digital, automate processes, and scale efficiently.
                             </p>
                         </div>
 
@@ -515,23 +512,23 @@ export default function Dashboard() {
 
                         <div>
                             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
-                                Customer Service
+                                Customer Support
                             </h3>
 
                             <ul className="mt-3 space-y-2 text-sm text-slate-400">
-                                <li>Support & Assistance</li>
-                                <li>System Setup Help</li>
+                                <li>System Setup Assistance</li>
+                                <li>Technical Support</li>
                                 <li>After-Sales Support</li>
                             </ul>
                         </div>
 
                         <div>
                             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
-                                Follow Us
+                                Contact & Social
                             </h3>
 
                             <ul className="mt-3 space-y-2 text-sm text-slate-400">
-                                <li>Facebook</li>
+                                <li>Facebook Page</li>
                                 <li>Instagram</li>
                                 <li>Email: jcmwebsolution@gmail.com</li>
                             </ul>

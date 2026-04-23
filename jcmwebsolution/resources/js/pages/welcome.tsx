@@ -7,7 +7,7 @@ import {
     Sparkles,
     Wrench,
 } from 'lucide-react';
-
+import { useEffect, useState } from 'react';
 import Navbar from '@/components/navbar';
 
 type ProductItem = {
@@ -41,6 +41,23 @@ type PageProps = {
 export default function Welcome() {
     const { props } = usePage<PageProps>();
     const { products, services, canRegister } = props;
+
+    const banners = [
+        '/images/banner/banner1.png',
+        '/images/banner/banner2.png',
+        '/images/banner/banner3.png',
+        '/images/banner/banner4.png',
+    ];
+
+    const [currentBanner, setCurrentBanner] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentBanner((prev) => (prev + 1) % banners.length);
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [banners.length]);
 
     const pricingTypeBadgeClass = (pricingType: string) => {
         switch (pricingType) {
@@ -107,8 +124,6 @@ export default function Welcome() {
             <Head title="JCM Web Solution" />
 
             <div className="min-h-screen overflow-x-hidden bg-[#e8e9eb] text-slate-900">
-                <div className="fixed inset-0 -z-10 bg-[linear-gradient(to_bottom,_#edf5fc,_#f6f9fd)]" />
-
                 <Navbar />
 
                 <main className="space-y-6 overflow-x-hidden">
@@ -126,9 +141,9 @@ export default function Welcome() {
                                 </h1>
 
                                 <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 md:text-[15px]">
-                                    Explore plan-based systems and custom-made services designed
-                                    for real businesses. This public page showcases your products
-                                    and services like a modern online storefront.
+                                    Explore ready-made products and custom-built digital solutions
+                                    designed for real businesses. Find the right system to help your
+                                    operations become more organized, efficient, and scalable.
                                 </p>
 
                                 <div className="mt-5 flex flex-wrap gap-3">
@@ -156,7 +171,7 @@ export default function Welcome() {
                                 </div>
 
                                 <div className="mt-4 flex flex-wrap gap-3 text-[13px] text-slate-300">
-                                    <span>✔ SaaS-ready products</span>
+                                    <span>✔ Ready products</span>
                                     <span>✔ Custom-built services</span>
                                     <span>✔ Scalable business solutions</span>
                                 </div>
@@ -167,10 +182,10 @@ export default function Welcome() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                                                Promo Visual
+                                                Featured Solution
                                             </p>
                                             <h3 className="mt-1.5 text-lg font-bold text-white">
-                                                Your own product ad section
+                                                Professional systems built for growing businesses
                                             </h3>
                                         </div>
                                         <div className="rounded-2xl bg-white/10 p-2.5">
@@ -178,13 +193,29 @@ export default function Welcome() {
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 h-[190px] rounded-[20px] border border-white/10 bg-white/10" />
+                                    <div className="relative mt-4 overflow-hidden rounded-[20px] border border-white/10">
+                                        <img
+                                            src={banners[currentBanner]}
+                                            alt={`Banner ${currentBanner + 1}`}
+                                            className="h-[350px] w-full object-cover transition-all duration-700"
+                                        />
 
-                                    <p className="mt-3 text-sm leading-6 text-slate-300">
-                                        Placeholder muna ito. Later ikaw na maglalagay ng own
-                                        promo image, booking preview, school-like mockup, or system
-                                        visuals.
-                                    </p>
+                                        <div className="absolute inset-x-0 bottom-3 flex justify-center gap-2">
+                                            {banners.map((_, index) => (
+                                                <button
+                                                    key={index}
+                                                    type="button"
+                                                    onClick={() => setCurrentBanner(index)}
+                                                    className={`h-2.5 rounded-full transition-all ${
+                                                        currentBanner === index
+                                                            ? 'w-8 bg-white'
+                                                            : 'w-2.5 bg-white/50 hover:bg-white/80'
+                                                    }`}
+                                                    aria-label={`Go to banner ${index + 1}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -216,16 +247,16 @@ export default function Welcome() {
                             <div className="mt-6 grid gap-6 md:grid-cols-3">
                                 {[
                                     {
-                                        title: 'Choose Product',
-                                        desc: 'Select a system or service that fits your business needs.',
+                                        title: 'Choose a Solution',
+                                        desc: 'Browse available products and services based on what your business needs most.',
                                     },
                                     {
-                                        title: 'Place Order',
-                                        desc: 'Send your order details, payment reference, and proof of payment.',
+                                        title: 'Place Your Order',
+                                        desc: 'Submit your order details and follow the payment process to get started.',
                                     },
                                     {
-                                        title: 'Activation & Setup',
-                                        desc: 'After verification, we activate your access and prepare your system.',
+                                        title: 'Launch with Confidence',
+                                        desc: 'We help you move forward with a system built for real operations and growth.',
                                     },
                                 ].map((step, i) => (
                                     <div key={i} className="text-center">
@@ -251,11 +282,10 @@ export default function Welcome() {
                                         Products
                                     </p>
                                     <h2 className="mt-2 text-2xl font-bold text-slate-900">
-                                        Featured SaaS Products
+                                        Featured Products
                                     </h2>
                                     <p className="mt-1 text-sm text-slate-500">
-                                        Plan-based and packaged digital products loaded from your
-                                        database.
+                                        Plan-based and packaged digital products loaded from your database.
                                     </p>
                                 </div>
                             </div>
@@ -292,8 +322,7 @@ export default function Welcome() {
                                                     {product.name}
                                                 </h3>
                                                 <p className="mt-2 min-h-[44px] text-sm leading-6 text-slate-500">
-                                                    {product.description ||
-                                                        'No description available yet.'}
+                                                    {product.description || 'No description available yet.'}
                                                 </p>
                                             </div>
 
@@ -318,7 +347,7 @@ export default function Welcome() {
 
                                             <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-400">
                                                 <Layers3 className="h-3.5 w-3.5" />
-                                                <span>More product details later</span>
+                                                <span>Explore product details and available options</span>
                                             </div>
                                         </div>
                                     ))
@@ -396,8 +425,7 @@ export default function Welcome() {
                                                     </h3>
 
                                                     <p className="mt-2 min-h-[44px] text-sm leading-6 text-slate-500">
-                                                        {service.description ||
-                                                            'No description available yet.'}
+                                                        {service.description || 'No description available yet.'}
                                                     </p>
                                                 </div>
 
@@ -438,33 +466,31 @@ export default function Welcome() {
                         <div className="mx-auto max-w-7xl px-4 md:px-6">
                             <div className="max-w-3xl">
                                 <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-700">
-                                    Why Choose JCM
+                                    Why Businesses Choose JCM
                                 </p>
 
                                 <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
-                                    Built to be practical, scalable, and business-ready
+                                    Modern systems built for real business needs
                                 </h2>
 
                                 <p className="mt-3 text-sm leading-7 text-slate-500 md:text-base">
-                                    We create digital solutions that are not only clean and modern,
-                                    but also structured for real business operations, long-term use,
-                                    and future growth.
+                                    We help businesses move from manual processes to smarter digital solutions with systems that are practical, scalable, and ready for daily operations.
                                 </p>
                             </div>
 
                             <div className="mt-10 grid gap-6 md:grid-cols-3">
                                 {[
                                     {
-                                        title: 'Clear Pricing Structure',
-                                        desc: 'Plan-based products and flexible custom options that make it easier to choose the right solution.',
+                                        title: 'Simple and Clear Pricing',
+                                        desc: 'Choose from ready-made products or request custom-built systems based on your business needs and budget.',
                                     },
                                     {
-                                        title: 'Business-Focused Development',
-                                        desc: 'Every system is designed around your workflow, actual needs, and the way your operations run.',
+                                        title: 'Built for Actual Operations',
+                                        desc: 'Our systems are designed to support real workflows such as bookings, orders, records, payments, and daily business management.',
                                     },
                                     {
-                                        title: 'Reliable Setup and Support',
-                                        desc: 'From delivery to deployment, the goal is to help you launch smoothly and continue with confidence.',
+                                        title: 'Reliable Support and Setup',
+                                        desc: 'From onboarding to system setup and after-sales support, we help you start smoothly and use your system with confidence.',
                                     },
                                 ].map((item) => (
                                     <div
@@ -491,16 +517,15 @@ export default function Welcome() {
                             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                                 <div className="max-w-2xl">
                                     <p className="text-sm uppercase tracking-[0.18em] text-slate-300">
-                                        Next Step
+                                        Start Your Digital System
                                     </p>
 
                                     <h2 className="mt-3 text-2xl font-bold md:text-3xl">
-                                        Launch your system with JCM
+                                        Upgrade your business with a modern system today
                                     </h2>
 
                                     <p className="mt-2 text-sm leading-7 text-slate-300">
-                                        Start with ready-made products or request a custom-built
-                                        solution for your business.
+                                        Choose from ready-made products or request a custom-built solution for your business.
                                     </p>
                                 </div>
 
@@ -533,8 +558,7 @@ export default function Welcome() {
                                 </h3>
 
                                 <p className="mt-3 text-sm leading-6 text-slate-400">
-                                    We build modern web systems and digital solutions designed for
-                                    real businesses, helping you go digital and scale efficiently.
+                                    We provide modern web systems solutions designed to help businesses go digital, automate processes, and scale efficiently.
                                 </p>
                             </div>
 
@@ -552,23 +576,23 @@ export default function Welcome() {
 
                             <div>
                                 <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
-                                    Customer Service
+                                    Customer Support
                                 </h3>
 
                                 <ul className="mt-3 space-y-2 text-sm text-slate-400">
-                                    <li>Support & Assistance</li>
-                                    <li>System Setup Help</li>
+                                    <li>System Setup Assistance</li>
+                                    <li>Technical Support</li>
                                     <li>After-Sales Support</li>
                                 </ul>
                             </div>
 
                             <div>
                                 <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
-                                    Follow Us
+                                    Contact & Social
                                 </h3>
 
                                 <ul className="mt-3 space-y-2 text-sm text-slate-400">
-                                    <li>Facebook</li>
+                                    <li>Facebook Page</li>
                                     <li>Instagram</li>
                                     <li>Email: jcmwebsolution@gmail.com</li>
                                 </ul>

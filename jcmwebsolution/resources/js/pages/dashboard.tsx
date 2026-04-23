@@ -8,6 +8,7 @@ import {
     Wrench,
 } from 'lucide-react';
 
+import { useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -48,6 +49,23 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Dashboard() {
     const { props } = usePage<PageProps>();
     const { products, services } = props;
+
+    const banners = [
+        '/images/banner/banner1.png',
+        '/images/banner/banner2.png',
+        '/images/banner/banner3.png',
+        '/images/banner/banner4.png',
+    ];
+
+    const [currentBanner, setCurrentBanner] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentBanner((prev) => (prev + 1) % banners.length);
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [banners.length]);
 
     const pricingTypeBadgeClass = (pricingType: string) => {
         switch (pricingType) {
@@ -140,7 +158,7 @@ export default function Dashboard() {
                             </div>
 
                             <div className="mt-4 flex flex-wrap gap-3 text-[13px] text-slate-300">
-                                <span>✔ SaaS-ready products</span>
+                                <span>✔ Ready products</span>
                                 <span>✔ Custom-built services</span>
                                 <span>✔ Scalable business solutions</span>
                             </div>
@@ -162,7 +180,29 @@ export default function Dashboard() {
                                     </div>
                                 </div>
 
-                                <div className="mt-4 h-[190px] rounded-[20px] border border-white/10 bg-white/10" />
+                                <div className="relative mt-4 overflow-hidden rounded-[20px] border border-white/10">
+                                    <img
+                                        src={banners[currentBanner]}
+                                        alt={`Banner ${currentBanner + 1}`}
+                                        className="h-[350px] w-full object-cover transition-all duration-700"
+                                    />
+
+                                    <div className="absolute inset-x-0 bottom-3 flex justify-center gap-2">
+                                        {banners.map((_, index) => (
+                                            <button
+                                                key={index}
+                                                type="button"
+                                                onClick={() => setCurrentBanner(index)}
+                                                className={`h-2.5 rounded-full transition-all ${
+                                                    currentBanner === index
+                                                        ? 'w-8 bg-white'
+                                                        : 'w-2.5 bg-white/50 hover:bg-white/80'
+                                                }`}
+                                                aria-label={`Go to banner ${index + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -229,7 +269,7 @@ export default function Dashboard() {
                                     Products
                                 </p>
                                 <h2 className="mt-2 text-2xl font-bold text-slate-900">
-                                    Featured SaaS Products
+                                    Featured Products
                                 </h2>
                                 <p className="mt-1 text-sm text-slate-500">
                                     Plan-based and packaged digital products loaded from your database.
@@ -308,7 +348,7 @@ export default function Dashboard() {
                                         No products found
                                     </h3>
                                     <p className="mt-2 text-sm text-slate-500">
-                                        Add active products first so they can appear in your SaaS store.
+                                        Add active products first so they can appear in your store.
                                     </p>
                                 </div>
                             )}
@@ -425,7 +465,7 @@ export default function Dashboard() {
                             {[
                                 {
                                     title: 'Simple and Clear Pricing',
-                                    desc: 'Choose from ready-made SaaS products or request custom-built systems based on your business needs and budget.',
+                                    desc: 'Choose from ready-made products or request custom-built systems based on your business needs and budget.',
                                 },
                                 {
                                     title: 'Built for Actual Operations',

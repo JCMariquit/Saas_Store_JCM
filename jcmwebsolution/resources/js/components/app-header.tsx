@@ -1,6 +1,9 @@
 import { Link, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import { Bell, ChevronLeft, Menu, MessageCircle, ShoppingCart, Sparkles } from 'lucide-react';
+
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { HeaderActionDrawer, type HeaderDrawerType } from '@/components/jcm-ui/header-action-drawer';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,20 +34,24 @@ type Props = {
     breadcrumbs?: BreadcrumbItem[];
 };
 
-const headerActionItems = [
+const headerActionItems: {
+    key: HeaderDrawerType;
+    title: string;
+    icon: typeof ShoppingCart;
+}[] = [
     {
+        key: 'cart',
         title: 'Cart',
-        href: '#',
         icon: ShoppingCart,
     },
     {
+        key: 'messages',
         title: 'Messages',
-        href: '#',
         icon: MessageCircle,
     },
     {
+        key: 'notifications',
         title: 'Notifications',
-        href: '#',
         icon: Bell,
     },
 ];
@@ -54,12 +61,14 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const { auth } = page.props;
     const getInitials = useInitials();
 
+    const [activeDrawer, setActiveDrawer] = useState<HeaderDrawerType | null>(null);
+
     const previousBreadcrumb =
         breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 2] : null;
 
     return (
         <>
-            <div className="border-b border-sidebar-border/80">
+            <div className="border-b border-sidebar-border/80 bg-white">
                 <div className="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
                     <div className="lg:hidden">
                         <Sheet>
@@ -119,16 +128,17 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                         )}
                                     </div>
 
-                                    <div className="mt-auto flex flex-col space-y-4 text-sm">
+                                    <div className="mt-auto flex flex-col space-y-2 text-sm">
                                         {headerActionItems.map((item) => (
-                                            <a
+                                            <button
                                                 key={item.title}
-                                                href={item.href}
-                                                className="flex items-center space-x-2 font-medium"
+                                                type="button"
+                                                onClick={() => setActiveDrawer(item.key)}
+                                                className="flex items-center space-x-2 rounded-xl px-3 py-2 text-left font-medium transition hover:bg-accent"
                                             >
                                                 <item.icon className="h-5 w-5" />
                                                 <span>{item.title}</span>
-                                            </a>
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
@@ -177,14 +187,26 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 <TooltipProvider key={item.title} delayDuration={0}>
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <a
-                                                href={item.href}
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveDrawer(item.key)}
                                                 className="group relative inline-flex h-9 w-9 items-center justify-center rounded-md bg-transparent p-0 text-sm font-medium text-accent-foreground ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                                             >
                                                 <span className="sr-only">{item.title}</span>
                                                 <item.icon className="size-5 opacity-80 group-hover:opacity-100" />
-                                            </a>
+
+                                                {item.key !== 'cart' && (
+                                                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" />
+                                                )}
+
+                                                {item.key === 'cart' && (
+                                                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-700 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white">
+                                                        2
+                                                    </span>
+                                                )}
+                                            </button>
                                         </TooltipTrigger>
+
                                         <TooltipContent>
                                             <p>{item.title}</p>
                                         </TooltipContent>
@@ -218,6 +240,16 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
                 </div>
             </div>
+
+            <HeaderActionDrawer
+                open={activeDrawer !== null}
+                type={activeDrawer}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setActiveDrawer(null);
+                    }
+                }}
+            />
         </>
     );
 }

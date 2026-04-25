@@ -10,18 +10,49 @@ use Laravel\Fortify\Features;
 
 class PublicController extends Controller
 {
+    private string $mediaBaseUrl = 'https://jcmwebsolution.com/jcm_admin/storage/app/public';
+
     public function home(): Response
+    {
+        $data = $this->storeData();
+
+        return Inertia::render('welcome', [
+            'canRegister' => Features::enabled(Features::registration()),
+            'products' => $data['products'],
+            'services' => $data['services'],
+        ]);
+    }
+
+    public function dashboard(): Response
+    {
+        $data = $this->storeData();
+
+        return Inertia::render('dashboard', [
+            'products' => $data['products'],
+            'services' => $data['services'],
+        ]);
+    }
+
+    private function storeData(): array
     {
         $products = Product::with([
                 'plans' => function ($query) {
                     $query->where('status', 'active')->orderBy('price');
-                }
+                },
+                'images' => function ($query) {
+                    $query->orderBy('sort_order')->orderBy('id');
+                },
             ])
             ->where('status', 'active')
             ->orderBy('name')
             ->get()
             ->map(function ($product) {
                 $lowestPlan = $product->plans->first();
+                $firstImage = $product->images->first();
+
+                $thumbnailUrl = $firstImage?->image_path
+                    ? $this->buildMediaUrl($firstImage->image_path)
+                    : null;
 
                 return [
                     'id' => $product->id,
@@ -29,6 +60,8 @@ class PublicController extends Controller
                     'description' => $product->description,
                     'pricing_type' => $product->pricing_type,
                     'status' => $product->status,
+                    'image_url' => $thumbnailUrl,
+                    'thumbnail_url' => $thumbnailUrl,
                     'starting_price' => $lowestPlan?->price,
                     'starting_price_label' => match ($product->pricing_type) {
                         'custom' => 'Custom',
@@ -37,7 +70,8 @@ class PublicController extends Controller
                             : 'Contact us',
                     },
                 ];
-            });
+            })
+            ->values();
 
         $services = Service::query()
             ->where('status', 'active')
@@ -55,12 +89,25 @@ class PublicController extends Controller
                     'base_price_label' => $service->base_price_label,
                     'status' => $service->status,
                 ];
-            });
+            })
+            ->values();
 
-        return Inertia::render('welcome', [
-            'canRegister' => Features::enabled(Features::registration()),
+        return [
             'products' => $products,
             'services' => $services,
-        ]);
+        ];
+    }
+
+    private function buildMediaUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        return rtrim($this->mediaBaseUrl, '/') . '/' . ltrim($path, '/');
     }
 }

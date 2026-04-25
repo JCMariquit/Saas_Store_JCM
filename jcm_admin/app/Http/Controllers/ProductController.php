@@ -31,7 +31,7 @@ class ProductController extends Controller
                         ->orWhere('status', 'like', "%{$search}%")
                         ->orWhere('pricing_type', 'like', "%{$search}%");
                 });
-            })
+            }) 
             ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString()

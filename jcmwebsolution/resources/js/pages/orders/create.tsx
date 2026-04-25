@@ -6,7 +6,10 @@ import {
     ImageOff,
     LoaderCircle,
     Package,
+    ShieldCheck,
     ShoppingCart,
+    Sparkles,
+    UploadCloud,
     Wallet,
     XCircle,
 } from 'lucide-react';
@@ -53,6 +56,11 @@ type PageProps = {
 
 type SubmitModalState = 'idle' | 'submitting' | 'success' | 'error';
 
+const inputClass =
+    'w-full rounded-[10px] border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100';
+
+const cardClass = 'rounded-[14px] border border-slate-200 bg-white shadow-sm';
+
 export default function Create({
     product,
     plans,
@@ -83,7 +91,7 @@ export default function Create({
         plans.find((plan) => String(plan.id) === String(data.plan_id)) ?? null;
 
     const computedPriceLabel = useMemo(() => {
-        if (!selectedPlan) return '—';
+        if (!selectedPlan) return 'To be confirmed';
 
         if (data.billing_type === 'yearly' && selectedPlan.price !== null) {
             return `₱${Number(selectedPlan.price * 12).toLocaleString(undefined, {
@@ -168,134 +176,182 @@ export default function Create({
 
     return (
         <AppLayout fullWidth>
-            <Head title={`Order ${product.name}`} />
+            <Head title={`Start Project - ${product.name}`} />
 
-            <div className="min-h-screen bg-[#f6f8fb] pb-10">
+            <div className="min-h-screen bg-[#e8edf5] pb-10 text-slate-900">
+                <section className="relative overflow-hidden border-b border-slate-200 bg-gradient-to-br from-slate-950 via-blue-950 to-sky-900 text-white">
+                    <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-sky-400/20 blur-3xl" />
+                    <div className="absolute right-0 top-16 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl" />
+
+                    <div className="relative mx-auto max-w-6xl px-4 py-7 md:px-6">
+     
+
+                        <div className="mt-7 grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
+                            <div>
+                                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-100">
+                                    <Sparkles className="h-3.5 w-3.5 text-sky-300" />
+                                    Start Your Project
+                                </div>
+
+                                <h1 className="mt-4 max-w-3xl text-3xl font-black leading-tight md:text-4xl">
+                                    Complete your request for {product.name}
+                                </h1>
+
+                                <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-200 md:text-base">
+                                    Fill out your preferred package, payment details, and project notes.
+                                    Once submitted, we’ll review your project details and contact you for the next step.
+                                </p>
+                            </div>
+
+                            <div className="rounded-[14px] border border-white/15 bg-white/10 p-5 backdrop-blur">
+                                <div className="flex items-start gap-3">
+                                    <div className="rounded-[10px] bg-white/10 p-2.5 text-emerald-300">
+                                        <ShieldCheck className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-white">
+                                            Secure project request
+                                        </p>
+                                        <p className="mt-1 text-sm leading-6 text-slate-200">
+                                            Submit your details safely and we’ll guide you through the next step.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <div className="mx-auto max-w-6xl px-4 py-6 md:px-6">
-                    <button
-                        type="button"
-                        onClick={() => router.visit('/dashboard')}
-                        className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        Back to Store
-                    </button>
-
-                    <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_380px]">
-                        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+                        <div className={`${cardClass} p-6`}>
                             <div className="flex items-center gap-3">
-                                <div className="rounded-2xl bg-slate-900 p-3 text-white">
+                                <div className="rounded-[10px] bg-slate-950 p-3 text-white">
                                     <ShoppingCart className="h-5 w-5" />
                                 </div>
 
                                 <div>
-                                    <h1 className="text-2xl font-bold text-slate-900">
-                                        Order & Payment
-                                    </h1>
+                                    <h2 className="text-2xl font-bold text-slate-900">
+                                        Project Request & Payment
+                                    </h2>
                                     <p className="text-sm text-slate-500">
-                                        Complete your order and payment details in one submission.
+                                        Submit your preferred package and payment information in one secure request.
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">
-                                    Product
+                            <div className="mt-6 rounded-[14px] border border-slate-200 bg-gradient-to-br from-sky-50 via-white to-blue-50 p-5">
+                                <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-700">
+                                    Selected Solution
                                 </p>
 
-                                <h2 className="mt-2 text-2xl font-bold text-slate-900">
+                                <h3 className="mt-2 text-2xl font-black text-slate-900">
                                     {product.name}
-                                </h2>
+                                </h3>
 
                                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                                    {product.description || 'No product description available.'}
+                                    {product.description ||
+                                        'A professional digital solution designed to help your business improve workflow, organize records, and serve customers more efficiently.'}
                                 </p>
 
-                                <div className="mt-4 inline-flex rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold capitalize text-slate-600">
-                                    Pricing Type: {product.pricing_type}
+                                <div className="mt-4 inline-flex rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold capitalize text-sky-700">
+                                    {product.pricing_type === 'plan'
+                                        ? 'Package-Based Service'
+                                        : product.pricing_type === 'custom'
+                                          ? 'Custom Project Request'
+                                          : 'Fixed Project Pricing'}
                                 </div>
                             </div>
 
                             <form onSubmit={submit} className="mt-6 space-y-6">
-                                <div>
-                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                        Select Plan
-                                        {isPlanProduct ? (
-                                            <span className="ml-1 text-red-500">*</span>
-                                        ) : null}
-                                    </label>
-
-                                    <select
-                                        value={data.plan_id}
-                                        onChange={(e) => setData('plan_id', e.target.value)}
-                                        className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-900"
-                                    >
-                                        <option value="">Select a plan</option>
-                                        {plans.map((plan) => (
-                                            <option key={plan.id} value={plan.id}>
-                                                {plan.name} — {plan.price_label}
-                                            </option>
-                                        ))}
-                                    </select>
-
-                                    {errors.plan_id && (
-                                        <p className="mt-2 text-sm text-red-600">{errors.plan_id}</p>
-                                    )}
-                                </div>
-
-                                {isPlanProduct ? (
+                                <div className="grid gap-5 md:grid-cols-2">
                                     <div>
                                         <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                            Billing Type <span className="text-red-500">*</span>
+                                            Preferred Package
+                                            {isPlanProduct ? (
+                                                <span className="ml-1 text-red-500">*</span>
+                                            ) : null}
                                         </label>
 
                                         <select
-                                            value={data.billing_type}
-                                            onChange={(e) => setData('billing_type', e.target.value)}
-                                            className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-900"
+                                            value={data.plan_id}
+                                            onChange={(e) => setData('plan_id', e.target.value)}
+                                            className={inputClass}
                                         >
-                                            {billing_type_options.map((option) => (
-                                                <option key={option.value} value={option.value}>
-                                                    {option.label}
+                                            <option value="">Choose a package</option>
+                                            {plans.map((plan) => (
+                                                <option key={plan.id} value={plan.id}>
+                                                    {plan.name} — {plan.price_label}
                                                 </option>
                                             ))}
                                         </select>
 
-                                        {errors.billing_type && (
-                                            <p className="mt-2 text-sm text-red-600">
-                                                {errors.billing_type}
-                                            </p>
+                                        {errors.plan_id && (
+                                            <p className="mt-2 text-sm text-red-600">{errors.plan_id}</p>
                                         )}
                                     </div>
-                                ) : null}
+
+                                    {isPlanProduct ? (
+                                        <div>
+                                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                                Payment Schedule <span className="text-red-500">*</span>
+                                            </label>
+
+                                            <select
+                                                value={data.billing_type}
+                                                onChange={(e) => setData('billing_type', e.target.value)}
+                                                className={inputClass}
+                                            >
+                                                {billing_type_options.map((option) => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+
+                                            {errors.billing_type && (
+                                                <p className="mt-2 text-sm text-red-600">
+                                                    {errors.billing_type}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ) : null}
+                                </div>
 
                                 {isCustomProduct ? (
-                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                        <p className="text-sm font-semibold text-slate-700">
-                                            Billing Type
+                                    <div className="rounded-[14px] border border-sky-100 bg-sky-50 p-4">
+                                        <p className="text-sm font-semibold text-sky-800">
+                                            Custom Project Pricing
                                         </p>
-                                        <p className="mt-1 text-sm text-slate-600">Custom</p>
+                                        <p className="mt-1 text-sm leading-6 text-slate-600">
+                                            Pricing will be reviewed based on your selected features, timeline,
+                                            setup, and support needs.
+                                        </p>
                                     </div>
                                 ) : null}
 
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                                <div className="rounded-[14px] border border-slate-200 bg-slate-50 p-5">
                                     <div className="flex items-center gap-2">
-                                        <Wallet className="h-5 w-5 text-slate-700" />
+                                        <Wallet className="h-5 w-5 text-blue-700" />
                                         <h3 className="text-lg font-bold text-slate-900">
-                                            Payment Details
+                                            Payment Information
                                         </h3>
                                     </div>
 
-                                    <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-white p-6">
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        Send your payment using your chosen method, then provide the reference number with your request.
+                                    </p>
+
+                                    <div className="mt-4 rounded-[14px] border border-dashed border-sky-200 bg-white p-6">
                                         <div className="flex flex-col items-center justify-center text-center">
-                                            <div className="rounded-2xl bg-slate-100 p-3">
-                                                <ImageOff className="h-8 w-8 text-slate-500" />
+                                            <div className="rounded-[14px] bg-sky-50 p-3">
+                                                <ImageOff className="h-8 w-8 text-sky-700" />
                                             </div>
-                                            <p className="mt-3 text-sm font-semibold text-slate-700">
-                                                QR Code Placeholder
+                                            <p className="mt-3 text-sm font-bold text-slate-800">
+                                                Payment QR will be displayed here
                                             </p>
-                                            <p className="mt-1 text-xs text-slate-500">
-                                                Put your GCash or Maya QR image here later.
+                                            <p className="mt-1 max-w-sm text-xs leading-5 text-slate-500">
+                                                Use the official payment QR provided by JCM Web Solution before submitting your reference number.
                                             </p>
                                         </div>
                                     </div>
@@ -308,7 +364,7 @@ export default function Create({
                                             <select
                                                 value={data.payment_method}
                                                 onChange={(e) => setData('payment_method', e.target.value)}
-                                                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-900"
+                                                className={inputClass}
                                             >
                                                 {payment_methods.map((method) => (
                                                     <option key={method.value} value={method.value}>
@@ -325,14 +381,14 @@ export default function Create({
 
                                         <div>
                                             <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                                Reference Number <span className="text-red-500">*</span>
+                                                Payment Reference Number <span className="text-red-500">*</span>
                                             </label>
                                             <input
                                                 type="text"
                                                 value={data.reference_number}
                                                 onChange={(e) => setData('reference_number', e.target.value)}
-                                                placeholder="Enter payment reference number"
-                                                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-900"
+                                                placeholder="Example: 1234567890"
+                                                className={inputClass}
                                             />
                                             {errors.reference_number && (
                                                 <p className="mt-2 text-sm text-red-600">
@@ -344,16 +400,33 @@ export default function Create({
 
                                     <div className="mt-4">
                                         <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                            Payment Proof
+                                            Upload Payment Proof
                                         </label>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) =>
-                                                setData('payment_proof', e.target.files?.[0] ?? null)
-                                            }
-                                            className="block w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700"
-                                        />
+
+                                        <label className="flex cursor-pointer flex-col items-center justify-center rounded-[14px] border border-dashed border-slate-300 bg-white px-4 py-6 text-center transition hover:border-sky-300 hover:bg-sky-50/40">
+                                            <UploadCloud className="h-8 w-8 text-blue-700" />
+                                            <span className="mt-2 text-sm font-semibold text-slate-700">
+                                                Upload screenshot or receipt
+                                            </span>
+                                            <span className="mt-1 text-xs text-slate-500">
+                                                JPG, PNG, or image file accepted
+                                            </span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) =>
+                                                    setData('payment_proof', e.target.files?.[0] ?? null)
+                                                }
+                                                className="hidden"
+                                            />
+                                        </label>
+
+                                        {data.payment_proof && (
+                                            <p className="mt-2 text-sm font-medium text-sky-700">
+                                                Selected file: {data.payment_proof.name}
+                                            </p>
+                                        )}
+
                                         {errors.payment_proof && (
                                             <p className="mt-2 text-sm text-red-600">
                                                 {errors.payment_proof}
@@ -364,15 +437,15 @@ export default function Create({
 
                                 <div>
                                     <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                        Notes / Requirements
+                                        Project Notes / Requirements
                                     </label>
 
                                     <textarea
                                         value={data.notes}
                                         onChange={(e) => setData('notes', e.target.value)}
                                         rows={5}
-                                        placeholder="Add your business requirements, setup requests, or other notes here..."
-                                        className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-900"
+                                        placeholder="Tell us about your business needs, preferred features, target launch date, or special requests..."
+                                        className={inputClass}
                                     />
 
                                     {errors.notes && (
@@ -380,29 +453,43 @@ export default function Create({
                                     )}
                                 </div>
 
-                                <div className="flex flex-wrap gap-3">
+                                <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-6">
                                     <Button
                                         type="submit"
                                         disabled={disableSubmit}
-                                        className="rounded-2xl px-5 py-3"
+                                        className="rounded-[10px] bg-gradient-to-r from-sky-600 to-blue-700 px-6 py-3 font-bold text-white shadow-lg shadow-blue-500/20 hover:from-sky-700 hover:to-blue-800"
                                     >
-                                        {processing ? 'Submitting...' : 'Submit Order & Payment'}
+                                        {processing ? (
+                                            <>
+                                                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                                Submitting Request...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ShoppingCart className="mr-2 h-4 w-4" />
+                                                Submit Project Request
+                                            </>
+                                        )}
                                     </Button>
+
+                                    <p className="text-sm text-slate-500">
+                                        We’ll review your details and assist you with the next step.
+                                    </p>
                                 </div>
                             </form>
                         </div>
 
                         <aside className="lg:sticky lg:top-6 lg:self-start">
-                            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                                <div className="border-b border-slate-200 bg-gradient-to-r from-slate-950 to-slate-800 px-6 py-5 text-white">
+                            <div className="overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-sm">
+                                <div className="border-b border-slate-200 bg-gradient-to-br from-slate-950 via-blue-950 to-sky-800 px-6 py-5 text-white">
                                     <div className="flex items-center gap-3">
-                                        <div className="rounded-2xl bg-white/10 p-3">
+                                        <div className="rounded-[10px] bg-white/10 p-3">
                                             <Package className="h-5 w-5" />
                                         </div>
 
                                         <div>
-                                            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
-                                                Order Summary
+                                            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-100">
+                                                Request Summary
                                             </p>
                                             <h3 className="mt-1 text-xl font-bold">{product.name}</h3>
                                         </div>
@@ -411,34 +498,42 @@ export default function Create({
 
                                 <div className="p-6">
                                     <div className="space-y-4">
-                                        <div className="rounded-2xl bg-slate-50 p-4">
+                                        <div className="rounded-[10px] border border-slate-200 bg-slate-50 p-4">
                                             <p className="text-xs uppercase tracking-wide text-slate-400">
-                                                Selected Plan
+                                                Selected Package
                                             </p>
                                             <p className="mt-1 text-lg font-bold text-slate-900">
-                                                {selectedPlan?.name || 'No plan selected yet'}
+                                                {selectedPlan?.name || 'Choose a package first'}
                                             </p>
+                                            {selectedPlan?.description && (
+                                                <p className="mt-1 text-xs leading-5 text-slate-500">
+                                                    {selectedPlan.description}
+                                                </p>
+                                            )}
                                         </div>
 
-                                        <div className="rounded-2xl bg-slate-50 p-4">
+                                        <div className="rounded-[10px] border border-slate-200 bg-slate-50 p-4">
                                             <p className="text-xs uppercase tracking-wide text-slate-400">
-                                                Billing Type
+                                                Payment Schedule
                                             </p>
                                             <p className="mt-1 text-sm font-semibold capitalize text-slate-900">
                                                 {data.billing_type}
                                             </p>
                                         </div>
 
-                                        <div className="rounded-2xl bg-slate-50 p-4">
+                                        <div className="rounded-[10px] border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-blue-50 p-4">
                                             <p className="text-xs uppercase tracking-wide text-slate-400">
-                                                Price
+                                                Estimated Price
                                             </p>
-                                            <p className="mt-1 text-2xl font-extrabold text-blue-600">
+                                            <p className="mt-1 text-2xl font-extrabold text-blue-700">
                                                 {computedPriceLabel}
+                                            </p>
+                                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                                                Final pricing may depend on your selected features and project scope.
                                             </p>
                                         </div>
 
-                                        <div className="rounded-2xl bg-slate-50 p-4">
+                                        <div className="rounded-[10px] border border-slate-200 bg-slate-50 p-4">
                                             <p className="text-xs uppercase tracking-wide text-slate-400">
                                                 Payment Method
                                             </p>
@@ -448,21 +543,36 @@ export default function Create({
                                         </div>
                                     </div>
 
-                                    <div className="mt-5 space-y-3 text-sm text-slate-500">
-                                        <div className="flex items-start gap-2">
-                                            <CheckCircle2 className="mt-0.5 h-4 w-4 text-green-600" />
-                                            <span>Order and payment will be submitted together.</span>
-                                        </div>
+                                    <div className="mt-5 rounded-[10px] border border-emerald-100 bg-emerald-50 p-4">
+                                        <p className="text-sm font-bold text-emerald-800">
+                                            What happens next?
+                                        </p>
 
-                                        <div className="flex items-start gap-2">
-                                            <CheckCircle2 className="mt-0.5 h-4 w-4 text-green-600" />
-                                            <span>Reference number will be saved with the payment record.</span>
-                                        </div>
+                                        <div className="mt-3 space-y-3 text-sm text-emerald-700">
+                                            <div className="flex items-start gap-2">
+                                                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                                                <span>Your project request will be submitted successfully.</span>
+                                            </div>
 
-                                        <div className="flex items-start gap-2">
-                                            <CheckCircle2 className="mt-0.5 h-4 w-4 text-green-600" />
-                                            <span>Next step is admin verification of your payment.</span>
+                                            <div className="flex items-start gap-2">
+                                                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                                                <span>We’ll review your payment details together with your request.</span>
+                                            </div>
+
+                                            <div className="flex items-start gap-2">
+                                                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                                                <span>Our team will contact you for the next step.</span>
+                                            </div>
                                         </div>
+                                    </div>
+
+                                    <div className="mt-5 rounded-[10px] border border-amber-200 bg-amber-50 p-4">
+                                        <p className="text-sm font-bold text-amber-800">
+                                            Reminder
+                                        </p>
+                                        <p className="mt-1 text-sm leading-6 text-amber-700">
+                                            Please make sure your reference number is correct and matches your payment transaction.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -473,30 +583,28 @@ export default function Create({
 
             {showSubmitModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 px-4 backdrop-blur-sm">
-                    <div className="w-full max-w-xl rounded-[28px] border border-slate-200 bg-white p-8 shadow-2xl">
+                    <div className="w-full max-w-xl rounded-[18px] border border-slate-200 bg-white p-8 shadow-2xl">
                         {submitModalState === 'submitting' && (
                             <>
                                 <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-blue-50">
-                                    <LoaderCircle className="h-11 w-11 animate-spin text-blue-600" />
+                                    <LoaderCircle className="h-11 w-11 animate-spin text-blue-700" />
                                 </div>
 
                                 <div className="mt-5 text-center">
                                     <h2 className="text-2xl font-bold text-slate-900">
-                                        Processing your order
+                                        Submitting your request
                                     </h2>
                                     <p className="mt-3 text-sm leading-7 text-slate-500">
-                                        Please wait while we submit your order and payment details.
-                                        Do not close this window while processing is in progress.
+                                        We’re saving your project request and payment details. Please keep this window open until submission is complete.
                                     </p>
                                 </div>
 
-                                <div className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4">
+                                <div className="mt-6 rounded-[14px] border border-blue-200 bg-blue-50 px-5 py-4">
                                     <p className="text-sm font-semibold text-blue-800">
-                                        Submitting...
+                                        Processing request...
                                     </p>
                                     <p className="mt-1 text-sm leading-6 text-blue-700">
-                                        Your order is currently being saved. The success confirmation
-                                        will appear automatically once submission is completed.
+                                        Your project details are being submitted securely.
                                     </p>
                                 </div>
                             </>
@@ -510,21 +618,18 @@ export default function Create({
 
                                 <div className="mt-5 text-center">
                                     <h2 className="text-2xl font-bold text-slate-900">
-                                        Order submitted successfully
+                                        Request submitted successfully
                                     </h2>
 
                                     <p className="mt-3 text-sm leading-7 text-slate-500">
-                                        Your order has been submitted successfully. Please make sure
-                                        your reference number is correct and matches your payment
-                                        transaction. Incorrect or unmatched payment details may
-                                        result in rejection during verification.
+                                        Your project request has been received. We’ll review your request and contact you once everything is ready.
                                     </p>
                                 </div>
 
                                 {successOrderCode && (
-                                    <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
+                                    <div className="mt-6 rounded-[14px] border border-slate-200 bg-slate-50 px-5 py-4">
                                         <p className="text-xs uppercase tracking-[0.16em] text-slate-400">
-                                            Order Reference
+                                            Request Reference
                                         </p>
                                         <p className="mt-1 text-lg font-bold text-slate-900">
                                             {successOrderCode}
@@ -532,19 +637,16 @@ export default function Create({
                                     </div>
                                 )}
 
-                                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+                                <div className="mt-4 rounded-[14px] border border-amber-200 bg-amber-50 px-5 py-4">
                                     <p className="text-sm font-semibold text-amber-800">
-                                        Important Reminder
+                                        Important reminder
                                     </p>
                                     <p className="mt-1 text-sm leading-6 text-amber-700">
-                                        Please ensure that your submitted reference number is accurate
-                                        and matches your payment transaction. Invalid or incorrect
-                                        reference details may cause your order to be rejected during
-                                        the verification process.
+                                        Please ensure that your submitted reference number is accurate and matches your payment transaction.
                                     </p>
                                 </div>
 
-                                <div className="mt-6 rounded-2xl bg-slate-900 px-4 py-3 text-center text-white">
+                                <div className="mt-6 rounded-[14px] bg-slate-950 px-4 py-3 text-center text-white">
                                     <p className="text-sm font-medium">
                                         Redirecting back to home page in{' '}
                                         <span className="font-bold text-green-400">{countdown}</span>{' '}
@@ -556,7 +658,7 @@ export default function Create({
                                     <Button
                                         type="button"
                                         onClick={() => router.visit('/dashboard')}
-                                        className="flex-1 rounded-2xl bg-slate-950 px-5 py-3 text-white hover:bg-slate-800"
+                                        className="flex-1 rounded-[10px] bg-slate-950 px-5 py-3 text-white hover:bg-slate-800"
                                     >
                                         <House className="mr-2 h-4 w-4" />
                                         Back to Home Page
@@ -576,7 +678,7 @@ export default function Create({
                                         Submission failed
                                     </h2>
                                     <p className="mt-3 text-sm leading-7 text-slate-500">
-                                        Please review the form fields and try again.
+                                        Please review your details and submit your request again.
                                     </p>
                                 </div>
 
@@ -584,7 +686,7 @@ export default function Create({
                                     <Button
                                         type="button"
                                         onClick={closeModal}
-                                        className="w-full rounded-2xl px-5 py-3"
+                                        className="w-full rounded-[10px] bg-slate-950 px-5 py-3 text-white hover:bg-slate-800"
                                     >
                                         Close
                                     </Button>

@@ -9,6 +9,8 @@ use App\Http\Controllers\PlanController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\WebsiteBuilderController;
+use App\Http\Controllers\MessageController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ServiceController;
 
 Route::get('/', function () {
@@ -95,6 +97,24 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/{service}', [ServiceController::class, 'update'])->name('update');
             Route::delete('/{service}', [ServiceController::class, 'destroy'])->name('destroy');
         });
+
+
+        Route::prefix('messages')->as('messages.')->group(function () {
+            Route::get('/', [MessageController::class, 'adminThreads'])->name('index');
+            Route::get('/{user}', [MessageController::class, 'adminConversation'])->name('conversation');
+            Route::post('/{user}/reply', [MessageController::class, 'adminReply'])->name('reply');
+        });
+
+Route::prefix('notifications')->as('notifications.')->group(function () {
+    Route::get('/', [NotificationController::class, 'adminIndex'])->name('index');
+    Route::post('/send', [NotificationController::class, 'adminSend'])->name('send');
+
+    // dapat ito muna bago /{notification}
+    Route::get('/users-list', [UsersController::class, 'list'])->name('users.list');
+
+    // dynamic route always last
+    Route::get('/{notification}', [NotificationController::class, 'adminShow'])->name('show');
+});
         
     });
 });

@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
 import { Bell, ChevronLeft, Menu, MessageCircle, ShoppingCart, Sparkles } from 'lucide-react';
 
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -62,9 +63,62 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const getInitials = useInitials();
 
     const [activeDrawer, setActiveDrawer] = useState<HeaderDrawerType | null>(null);
+    const [unreadMessages, setUnreadMessages] = useState(0);
+    const [unreadNotifications, setUnreadNotifications] = useState(0);
 
     const previousBreadcrumb =
         breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 2] : null;
+
+    useEffect(() => {
+        fetchUnreadCounts();
+
+        const interval = setInterval(fetchUnreadCounts, 5000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    async function fetchUnreadCounts() {
+        try {
+            const [messageResponse, notificationResponse] = await Promise.all([
+                axios.get('/messages'),
+                axios.get('/notifications'),
+            ]);
+
+            const messages = messageResponse.data.messages ?? [];
+            const notifications = notificationResponse.data.notifications ?? [];
+
+            const messageUnreadCount = messages.filter(
+                (item: any) => item.is_read === 1 && item.sender_type === 'admin',
+            ).length;
+
+            const notificationUnreadCount = notifications.filter(
+                (item: any) => item.is_read === 1,
+            ).length;
+
+            setUnreadMessages(messageUnreadCount);
+            setUnreadNotifications(notificationUnreadCount);
+        } catch (error) {
+            console.error('Failed to fetch unread counts:', error);
+        }
+    }
+
+    function hasUnread(itemKey: HeaderDrawerType) {
+        if (itemKey === 'messages') return unreadMessages > 0;
+        if (itemKey === 'notifications') return unreadNotifications > 0;
+
+        return false;
+    }
+
+    function openDrawer(itemKey: HeaderDrawerType) {
+        setActiveDrawer(itemKey);
+    }
+
+    function closeDrawer(open: boolean) {
+        if (!open) {
+            setActiveDrawer(null);
+            fetchUnreadCounts();
+        }
+    }
 
     return (
         <>
@@ -133,11 +187,24 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             <button
                                                 key={item.title}
                                                 type="button"
-                                                onClick={() => setActiveDrawer(item.key)}
-                                                className="flex items-center space-x-2 rounded-xl px-3 py-2 text-left font-medium transition hover:bg-accent"
+                                                onClick={() => openDrawer(item.key)}
+                                                className="relative flex items-center space-x-2 rounded-xl px-3 py-2 text-left font-medium transition hover:bg-accent"
                                             >
-                                                <item.icon className="h-5 w-5" />
+                                                <div className="relative">
+                                                    <item.icon className="h-5 w-5" />
+
+                                                    {hasUnread(item.key) && (
+                                                        <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" />
+                                                    )}
+                                                </div>
+
                                                 <span>{item.title}</span>
+
+                                                {item.key === 'cart' && (
+                                                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-700 px-1.5 text-[10px] font-bold text-white">
+                                                        2
+                                                    </span>
+                                                )}
                                             </button>
                                         ))}
                                     </div>
@@ -189,13 +256,17 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                         <TooltipTrigger asChild>
                                             <button
                                                 type="button"
-                                                onClick={() => setActiveDrawer(item.key)}
+                                                onClick={() => openDrawer(item.key)}
                                                 className="group relative inline-flex h-9 w-9 items-center justify-center rounded-md bg-transparent p-0 text-sm font-medium text-accent-foreground ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                                             >
                                                 <span className="sr-only">{item.title}</span>
                                                 <item.icon className="size-5 opacity-80 group-hover:opacity-100" />
 
-                                                {item.key !== 'cart' && (
+                                                {item.key === 'messages' && unreadMessages > 0 && (
+                                                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" />
+                                                )}
+
+                                                {item.key === 'notifications' && unreadNotifications > 0 && (
                                                     <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" />
                                                 )}
 
@@ -244,11 +315,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
             <HeaderActionDrawer
                 open={activeDrawer !== null}
                 type={activeDrawer}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        setActiveDrawer(null);
-                    }
-                }}
+                onOpenChange={closeDrawer}
             />
         </>
     );

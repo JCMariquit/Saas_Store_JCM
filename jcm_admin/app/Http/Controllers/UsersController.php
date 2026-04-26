@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -103,5 +104,20 @@ class UsersController extends Controller
         return redirect()
             ->route('admin.users.index')
             ->with('success', 'User deleted successfully.');
+    }
+
+    public function list()
+    {
+        abort_if(Auth::user()?->role !== 'admin', 403);
+
+        $users = User::query()
+            ->where('role', '!=', 'admin')
+            ->where('is_active', 1)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        return response()->json([
+            'users' => $users,
+        ]);
     }
 }

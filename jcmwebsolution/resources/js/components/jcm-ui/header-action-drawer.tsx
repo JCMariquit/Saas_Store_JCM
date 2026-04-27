@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { useEffect, useRef, useState } from 'react';
 import {
     ArrowLeft,
     Bell,
@@ -10,6 +9,7 @@ import {
     ShoppingCart,
     Trash2,
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -29,10 +29,19 @@ type HeaderActionDrawerProps = {
 };
 
 type CartItem = {
-    title: string;
-    description: string;
-    price: string;
-    details: string;
+    id: number;
+    user_id: number;
+    product_id: number;
+    plan_id?: number | null;
+    quantity: number;
+    status: string;
+    notes?: string | null;
+    product_name: string;
+    product_description?: string | null;
+    product_image?: string | null;
+    plan_name?: string | null;
+    plan_price?: number | string | null;
+    plan_description?: string | null;
 };
 
 type NotificationItem = {
@@ -63,6 +72,13 @@ export function HeaderActionDrawer({ open, type, onOpenChange }: HeaderActionDra
     const [selectedCart, setSelectedCart] = useState<CartItem | null>(null);
     const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
 
+    useEffect(() => {
+        if (open) {
+            setSelectedCart(null);
+            setSelectedNotification(null);
+        }
+    }, [open, type]);
+
     const drawerTitle =
         type === 'cart'
             ? selectedCart
@@ -77,8 +93,8 @@ export function HeaderActionDrawer({ open, type, onOpenChange }: HeaderActionDra
     const drawerDescription =
         type === 'cart'
             ? selectedCart
-                ? 'View more information about this selected service.'
-                : 'Review selected services before sending your order request.'
+                ? 'Review selected product and plan details.'
+                : 'View products and plans you added to cart.'
             : type === 'messages'
               ? 'Send your inquiry directly to the admin.'
               : selectedNotification
@@ -149,77 +165,170 @@ export function HeaderActionDrawer({ open, type, onOpenChange }: HeaderActionDra
 }
 
 function CartDrawerContent({ onSelectItem }: { onSelectItem: (item: CartItem) => void }) {
-    const cartItems: CartItem[] = [
-        {
-            title: 'Booking System',
-            description: 'Online appointment and reservation system.',
-            price: '₱15,000+',
-            details: 'A simple booking system where clients can submit appointment requests, select services, and wait for admin confirmation.',
-        },
-        {
-            title: 'Admin Dashboard',
-            description: 'Manage orders, clients, reports, and services.',
-            price: 'Included',
-            details: 'A clean admin panel for managing service requests, clients, booking records, and basic reports.',
-        },
-    ];
+    const [cartItems, setCartItems] = useState<CartItem[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [removingId, setRemovingId] = useState<number | null>(null);
+    const [total, setTotal] = useState(0);
+
+    useEffect(() => {
+        void fetchCartItems();
+
+        const refreshCart = () => {
+            void fetchCartItems();
+        };
+
+        window.addEventListener('cart:refresh', refreshCart);
+
+        return () => {
+            window.removeEventListener('cart:refresh', refreshCart);
+        };
+    }, []);
+
+    async function fetchCartItems() {
+        setLoading(true);
+
+        try {
+            const response = await axios.get('/carts');
+
+            setCartItems(response.data.items ?? []);
+            setTotal(Number(response.data.total ?? 0));
+        } catch (error) {
+            console.error('Failed to fetch cart items:', error);
+            setCartItems([]);
+            setTotal(0);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function removeCartItem(id: number) {
+        setRemovingId(id);
+
+        try {
+            await axios.delete(`/carts/${id}`);
+            await fetchCartItems();
+            window.dispatchEvent(new Event('cart:refresh'));
+        } catch (error) {
+            console.error('Failed to remove cart item:', error);
+        } finally {
+            setRemovingId(null);
+        }
+    }
+
+    function formatPeso(value?: number | string | null) {
+        const amount = Number(value ?? 0);
+
+        if (amount <= 0) return 'Contact us';
+
+        return new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: 'PHP',
+            maximumFractionDigits: 0,
+        }).format(amount);
+    }
 
     return (
         <div className="space-y-5">
             <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-950 to-blue-800 p-5 text-white shadow-sm">
-                <p className="text-sm text-blue-100">Selected package</p>
-                <h3 className="mt-1 text-2xl font-semibold">Starter Service Request</h3>
+                <p className="text-sm text-blue-100">Selected products</p>
+                <h3 className="mt-1 text-2xl font-semibold">
+                    {cartItems.length} Cart Item{cartItems.length === 1 ? '' : 's'}
+                </h3>
                 <p className="mt-2 text-sm text-blue-100">
-                    Your selected services are ready for review before submission.
+                    Review your selected products before sending an order request.
                 </p>
             </div>
 
             <div className="space-y-3">
-                {cartItems.map((item) => (
-                    <button
-                        key={item.title}
-                        type="button"
-                        onClick={() => onSelectItem(item)}
-                        className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-50/40"
-                    >
-                        <div className="flex items-start justify-between gap-3">
-                            <div>
-                                <h4 className="font-semibold text-slate-950">{item.title}</h4>
-                                <p className="mt-1 text-sm text-slate-500">{item.description}</p>
+                {loading && (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-400 shadow-sm">
+                        Loading cart...
+                    </div>
+                )}
+
+                {!loading && cartItems.length === 0 && (
+                    <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                            <ShoppingCart className="h-6 w-6" />
+                        </div>
+
+                        <h4 className="mt-3 font-semibold text-slate-900">Your cart is empty</h4>
+                        <p className="mt-1 text-sm text-slate-500">
+                            Products you add to cart will appear here.
+                        </p>
+                    </div>
+                )}
+
+                {!loading &&
+                    cartItems.map((item) => (
+                        <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => onSelectItem(item)}
+                            className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-50/40"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                    <h4 className="font-semibold text-slate-950">
+                                        {item.product_name}
+                                    </h4>
+
+                                    {item.plan_name && (
+                                        <p className="mt-1 text-sm font-medium text-blue-700">
+                                            {item.plan_name}
+                                        </p>
+                                    )}
+
+                                    <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                                        {item.product_description ?? 'No description available.'}
+                                    </p>
+                                </div>
+
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={removingId === item.id}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        void removeCartItem(item.id);
+                                    }}
+                                    className="h-8 w-8 shrink-0 text-slate-400 hover:text-red-600"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
                             </div>
 
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => e.stopPropagation()}
-                                className="h-8 w-8 text-slate-400 hover:text-red-600"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </div>
+                            <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+                                <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                                    Qty: {item.quantity}
+                                </span>
 
-                        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
-                            <span className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                                Starting price
-                            </span>
-                            <span className="font-semibold text-blue-700">{item.price}</span>
-                        </div>
-                    </button>
-                ))}
+                                <span className="font-semibold text-blue-700">
+                                    {formatPeso(item.plan_price)}
+                                </span>
+                            </div>
+                        </button>
+                    ))}
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-500">Estimated total</span>
-                    <span className="text-lg font-bold text-slate-950">₱15,000+</span>
+                    <span className="text-lg font-bold text-slate-950">
+                        {formatPeso(total)}
+                    </span>
                 </div>
+
                 <p className="mt-2 text-xs text-slate-500">
                     Final pricing may change depending on required features and scope.
                 </p>
             </div>
 
-            <Button className="h-11 w-full rounded-xl bg-blue-700 font-semibold text-white hover:bg-blue-800">
+            <Button
+                disabled={cartItems.length === 0}
+                className="h-11 w-full rounded-xl bg-blue-700 font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
                 Proceed to Order Request
             </Button>
         </div>
@@ -227,6 +336,18 @@ function CartDrawerContent({ onSelectItem }: { onSelectItem: (item: CartItem) =>
 }
 
 function CartDetail({ item }: { item: CartItem }) {
+    function formatPeso(value?: number | string | null) {
+        const amount = Number(value ?? 0);
+
+        if (amount <= 0) return 'Contact us';
+
+        return new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: 'PHP',
+            maximumFractionDigits: 0,
+        }).format(amount);
+    }
+
     return (
         <div className="space-y-4">
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -234,19 +355,54 @@ function CartDetail({ item }: { item: CartItem }) {
                     <ShoppingCart className="h-6 w-6" />
                 </div>
 
-                <h3 className="mt-4 text-xl font-semibold text-slate-950">{item.title}</h3>
-                <p className="mt-2 text-sm text-slate-500">{item.description}</p>
+                <h3 className="mt-4 text-xl font-semibold text-slate-950">
+                    {item.product_name}
+                </h3>
+
+                {item.plan_name && (
+                    <p className="mt-1 font-medium text-blue-700">{item.plan_name}</p>
+                )}
+
+                <p className="mt-2 text-sm text-slate-500">
+                    {item.product_description ?? 'No description available.'}
+                </p>
 
                 <div className="mt-5 rounded-xl bg-slate-50 p-4">
                     <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                        More details
+                        Plan details
                     </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{item.details}</p>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                        {item.plan_description ?? 'No plan details available.'}
+                    </p>
                 </div>
 
-                <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
-                    <span className="text-sm text-slate-500">Starting price</span>
-                    <span className="font-bold text-blue-700">{item.price}</span>
+                {item.notes && (
+                    <div className="mt-4 rounded-xl bg-slate-50 p-4">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Notes
+                        </p>
+
+                        <p className="mt-2 text-sm leading-6 text-slate-600">{item.notes}</p>
+                    </div>
+                )}
+
+                <div className="mt-5 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+                    <div className="rounded-xl border border-slate-100 bg-white p-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Quantity
+                        </p>
+                        <p className="mt-1 font-semibold text-slate-950">{item.quantity}</p>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-100 bg-white p-3">
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            Price
+                        </p>
+                        <p className="mt-1 font-semibold text-blue-700">
+                            {formatPeso(item.plan_price)}
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -265,7 +421,17 @@ function MessagesDrawerContent() {
     const chatEndRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        fetchMessages();
+        void fetchMessages();
+
+        const refreshMessages = () => {
+            void fetchMessages();
+        };
+
+        window.addEventListener('message:refresh', refreshMessages);
+
+        return () => {
+            window.removeEventListener('message:refresh', refreshMessages);
+        };
     }, []);
 
     useEffect(() => {
@@ -297,6 +463,7 @@ function MessagesDrawerContent() {
 
             setText('');
             await fetchMessages();
+            window.dispatchEvent(new Event('message:refresh'));
         } catch (error) {
             console.error('Failed to send message:', error);
         } finally {
@@ -389,7 +556,7 @@ function MessagesDrawerContent() {
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
-                                sendMessage();
+                                void sendMessage();
                             }
                         }}
                         rows={1}
@@ -399,7 +566,7 @@ function MessagesDrawerContent() {
 
                     <Button
                         type="button"
-                        onClick={sendMessage}
+                        onClick={() => void sendMessage()}
                         disabled={loading || !text.trim()}
                         className="h-11 rounded-xl bg-blue-700 px-5 font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
                     >
@@ -421,7 +588,17 @@ function NotificationsDrawerContent({
     const [markingAll, setMarkingAll] = useState(false);
 
     useEffect(() => {
-        fetchNotifications();
+        void fetchNotifications();
+
+        const refreshNotifications = () => {
+            void fetchNotifications();
+        };
+
+        window.addEventListener('notification:refresh', refreshNotifications);
+
+        return () => {
+            window.removeEventListener('notification:refresh', refreshNotifications);
+        };
     }, []);
 
     async function fetchNotifications() {
@@ -452,6 +629,7 @@ function NotificationsDrawerContent({
                 ),
             );
 
+            window.dispatchEvent(new Event('notification:refresh'));
             onSelectItem(notification);
         } catch (error) {
             console.error('Failed to open notification:', error);
@@ -472,6 +650,8 @@ function NotificationsDrawerContent({
                     read_at: notif.read_at ?? new Date().toISOString(),
                 })),
             );
+
+            window.dispatchEvent(new Event('notification:refresh'));
         } catch (error) {
             console.error('Failed to mark all notifications as read:', error);
         } finally {
@@ -534,7 +714,7 @@ function NotificationsDrawerContent({
                             <button
                                 key={item.id}
                                 type="button"
-                                onClick={() => openNotification(item)}
+                                onClick={() => void openNotification(item)}
                                 className={`w-full rounded-2xl border p-4 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-50/40 ${
                                     isUnread
                                         ? 'border-blue-200 bg-blue-50/70'
@@ -587,7 +767,7 @@ function NotificationsDrawerContent({
             <Button
                 type="button"
                 variant="outline"
-                onClick={markAllAsRead}
+                onClick={() => void markAllAsRead()}
                 disabled={markingAll || notifications.length === 0}
                 className="h-11 w-full rounded-xl border-slate-200 bg-white font-semibold disabled:cursor-not-allowed disabled:opacity-60"
             >

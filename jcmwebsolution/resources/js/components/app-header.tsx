@@ -1,7 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import { useEffect, useState } from 'react';
 import { Bell, ChevronLeft, Menu, MessageCircle, ShoppingCart, Sparkles } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { HeaderActionDrawer, type HeaderDrawerType } from '@/components/jcm-ui/header-action-drawer';
@@ -35,26 +35,23 @@ type Props = {
     breadcrumbs?: BreadcrumbItem[];
 };
 
+type HeaderMessage = {
+    is_read: number;
+    sender_type: 'user' | 'admin';
+};
+
+type HeaderNotification = {
+    is_read: number;
+};
+
 const headerActionItems: {
     key: HeaderDrawerType;
     title: string;
     icon: typeof ShoppingCart;
 }[] = [
-    {
-        key: 'cart',
-        title: 'Cart',
-        icon: ShoppingCart,
-    },
-    {
-        key: 'messages',
-        title: 'Messages',
-        icon: MessageCircle,
-    },
-    {
-        key: 'notifications',
-        title: 'Notifications',
-        icon: Bell,
-    },
+    { key: 'cart', title: 'Cart', icon: ShoppingCart },
+    { key: 'messages', title: 'Messages', icon: MessageCircle },
+    { key: 'notifications', title: 'Notifications', icon: Bell },
 ];
 
 export function AppHeader({ breadcrumbs = [] }: Props) {
@@ -65,58 +62,90 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const [activeDrawer, setActiveDrawer] = useState<HeaderDrawerType | null>(null);
     const [unreadMessages, setUnreadMessages] = useState(0);
     const [unreadNotifications, setUnreadNotifications] = useState(0);
+    const [cartCount, setCartCount] = useState(0);
 
     const previousBreadcrumb =
         breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 2] : null;
 
-    useEffect(() => {
-        fetchUnreadCounts();
-
-        const interval = setInterval(fetchUnreadCounts, 5000);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    async function fetchUnreadCounts() {
+    const fetchHeaderCounts = useCallback(async () => {
         try {
-            const [messageResponse, notificationResponse] = await Promise.all([
+            const [messageResponse, notificationResponse, cartResponse] = await Promise.all([
                 axios.get('/messages'),
                 axios.get('/notifications'),
+                axios.get('/carts'),
             ]);
 
-            const messages = messageResponse.data.messages ?? [];
-            const notifications = notificationResponse.data.notifications ?? [];
+            const messages: HeaderMessage[] = messageResponse.data.messages ?? [];
+            const notifications: HeaderNotification[] = notificationResponse.data.notifications ?? [];
 
             const messageUnreadCount = messages.filter(
-                (item: any) => item.is_read === 1 && item.sender_type === 'admin',
+                (item) => item.is_read === 1 && item.sender_type === 'admin',
             ).length;
 
             const notificationUnreadCount = notifications.filter(
-                (item: any) => item.is_read === 1,
+                (item) => item.is_read === 1,
             ).length;
 
             setUnreadMessages(messageUnreadCount);
             setUnreadNotifications(notificationUnreadCount);
+            setCartCount(Number(cartResponse.data.count ?? 0));
         } catch (error) {
-            console.error('Failed to fetch unread counts:', error);
+            console.error('Failed to fetch header counts:', error);
         }
-    }
+    }, []);
 
-    function hasUnread(itemKey: HeaderDrawerType) {
-        if (itemKey === 'messages') return unreadMessages > 0;
-        if (itemKey === 'notifications') return unreadNotifications > 0;
+    useEffect(() => {
+        void fetchHeaderCounts();
 
-        return false;
+        const interval = window.setInterval(() => {
+            void fetchHeaderCounts();
+        }, 5000);
+
+        const refreshHeaderCounts = () => {
+            void fetchHeaderCounts();
+        };
+
+        window.addEventListener('cart:refresh', refreshHeaderCounts);
+        window.addEventListener('message:refresh', refreshHeaderCounts);
+        window.addEventListener('notification:refresh', refreshHeaderCounts);
+
+        return () => {
+            window.clearInterval(interval);
+            window.removeEventListener('cart:refresh', refreshHeaderCounts);
+            window.removeEventListener('message:refresh', refreshHeaderCounts);
+            window.removeEventListener('notification:refresh', refreshHeaderCounts);
+        };
+    }, [fetchHeaderCounts]);
+
+    function getBadgeCount(itemKey: HeaderDrawerType) {
+        if (itemKey === 'cart') return cartCount;
+        if (itemKey === 'messages') return unreadMessages;
+        if (itemKey === 'notifications') return unreadNotifications;
+
+        return 0;
     }
 
     function openDrawer(itemKey: HeaderDrawerType) {
         setActiveDrawer(itemKey);
+        void fetchHeaderCounts();
+
+        if (itemKey === 'cart') {
+            window.dispatchEvent(new Event('cart:refresh'));
+        }
+
+        if (itemKey === 'messages') {
+            window.dispatchEvent(new Event('message:refresh'));
+        }
+
+        if (itemKey === 'notifications') {
+            window.dispatchEvent(new Event('notification:refresh'));
+        }
     }
 
     function closeDrawer(open: boolean) {
         if (!open) {
             setActiveDrawer(null);
-            fetchUnreadCounts();
+            void fetchHeaderCounts();
         }
     }
 
@@ -183,30 +212,28 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     </div>
 
                                     <div className="mt-auto flex flex-col space-y-2 text-sm">
-                                        {headerActionItems.map((item) => (
-                                            <button
-                                                key={item.title}
-                                                type="button"
-                                                onClick={() => openDrawer(item.key)}
-                                                className="relative flex items-center space-x-2 rounded-xl px-3 py-2 text-left font-medium transition hover:bg-accent"
-                                            >
-                                                <div className="relative">
+                                        {headerActionItems.map((item) => {
+                                            const badgeCount = getBadgeCount(item.key);
+
+                                            return (
+                                                <button
+                                                    key={item.title}
+                                                    type="button"
+                                                    onClick={() => openDrawer(item.key)}
+                                                    className="relative flex items-center space-x-2 rounded-xl px-3 py-2 text-left font-medium transition hover:bg-accent"
+                                                >
                                                     <item.icon className="h-5 w-5" />
 
-                                                    {hasUnread(item.key) && (
-                                                        <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" />
+                                                    <span>{item.title}</span>
+
+                                                    {badgeCount > 0 && (
+                                                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-700 px-1.5 text-[10px] font-bold text-white">
+                                                            {badgeCount > 99 ? '99+' : badgeCount}
+                                                        </span>
                                                     )}
-                                                </div>
-
-                                                <span>{item.title}</span>
-
-                                                {item.key === 'cart' && (
-                                                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-700 px-1.5 text-[10px] font-bold text-white">
-                                                        2
-                                                    </span>
-                                                )}
-                                            </button>
-                                        ))}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </SheetContent>
@@ -222,7 +249,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </Link>
 
                     <div className="ml-4 hidden min-w-0 flex-1 items-center lg:flex">
-                        {breadcrumbs.length > 1 ? (
+                        {breadcrumbs.length > 1 && (
                             <div className="flex min-w-0 items-center gap-3">
                                 {previousBreadcrumb && (
                                     <Link
@@ -238,7 +265,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     <Breadcrumbs breadcrumbs={breadcrumbs} />
                                 </div>
                             </div>
-                        ) : null}
+                        )}
                     </div>
 
                     <div className="ml-auto flex items-center space-x-2">
@@ -250,40 +277,36 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                         </div>
 
                         <div className="hidden items-center gap-1 lg:flex">
-                            {headerActionItems.map((item) => (
-                                <TooltipProvider key={item.title} delayDuration={0}>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button
-                                                type="button"
-                                                onClick={() => openDrawer(item.key)}
-                                                className="group relative inline-flex h-9 w-9 items-center justify-center rounded-md bg-transparent p-0 text-sm font-medium text-accent-foreground ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-                                            >
-                                                <span className="sr-only">{item.title}</span>
-                                                <item.icon className="size-5 opacity-80 group-hover:opacity-100" />
+                            {headerActionItems.map((item) => {
+                                const badgeCount = getBadgeCount(item.key);
 
-                                                {item.key === 'messages' && unreadMessages > 0 && (
-                                                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" />
-                                                )}
+                                return (
+                                    <TooltipProvider key={item.title} delayDuration={0}>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openDrawer(item.key)}
+                                                    className="group relative inline-flex h-9 w-9 items-center justify-center rounded-md bg-transparent p-0 text-sm font-medium text-accent-foreground ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                                                >
+                                                    <span className="sr-only">{item.title}</span>
+                                                    <item.icon className="size-5 opacity-80 group-hover:opacity-100" />
 
-                                                {item.key === 'notifications' && unreadNotifications > 0 && (
-                                                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" />
-                                                )}
+                                                    {badgeCount > 0 && (
+                                                        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-700 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white">
+                                                            {badgeCount > 99 ? '99+' : badgeCount}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            </TooltipTrigger>
 
-                                                {item.key === 'cart' && (
-                                                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-700 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white">
-                                                        2
-                                                    </span>
-                                                )}
-                                            </button>
-                                        </TooltipTrigger>
-
-                                        <TooltipContent>
-                                            <p>{item.title}</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            ))}
+                                            <TooltipContent>
+                                                <p>{item.title}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                );
+                            })}
                         </div>
 
                         <DropdownMenu>

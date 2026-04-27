@@ -4,7 +4,9 @@ import { Bell, ChevronLeft, Menu, MessageCircle, ShoppingCart, Sparkles } from '
 import { useCallback, useEffect, useState } from 'react';
 
 import { Breadcrumbs } from '@/components/breadcrumbs';
-import { HeaderActionDrawer, type HeaderDrawerType } from '@/components/jcm-ui/header-action-drawer';
+import { CartDrawer } from '@/components/jcm-ui/drawers/cart-drawer';
+import { MessagesDrawer } from '@/components/jcm-ui/drawers/messages-drawer';
+import { NotificationsDrawer } from '@/components/jcm-ui/drawers/notifications-drawer';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -34,6 +36,8 @@ import AppLogoIcon from './app-logo-icon';
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
 };
+
+type HeaderDrawerType = 'cart' | 'messages' | 'notifications';
 
 type HeaderMessage = {
     is_read: number;
@@ -76,18 +80,19 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
             ]);
 
             const messages: HeaderMessage[] = messageResponse.data.messages ?? [];
-            const notifications: HeaderNotification[] = notificationResponse.data.notifications ?? [];
+            const notifications: HeaderNotification[] =
+                notificationResponse.data.notifications ?? [];
 
-            const messageUnreadCount = messages.filter(
-                (item) => item.is_read === 1 && item.sender_type === 'admin',
-            ).length;
+            setUnreadMessages(
+                messages.filter(
+                    (item) => item.is_read === 1 && item.sender_type === 'admin',
+                ).length,
+            );
 
-            const notificationUnreadCount = notifications.filter(
-                (item) => item.is_read === 1,
-            ).length;
+            setUnreadNotifications(
+                notifications.filter((item) => item.is_read === 1).length,
+            );
 
-            setUnreadMessages(messageUnreadCount);
-            setUnreadNotifications(notificationUnreadCount);
             setCartCount(Number(cartResponse.data.count ?? 0));
         } catch (error) {
             console.error('Failed to fetch header counts:', error);
@@ -187,7 +192,8 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
                                                 <div className="space-y-2">
                                                     {breadcrumbs.map((item, index) => {
-                                                        const isLast = index === breadcrumbs.length - 1;
+                                                        const isLast =
+                                                            index === breadcrumbs.length - 1;
 
                                                         return isLast ? (
                                                             <div
@@ -223,12 +229,13 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                     className="relative flex items-center space-x-2 rounded-xl px-3 py-2 text-left font-medium transition hover:bg-accent"
                                                 >
                                                     <item.icon className="h-5 w-5" />
-
                                                     <span>{item.title}</span>
 
                                                     {badgeCount > 0 && (
                                                         <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-700 px-1.5 text-[10px] font-bold text-white">
-                                                            {badgeCount > 99 ? '99+' : badgeCount}
+                                                            {badgeCount > 99
+                                                                ? '99+'
+                                                                : badgeCount}
                                                         </span>
                                                     )}
                                                 </button>
@@ -294,7 +301,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
                                                     {badgeCount > 0 && (
                                                         <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-700 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white">
-                                                            {badgeCount > 99 ? '99+' : badgeCount}
+                                                            {badgeCount > 99
+                                                                ? '99+'
+                                                                : badgeCount}
                                                         </span>
                                                     )}
                                                 </button>
@@ -335,9 +344,18 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                 </div>
             </div>
 
-            <HeaderActionDrawer
-                open={activeDrawer !== null}
-                type={activeDrawer}
+            <CartDrawer
+                open={activeDrawer === 'cart'}
+                onOpenChange={closeDrawer}
+            />
+
+            <MessagesDrawer
+                open={activeDrawer === 'messages'}
+                onOpenChange={closeDrawer}
+            />
+
+            <NotificationsDrawer
+                open={activeDrawer === 'notifications'}
                 onOpenChange={closeDrawer}
             />
         </>

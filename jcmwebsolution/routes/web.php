@@ -18,7 +18,7 @@ Route::get('/dashboard', [PublicController::class, 'dashboard'])
 Route::get('/my-subscription', [MySubscriptionController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('my-subscription');
-
+ 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/products/{product}', [ProductController::class, 'show'])
         ->name('products.show');

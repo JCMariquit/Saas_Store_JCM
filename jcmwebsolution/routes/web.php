@@ -6,6 +6,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\CartController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicController::class, 'home'])
@@ -36,6 +37,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/messages/{message}/read', [MessageController::class, 'markAsRead'])->name('messages.read');
 
     Route::post('/admin/messages/{user}/reply', [MessageController::class, 'adminReply'])->name('admin.messages.reply');
+
+    Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
+
 });
 
 require __DIR__ . '/settings.php';

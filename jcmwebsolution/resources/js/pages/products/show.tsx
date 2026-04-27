@@ -89,6 +89,18 @@ type PlanDetailsModalProps = {
     onClose: () => void;
 };
 
+type AddToCartModalProps = {
+    open: boolean;
+    product: ProductDetail;
+    selectedPlanId: number | null;
+    notes: string;
+    isSubmitting: boolean;
+    onSelectPlan: (planId: number | null) => void;
+    onChangeNotes: (notes: string) => void;
+    onClose: () => void;
+    onSubmit: () => void;
+};
+
 const cardClass = 'rounded-[10px] border border-slate-200 bg-white p-6 shadow-sm';
 
 const fallbackProductDescription =
@@ -120,9 +132,7 @@ function PlanDetailsModal({ open, plan, productId, onClose }: PlanDetailsModalPr
                         Selected Package
                     </div>
 
-                    <h2 className="mt-4 pr-10 text-3xl font-black leading-tight">
-                        {plan.name}
-                    </h2>
+                    <h2 className="mt-4 pr-10 text-3xl font-black leading-tight">{plan.name}</h2>
 
                     <p className="mt-2 max-w-xl text-sm leading-6 text-sky-100">
                         {plan.description ||
@@ -135,9 +145,7 @@ function PlanDetailsModal({ open, plan, productId, onClose }: PlanDetailsModalPr
                                 <WalletCards className="h-4 w-4" />
                                 Package Price
                             </p>
-                            <p className="mt-2 text-3xl font-black text-white">
-                                {plan.price_label}
-                            </p>
+                            <p className="mt-2 text-3xl font-black text-white">{plan.price_label}</p>
                         </div>
 
                         <div className="rounded-[10px] border border-white/15 bg-white/10 p-4 backdrop-blur">
@@ -159,12 +167,8 @@ function PlanDetailsModal({ open, plan, productId, onClose }: PlanDetailsModalPr
                         </div>
 
                         <div>
-                            <h3 className="text-base font-bold text-slate-900">
-                                What you’ll get
-                            </h3>
-                            <p className="text-sm text-slate-500">
-                                Main inclusions prepared for this package.
-                            </p>
+                            <h3 className="text-base font-bold text-slate-900">What you’ll get</h3>
+                            <p className="text-sm text-slate-500">Main inclusions prepared for this package.</p>
                         </div>
                     </div>
 
@@ -187,24 +191,181 @@ function PlanDetailsModal({ open, plan, productId, onClose }: PlanDetailsModalPr
                     )}
 
                     <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                            className="rounded-[10px] px-5"
-                        >
+                        <Button type="button" variant="outline" onClick={onClose} className="rounded-[10px] px-5">
                             Review More
                         </Button>
 
                         <Button
                             type="button"
-                            onClick={() =>
-                                router.get(`/orders/create?product_id=${productId}&plan_id=${plan.id}`)
-                            }
+                            onClick={() => router.get(`/orders/create?product_id=${productId}&plan_id=${plan.id}`)}
                             className="rounded-[10px] bg-gradient-to-r from-sky-600 to-blue-700 px-5 text-white shadow-lg shadow-blue-500/20 hover:from-sky-700 hover:to-blue-800"
                         >
                             Start Project
                             <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function AddToCartModal({
+    open,
+    product,
+    selectedPlanId,
+    notes,
+    isSubmitting,
+    onSelectPlan,
+    onChangeNotes,
+    onClose,
+    onSubmit,
+}: AddToCartModalProps) {
+    if (!open) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur-md">
+            <div className="relative w-full max-w-2xl overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-2xl">
+                <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-sky-300/30 blur-3xl" />
+                <div className="absolute -bottom-10 left-0 h-40 w-40 rounded-full bg-blue-400/20 blur-3xl" />
+
+                <div className="relative bg-gradient-to-br from-slate-950 via-blue-950 to-sky-800 px-7 py-6 text-white">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="absolute right-5 top-5 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20"
+                    >
+                        <X className="h-4 w-4" />
+                    </button>
+
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-sky-50 backdrop-blur">
+                        <ShoppingCart className="h-4 w-4 text-sky-300" />
+                        Add to Cart
+                    </div>
+
+                    <h2 className="mt-4 pr-10 text-2xl font-black leading-tight md:text-3xl">
+                        Choose package for {product.name}
+                    </h2>
+
+                    <p className="mt-2 max-w-xl text-sm leading-6 text-sky-100">
+                        Select the package you want to add to your cart. You can also add notes for your preferred setup
+                        or requirements.
+                    </p>
+                </div>
+
+                <div className="relative max-h-[70vh] overflow-y-auto px-7 py-6">
+                    <div>
+                        <label className="text-sm font-bold text-slate-900">Select Plan</label>
+
+                        <div className="mt-3 space-y-3">
+                            {product.plans.length > 0 ? (
+                                product.plans.map((plan) => {
+                                    const isSelected = selectedPlanId === plan.id;
+
+                                    return (
+                                        <button
+                                            key={plan.id}
+                                            type="button"
+                                            onClick={() => onSelectPlan(plan.id)}
+                                            className={`w-full rounded-[12px] border p-4 text-left transition ${
+                                                isSelected
+                                                    ? 'border-sky-400 bg-sky-50 ring-2 ring-sky-100'
+                                                    : 'border-slate-200 bg-white hover:border-sky-200 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span
+                                                            className={`flex h-4 w-4 items-center justify-center rounded-full border ${
+                                                                isSelected
+                                                                    ? 'border-sky-600 bg-sky-600'
+                                                                    : 'border-slate-300 bg-white'
+                                                            }`}
+                                                        >
+                                                            {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                                                        </span>
+
+                                                        <p className="font-black text-slate-900">{plan.name}</p>
+                                                    </div>
+
+                                                    <p className="mt-1 pl-6 text-xs text-slate-500">
+                                                        {plan.billing_cycle || 'Flexible project setup'}
+                                                    </p>
+                                                </div>
+
+                                                <p className="shrink-0 text-sm font-black text-blue-700">{plan.price_label}</p>
+                                            </div>
+
+                                            {plan.description && (
+                                                <p className="mt-3 pl-6 text-sm leading-6 text-slate-500">{plan.description}</p>
+                                            )}
+
+                                            {plan.features.length > 0 && (
+                                                <div className="mt-3 grid gap-2 pl-6 sm:grid-cols-2">
+                                                    {plan.features.slice(0, 4).map((feature, index) => (
+                                                        <div
+                                                            key={`${plan.id}-cart-feature-${index}`}
+                                                            className="flex items-start gap-2 text-xs text-slate-600"
+                                                        >
+                                                            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                                                            <span>{feature}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </button>
+                                    );
+                                })
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => onSelectPlan(null)}
+                                    className="w-full rounded-[12px] border border-slate-200 bg-slate-50 p-4 text-left"
+                                >
+                                    <p className="font-bold text-slate-900">Custom Request</p>
+                                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                                        No fixed package available. This product will be added as a custom request.
+                                    </p>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="mt-5">
+                        <label className="text-sm font-bold text-slate-900">Notes / Requirements</label>
+
+                        <textarea
+                            value={notes}
+                            onChange={(event) => onChangeNotes(event.target.value)}
+                            rows={4}
+                            placeholder="Optional: Add preferred setup, target features, business requirements, or special instructions..."
+                            className="mt-2 w-full rounded-[10px] border border-slate-300 px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                        />
+                    </div>
+
+                    <div className="mt-6 rounded-[10px] border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-blue-50 p-4">
+                        <p className="text-xs font-bold uppercase tracking-wide text-sky-700">Cart Summary</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">{product.name}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                            Your selected product and plan will be saved to your cart for review before checkout or project
+                            request.
+                        </p>
+                    </div>
+
+                    <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <Button type="button" variant="outline" onClick={onClose} className="rounded-[10px]">
+                            Cancel
+                        </Button>
+
+                        <Button
+                            type="button"
+                            disabled={isSubmitting || (product.plans.length > 0 && !selectedPlanId)}
+                            onClick={onSubmit}
+                            className="rounded-[10px] bg-gradient-to-r from-sky-600 to-blue-700 text-white shadow-lg shadow-blue-500/20 hover:from-sky-700 hover:to-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            {isSubmitting ? 'Adding...' : 'Confirm Add to Cart'}
                         </Button>
                     </div>
                 </div>
@@ -247,9 +408,45 @@ export default function Show({ product }: PageProps) {
 
     const [activeIndex, setActiveIndex] = useState(0);
     const [selectedPlan, setSelectedPlan] = useState<PlanItem | null>(null);
+    const [cartModalOpen, setCartModalOpen] = useState(false);
+    const [cartPlanId, setCartPlanId] = useState<number | null>(product.plans?.[0]?.id ?? null);
+    const [cartNotes, setCartNotes] = useState('');
+    const [isAddingCart, setIsAddingCart] = useState(false);
+    const [cartSuccessOpen, setCartSuccessOpen] = useState(false);
 
     const safeActiveIndex = activeIndex >= galleryImages.length ? 0 : activeIndex;
     const activeImage = galleryImages[safeActiveIndex]?.image_url ?? product.thumbnail_url ?? null;
+
+    const openCartModal = () => {
+        setCartPlanId(product.plans?.[0]?.id ?? null);
+        setCartModalOpen(true);
+    };
+
+    const submitAddToCart = () => {
+        setIsAddingCart(true);
+
+        router.post(
+            '/cart',
+            {
+                product_id: product.id,
+                plan_id: cartPlanId,
+                notes: cartNotes,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setCartModalOpen(false);
+                    setCartNotes('');
+                    setCartSuccessOpen(true);
+
+                    setTimeout(() => {
+                        setCartSuccessOpen(false);
+                    }, 3000);
+                },
+                onFinish: () => setIsAddingCart(false),
+            },
+        );
+    };
 
     const showPrevImage = () => {
         if (galleryImages.length <= 1) return;
@@ -318,16 +515,12 @@ export default function Show({ product }: PageProps) {
                                     </span>
 
                                     <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700">
-                                        {product.plans.length > 0
-                                            ? 'Flexible Service Packages'
-                                            : 'Custom Project Request'}
+                                        {product.plans.length > 0 ? 'Flexible Service Packages' : 'Custom Project Request'}
                                     </span>
                                 </div>
 
                                 <div className="mt-6">
-                                    <p className="text-xs uppercase tracking-[0.18em] text-slate-300">
-                                        Starts at
-                                    </p>
+                                    <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Starts at</p>
                                     <p className="mt-1 text-3xl font-extrabold text-white">
                                         {product.starting_price_label}
                                     </p>
@@ -470,9 +663,7 @@ export default function Show({ product }: PageProps) {
                                                     key={plan.id}
                                                     onClick={() => setSelectedPlan(plan)}
                                                     className={`group relative cursor-pointer overflow-hidden rounded-[14px] border bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-sky-300 hover:shadow-xl hover:shadow-sky-100 ${
-                                                        isBestPlan
-                                                            ? 'border-sky-300 ring-2 ring-sky-100'
-                                                            : 'border-slate-200'
+                                                        isBestPlan ? 'border-sky-300 ring-2 ring-sky-100' : 'border-slate-200'
                                                     }`}
                                                 >
                                                     <div className="absolute inset-0 bg-gradient-to-br from-sky-100/60 via-white to-transparent opacity-0 transition group-hover:opacity-100" />
@@ -573,12 +764,8 @@ export default function Show({ product }: PageProps) {
                                     </div>
 
                                     <div>
-                                        <h2 className="text-xl font-bold text-slate-900">
-                                            Why choose this solution?
-                                        </h2>
-                                        <p className="text-sm text-slate-500">
-                                            Designed to support your daily business operations.
-                                        </p>
+                                        <h2 className="text-xl font-bold text-slate-900">Why choose this solution?</h2>
+                                        <p className="text-sm text-slate-500">Designed to support your daily business operations.</p>
                                     </div>
                                 </div>
 
@@ -594,12 +781,8 @@ export default function Show({ product }: PageProps) {
                                     </div>
 
                                     <div>
-                                        <h2 className="text-xl font-bold text-slate-900">
-                                            What this system can do
-                                        </h2>
-                                        <p className="text-sm text-slate-500">
-                                            Key features that help improve your business workflow.
-                                        </p>
+                                        <h2 className="text-xl font-bold text-slate-900">What this system can do</h2>
+                                        <p className="text-sm text-slate-500">Key features that help improve your business workflow.</p>
                                     </div>
                                 </div>
 
@@ -641,9 +824,7 @@ export default function Show({ product }: PageProps) {
                                         </div>
 
                                         <div>
-                                            <h2 className="text-xl font-bold text-slate-900">
-                                                Solution overview
-                                            </h2>
+                                            <h2 className="text-xl font-bold text-slate-900">Solution overview</h2>
                                             <p className="text-sm text-slate-500">
                                                 More details about how this system can support your business.
                                             </p>
@@ -652,13 +833,8 @@ export default function Show({ product }: PageProps) {
 
                                     <div className="mt-6 space-y-4">
                                         {product.overviews.map((overview) => (
-                                            <div
-                                                key={overview.id}
-                                                className="rounded-[10px] border border-slate-200 bg-slate-50 p-5"
-                                            >
-                                                <h3 className="text-lg font-bold text-slate-900">
-                                                    {overview.title}
-                                                </h3>
+                                            <div key={overview.id} className="rounded-[10px] border border-slate-200 bg-slate-50 p-5">
+                                                <h3 className="text-lg font-bold text-slate-900">{overview.title}</h3>
                                                 <p className="mt-2 whitespace-pre-line text-sm leading-7 text-slate-600">
                                                     {overview.content}
                                                 </p>
@@ -675,18 +851,14 @@ export default function Show({ product }: PageProps) {
                                     Ready to get started?
                                 </p>
 
-                                <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                                    {product.name}
-                                </h3>
+                                <h3 className="mt-2 text-2xl font-bold text-slate-900">{product.name}</h3>
 
                                 <p className="mt-2 text-sm leading-6 text-slate-500">
                                     Start your project request and let us prepare the right solution for your business.
                                 </p>
 
                                 <div className="mt-5 rounded-[10px] border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-blue-50 p-4">
-                                    <p className="text-xs uppercase tracking-wide text-slate-400">
-                                        Starts at
-                                    </p>
+                                    <p className="text-xs uppercase tracking-wide text-slate-400">Starts at</p>
                                     <p className="mt-1 text-2xl font-extrabold text-blue-700">
                                         {product.starting_price_label}
                                     </p>
@@ -707,9 +879,11 @@ export default function Show({ product }: PageProps) {
 
                                     <button
                                         type="button"
-                                        className="inline-flex w-full items-center justify-center rounded-[10px] border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                        onClick={openCartModal}
+                                        className="inline-flex w-full items-center justify-center rounded-[10px] border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-bold text-sky-700 transition hover:bg-sky-100"
                                     >
-                                        Ask First
+                                        <ShoppingCart className="mr-2 h-4 w-4" />
+                                        Add to Cart
                                     </button>
                                 </div>
 
@@ -766,6 +940,34 @@ export default function Show({ product }: PageProps) {
                 productId={product.id}
                 onClose={() => setSelectedPlan(null)}
             />
+
+            <AddToCartModal
+                open={cartModalOpen}
+                product={product}
+                selectedPlanId={cartPlanId}
+                notes={cartNotes}
+                isSubmitting={isAddingCart}
+                onSelectPlan={setCartPlanId}
+                onChangeNotes={setCartNotes}
+                onClose={() => setCartModalOpen(false)}
+                onSubmit={submitAddToCart}
+            />
+
+            {cartSuccessOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-sm">
+                    <div className="w-full max-w-sm rounded-[14px] border border-emerald-200 bg-white p-6 text-center shadow-2xl">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                            <CheckCircle2 className="h-8 w-8" />
+                        </div>
+
+                        <h2 className="mt-4 text-xl font-black text-slate-900">Added to Cart</h2>
+
+                        <p className="mt-2 text-sm leading-6 text-slate-500">
+                            Product has been added to your cart successfully.
+                        </p>
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }

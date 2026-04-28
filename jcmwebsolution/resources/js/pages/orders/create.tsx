@@ -1,6 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import {
-    ArrowLeft,
     CheckCircle2,
     House,
     ImageOff,
@@ -36,6 +35,16 @@ type ProductItem = {
     pricing_type: string;
 };
 
+type ServiceItem = {
+    id: number;
+    name: string;
+    description: string | null;
+    service_type: string;
+    pricing_type: string;
+    base_price: number | null;
+    base_price_label: string;
+};
+
 type PaymentMethodItem = {
     value: string;
     label: string;
@@ -47,9 +56,11 @@ type BillingTypeOption = {
 };
 
 type PageProps = {
-    product: ProductItem;
+    product?: ProductItem | null;
+    service?: ServiceItem | null;
     plans: PlanItem[];
     selected_plan_id?: number | null;
+    cart_id?: number | null;
     payment_methods: PaymentMethodItem[];
     billing_type_options: BillingTypeOption[];
 };
@@ -62,14 +73,22 @@ const inputClass =
 const cardClass = 'rounded-[14px] border border-slate-200 bg-white shadow-sm';
 
 export default function Create({
-    product,
-    plans,
+    product = null,
+    service = null,
+    plans = [],
     selected_plan_id,
+    cart_id,
     payment_methods,
     billing_type_options,
 }: PageProps) {
-    const isPlanProduct = product.pricing_type === 'plan';
-    const isCustomProduct = product.pricing_type === 'custom';
+    const isServiceRequest = !!service;
+    const item = service ?? product;
+
+    const itemName = item?.name ?? 'Selected Request';
+    const itemDescription = item?.description ?? null;
+
+    const isPlanProduct = !isServiceRequest && product?.pricing_type === 'plan';
+    const isCustomProduct = isServiceRequest || product?.pricing_type === 'custom';
 
     const [showSubmitModal, setShowSubmitModal] = useState(false);
     const [submitModalState, setSubmitModalState] =
@@ -77,20 +96,27 @@ export default function Create({
     const [countdown, setCountdown] = useState(10);
     const [successOrderCode, setSuccessOrderCode] = useState<string | null>(null);
 
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        product_id: product.id,
-        plan_id: selected_plan_id ? String(selected_plan_id) : '',
-        billing_type: isPlanProduct ? 'monthly' : 'custom',
-        notes: '',
-        payment_method: 'gcash',
-        reference_number: '',
-        payment_proof: null as File | null,
-    });
+    const { data, setData, post, processing, errors, reset, clearErrors } =
+        useForm({
+            product_id: product?.id ? String(product.id) : '',
+            service_id: service?.id ? String(service.id) : '',
+            plan_id: selected_plan_id ? String(selected_plan_id) : '',
+            cart_id: cart_id ? String(cart_id) : '',
+            billing_type: isPlanProduct ? 'monthly' : 'custom',
+            notes: '',
+            payment_method: 'gcash',
+            reference_number: '',
+            payment_proof: null as File | null,
+        });
 
     const selectedPlan =
         plans.find((plan) => String(plan.id) === String(data.plan_id)) ?? null;
 
     const computedPriceLabel = useMemo(() => {
+        if (isServiceRequest) {
+            return service?.base_price_label ?? 'To be confirmed';
+        }
+
         if (!selectedPlan) return 'To be confirmed';
 
         if (data.billing_type === 'yearly' && selectedPlan.price !== null) {
@@ -101,10 +127,19 @@ export default function Create({
         }
 
         return selectedPlan.price_label;
-    }, [selectedPlan, data.billing_type]);
+    }, [isServiceRequest, service?.base_price_label, selectedPlan, data.billing_type]);
+
+    const requestTypeLabel = isServiceRequest
+        ? 'Custom Service Request'
+        : product?.pricing_type === 'plan'
+          ? 'Package-Based Product'
+          : product?.pricing_type === 'custom'
+            ? 'Custom Project Request'
+            : 'Fixed Project Pricing';
 
     const disableSubmit =
         processing ||
+        !item ||
         (isPlanProduct && !data.plan_id) ||
         !data.payment_method ||
         !data.reference_number;
@@ -130,6 +165,8 @@ export default function Create({
             preserveScroll: true,
             onSuccess: (page) => {
                 reset('notes', 'reference_number', 'payment_proof');
+                window.dispatchEvent(new Event('cart:refresh'));
+
                 setSubmitModalState('success');
                 setCountdown(10);
 
@@ -163,7 +200,7 @@ export default function Create({
         if (!showSubmitModal || submitModalState !== 'success') return;
 
         if (countdown <= 0) {
-            router.visit('/');
+            router.visit('/dashboard');
             return;
         }
 
@@ -174,9 +211,34 @@ export default function Create({
         return () => window.clearTimeout(timer);
     }, [showSubmitModal, submitModalState, countdown]);
 
+    if (!item) {
+        return (
+            <AppLayout fullWidth>
+                <Head title="Request Not Found" />
+                <div className="flex min-h-screen items-center justify-center bg-[#e8edf5] px-4">
+                    <div className="max-w-md rounded-[14px] border border-slate-200 bg-white p-8 text-center shadow-sm">
+                        <h1 className="text-2xl font-bold text-slate-900">
+                            Request not found
+                        </h1>
+                        <p className="mt-2 text-sm text-slate-500">
+                            Please go back to the store and select a product or service.
+                        </p>
+                        <Button
+                            type="button"
+                            onClick={() => router.visit('/dashboard')}
+                            className="mt-5 rounded-[10px] bg-slate-950 px-5 py-3 text-white hover:bg-slate-800"
+                        >
+                            Back to Store
+                        </Button>
+                    </div>
+                </div>
+            </AppLayout>
+        );
+    }
+
     return (
         <AppLayout fullWidth>
-            <Head title={`Start Project - ${product.name}`} />
+            <Head title={`Start Request - ${itemName}`} />
 
             <div className="min-h-screen bg-[#e8edf5] pb-10 text-slate-900">
                 <section className="relative overflow-hidden border-b border-slate-200 bg-gradient-to-br from-slate-950 via-blue-950 to-sky-900 text-white">
@@ -184,22 +246,22 @@ export default function Create({
                     <div className="absolute right-0 top-16 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl" />
 
                     <div className="relative mx-auto max-w-6xl px-4 py-7 md:px-6">
-     
-
                         <div className="mt-7 grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
                             <div>
                                 <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-100">
                                     <Sparkles className="h-3.5 w-3.5 text-sky-300" />
-                                    Start Your Project
+                                    {isServiceRequest
+                                        ? 'Start Your Service Request'
+                                        : 'Start Your Project'}
                                 </div>
 
                                 <h1 className="mt-4 max-w-3xl text-3xl font-black leading-tight md:text-4xl">
-                                    Complete your request for {product.name}
+                                    Complete your request for {itemName}
                                 </h1>
 
                                 <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-200 md:text-base">
-                                    Fill out your preferred package, payment details, and project notes.
-                                    Once submitted, we’ll review your project details and contact you for the next step.
+                                    Fill out your request details, payment information, and notes.
+                                    Once submitted, we’ll review your request and contact you for the next step.
                                 </p>
                             </div>
 
@@ -210,7 +272,7 @@ export default function Create({
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-white">
-                                            Secure project request
+                                            Secure request submission
                                         </p>
                                         <p className="mt-1 text-sm leading-6 text-slate-200">
                                             Submit your details safely and we’ll guide you through the next step.
@@ -232,103 +294,106 @@ export default function Create({
 
                                 <div>
                                     <h2 className="text-2xl font-bold text-slate-900">
-                                        Project Request & Payment
+                                        Request & Payment
                                     </h2>
                                     <p className="text-sm text-slate-500">
-                                        Submit your preferred package and payment information in one secure request.
+                                        Submit your request and payment information in one secure form.
                                     </p>
                                 </div>
                             </div>
 
                             <div className="mt-6 rounded-[14px] border border-slate-200 bg-gradient-to-br from-sky-50 via-white to-blue-50 p-5">
                                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-700">
-                                    Selected Solution
+                                    Selected {isServiceRequest ? 'Service' : 'Solution'}
                                 </p>
 
                                 <h3 className="mt-2 text-2xl font-black text-slate-900">
-                                    {product.name}
+                                    {itemName}
                                 </h3>
 
-                                <p className="mt-2 text-sm leading-6 text-slate-600">
-                                    {product.description ||
-                                        'A professional digital solution designed to help your business improve workflow, organize records, and serve customers more efficiently.'}
-                                </p>
+                                {itemDescription && (
+                                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                                        {itemDescription}
+                                    </p>
+                                )}
 
                                 <div className="mt-4 inline-flex rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold capitalize text-sky-700">
-                                    {product.pricing_type === 'plan'
-                                        ? 'Package-Based Service'
-                                        : product.pricing_type === 'custom'
-                                          ? 'Custom Project Request'
-                                          : 'Fixed Project Pricing'}
+                                    {requestTypeLabel}
                                 </div>
                             </div>
 
                             <form onSubmit={submit} className="mt-6 space-y-6">
-                                <div className="grid gap-5 md:grid-cols-2">
-                                    <div>
-                                        <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                            Preferred Package
-                                            {isPlanProduct ? (
-                                                <span className="ml-1 text-red-500">*</span>
-                                            ) : null}
-                                        </label>
-
-                                        <select
-                                            value={data.plan_id}
-                                            onChange={(e) => setData('plan_id', e.target.value)}
-                                            className={inputClass}
-                                        >
-                                            <option value="">Choose a package</option>
-                                            {plans.map((plan) => (
-                                                <option key={plan.id} value={plan.id}>
-                                                    {plan.name} — {plan.price_label}
-                                                </option>
-                                            ))}
-                                        </select>
-
-                                        {errors.plan_id && (
-                                            <p className="mt-2 text-sm text-red-600">{errors.plan_id}</p>
-                                        )}
-                                    </div>
-
-                                    {isPlanProduct ? (
+                                {!isServiceRequest && (
+                                    <div className="grid gap-5 md:grid-cols-2">
                                         <div>
                                             <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                                Payment Schedule <span className="text-red-500">*</span>
+                                                Preferred Package
+                                                {isPlanProduct && (
+                                                    <span className="ml-1 text-red-500">*</span>
+                                                )}
                                             </label>
 
                                             <select
-                                                value={data.billing_type}
-                                                onChange={(e) => setData('billing_type', e.target.value)}
+                                                value={data.plan_id}
+                                                onChange={(e) => setData('plan_id', e.target.value)}
                                                 className={inputClass}
                                             >
-                                                {billing_type_options.map((option) => (
-                                                    <option key={option.value} value={option.value}>
-                                                        {option.label}
+                                                <option value="">Choose a package</option>
+                                                {plans.map((plan) => (
+                                                    <option key={plan.id} value={plan.id}>
+                                                        {plan.name} — {plan.price_label}
                                                     </option>
                                                 ))}
                                             </select>
 
-                                            {errors.billing_type && (
+                                            {errors.plan_id && (
                                                 <p className="mt-2 text-sm text-red-600">
-                                                    {errors.billing_type}
+                                                    {errors.plan_id}
                                                 </p>
                                             )}
                                         </div>
-                                    ) : null}
-                                </div>
 
-                                {isCustomProduct ? (
+                                        {isPlanProduct && (
+                                            <div>
+                                                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                                    Payment Schedule <span className="text-red-500">*</span>
+                                                </label>
+
+                                                <select
+                                                    value={data.billing_type}
+                                                    onChange={(e) => setData('billing_type', e.target.value)}
+                                                    className={inputClass}
+                                                >
+                                                    {billing_type_options.map((option) => (
+                                                        <option key={option.value} value={option.value}>
+                                                            {option.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+
+                                                {errors.billing_type && (
+                                                    <p className="mt-2 text-sm text-red-600">
+                                                        {errors.billing_type}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {isCustomProduct && (
                                     <div className="rounded-[14px] border border-sky-100 bg-sky-50 p-4">
                                         <p className="text-sm font-semibold text-sky-800">
-                                            Custom Project Pricing
+                                            {isServiceRequest
+                                                ? 'Custom Service Pricing'
+                                                : 'Custom Project Pricing'}
                                         </p>
                                         <p className="mt-1 text-sm leading-6 text-slate-600">
                                             Pricing will be reviewed based on your selected features, timeline,
                                             setup, and support needs.
                                         </p>
                                     </div>
-                                ) : null}
+                                )}
 
                                 <div className="rounded-[14px] border border-slate-200 bg-slate-50 p-5">
                                     <div className="flex items-center gap-2">
@@ -361,6 +426,7 @@ export default function Create({
                                             <label className="mb-2 block text-sm font-semibold text-slate-700">
                                                 Payment Method <span className="text-red-500">*</span>
                                             </label>
+
                                             <select
                                                 value={data.payment_method}
                                                 onChange={(e) => setData('payment_method', e.target.value)}
@@ -372,6 +438,7 @@ export default function Create({
                                                     </option>
                                                 ))}
                                             </select>
+
                                             {errors.payment_method && (
                                                 <p className="mt-2 text-sm text-red-600">
                                                     {errors.payment_method}
@@ -383,6 +450,7 @@ export default function Create({
                                             <label className="mb-2 block text-sm font-semibold text-slate-700">
                                                 Payment Reference Number <span className="text-red-500">*</span>
                                             </label>
+
                                             <input
                                                 type="text"
                                                 value={data.reference_number}
@@ -390,6 +458,7 @@ export default function Create({
                                                 placeholder="Example: 1234567890"
                                                 className={inputClass}
                                             />
+
                                             {errors.reference_number && (
                                                 <p className="mt-2 text-sm text-red-600">
                                                     {errors.reference_number}
@@ -437,7 +506,9 @@ export default function Create({
 
                                 <div>
                                     <label className="mb-2 block text-sm font-semibold text-slate-700">
-                                        Project Notes / Requirements
+                                        {isServiceRequest
+                                            ? 'Service Notes / Requirements'
+                                            : 'Project Notes / Requirements'}
                                     </label>
 
                                     <textarea
@@ -467,7 +538,7 @@ export default function Create({
                                         ) : (
                                             <>
                                                 <ShoppingCart className="mr-2 h-4 w-4" />
-                                                Submit Project Request
+                                                Submit Request
                                             </>
                                         )}
                                     </Button>
@@ -491,33 +562,30 @@ export default function Create({
                                             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-100">
                                                 Request Summary
                                             </p>
-                                            <h3 className="mt-1 text-xl font-bold">{product.name}</h3>
+                                            <h3 className="mt-1 text-xl font-bold">{itemName}</h3>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="p-6">
                                     <div className="space-y-4">
-                                        <div className="rounded-[10px] border border-slate-200 bg-slate-50 p-4">
-                                            <p className="text-xs uppercase tracking-wide text-slate-400">
-                                                Selected Package
-                                            </p>
-                                            <p className="mt-1 text-lg font-bold text-slate-900">
-                                                {selectedPlan?.name || 'Choose a package first'}
-                                            </p>
-                                            {selectedPlan?.description && (
-                                                <p className="mt-1 text-xs leading-5 text-slate-500">
-                                                    {selectedPlan.description}
+                                        {!isServiceRequest && (
+                                            <div className="rounded-[10px] border border-slate-200 bg-slate-50 p-4">
+                                                <p className="text-xs uppercase tracking-wide text-slate-400">
+                                                    Selected Package
                                                 </p>
-                                            )}
-                                        </div>
+                                                <p className="mt-1 text-lg font-bold text-slate-900">
+                                                    {selectedPlan?.name || 'Choose a package first'}
+                                                </p>
+                                            </div>
+                                        )}
 
                                         <div className="rounded-[10px] border border-slate-200 bg-slate-50 p-4">
                                             <p className="text-xs uppercase tracking-wide text-slate-400">
-                                                Payment Schedule
+                                                Request Type
                                             </p>
                                             <p className="mt-1 text-sm font-semibold capitalize text-slate-900">
-                                                {data.billing_type}
+                                                {requestTypeLabel}
                                             </p>
                                         </div>
 
@@ -527,9 +595,6 @@ export default function Create({
                                             </p>
                                             <p className="mt-1 text-2xl font-extrabold text-blue-700">
                                                 {computedPriceLabel}
-                                            </p>
-                                            <p className="mt-1 text-xs leading-5 text-slate-500">
-                                                Final pricing may depend on your selected features and project scope.
                                             </p>
                                         </div>
 
@@ -541,38 +606,6 @@ export default function Create({
                                                 {data.payment_method || 'Not selected'}
                                             </p>
                                         </div>
-                                    </div>
-
-                                    <div className="mt-5 rounded-[10px] border border-emerald-100 bg-emerald-50 p-4">
-                                        <p className="text-sm font-bold text-emerald-800">
-                                            What happens next?
-                                        </p>
-
-                                        <div className="mt-3 space-y-3 text-sm text-emerald-700">
-                                            <div className="flex items-start gap-2">
-                                                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                                                <span>Your project request will be submitted successfully.</span>
-                                            </div>
-
-                                            <div className="flex items-start gap-2">
-                                                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                                                <span>We’ll review your payment details together with your request.</span>
-                                            </div>
-
-                                            <div className="flex items-start gap-2">
-                                                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                                                <span>Our team will contact you for the next step.</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-5 rounded-[10px] border border-amber-200 bg-amber-50 p-4">
-                                        <p className="text-sm font-bold text-amber-800">
-                                            Reminder
-                                        </p>
-                                        <p className="mt-1 text-sm leading-6 text-amber-700">
-                                            Please make sure your reference number is correct and matches your payment transaction.
-                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -595,16 +628,7 @@ export default function Create({
                                         Submitting your request
                                     </h2>
                                     <p className="mt-3 text-sm leading-7 text-slate-500">
-                                        We’re saving your project request and payment details. Please keep this window open until submission is complete.
-                                    </p>
-                                </div>
-
-                                <div className="mt-6 rounded-[14px] border border-blue-200 bg-blue-50 px-5 py-4">
-                                    <p className="text-sm font-semibold text-blue-800">
-                                        Processing request...
-                                    </p>
-                                    <p className="mt-1 text-sm leading-6 text-blue-700">
-                                        Your project details are being submitted securely.
+                                        We’re saving your request and payment details. Please keep this window open until submission is complete.
                                     </p>
                                 </div>
                             </>
@@ -622,7 +646,7 @@ export default function Create({
                                     </h2>
 
                                     <p className="mt-3 text-sm leading-7 text-slate-500">
-                                        Your project request has been received. We’ll review your request and contact you once everything is ready.
+                                        Your request has been received. We’ll review your request and contact you once everything is ready.
                                     </p>
                                 </div>
 
@@ -636,15 +660,6 @@ export default function Create({
                                         </p>
                                     </div>
                                 )}
-
-                                <div className="mt-4 rounded-[14px] border border-amber-200 bg-amber-50 px-5 py-4">
-                                    <p className="text-sm font-semibold text-amber-800">
-                                        Important reminder
-                                    </p>
-                                    <p className="mt-1 text-sm leading-6 text-amber-700">
-                                        Please ensure that your submitted reference number is accurate and matches your payment transaction.
-                                    </p>
-                                </div>
 
                                 <div className="mt-6 rounded-[14px] bg-slate-950 px-4 py-3 text-center text-white">
                                     <p className="text-sm font-medium">

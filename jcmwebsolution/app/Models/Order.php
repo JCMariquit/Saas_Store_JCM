@@ -10,6 +10,7 @@ class Order extends Model
         'order_code',
         'user_id',
         'product_id',
+        'service_id',
         'plan_id',
         'billing_type',
         'amount',
@@ -36,6 +37,11 @@ class Order extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function service()
+    {
+        return $this->belongsTo(Service::class);
     }
 
     public function plan()

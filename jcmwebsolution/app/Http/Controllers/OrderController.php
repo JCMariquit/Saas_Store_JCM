@@ -1,14 +1,11 @@
 <?php
 
-// ==============================================
-// FILE: app/Http/Controllers/OrderController.php
-// ==============================================
-
 namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\Plan;
 use App\Models\Product;
+use App\Models\Service;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,48 +18,77 @@ class OrderController extends Controller
     public function create(Request $request)
     {
         $productId = $request->integer('product_id');
+        $serviceId = $request->integer('service_id');
         $planId = $request->integer('plan_id');
+        $cartId = $request->integer('cart_id');
 
-        abort_if(!$productId, 404, 'Product not found.');
+        abort_if(!$productId && !$serviceId, 404, 'Product or service not found.');
 
-        $product = Product::with([
-            'plans' => function ($query) {
-                $query->where('status', 'active')->orderBy('price');
-            }
-        ])->findOrFail($productId);
+        $product = null;
+        $service = null;
+        $plans = collect();
+        $selectedPlan = null;
 
-        $plans = $product->plans->map(function ($plan) {
-            return [
-                'id' => $plan->id,
-                'name' => $plan->name,
-                'description' => $plan->description,
-                'price' => $plan->price,
-                'price_label' => $plan->price !== null
-                    ? '₱' . number_format((float) $plan->price, 2)
-                    : 'Custom',
-                'billing_cycle' => $plan->billing_cycle,
-                'duration_days' => $plan->duration_days ?? null,
-                'status' => $plan->status,
-            ];
-        })->values();
+        if ($productId) {
+            $product = Product::with([
+                'plans' => function ($query) {
+                    $query->where('status', 'active')->orderBy('price');
+                },
+            ])->findOrFail($productId);
 
-        $selectedPlan = $planId
-            ? $product->plans->firstWhere('id', $planId)
-            : null;
+            $plans = $product->plans->map(function ($plan) {
+                return [
+                    'id' => $plan->id,
+                    'name' => $plan->name,
+                    'description' => $plan->description,
+                    'price' => $plan->price,
+                    'price_label' => $plan->price !== null
+                        ? '₱' . number_format((float) $plan->price, 2)
+                        : 'Custom',
+                    'billing_cycle' => $plan->billing_cycle,
+                    'duration_days' => $plan->duration_days ?? null,
+                    'status' => $plan->status,
+                ];
+            })->values();
+
+            $selectedPlan = $planId
+                ? $product->plans->firstWhere('id', $planId)
+                : null;
+        }
+
+        if ($serviceId) {
+            $service = Service::query()
+                ->where('status', 'active')
+                ->findOrFail($serviceId);
+        }
 
         return Inertia::render('orders/create', [
-            'product' => [
+            'product' => $product ? [
                 'id' => $product->id,
                 'name' => $product->name,
                 'description' => $product->description,
                 'pricing_type' => $product->pricing_type,
-            ],
+            ] : null,
+
+            'service' => $service ? [
+                'id' => $service->id,
+                'name' => $service->name,
+                'description' => $service->description,
+                'service_type' => $service->service_type,
+                'pricing_type' => $service->pricing_type,
+                'base_price' => $service->base_price,
+                'base_price_label' => $service->base_price_label,
+            ] : null,
+
             'plans' => $plans,
             'selected_plan_id' => $selectedPlan?->id,
+            'cart_id' => $cartId ?: null,
+
             'payment_methods' => [
                 ['value' => 'gcash', 'label' => 'GCash'],
                 ['value' => 'maya', 'label' => 'Maya'],
             ],
+
             'billing_type_options' => [
                 ['value' => 'monthly', 'label' => 'Monthly'],
                 ['value' => 'yearly', 'label' => 'Yearly'],
@@ -73,8 +99,10 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'product_id' => ['required', 'exists:products,id'],
-            'plan_id' => ['nullable', 'exists:plans,id'],
+            'product_id' => ['nullable', 'integer', 'exists:products,id'],
+            'service_id' => ['nullable', 'integer', 'exists:services,id'],
+            'plan_id' => ['nullable', 'integer', 'exists:plans,id'],
+            'cart_id' => ['nullable', 'integer', 'exists:carts,id'],
             'billing_type' => ['nullable', 'in:monthly,yearly,custom'],
             'notes' => ['nullable', 'string'],
 
@@ -83,40 +111,67 @@ class OrderController extends Controller
             'payment_proof' => ['nullable', 'image', 'max:5120'],
         ]);
 
-        $product = Product::findOrFail($validated['product_id']);
-
-        if ($product->pricing_type === 'plan' && empty($validated['plan_id'])) {
+        if (empty($validated['product_id']) && empty($validated['service_id'])) {
             return back()->withErrors([
-                'plan_id' => 'Please select a plan.',
+                'product_id' => 'Please select a product or service.',
             ])->withInput();
         }
 
+        if (!empty($validated['product_id']) && !empty($validated['service_id'])) {
+            return back()->withErrors([
+                'product_id' => 'Please select only one item.',
+            ])->withInput();
+        }
+
+        $product = null;
+        $service = null;
         $plan = null;
 
-        if (!empty($validated['plan_id'])) {
-            $plan = Plan::where('id', $validated['plan_id'])
-                ->where('product_id', $product->id)
+        if (!empty($validated['product_id'])) {
+            $product = Product::findOrFail($validated['product_id']);
+
+            if ($product->pricing_type === 'plan' && empty($validated['plan_id'])) {
+                return back()->withErrors([
+                    'plan_id' => 'Please select a plan.',
+                ])->withInput();
+            }
+
+            if (!empty($validated['plan_id'])) {
+                $plan = Plan::where('id', $validated['plan_id'])
+                    ->where('product_id', $product->id)
+                    ->where('status', 'active')
+                    ->firstOrFail();
+            }
+        }
+
+        if (!empty($validated['service_id'])) {
+            $service = Service::query()
                 ->where('status', 'active')
-                ->firstOrFail();
+                ->findOrFail($validated['service_id']);
         }
 
-        if ($product->pricing_type === 'plan') {
-            $billingType = $validated['billing_type'] ?? 'monthly';
-        } else {
+        if ($service) {
             $billingType = 'custom';
+            $amount = (float) ($service->base_price ?? 0);
+            $durationDays = null;
+            $plan = null;
+        } else {
+            $billingType = $product && $product->pricing_type === 'plan'
+                ? ($validated['billing_type'] ?? 'monthly')
+                : 'custom';
+
+            $amount = (float) ($plan?->price ?? 0);
+
+            if ($billingType === 'yearly' && $amount > 0) {
+                $amount *= 12;
+            }
+
+            $durationDays = match ($billingType) {
+                'monthly' => 30,
+                'yearly' => 365,
+                default => $plan?->duration_days,
+            };
         }
-
-        $amount = $plan?->price ?? 0;
-
-        if ($billingType === 'yearly' && $amount > 0) {
-            $amount = $amount * 12;
-        }
-
-        $durationDays = match ($billingType) {
-            'monthly' => 30,
-            'yearly' => 365,
-            default => $plan?->duration_days,
-        };
 
         $paymentProofPath = null;
 
@@ -128,6 +183,7 @@ class OrderController extends Controller
 
         DB::transaction(function () use (
             $product,
+            $service,
             $plan,
             $billingType,
             $amount,
@@ -139,8 +195,14 @@ class OrderController extends Controller
             $order = Order::create([
                 'order_code' => $this->generateOrderCode(),
                 'user_id' => Auth::id(),
-                'product_id' => $product->id,
-                'plan_id' => $plan?->id,
+
+                // Product order only
+                'product_id' => $product?->id,
+                'plan_id' => $product ? $plan?->id : null,
+
+                // Service/custom build order only
+                'service_id' => $service?->id,
+
                 'billing_type' => $billingType,
                 'amount' => $amount,
                 'duration_days' => $durationDays,
@@ -161,16 +223,27 @@ class OrderController extends Controller
                 'paid_at' => now(),
                 'notes' => 'Payment submitted together with order.',
             ]);
+
+            if (!empty($validated['cart_id'])) {
+                DB::table('carts')
+                    ->where('id', $validated['cart_id'])
+                    ->where('user_id', Auth::id())
+                    ->delete();
+            }
         });
 
-        return redirect()->route('orders.create', [
-            'product_id' => $product->id,
-            'plan_id' => $plan?->id,
-        ])->with([
+        $redirectParams = $service
+            ? ['service_id' => $service->id]
+            : [
+                'product_id' => $product?->id,
+                'plan_id' => $plan?->id,
+            ];
+
+        return redirect()->route('orders.create', $redirectParams)->with([
             'order_success' => true,
-            'success_title' => 'Order submitted successfully',
-            'success_message' => 'Your order has been submitted successfully. Please make sure your reference number is correct and matches your payment transaction. Incorrect or unmatched payment details may result in rejection during verification.',
-            'redirect_to' => route('home'),
+            'success_title' => 'Request submitted successfully',
+            'success_message' => 'Your request has been submitted successfully.',
+            'redirect_to' => route('dashboard'),
             'redirect_after' => 5,
             'order_code' => $order?->order_code,
         ]);

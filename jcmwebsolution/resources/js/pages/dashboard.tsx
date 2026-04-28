@@ -1,17 +1,16 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { Boxes, MonitorSmartphone, Wrench } from 'lucide-react';
 
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-
 import HowItWorks from '@/components/jcm-ui/HowItWorks';
 import StatsStrip from '@/components/jcm-ui/StatsStrip';
 import StoreFooter from '@/components/jcm-ui/StoreFooter';
 import StoreGridSection from '@/components/jcm-ui/StoreGridSection';
 import StoreHero from '@/components/jcm-ui/StoreHero';
-import WhyChooseUs from '@/components/jcm-ui/WhyChooseUs';
-
 import type { ProductItem, ServiceItem, StoreCardItem } from '@/components/jcm-ui/types';
+import WhyChooseUs from '@/components/jcm-ui/WhyChooseUs';
+import AppLayout from '@/layouts/app-layout';
+import type { BreadcrumbItem } from '@/types';
+
 type PageProps = {
     products: ProductItem[];
     services: ServiceItem[];
@@ -93,6 +92,7 @@ export default function Dashboard() {
                         emptyDescription="Services will appear here once available."
                         emptyIcon={<Wrench className="h-6 w-6 text-slate-500" />}
                         fallbackIcon={<Wrench className="h-10 w-10 text-slate-400" />}
+                        onItemClick={(item) => router.get(`/services/${item.id}`)}
                     />
                 </div>
 

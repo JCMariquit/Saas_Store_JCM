@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import axios from 'axios';
 import {
     CheckCircle2,
@@ -25,6 +26,9 @@ type Props = {
 
 type CartItem = {
     id: number;
+    user_id?: number;
+    product_id: number;
+    plan_id?: number | null;
     product_name: string;
     product_description?: string | null;
     product_image?: string | null;
@@ -41,6 +45,7 @@ export function CartDrawer({ open, onOpenChange }: Props) {
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [loading, setLoading] = useState(false);
     const [removingId, setRemovingId] = useState<number | null>(null);
+    const [proceeding, setProceeding] = useState(false);
 
     useEffect(() => {
         if (open) void fetchCart();
@@ -68,9 +73,6 @@ export function CartDrawer({ open, onOpenChange }: Props) {
             return sum + Number(item.plan_price ?? 0) * Number(item.quantity ?? 1);
         }, 0);
     }, [selectedItems]);
-
-
-    const allSelected = items.length > 0 && selectedIds.length === items.length;
 
     async function fetchCart() {
         setLoading(true);
@@ -100,7 +102,9 @@ export function CartDrawer({ open, onOpenChange }: Props) {
             await axios.delete(`/carts/${id}`);
 
             setItems((current) => current.filter((item) => item.id !== id));
-            setSelectedIds((current) => current.filter((selectedId) => selectedId !== id));
+            setSelectedIds((current) =>
+                current.filter((selectedId) => selectedId !== id),
+            );
 
             window.dispatchEvent(new Event('cart:refresh'));
         } catch (error) {
@@ -111,20 +115,28 @@ export function CartDrawer({ open, onOpenChange }: Props) {
     }
 
     function toggleSelected(id: number) {
-        setSelectedIds((current) =>
-            current.includes(id)
-                ? current.filter((selectedId) => selectedId !== id)
-                : [...current, id],
-        );
+        setSelectedIds((current) => {
+            if (current.includes(id)) {
+                return current.filter((selectedId) => selectedId !== id);
+            }
+
+            return [id];
+        });
     }
 
-    function toggleSelectAll() {
-        if (allSelected) {
-            setSelectedIds([]);
-            return;
-        }
+    function proceedToOrder() {
+        if (selectedItems.length !== 1 || proceeding) return;
 
-        setSelectedIds(items.map((item) => item.id));
+        const item = selectedItems[0];
+
+        setProceeding(true);
+        onOpenChange(false);
+
+        router.visit(
+            `/orders/create?product_id=${item.product_id}${
+                item.plan_id ? `&plan_id=${item.plan_id}` : ''
+            }&cart_id=${item.id}`,
+        );
     }
 
     function formatPeso(value?: number | string | null) {
@@ -162,7 +174,7 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                                             Your Cart
                                         </span>
                                         <span className="mt-0.5 block text-xs font-normal text-blue-100">
-                                            Review selected products
+                                            Select one product to order
                                         </span>
                                     </span>
                                 </span>
@@ -173,7 +185,7 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                             </SheetTitle>
 
                             <SheetDescription className="sr-only">
-                                Choose items you want to include in your order request.
+                                Choose item you want to include in your order request.
                             </SheetDescription>
                         </SheetHeader>
                     </div>
@@ -303,22 +315,9 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                 <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-4 shadow-[0_-14px_30px_rgba(15,23,42,0.08)]">
                     {items.length > 0 && (
                         <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
-                            <button
-                                type="button"
-                                onClick={toggleSelectAll}
-                                className="flex items-center gap-2 text-sm font-semibold text-slate-700"
-                            >
-                                <span
-                                    className={`flex h-5 w-5 items-center justify-center rounded-md border ${
-                                        allSelected
-                                            ? 'border-blue-700 bg-blue-700 text-white'
-                                            : 'border-slate-300 bg-white text-transparent'
-                                    }`}
-                                >
-                                    <CheckCircle2 className="h-4 w-4" />
-                                </span>
-                                Select all
-                            </button>
+                            <p className="text-sm font-semibold text-slate-700">
+                                Select one item to proceed
+                            </p>
 
                             <span className="text-xs font-medium text-slate-500">
                                 {selectedIds.length} selected
@@ -326,18 +325,19 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                         </div>
                     )}
 
-                    <div className="mb-3 flex items-center justify-between">
-                        <div>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                                 Order Summary
                             </p>
-                            <p className="text-sm text-slate-500">
-                                {selectedIds.length} selected item
-                                {selectedIds.length === 1 ? '' : 's'}
+                            <p className="line-clamp-1 text-sm text-slate-500">
+                                {selectedIds.length === 1
+                                    ? selectedItems[0]?.product_name
+                                    : 'No selected product'}
                             </p>
                         </div>
 
-                        <div className="text-right">
+                        <div className="shrink-0 text-right">
                             <p className="text-xs text-slate-400">Subtotal</p>
                             <p className="text-xl font-bold text-slate-950">
                                 {formatPeso(selectedIds.length > 0 ? selectedTotal : 0)}
@@ -346,11 +346,17 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                     </div>
 
                     <Button
-                        disabled={selectedIds.length === 0}
+                        type="button"
+                        onClick={proceedToOrder}
+                        disabled={selectedIds.length !== 1 || proceeding}
                         className="h-11 w-full rounded-2xl bg-blue-700 font-semibold text-white shadow-sm hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                        <PackageCheck className="mr-2 h-4 w-4" />
-                        Proceed to Order
+                        {proceeding ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <PackageCheck className="mr-2 h-4 w-4" />
+                        )}
+                        {proceeding ? 'Redirecting...' : 'Proceed to Order'}
                     </Button>
                 </div>
             </SheetContent>

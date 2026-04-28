@@ -7,6 +7,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicController::class, 'home'])->name('home');
@@ -64,6 +65,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::delete('/carts/{cart}', [CartController::class, 'destroy'])
         ->name('carts.destroy');
+
+    Route::get('/services/{service}', [ServiceController::class, 'show'])
+        ->name('services.show');
 });
 
 require __DIR__ . '/settings.php';

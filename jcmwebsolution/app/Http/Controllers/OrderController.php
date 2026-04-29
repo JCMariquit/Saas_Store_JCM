@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\PaymentMethod;
 use App\Models\Plan;
 use App\Models\Product;
 use App\Models\Service;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class OrderController extends Controller
@@ -62,6 +64,25 @@ class OrderController extends Controller
                 ->findOrFail($serviceId);
         }
 
+        $paymentMethods = PaymentMethod::query()
+            ->where('status', 1)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($method) {
+                return [
+                    'id' => $method->id,
+                    'name' => $method->name,
+                    'slug' => $method->slug,
+                    'account_name' => $method->account_name,
+                    'account_number' => $method->account_number,
+                    'account_owner' => $method->account_owner,
+                    'image_path' => $method->image_path,
+                    'instructions' => $method->instructions,
+                ];
+            })
+            ->values();
+
         return Inertia::render('orders/create', [
             'product' => $product ? [
                 'id' => $product->id,
@@ -83,11 +104,7 @@ class OrderController extends Controller
             'plans' => $plans,
             'selected_plan_id' => $selectedPlan?->id,
             'cart_id' => $cartId ?: null,
-
-            'payment_methods' => [
-                ['value' => 'gcash', 'label' => 'GCash'],
-                ['value' => 'maya', 'label' => 'Maya'],
-            ],
+            'payment_methods' => $paymentMethods,
 
             'billing_type_options' => [
                 ['value' => 'monthly', 'label' => 'Monthly'],
@@ -106,7 +123,11 @@ class OrderController extends Controller
             'billing_type' => ['nullable', 'in:monthly,yearly,custom'],
             'notes' => ['nullable', 'string'],
 
-            'payment_method' => ['required', 'in:gcash,maya'],
+            'payment_method_id' => [
+                'required',
+                'integer',
+                Rule::exists('payment_methods', 'id')->where('status', 1),
+            ],
             'reference_number' => ['required', 'string', 'max:100'],
             'payment_proof' => ['nullable', 'image', 'max:5120'],
         ]);
@@ -122,6 +143,10 @@ class OrderController extends Controller
                 'product_id' => 'Please select only one item.',
             ])->withInput();
         }
+
+        $paymentMethod = PaymentMethod::query()
+            ->where('status', 1)
+            ->findOrFail($validated['payment_method_id']);
 
         $product = null;
         $service = null;
@@ -190,20 +215,19 @@ class OrderController extends Controller
             $durationDays,
             $validated,
             $paymentProofPath,
+            $paymentMethod,
             &$order
         ) {
             $order = Order::create([
                 'order_code' => $this->generateOrderCode(),
                 'user_id' => Auth::id(),
 
-                // Product order only
                 'product_id' => $product?->id,
                 'plan_id' => $product ? $plan?->id : null,
-
-                // Service/custom build order only
                 'service_id' => $service?->id,
 
                 'billing_type' => $billingType,
+                'payment_method_id' => $paymentMethod->id,
                 'amount' => $amount,
                 'duration_days' => $durationDays,
                 'status' => 'pending',
@@ -215,7 +239,8 @@ class OrderController extends Controller
                 'transaction_code' => $this->generateTransactionCode(),
                 'order_id' => $order->id,
                 'user_id' => Auth::id(),
-                'payment_method' => $validated['payment_method'],
+                'payment_method_id' => $paymentMethod->id,
+                'payment_method' => $paymentMethod->slug,
                 'reference_number' => $validated['reference_number'],
                 'amount' => $amount,
                 'payment_proof' => $paymentProofPath,

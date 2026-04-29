@@ -1,5 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import {
+    AlertTriangle,
     CheckCircle2,
     House,
     ImageOff,
@@ -46,8 +47,14 @@ type ServiceItem = {
 };
 
 type PaymentMethodItem = {
-    value: string;
-    label: string;
+    id: number;
+    name: string;
+    slug: string;
+    account_name: string | null;
+    account_number: string | null;
+    account_owner: string | null;
+    image_path: string | null;
+    instructions: string | null;
 };
 
 type BillingTypeOption = {
@@ -78,7 +85,7 @@ export default function Create({
     plans = [],
     selected_plan_id,
     cart_id,
-    payment_methods,
+    payment_methods = [],
     billing_type_options,
 }: PageProps) {
     const isServiceRequest = !!service;
@@ -104,7 +111,9 @@ export default function Create({
             cart_id: cart_id ? String(cart_id) : '',
             billing_type: isPlanProduct ? 'monthly' : 'custom',
             notes: '',
-            payment_method: 'gcash',
+            payment_method_id: payment_methods?.[0]?.id
+                ? String(payment_methods[0].id)
+                : '',
             reference_number: '',
             payment_proof: null as File | null,
         });
@@ -112,12 +121,17 @@ export default function Create({
     const selectedPlan =
         plans.find((plan) => String(plan.id) === String(data.plan_id)) ?? null;
 
+    const selectedPaymentMethod =
+        payment_methods.find(
+            (method) => String(method.id) === String(data.payment_method_id),
+        ) ?? null;
+
     const computedPriceLabel = useMemo(() => {
         if (isServiceRequest) {
-            return service?.base_price_label ?? 'To be confirmed';
+            return service?.base_price_label ?? '₱0';
         }
 
-        if (!selectedPlan) return 'To be confirmed';
+        if (!selectedPlan) return '₱0';
 
         if (data.billing_type === 'yearly' && selectedPlan.price !== null) {
             return `₱${Number(selectedPlan.price * 12).toLocaleString(undefined, {
@@ -141,7 +155,7 @@ export default function Create({
         processing ||
         !item ||
         (isPlanProduct && !data.plan_id) ||
-        !data.payment_method ||
+        !data.payment_method_id ||
         !data.reference_number;
 
     const closeModal = () => {
@@ -407,41 +421,118 @@ export default function Create({
                                         Send your payment using your chosen method, then provide the reference number with your request.
                                     </p>
 
-                                    <div className="mt-4 rounded-[14px] border border-dashed border-sky-200 bg-white p-6">
-                                        <div className="flex flex-col items-center justify-center text-center">
-                                            <div className="rounded-[14px] bg-sky-50 p-3">
-                                                <ImageOff className="h-8 w-8 text-sky-700" />
+                                    <div className="mt-4 rounded-[14px] border border-blue-100 bg-blue-50 p-4">
+                                        <p className="text-sm font-bold text-blue-900">
+                                            How to pay
+                                        </p>
+
+                                        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-700">
+                                            <li>
+                                                Open your payment app such as GCash, Maya, or your selected payment method.
+                                            </li>
+                                            <li>
+                                                Scan the QR code below, or send the payment directly to the displayed account number.
+                                            </li>
+                                            <li>
+                                                Send the exact amount shown in the request summary.
+                                            </li>
+                                            <li>
+                                                Copy the correct reference number from your payment receipt.
+                                            </li>
+                                            <li>
+                                                Upload a screenshot or receipt as payment proof, then submit your request.
+                                            </li>
+                                        </ol>
+                                    </div>
+
+                                    <div className="mt-4 rounded-[14px] border border-red-200 bg-red-50 p-4">
+                                        <div className="flex gap-3">
+                                            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+                                            <div>
+                                                <p className="text-sm font-bold text-red-700">
+                                                    Important payment reminder
+                                                </p>
+                                                <p className="mt-1 text-sm leading-6 text-red-700">
+                                                    Please make sure the amount sent is correct. Incorrect or incomplete payment amount may be automatically rejected during verification.
+                                                </p>
                                             </div>
-                                            <p className="mt-3 text-sm font-bold text-slate-800">
-                                                Payment QR will be displayed here
-                                            </p>
-                                            <p className="mt-1 max-w-sm text-xs leading-5 text-slate-500">
-                                                Use the official payment QR provided by JCM Web Solution before submitting your reference number.
-                                            </p>
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                                    <div className="mt-4 rounded-[14px] border border-dashed border-sky-200 bg-white p-6">
+                                        {selectedPaymentMethod?.image_path ? (
+                                            <div className="flex flex-col items-center justify-center text-center">
+                                                <img
+                                                    src={selectedPaymentMethod.image_path}
+                                                    alt={selectedPaymentMethod.name}
+                                                    className="h-56 w-56 rounded-[14px] border border-slate-200 bg-white object-contain p-3"
+                                                />
+
+                                                <p className="mt-4 text-base font-bold text-slate-900">
+                                                    {selectedPaymentMethod.name}
+                                                </p>
+
+                                                {selectedPaymentMethod.account_name && (
+                                                    <p className="mt-1 text-sm text-slate-600">
+                                                        Account Name:{' '}
+                                                        <span className="font-semibold text-slate-900">
+                                                            {selectedPaymentMethod.account_name}
+                                                        </span>
+                                                    </p>
+                                                )}
+
+                                                {selectedPaymentMethod.account_number && (
+                                                    <p className="mt-1 text-sm text-slate-600">
+                                                        Account Number:{' '}
+                                                        <span className="font-semibold text-slate-900">
+                                                            {selectedPaymentMethod.account_number}
+                                                        </span>
+                                                    </p>
+                                                )}
+
+                                                {selectedPaymentMethod.instructions && (
+                                                    <p className="mt-3 max-w-md text-xs leading-5 text-slate-500">
+                                                        {selectedPaymentMethod.instructions}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center text-center">
+                                                <div className="rounded-[14px] bg-sky-50 p-3">
+                                                    <ImageOff className="h-8 w-8 text-sky-700" />
+                                                </div>
+                                                <p className="mt-3 text-sm font-bold text-slate-800">
+                                                    No payment QR uploaded yet
+                                                </p>
+                                                <p className="mt-1 max-w-sm text-xs leading-5 text-slate-500">
+                                                    Please contact JCM Web Solution for the payment details.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="mt-4 grid gap-4 md:grid-cols-[0.7fr_1.3fr]">
                                         <div>
                                             <label className="mb-2 block text-sm font-semibold text-slate-700">
                                                 Payment Method <span className="text-red-500">*</span>
                                             </label>
 
                                             <select
-                                                value={data.payment_method}
-                                                onChange={(e) => setData('payment_method', e.target.value)}
+                                                value={data.payment_method_id}
+                                                onChange={(e) => setData('payment_method_id', e.target.value)}
                                                 className={inputClass}
                                             >
+                                                <option value="">Choose payment method</option>
                                                 {payment_methods.map((method) => (
-                                                    <option key={method.value} value={method.value}>
-                                                        {method.label}
+                                                    <option key={method.id} value={method.id}>
+                                                        {method.name}
                                                     </option>
                                                 ))}
                                             </select>
 
-                                            {errors.payment_method && (
+                                            {errors.payment_method_id && (
                                                 <p className="mt-2 text-sm text-red-600">
-                                                    {errors.payment_method}
+                                                    {errors.payment_method_id}
                                                 </p>
                                             )}
                                         </div>
@@ -458,6 +549,10 @@ export default function Create({
                                                 placeholder="Example: 1234567890"
                                                 className={inputClass}
                                             />
+
+                                            <p className="mt-2 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold leading-5 text-red-700">
+                                               Make sure your reference number is correct. Wrong or unmatched reference numbers may be rejected.
+                                            </p>
 
                                             {errors.reference_number && (
                                                 <p className="mt-2 text-sm text-red-600">
@@ -478,7 +573,7 @@ export default function Create({
                                                 Upload screenshot or receipt
                                             </span>
                                             <span className="mt-1 text-xs text-slate-500">
-                                                JPG, PNG, or image file accepted
+                                                Upload a clear receipt showing the correct amount, date, and reference number.
                                             </span>
                                             <input
                                                 type="file"
@@ -598,12 +693,21 @@ export default function Create({
                                             </p>
                                         </div>
 
+                                        <div className="rounded-[10px] border border-red-200 bg-red-50 p-4">
+                                            <p className="text-xs font-bold uppercase tracking-wide text-red-500">
+                                                Payment Reminder
+                                            </p>
+                                            <p className="mt-1 text-sm font-semibold text-red-700">
+                                                Send exactly {computedPriceLabel}. Incorrect amount may be rejected.
+                                            </p>
+                                        </div>
+
                                         <div className="rounded-[10px] border border-slate-200 bg-slate-50 p-4">
                                             <p className="text-xs uppercase tracking-wide text-slate-400">
                                                 Payment Method
                                             </p>
                                             <p className="mt-1 text-sm font-semibold capitalize text-slate-900">
-                                                {data.payment_method || 'Not selected'}
+                                                {selectedPaymentMethod?.name || 'Not selected'}
                                             </p>
                                         </div>
                                     </div>

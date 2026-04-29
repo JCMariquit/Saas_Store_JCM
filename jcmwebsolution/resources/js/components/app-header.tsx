@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import { Bell, ChevronLeft, Menu, MessageCircle, ShoppingCart, Sparkles } from 'lucide-react';
+import { Bell, Menu, MessageCircle, ShoppingCart, Sparkles } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Breadcrumbs } from '@/components/breadcrumbs';
@@ -68,9 +68,6 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const [unreadNotifications, setUnreadNotifications] = useState(0);
     const [cartCount, setCartCount] = useState(0);
 
-    const previousBreadcrumb =
-        breadcrumbs.length > 1 ? breadcrumbs[breadcrumbs.length - 2] : null;
-
     const fetchHeaderCounts = useCallback(async () => {
         try {
             const [messageResponse, notificationResponse, cartResponse] = await Promise.all([
@@ -100,7 +97,9 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     }, []);
 
     useEffect(() => {
-        void fetchHeaderCounts();
+        const initialTimer = window.setTimeout(() => {
+            void fetchHeaderCounts();
+        }, 0);
 
         const interval = window.setInterval(() => {
             void fetchHeaderCounts();
@@ -115,6 +114,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
         window.addEventListener('notification:refresh', refreshHeaderCounts);
 
         return () => {
+            window.clearTimeout(initialTimer);
             window.clearInterval(interval);
             window.removeEventListener('cart:refresh', refreshHeaderCounts);
             window.removeEventListener('message:refresh', refreshHeaderCounts);
@@ -258,16 +258,6 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     <div className="ml-4 hidden min-w-0 flex-1 items-center lg:flex">
                         {breadcrumbs.length > 1 && (
                             <div className="flex min-w-0 items-center gap-3">
-                                {previousBreadcrumb && (
-                                    <Link
-                                        href={previousBreadcrumb.href}
-                                        className="inline-flex items-center gap-1 rounded-md border border-sidebar-border/70 px-2.5 py-1.5 text-sm font-medium text-neutral-600 transition hover:bg-accent hover:text-foreground"
-                                    >
-                                        <ChevronLeft className="h-4 w-4" />
-                                        Back
-                                    </Link>
-                                )}
-
                                 <div className="min-w-0">
                                     <Breadcrumbs breadcrumbs={breadcrumbs} />
                                 </div>

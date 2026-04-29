@@ -18,7 +18,7 @@ type PageProps = {
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Store',
+        title: 'JCM Websolution',
         href: '/dashboard',
     },
 ];
@@ -59,7 +59,7 @@ export default function Dashboard() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs} fullWidth>
-            <Head title="Store" />
+            <Head title="JCM Websolution" />
 
             <main className="space-y-6 overflow-x-hidden bg-[#e8e9eb] pb-0">
                 <StoreHero banners={banners} />

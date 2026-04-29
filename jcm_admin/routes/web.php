@@ -12,6 +12,7 @@ use App\Http\Controllers\WebsiteBuilderController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\PaymentMethodController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -105,16 +106,19 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{user}/reply', [MessageController::class, 'adminReply'])->name('reply');
         });
 
-Route::prefix('notifications')->as('notifications.')->group(function () {
-    Route::get('/', [NotificationController::class, 'adminIndex'])->name('index');
-    Route::post('/send', [NotificationController::class, 'adminSend'])->name('send');
+        Route::prefix('notifications')->as('notifications.')->group(function () {
+            Route::get('/', [NotificationController::class, 'adminIndex'])->name('index');
+            Route::post('/send', [NotificationController::class, 'adminSend'])->name('send');
+            Route::get('/users-list', [UsersController::class, 'list'])->name('users.list');
+            Route::get('/{notification}', [NotificationController::class, 'adminShow'])->name('show');
+        });
 
-    // dapat ito muna bago /{notification}
-    Route::get('/users-list', [UsersController::class, 'list'])->name('users.list');
-
-    // dynamic route always last
-    Route::get('/{notification}', [NotificationController::class, 'adminShow'])->name('show');
-});
+        Route::prefix('payment-methods')->as('payment-methods.')->group(function () {
+            Route::get('/', [PaymentMethodController::class, 'index'])->name('index');
+            Route::post('/', [PaymentMethodController::class, 'store'])->name('store');
+            Route::post('/{paymentMethod}', [PaymentMethodController::class, 'update'])->name('update');
+            Route::delete('/{paymentMethod}', [PaymentMethodController::class, 'destroy'])->name('destroy');
+        });
         
     });
 });

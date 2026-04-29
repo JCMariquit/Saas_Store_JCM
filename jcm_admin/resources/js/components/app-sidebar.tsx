@@ -24,6 +24,7 @@ import {
     BarChart3,
     MonitorSmartphone,
     Globe,
+    Wallet,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import AppLogo from './app-logo';
@@ -75,6 +76,11 @@ const menuGroups: MenuGroup[] = [
                 title: 'Plans',
                 url: '/admin/plans',
                 icon: Layers3,
+            },
+            {
+                title: 'Payment Methods',
+                url: '/admin/payment-methods',
+                icon: Wallet,
             },
         ],
     },

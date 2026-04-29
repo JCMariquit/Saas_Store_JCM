@@ -5,8 +5,10 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router, useForm } from '@inertiajs/react';
 import {
+    CheckCircle2,
     CreditCard,
     FileImage,
+    LoaderCircle,
     Pencil,
     Settings2,
     Sparkles,
@@ -14,6 +16,7 @@ import {
     Upload,
     Wallet,
     X,
+    XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -47,8 +50,12 @@ type FormData = {
     image: File | null;
 };
 
+type ModalType = 'loading' | 'success' | 'error';
+
 export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
     const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
+    const [showModal, setShowModal] = useState(false);
+    const [modalType, setModalType] = useState<ModalType>('loading');
 
     const form = useForm<FormData>({
         name: '',
@@ -81,14 +88,28 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
         });
     };
 
+    const closeModal = () => {
+        if (modalType === 'loading') return;
+        setShowModal(false);
+    };
+
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        setShowModal(true);
+        setModalType('loading');
 
         if (editingMethod) {
             form.post(route('admin.payment-methods.update', editingMethod.id), {
                 forceFormData: true,
                 preserveScroll: true,
-                onSuccess: () => resetForm(),
+                onSuccess: () => {
+                    setModalType('success');
+                    resetForm();
+                },
+                onError: () => {
+                    setModalType('error');
+                },
             });
 
             return;
@@ -97,7 +118,13 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
         form.post(route('admin.payment-methods.store'), {
             forceFormData: true,
             preserveScroll: true,
-            onSuccess: () => resetForm(),
+            onSuccess: () => {
+                setModalType('success');
+                resetForm();
+            },
+            onError: () => {
+                setModalType('error');
+            },
         });
     };
 
@@ -579,6 +606,76 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                     </form>
                 </div>
             </div>
+
+            {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-2xl">
+                        {modalType === 'loading' && (
+                            <>
+                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-blue-50">
+                                    <LoaderCircle className="h-11 w-11 animate-spin text-blue-700" />
+                                </div>
+
+                                <h2 className="mt-5 text-2xl font-bold text-slate-900">
+                                    Saving payment method
+                                </h2>
+
+                                <p className="mt-2 text-sm leading-6 text-slate-500">
+                                    Please wait while we save your payment method details.
+                                </p>
+                            </>
+                        )}
+
+                        {modalType === 'success' && (
+                            <>
+                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-50">
+                                    <CheckCircle2 className="h-11 w-11 text-green-600" />
+                                </div>
+
+                                <h2 className="mt-5 text-2xl font-bold text-slate-900">
+                                    Success
+                                </h2>
+
+                                <p className="mt-2 text-sm leading-6 text-slate-500">
+                                    Payment method has been saved successfully.
+                                </p>
+
+                                <Button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="mt-6 w-full rounded-2xl"
+                                >
+                                    Okay
+                                </Button>
+                            </>
+                        )}
+
+                        {modalType === 'error' && (
+                            <>
+                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-50">
+                                    <XCircle className="h-11 w-11 text-red-600" />
+                                </div>
+
+                                <h2 className="mt-5 text-2xl font-bold text-slate-900">
+                                    Failed
+                                </h2>
+
+                                <p className="mt-2 text-sm leading-6 text-slate-500">
+                                    Please check the form fields and try again.
+                                </p>
+
+                                <Button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="mt-6 w-full rounded-2xl bg-slate-950 text-white hover:bg-slate-800"
+                                >
+                                    Close
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }

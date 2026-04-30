@@ -35,23 +35,53 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(false);
-    const [fetching, setFetching] = useState(false);
+    const [, setFetching] = useState(false);
     const [markingRead, setMarkingRead] = useState(false);
+    const [openingLoading, setOpeningLoading] = useState(false);
 
     const chatEndRef = useRef<HTMLDivElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+    function scrollToBottom(behavior: ScrollBehavior = 'auto') {
+        window.setTimeout(() => {
+            chatEndRef.current?.scrollIntoView({
+                behavior,
+                block: 'end',
+            });
+        }, 120);
+    }
+
     useEffect(() => {
-        if (open) {
-            void fetchMessages(true);
+        if (!open) {
+            setOpeningLoading(false);
+            return;
         }
+
+        setOpeningLoading(true);
+
+        const maxLoadingTimer = window.setTimeout(() => {
+            setOpeningLoading(false);
+            scrollToBottom('auto');
+        }, 5000);
+
+        void fetchMessages(true).finally(() => {
+            window.setTimeout(() => {
+                setOpeningLoading(false);
+                scrollToBottom('auto');
+            }, 2000);
+        });
+
+        return () => {
+            window.clearTimeout(maxLoadingTimer);
+        };
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
     useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+        if (!open) return;
+        scrollToBottom('auto');
+    }, [open, messages]);
 
     async function fetchMessages(markAsRead = false) {
         setFetching(true);
@@ -61,6 +91,7 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
             const fetchedMessages = res.data.messages ?? [];
 
             setMessages(fetchedMessages);
+            scrollToBottom('auto');
 
             if (markAsRead) {
                 await markMessagesAsRead();
@@ -69,6 +100,7 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
             console.error('Failed to fetch messages:', error);
         } finally {
             setFetching(false);
+            scrollToBottom('auto');
         }
     }
 
@@ -83,7 +115,7 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
                     message.sender_type === 'admin'
                         ? {
                               ...message,
-                              is_read: 1,
+                              is_read: 0,
                               read_at: message.read_at ?? new Date().toISOString(),
                           }
                         : message,
@@ -91,6 +123,7 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
             );
 
             window.dispatchEvent(new Event('message:refresh'));
+            scrollToBottom('auto');
         } catch (error) {
             console.error('Failed to mark messages as read:', error);
         } finally {
@@ -111,6 +144,7 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
 
             await fetchMessages(false);
             window.dispatchEvent(new Event('message:refresh'));
+            scrollToBottom('smooth');
         } catch (error) {
             console.error('Failed to send message:', error);
         } finally {
@@ -194,14 +228,12 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
                             <ShieldCheck className="h-4 w-4 text-blue-100" />
                             <span>Admin support conversation</span>
 
-                            {markingRead && (
+                            {markingRead ? (
                                 <span className="ml-auto flex items-center gap-1 text-blue-100">
                                     <Loader2 className="h-3 w-3 animate-spin" />
                                     Reading
                                 </span>
-                            )}
-
-                            {!markingRead && (
+                            ) : (
                                 <span className="ml-auto flex items-center gap-1 text-blue-100">
                                     <CheckCheck className="h-3.5 w-3.5" />
                                     Synced
@@ -212,19 +244,19 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-                    {fetching && (
-                        <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-700">
-                                <Loader2 className="h-6 w-6 animate-spin" />
+                    {openingLoading && (
+                        <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+                            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                                <Loader2 className="h-5 w-5 animate-spin" />
                             </div>
 
-                            <p className="mt-3 text-sm font-medium text-slate-500">
-                                Loading messages...
+                            <p className="mt-3 text-sm font-semibold text-slate-700">
+                                Loading conversation...
                             </p>
                         </div>
                     )}
 
-                    {!fetching && messages.length === 0 && (
+                    {!openingLoading && messages.length === 0 && (
                         <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
                             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
                                 <MessageCircle className="h-7 w-7" />
@@ -240,14 +272,15 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
                         </div>
                     )}
 
-                    {!fetching && messages.length > 0 && (
+                    {!openingLoading && messages.length > 0 && (
                         <div className="space-y-4">
                             {messages.map((m, index) => {
                                 const isAdmin = m.sender_type === 'admin';
                                 const previous = messages[index - 1];
                                 const showDate =
                                     !previous ||
-                                    formatDate(previous.created_at) !== formatDate(m.created_at);
+                                    formatDate(previous.created_at) !==
+                                        formatDate(m.created_at);
 
                                 return (
                                     <div key={m.id}>

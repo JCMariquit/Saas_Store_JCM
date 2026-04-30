@@ -189,14 +189,6 @@ export default function Show({ service }: PageProps) {
                                     >
                                         View Details
                                     </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={requestService}
-                                        className="rounded-[10px] border border-white/20 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20"
-                                    >
-                                        Request Service
-                                    </button>
                                 </div>
                             </div>
 
@@ -456,16 +448,6 @@ export default function Show({ service }: PageProps) {
                                     {service.description}
                                 </p>
                             )}
-
-                            <div className="mt-5">
-                                <button
-                                    type="button"
-                                    onClick={requestService}
-                                    className="rounded-[10px] bg-slate-950 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-slate-300 transition hover:bg-slate-800"
-                                >
-                                    Request This Service
-                                </button>
-                            </div>
                         </div>
                     </section>
                 </div>

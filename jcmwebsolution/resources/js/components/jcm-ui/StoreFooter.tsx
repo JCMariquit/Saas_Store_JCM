@@ -1,5 +1,3 @@
-import { ArrowRight } from 'lucide-react';
-
 export default function StoreFooter() {
     return (
         <section className="relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen overflow-x-hidden border-t border-slate-800 bg-gradient-to-r from-slate-950 to-slate-800 text-white">
@@ -19,14 +17,6 @@ export default function StoreFooter() {
                             to your business needs.
                         </p>
                     </div>
-
-                    <button
-                        type="button"
-                        className="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-sm font-bold text-slate-950 shadow-md transition hover:bg-slate-100"
-                    >
-                        Get Started Now
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                    </button>
                 </div>
             </div>
 

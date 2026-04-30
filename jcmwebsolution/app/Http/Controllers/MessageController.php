@@ -83,4 +83,20 @@ class MessageController extends Controller
             'message' => 'Message marked as read.',
         ]);
     }
+
+    public function readAll()
+    {
+        Message::where('user_id', Auth::id())
+            ->where('receiver_id', Auth::id())
+            ->where('sender_type', 'admin')
+            ->where('is_read', 1)
+            ->update([
+                'is_read' => 0,
+                'read_at' => now(),
+            ]);
+
+        return response()->json([
+            'message' => 'All admin messages marked as read.',
+        ]);
+    }
 }

@@ -68,6 +68,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/services/{service}', [ServiceController::class, 'show'])
         ->name('services.show');
+    
+    Route::post('/messages/read-all', [MessageController::class, 'readAll'])
+    ->name('messages.read-all');
 });
 
 require __DIR__ . '/settings.php';

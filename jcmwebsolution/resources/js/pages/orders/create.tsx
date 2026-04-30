@@ -459,45 +459,51 @@ export default function Create({
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 rounded-[14px] border border-dashed border-sky-200 bg-white p-6">
+                                <div className="mt-4 overflow-hidden rounded-[14px] border border-dashed border-sky-200 bg-white">
                                         {selectedPaymentMethod?.image_path ? (
-                                            <div className="flex flex-col items-center justify-center text-center">
-                                                <img
-                                                    src={selectedPaymentMethod.image_path}
-                                                    alt={selectedPaymentMethod.name}
-                                                    className="h-56 w-56 rounded-[14px] border border-slate-200 bg-white object-contain p-3"
-                                                />
+                                            <div className="text-center">
+                                                {/* IMAGE – FULL WIDTH / NO PADDING */}
+                                                <div className="w-full pt-10 rounded-[10px] bg-white overflow-hidden">
+                                                    <img
+                                                        src={selectedPaymentMethod.image_path}
+                                                        alt={selectedPaymentMethod.name}
+                                                        className="h-[320px] w-full object-contain"
+                                                    />
+                                                </div>
 
-                                                <p className="mt-4 text-base font-bold text-slate-900">
-                                                    {selectedPaymentMethod.name}
-                                                </p>
-
-                                                {selectedPaymentMethod.account_name && (
-                                                    <p className="mt-1 text-sm text-slate-600">
-                                                        Account Name:{' '}
-                                                        <span className="font-semibold text-slate-900">
-                                                            {selectedPaymentMethod.account_name}
-                                                        </span>
+                                                {/* CONTENT */}
+                                                <div className="px-6 py-5">
+                                                    <p className="text-base font-bold text-slate-900">
+                                                        {selectedPaymentMethod.name}
                                                     </p>
-                                                )}
 
-                                                {selectedPaymentMethod.account_number && (
-                                                    <p className="mt-1 text-sm text-slate-600">
-                                                        Account Number:{' '}
-                                                        <span className="font-semibold text-slate-900">
-                                                            {selectedPaymentMethod.account_number}
-                                                        </span>
-                                                    </p>
-                                                )}
+                                                    {selectedPaymentMethod.account_name && (
+                                                        <p className="mt-2 text-sm text-slate-600">
+                                                            Account Name:{' '}
+                                                            <span className="font-bold text-blue-600">
+                                                                {selectedPaymentMethod.account_name}
+                                                            </span>
+                                                        </p>
+                                                    )}
 
-                                                {selectedPaymentMethod.instructions && (
-                                                    <p className="mt-3 max-w-md text-xs leading-5 text-slate-500">
-                                                        {selectedPaymentMethod.instructions}
-                                                    </p>
-                                                )}
+                                                    {selectedPaymentMethod.account_number && (
+                                                        <p className="mt-1 text-sm text-slate-600">
+                                                            Account Number:{' '}
+                                                            <span className="font-bold text-blue-600">
+                                                                {selectedPaymentMethod.account_number}
+                                                            </span>
+                                                        </p>
+                                                    )}
+
+                                                    {selectedPaymentMethod.instructions && (
+                                                        <p className="mt-3 text-xs leading-5 text-slate-500">
+                                                            {selectedPaymentMethod.instructions}
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </div>
                                         ) : (
-                                            <div className="flex flex-col items-center justify-center text-center">
+                                            <div className="flex flex-col items-center justify-center p-6 text-center">
                                                 <div className="rounded-[14px] bg-sky-50 p-3">
                                                     <ImageOff className="h-8 w-8 text-sky-700" />
                                                 </div>
@@ -510,7 +516,6 @@ export default function Create({
                                             </div>
                                         )}
                                     </div>
-
                                     <div className="mt-4 grid gap-4 md:grid-cols-[0.7fr_1.3fr]">
                                         <div>
                                             <label className="mb-2 block text-sm font-semibold text-slate-700">

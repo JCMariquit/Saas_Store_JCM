@@ -113,7 +113,7 @@ function PlanDetailsModal({ open, plan, productId, onClose }: PlanDetailsModalPr
     if (!open || !plan) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/70 px-4 py-14 backdrop-blur-md md:items-center md:py-6">
             <div className="relative w-full max-w-2xl overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-2xl">
                 <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-sky-300/30 blur-3xl" />
                 <div className="absolute left-0 top-24 h-36 w-36 rounded-full bg-blue-500/15 blur-3xl" />
@@ -224,7 +224,7 @@ function AddToCartModal({
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur-md">
+        <div className="fixed  inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur-md">
             <div className="relative w-full max-w-2xl overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-2xl">
                 <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-sky-300/30 blur-3xl" />
                 <div className="absolute -bottom-10 left-0 h-40 w-40 rounded-full bg-blue-400/20 blur-3xl" />

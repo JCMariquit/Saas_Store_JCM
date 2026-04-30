@@ -17,6 +17,8 @@ use Inertia\Inertia;
 
 class OrderController extends Controller
 {
+    private string $adminStorageBaseUrl = 'https://jcmwebsolution.com/jcm_admin/storage/app/public/';
+
     public function create(Request $request)
     {
         $productId = $request->integer('product_id');
@@ -77,7 +79,7 @@ class OrderController extends Controller
                     'account_name' => $method->account_name,
                     'account_number' => $method->account_number,
                     'account_owner' => $method->account_owner,
-                    'image_path' => $method->image_path,
+                    'image_path' => $this->formatAdminPaymentImageUrl($method->image_path),
                     'instructions' => $method->instructions,
                 ];
             })
@@ -272,6 +274,29 @@ class OrderController extends Controller
             'redirect_after' => 5,
             'order_code' => $order?->order_code,
         ]);
+    }
+
+    private function formatAdminPaymentImageUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        if (Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
+        }
+
+        $cleanPath = ltrim($path, '/');
+
+        if (Str::startsWith($cleanPath, 'storage/')) {
+            $cleanPath = Str::after($cleanPath, 'storage/');
+        }
+
+        if (Str::startsWith($cleanPath, 'app/public/')) {
+            $cleanPath = Str::after($cleanPath, 'app/public/');
+        }
+
+        return rtrim($this->adminStorageBaseUrl, '/') . '/' . $cleanPath;
     }
 
     private function generateOrderCode(): string

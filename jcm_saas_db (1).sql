@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 28, 2026 at 10:20 AM
+-- Generation Time: Apr 30, 2026 at 11:02 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -32,16 +32,6 @@ CREATE TABLE `cache` (
   `value` mediumtext NOT NULL,
   `expiration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `cache`
---
-
-INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('laravel-cache-696d286ffe0da48445dcbf8fb537c827', 'i:1;', 1777257407),
-('laravel-cache-696d286ffe0da48445dcbf8fb537c827:timer', 'i:1777257407;', 1777257407),
-('laravel-cache-7a239e18a46bf0f277309f974829ab02', 'i:1;', 1777339474),
-('laravel-cache-7a239e18a46bf0f277309f974829ab02:timer', 'i:1777339474;', 1777339474);
 
 -- --------------------------------------------------------
 
@@ -150,8 +140,11 @@ CREATE TABLE `messages` (
 INSERT INTO `messages` (`id`, `user_id`, `sender_id`, `receiver_id`, `message`, `sender_type`, `is_read`, `read_at`, `created_at`, `updated_at`) VALUES
 (1, 2, 2, 1, 'helllo', 'user', 0, '2026-04-26 03:28:12', '2026-04-25 20:22:37', '2026-04-26 03:28:12'),
 (2, 2, 2, 1, 'jujuju', 'user', 0, '2026-04-26 07:30:03', '2026-04-25 20:33:11', '2026-04-26 07:30:03'),
-(3, 2, 1, 2, 'hi', 'admin', 1, NULL, '2026-04-26 05:13:23', '2026-04-26 05:13:23'),
-(4, 2, 2, 1, 'd', 'user', 0, '2026-04-27 21:52:56', '2026-04-27 18:11:14', '2026-04-27 21:52:56');
+(3, 2, 1, 2, 'hi', 'admin', 0, '2026-04-29 19:21:50', '2026-04-26 05:13:23', '2026-04-29 19:21:50'),
+(4, 2, 2, 1, 'd', 'user', 0, '2026-04-27 21:52:56', '2026-04-27 18:11:14', '2026-04-27 21:52:56'),
+(5, 2, 2, 1, 'rert', 'user', 0, '2026-04-29 19:54:42', '2026-04-29 19:31:23', '2026-04-29 19:54:42'),
+(6, 2, 2, 1, 'ete', 'user', 0, '2026-04-29 19:54:42', '2026-04-29 19:31:25', '2026-04-29 19:54:42'),
+(7, 2, 2, 1, 'erte', 'user', 0, '2026-04-29 19:54:42', '2026-04-29 19:31:27', '2026-04-29 19:54:42');
 
 -- --------------------------------------------------------
 
@@ -199,9 +192,8 @@ CREATE TABLE `notifications` (
 
 INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `is_read`, `read_at`, `created_at`, `updated_at`) VALUES
 (1, 1, '1Welcome to JCM Web Solution', 'Your account is ready. You can now send inquiries and receive project updates.', 'system', 0, '2026-04-26 18:36:33', '2026-04-26 04:24:39', '2026-04-26 18:36:33'),
-(2, 2, 'System Maintenance', 'Jcm Websolution will be unable to use start in Dec1 12 am to 5 am, due to system update and maintenance', 'system', 0, '2026-04-27 19:55:29', '2026-04-26 07:56:55', '2026-04-27 19:55:29'),
-(6, 2, '12', '12', 'announcement', 0, '2026-04-27 19:55:28', '2026-04-26 08:14:35', '2026-04-27 19:55:28'),
-(7, 3, '12', '12', 'announcement', 1, NULL, '2026-04-26 08:14:35', '2026-04-26 08:14:35');
+(2, 2, 'System Maintenance', 'Jcm Websolution will be unable to use start in Dec1 12 am to 5 am, due to system update and maintenance', 'system', 0, '2026-04-29 19:31:55', '2026-04-26 07:56:55', '2026-04-29 19:31:55'),
+(6, 2, '12', '12', 'announcement', 0, '2026-04-29 19:31:53', '2026-04-26 08:14:35', '2026-04-29 19:31:53');
 
 -- --------------------------------------------------------
 
@@ -217,6 +209,7 @@ CREATE TABLE `orders` (
   `service_id` bigint(20) UNSIGNED DEFAULT NULL,
   `plan_id` bigint(20) UNSIGNED DEFAULT NULL,
   `billing_type` enum('trial','monthly','yearly','custom') NOT NULL DEFAULT 'monthly',
+  `payment_method_id` bigint(20) UNSIGNED DEFAULT NULL,
   `subscription_id` bigint(20) UNSIGNED DEFAULT NULL,
   `amount` decimal(10,2) NOT NULL,
   `duration_days` int(11) DEFAULT NULL,
@@ -233,11 +226,8 @@ CREATE TABLE `orders` (
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`id`, `order_code`, `user_id`, `product_id`, `service_id`, `plan_id`, `billing_type`, `subscription_id`, `amount`, `duration_days`, `status`, `ordered_at`, `paid_at`, `verified_at`, `notes`, `created_at`, `updated_at`) VALUES
-(13, 'ORD-20260426-ADHFNG', 1, 6, NULL, 5, 'monthly', NULL, 699.00, 30, 'pending', '2026-04-25 20:33:52', NULL, NULL, NULL, '2026-04-25 20:33:52', '2026-04-25 20:33:52'),
-(14, 'ORD-20260428-YFX1VC', 2, 6, NULL, 5, 'monthly', NULL, 699.00, 30, 'pending', '2026-04-27 18:39:18', NULL, NULL, NULL, '2026-04-27 18:39:18', '2026-04-27 18:39:18'),
-(15, 'ORD-20260428-PUK28A', 2, 6, NULL, 5, 'monthly', NULL, 699.00, 30, 'pending', '2026-04-27 18:55:25', NULL, NULL, NULL, '2026-04-27 18:55:25', '2026-04-27 18:55:25'),
-(16, 'ORD-20260428-YD2ESH', 2, NULL, 5, NULL, 'custom', NULL, 10000.00, NULL, 'pending', '2026-04-28 00:12:20', NULL, NULL, NULL, '2026-04-28 00:12:20', '2026-04-28 00:12:20');
+INSERT INTO `orders` (`id`, `order_code`, `user_id`, `product_id`, `service_id`, `plan_id`, `billing_type`, `payment_method_id`, `subscription_id`, `amount`, `duration_days`, `status`, `ordered_at`, `paid_at`, `verified_at`, `notes`, `created_at`, `updated_at`) VALUES
+(15, 'ORD-20260428-PUK28A', 2, 6, NULL, 5, 'monthly', NULL, NULL, 699.00, 30, 'pending', '2026-04-27 18:55:25', NULL, NULL, NULL, '2026-04-27 18:55:25', '2026-04-27 18:55:25');
 
 -- --------------------------------------------------------
 
@@ -250,6 +240,35 @@ CREATE TABLE `password_reset_tokens` (
   `token` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `payment_methods`
+--
+
+CREATE TABLE `payment_methods` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `slug` varchar(100) NOT NULL,
+  `account_name` varchar(150) DEFAULT NULL,
+  `account_number` varchar(100) DEFAULT NULL,
+  `account_owner` varchar(150) DEFAULT NULL,
+  `image_path` varchar(255) DEFAULT NULL,
+  `background_image_path` varchar(255) DEFAULT NULL,
+  `instructions` text DEFAULT NULL,
+  `status` tinyint(1) NOT NULL DEFAULT 1,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `payment_methods`
+--
+
+INSERT INTO `payment_methods` (`id`, `name`, `slug`, `account_name`, `account_number`, `account_owner`, `image_path`, `background_image_path`, `instructions`, `status`, `sort_order`, `created_at`, `updated_at`) VALUES
+(4, 'Gcash', 'gcash', 'JU*E CH****S M.', '09814302368', NULL, '/storage/payment-methods/gcash_qr.png', '/storage/payment-method-backgrounds/gcash_bg.png', 'Scan the QR Code for payment or send the exact amount to the displayed acc number', 1, 1, '2026-04-29 17:48:43', '2026-04-29 17:48:43');
 
 -- --------------------------------------------------------
 
@@ -482,7 +501,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('WH5NKarTNQ7fHDP65iSXQ2mLS4xV7jo71eaALC69', 2, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiWXhEMnlnZko0eTdzVnlyRGJLdGNVa0FFSnpxUFpLUml2aGNQSlFnOCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9jYXJ0cyI7czo1OiJyb3V0ZSI7czoxMToiY2FydHMuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToyO30=', 1777364408);
+('hmUR4qy8ewGWd80aUQu3Cbsa6Zq43e8xgDpCtxVu', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiUFlrNWVVOTdoUVdGUTFBWUZrUTZ6aWEzZExWcEhjbEtINkdDamxQNCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9ub3RpZmljYXRpb25zIjtzOjU6InJvdXRlIjtzOjI1OiJhZG1pbi5ub3RpZmljYXRpb25zLmluZGV4Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTt9', 1777536795);
 
 -- --------------------------------------------------------
 
@@ -539,10 +558,7 @@ CREATE TABLE `transactions` (
 --
 
 INSERT INTO `transactions` (`id`, `transaction_code`, `order_id`, `user_id`, `payment_method`, `reference_number`, `account_name`, `account_number`, `amount`, `payment_proof`, `status`, `paid_at`, `verified_at`, `notes`, `verified_by`, `created_at`, `updated_at`) VALUES
-(1, 'TXN-RTR1ZW', 13, 1, 'gcash', 'zsy657m', NULL, NULL, 699.00, NULL, 'pending', '2026-04-25 20:33:52', NULL, 'Payment submitted together with order.', NULL, '2026-04-25 20:33:52', '2026-04-25 20:33:52'),
-(2, 'TXN-BZOPDX', 14, 2, 'gcash', '123', NULL, NULL, 699.00, NULL, 'pending', '2026-04-27 18:39:18', NULL, 'Payment submitted together with order.', NULL, '2026-04-27 18:39:18', '2026-04-27 18:39:18'),
-(3, 'TXN-ZVVWAP', 15, 2, 'gcash', '123', NULL, NULL, 699.00, NULL, 'pending', '2026-04-27 18:55:25', NULL, 'Payment submitted together with order.', NULL, '2026-04-27 18:55:25', '2026-04-27 18:55:25'),
-(4, 'TXN-FX5CGH', 16, 2, 'gcash', '3', NULL, NULL, 10000.00, NULL, 'pending', '2026-04-28 00:12:20', NULL, 'Payment submitted together with order.', NULL, '2026-04-28 00:12:20', '2026-04-28 00:12:20');
+(3, 'TXN-ZVVWAP', 15, 2, 'gcash', '123', NULL, NULL, 699.00, NULL, 'pending', '2026-04-27 18:55:25', NULL, 'Payment submitted together with order.', NULL, '2026-04-27 18:55:25', '2026-04-27 18:55:25');
 
 -- --------------------------------------------------------
 
@@ -572,8 +588,7 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `two_factor_secret`, `two_factor_recovery_codes`, `two_factor_confirmed_at`, `remember_token`, `created_at`, `updated_at`, `role`, `is_active`) VALUES
 (1, 'June Charles Mariquit', 'junecharlesmariquit553@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, NULL, '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'admin', 1),
-(2, 'jcm test client', 'jcm.tc1@gmail.com', NULL, '$2y$12$ZEOBWD0I/XP.g5WFLoZ14OP9s1d96zvlmXjU1SLoKoPtk42DGHb4K', NULL, NULL, NULL, NULL, '2026-04-14 08:44:29', '2026-04-14 08:44:29', 'client', 1),
-(3, 'admin', 'admin@gmail.com', NULL, '$2y$12$f1NzyRN51AKhLWa2Vhud9.yjQE9XmsdmM51ob/DBwYQK6yew8DwK2', NULL, NULL, NULL, NULL, '2026-04-17 11:39:06', '2026-04-17 11:39:06', 'client', 1);
+(2, 'jcm test client', 'jcm.tc1@gmail.com', NULL, '$2y$12$ZEOBWD0I/XP.g5WFLoZ14OP9s1d96zvlmXjU1SLoKoPtk42DGHb4K', NULL, NULL, NULL, NULL, '2026-04-14 08:44:29', '2026-04-14 08:44:29', 'client', 1);
 
 --
 -- Indexes for dumped tables
@@ -655,13 +670,21 @@ ALTER TABLE `orders`
   ADD KEY `idx_orders_user_id` (`user_id`),
   ADD KEY `idx_orders_plan_id` (`plan_id`),
   ADD KEY `idx_orders_status` (`status`),
-  ADD KEY `idx_orders_subscription_id` (`subscription_id`);
+  ADD KEY `idx_orders_subscription_id` (`subscription_id`),
+  ADD KEY `orders_payment_method_id_foreign` (`payment_method_id`);
 
 --
 -- Indexes for table `password_reset_tokens`
 --
 ALTER TABLE `password_reset_tokens`
   ADD PRIMARY KEY (`email`);
+
+--
+-- Indexes for table `payment_methods`
+--
+ALTER TABLE `payment_methods`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `slug` (`slug`);
 
 --
 -- Indexes for table `plans`
@@ -789,7 +812,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `messages`
 --
 ALTER TABLE `messages`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `migrations`
@@ -808,6 +831,12 @@ ALTER TABLE `notifications`
 --
 ALTER TABLE `orders`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+
+--
+-- AUTO_INCREMENT for table `payment_methods`
+--
+ALTER TABLE `payment_methods`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `plans`
@@ -906,7 +935,8 @@ ALTER TABLE `orders`
   ADD CONSTRAINT `fk_orders_plan` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_orders_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_orders_subscription` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `orders_payment_method_id_foreign` FOREIGN KEY (`payment_method_id`) REFERENCES `payment_methods` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `plans`

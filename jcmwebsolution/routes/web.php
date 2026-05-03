@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\MySubscriptionController;
@@ -10,19 +11,32 @@ use App\Http\Controllers\PublicController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| Public / Storefront Routes
+|--------------------------------------------------------------------------
+*/
+
 Route::get('/', [PublicController::class, 'home'])->name('home');
 
-Route::get('/dashboard', [PublicController::class, 'dashboard'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+/*
+|--------------------------------------------------------------------------
+| Authenticated Storefront / User Routes
+|--------------------------------------------------------------------------
+*/
 
-Route::get('/my-subscription', [MySubscriptionController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('my-subscription');
- 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', [PublicController::class, 'dashboard'])
+        ->name('dashboard');
+
+    Route::get('/my-subscription', [MySubscriptionController::class, 'index'])
+        ->name('my-subscription');
+
     Route::get('/products/{product}', [ProductController::class, 'show'])
         ->name('products.show');
+
+    Route::get('/services/{service}', [ServiceController::class, 'show'])
+        ->name('services.show');
 
     Route::get('/orders/create', [OrderController::class, 'create'])
         ->name('orders.create');
@@ -51,8 +65,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/messages/{message}/read', [MessageController::class, 'markAsRead'])
         ->name('messages.read');
 
-    Route::post('/admin/messages/{user}/reply', [MessageController::class, 'adminReply'])
-        ->name('admin.messages.reply');
+    Route::post('/messages/read-all', [MessageController::class, 'readAll'])
+        ->name('messages.read-all');
 
     Route::get('/carts', [CartController::class, 'index'])
         ->name('carts.index');
@@ -65,12 +79,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::delete('/carts/{cart}', [CartController::class, 'destroy'])
         ->name('carts.destroy');
-
-    Route::get('/services/{service}', [ServiceController::class, 'show'])
-        ->name('services.show');
-    
-    Route::post('/messages/read-all', [MessageController::class, 'readAll'])
-    ->name('messages.read-all');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Admin Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'verified'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])
+            ->name('dashboard');
+
+        Route::post('/messages/{user}/reply', [MessageController::class, 'adminReply'])
+            ->name('messages.reply');
+    });
 
 require __DIR__ . '/settings.php';

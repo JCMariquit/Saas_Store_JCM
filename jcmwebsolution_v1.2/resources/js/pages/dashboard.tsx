@@ -18,7 +18,7 @@ import type { BreadcrumbItem } from '@/types';
 type PageProps = {
     products: ProductItem[];
     services: ServiceItem[];
-};
+}; 
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

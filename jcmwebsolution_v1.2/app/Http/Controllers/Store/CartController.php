@@ -15,8 +15,6 @@ class CartController extends Controller
     {
         $authId = Auth::id();
 
-        $mediaBaseUrl = 'https://jcmwebsolution.com/jcm_admin/storage/app/public/';
-
         if (!$authId) {
             return response()->json([
                 'auth_id' => null,
@@ -68,7 +66,7 @@ class CartController extends Controller
             ])
             ->orderByDesc('carts.id')
             ->get()
-            ->map(function ($item) use ($mediaBaseUrl) {
+            ->map(function ($item) {
                 $imagePath = $item->product_image;
 
                 return (object) [
@@ -78,9 +76,14 @@ class CartController extends Controller
                     'plan_id' => $item->plan_id,
                     'product_name' => $item->product_name ?? "Product #{$item->product_id}",
                     'product_description' => $item->product_description,
+
+                    // Local public image path
+                    // Example DB value: images/products/sample.png
+                    // Actual file: public/images/products/sample.png
                     'product_image' => $imagePath
-                        ? rtrim($mediaBaseUrl, '/') . '/' . ltrim($imagePath, '/')
+                        ? asset(ltrim($imagePath, '/'))
                         : null,
+
                     'plan_name' => $item->plan_name ?? 'No plan',
                     'plan_price' => (float) ($item->plan_price ?? 0),
                     'plan_description' => $item->plan_description,

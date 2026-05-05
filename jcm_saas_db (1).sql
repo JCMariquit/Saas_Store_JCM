@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 30, 2026 at 11:02 AM
+-- Generation Time: May 05, 2026 at 10:04 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -62,6 +62,13 @@ CREATE TABLE `carts` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `carts`
+--
+
+INSERT INTO `carts` (`id`, `user_id`, `product_id`, `plan_id`, `quantity`, `status`, `notes`, `created_at`, `updated_at`) VALUES
+(8, 2, 6, 5, 1, 'active', NULL, '2026-05-03 22:58:24', '2026-05-03 22:58:24');
 
 -- --------------------------------------------------------
 
@@ -203,6 +210,7 @@ INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `is_re
 
 CREATE TABLE `orders` (
   `id` bigint(20) UNSIGNED NOT NULL,
+  `transaction_id` bigint(20) UNSIGNED DEFAULT NULL,
   `order_code` varchar(100) NOT NULL,
   `user_id` bigint(20) UNSIGNED NOT NULL,
   `product_id` bigint(20) UNSIGNED DEFAULT NULL,
@@ -226,8 +234,9 @@ CREATE TABLE `orders` (
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`id`, `order_code`, `user_id`, `product_id`, `service_id`, `plan_id`, `billing_type`, `payment_method_id`, `subscription_id`, `amount`, `duration_days`, `status`, `ordered_at`, `paid_at`, `verified_at`, `notes`, `created_at`, `updated_at`) VALUES
-(15, 'ORD-20260428-PUK28A', 2, 6, NULL, 5, 'monthly', NULL, NULL, 699.00, 30, 'pending', '2026-04-27 18:55:25', NULL, NULL, NULL, '2026-04-27 18:55:25', '2026-04-27 18:55:25');
+INSERT INTO `orders` (`id`, `transaction_id`, `order_code`, `user_id`, `product_id`, `service_id`, `plan_id`, `billing_type`, `payment_method_id`, `subscription_id`, `amount`, `duration_days`, `status`, `ordered_at`, `paid_at`, `verified_at`, `notes`, `created_at`, `updated_at`) VALUES
+(15, 3, 'ORD-20260428-PUK28A', 2, 6, NULL, 5, 'monthly', NULL, NULL, 699.00, 30, 'pending', '2026-04-27 18:55:25', NULL, NULL, NULL, '2026-04-27 18:55:25', '2026-05-05 07:45:33'),
+(17, 5, 'ORD-20260504-AJPCPT', 2, 6, NULL, 5, 'monthly', NULL, NULL, 699.00, 30, 'verified', '2026-05-03 18:48:08', '2026-05-05 00:00:47', '2026-05-05 00:00:47', NULL, '2026-05-03 18:48:08', '2026-05-05 00:00:47');
 
 -- --------------------------------------------------------
 
@@ -319,7 +328,8 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `product_code`, `name`, `description`, `thumbnail`, `price`, `pricing_type`, `status`, `created_at`, `updated_at`) VALUES
-(6, 'PRD-NKTU8G', 'Hotel and Resolrt Booking System', 'Hotel & Resort Boking system is a system where client can book a room in a hotel or a resort anywhere around the globe.', NULL, NULL, 'plan', 'active', '2026-04-23 16:56:15', '2026-04-23 16:56:15');
+(6, 'PRD-NKTU8G', 'cancel', 'Hotel & Resort Boking system is a system where client can book a room in a hotel or a resort anywhere around the globe.', NULL, NULL, 'plan', 'active', '2026-04-23 16:56:15', '2026-05-05 08:04:18'),
+(7, 'PRD-RA06RM', 'Hotel and Resort Booking System', 'Hotel & Resort Boking system is a system where client can book a room in a hotel or a resort anywhere around the globe.', NULL, NULL, 'plan', 'active', '2026-05-04 18:11:04', '2026-05-04 18:11:04');
 
 -- --------------------------------------------------------
 
@@ -343,9 +353,8 @@ CREATE TABLE `product_features` (
 --
 
 INSERT INTO `product_features` (`id`, `product_id`, `feature_title`, `feature_description`, `icon`, `sort_order`, `created_at`, `updated_at`) VALUES
-(1, 6, 'Booking System', NULL, NULL, 0, '2026-04-23 16:56:15', '2026-04-23 16:56:15'),
-(2, 6, 'With Message Support', NULL, NULL, 1, '2026-04-23 16:56:15', '2026-04-23 16:56:15'),
-(3, 6, 'Email Notifcation', NULL, NULL, 2, '2026-04-23 16:56:15', '2026-04-23 16:56:15');
+(4, 7, 'f1', NULL, NULL, 0, '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
+(5, 7, 'f2', NULL, NULL, 1, '2026-05-04 18:11:04', '2026-05-04 18:11:04');
 
 -- --------------------------------------------------------
 
@@ -368,10 +377,8 @@ CREATE TABLE `product_images` (
 --
 
 INSERT INTO `product_images` (`id`, `product_id`, `image_path`, `alt_text`, `sort_order`, `created_at`, `updated_at`) VALUES
-(1, 6, 'products/nyHI1v7nzxnGQN64eBi0W7VMuK4FueNmMgrCp6Rh.png', 'Hotel and Resolrt Booking System image 1', 0, '2026-04-23 16:56:16', '2026-04-23 16:56:16'),
-(2, 6, 'products/4WpNFo5VAwTRg1kh10rdxfqAG8Z9m2gxdXz94ixN.png', 'Hotel and Resolrt Booking System image 2', 1, '2026-04-23 16:56:16', '2026-04-23 16:56:16'),
-(3, 6, 'products/ae3ZPOT4D7jCyktKeq8l8b3ef9PBEiQt9uSL4UNe.png', 'Hotel and Resolrt Booking System image 3', 2, '2026-04-23 16:56:16', '2026-04-23 16:56:16'),
-(4, 6, 'products/x9WKAMfj1Zal9Ky9gcOG4AYG84t6oTigfiCPspg6.png', 'Hotel and Resolrt Booking System image 4', 3, '2026-04-23 16:56:16', '2026-04-23 16:56:16');
+(5, 7, 'products/LeGF2UCI6Wbtq3Y4tCITYHsvb2WHenvWHFgclG2z.png', 'Hotel and Resort Booking System image 1', 0, '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
+(6, 7, 'products/a0JBQ5GxBCdGR3suZ77bBP63sWCjhEDhByMTYwLs.png', 'Hotel and Resort Booking System image 2', 1, '2026-05-04 18:11:04', '2026-05-04 18:11:04');
 
 -- --------------------------------------------------------
 
@@ -394,7 +401,7 @@ CREATE TABLE `product_overview` (
 --
 
 INSERT INTO `product_overview` (`id`, `product_id`, `title`, `content`, `sort_order`, `created_at`, `updated_at`) VALUES
-(1, 6, 'Booking System', 'Hotel & Resort Boking system is a system where client can book a room in a hotel or a resort anywhere around the globe.Hotel & Resort Boking system is a system where client can book a room in a hotel or a resort anywhere around the globe.', 0, '2026-04-23 16:56:15', '2026-04-23 16:56:15');
+(2, 7, 'Hotel and Resolrt Booking System', 'Hotel and Resolrt Booking System', 0, '2026-05-04 18:11:04', '2026-05-04 18:11:04');
 
 -- --------------------------------------------------------
 
@@ -501,7 +508,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('hmUR4qy8ewGWd80aUQu3Cbsa6Zq43e8xgDpCtxVu', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiUFlrNWVVOTdoUVdGUTFBWUZrUTZ6aWEzZExWcEhjbEtINkdDamxQNCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9hZG1pbi9ub3RpZmljYXRpb25zIjtzOjU6InJvdXRlIjtzOjI1OiJhZG1pbi5ub3RpZmljYXRpb25zLmluZGV4Ijt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTt9', 1777536795);
+('b5hpa9NVSUEkNLH98vDmK26iwQEzgHVyNJ5siMCv', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiNG55aXA4M0c2dnNXTVVHT2NaelV5Y1huWWo1TlNzMjZBeXNETzZUMSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo0NDoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL3Byb2R1Y3RzP3NlYXJjaD0iO3M6NToicm91dGUiO3M6MjA6ImFkbWluLnByb2R1Y3RzLmluZGV4Ijt9fQ==', 1777968145);
 
 -- --------------------------------------------------------
 
@@ -526,6 +533,13 @@ CREATE TABLE `subscriptions` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `subscriptions`
+--
+
+INSERT INTO `subscriptions` (`id`, `user_id`, `product_id`, `order_id`, `plan_id`, `subscription_code`, `subscription_type`, `status`, `start_date`, `end_date`, `duration_days`, `amount`, `notes`, `created_at`, `updated_at`) VALUES
+(14, 2, 6, 17, 5, 'SUB-PMMSNG', 'monthly', 'active', '2026-05-05', '2026-06-05', 30, 699.00, 'Auto-created from verified order: ORD-20260504-AJPCPT', '2026-05-05 00:00:47', '2026-05-05 00:00:47');
 
 -- --------------------------------------------------------
 
@@ -558,7 +572,8 @@ CREATE TABLE `transactions` (
 --
 
 INSERT INTO `transactions` (`id`, `transaction_code`, `order_id`, `user_id`, `payment_method`, `reference_number`, `account_name`, `account_number`, `amount`, `payment_proof`, `status`, `paid_at`, `verified_at`, `notes`, `verified_by`, `created_at`, `updated_at`) VALUES
-(3, 'TXN-ZVVWAP', 15, 2, 'gcash', '123', NULL, NULL, 699.00, NULL, 'pending', '2026-04-27 18:55:25', NULL, 'Payment submitted together with order.', NULL, '2026-04-27 18:55:25', '2026-04-27 18:55:25');
+(3, 'TXN-ZVVWAP', 15, 2, 'gcash', '123', NULL, NULL, 699.00, NULL, 'pending', '2026-04-27 18:55:25', NULL, 'Payment submitted together with order.', NULL, '2026-04-27 18:55:25', '2026-04-27 18:55:25'),
+(5, 'TXN-VDPHKL', 17, 2, 'gcash', '14234', NULL, NULL, 699.00, NULL, 'verified', '2026-05-03 18:48:08', '2026-05-05 00:00:47', 'Payment submitted together with order.', NULL, '2026-05-03 18:48:08', '2026-05-05 00:00:47');
 
 -- --------------------------------------------------------
 
@@ -671,7 +686,8 @@ ALTER TABLE `orders`
   ADD KEY `idx_orders_plan_id` (`plan_id`),
   ADD KEY `idx_orders_status` (`status`),
   ADD KEY `idx_orders_subscription_id` (`subscription_id`),
-  ADD KEY `orders_payment_method_id_foreign` (`payment_method_id`);
+  ADD KEY `orders_payment_method_id_foreign` (`payment_method_id`),
+  ADD KEY `fk_orders_transaction` (`transaction_id`);
 
 --
 -- Indexes for table `password_reset_tokens`
@@ -794,7 +810,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `failed_jobs`
@@ -830,7 +846,7 @@ ALTER TABLE `notifications`
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `payment_methods`
@@ -848,25 +864,25 @@ ALTER TABLE `plans`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `product_features`
 --
 ALTER TABLE `product_features`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `product_images`
 --
 ALTER TABLE `product_images`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `product_overview`
 --
 ALTER TABLE `product_overview`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `services`
@@ -896,13 +912,13 @@ ALTER TABLE `service_overview`
 -- AUTO_INCREMENT for table `subscriptions`
 --
 ALTER TABLE `subscriptions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -935,6 +951,7 @@ ALTER TABLE `orders`
   ADD CONSTRAINT `fk_orders_plan` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_orders_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_orders_subscription` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_orders_transaction` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `orders_payment_method_id_foreign` FOREIGN KEY (`payment_method_id`) REFERENCES `payment_methods` (`id`) ON DELETE SET NULL;
 

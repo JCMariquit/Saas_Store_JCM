@@ -36,7 +36,7 @@ class ProductController extends Controller
         | http://localhost/jcmwebsolution/jcm_admin/public/storage
         |
         */
-        $mediaBaseUrl = 'https://jcmwebsolution.com/jcm_admin/storage/app/public/';
+        $mediaBaseUrl = asset('storage');
 
         $pricingTypeLabel = match ($product->pricing_type) {
             'plan' => 'Plan Based',

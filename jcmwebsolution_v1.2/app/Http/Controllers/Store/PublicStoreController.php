@@ -44,7 +44,7 @@ class PublicStoreController extends Controller
                 } elseif ($firstImage) {
                     $imageUrl = asset('storage/' . $firstImage->image_path);
                 }
-
+ 
                 return [
                     'id' => $product->id,
                     'name' => $product->name,

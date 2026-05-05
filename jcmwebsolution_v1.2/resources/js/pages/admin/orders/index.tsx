@@ -61,6 +61,7 @@ type OrderRow = {
     verified_at: string | null;
     has_subscription: boolean;
     subscription_code: string | null;
+    has_transaction: boolean;
     transaction: null | {
         id: number;
         transaction_code: string;
@@ -578,7 +579,7 @@ export default function OrdersIndex() {
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <div className="flex items-center justify-center gap-2">
-                                            {order.status === 'pending' && (
+                                            {order.status === 'pending' && !order.has_transaction && (
                                                 <Button
                                                     type="button"
                                                     variant="outline"
@@ -588,6 +589,30 @@ export default function OrdersIndex() {
                                                 >
                                                     <CreditCard className="h-4 w-4" />
                                                 </Button>
+                                            )}
+
+                                            {order.status === 'pending' && order.has_transaction && (
+                                                <>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className="h-10 rounded-xl border-emerald-200 bg-white px-3 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                                                        title="Accept order"
+                                                        onClick={() => verifyOrder(order)}
+                                                    >
+                                                        <BadgeCheck className="h-4 w-4" />
+                                                    </Button>
+
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className="h-10 rounded-xl border-red-200 bg-white px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                        title="Deny order"
+                                                        onClick={() => openReject(order)}
+                                                    >
+                                                        <XCircle className="h-4 w-4" />
+                                                    </Button>
+                                                </>
                                             )}
 
                                             {order.status === 'paid' && (
@@ -1124,7 +1149,7 @@ export default function OrdersIndex() {
                             </div>
 
                             <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-5">
-                                {viewingOrder.status === 'pending' && (
+                                {viewingOrder.status === 'pending' && !viewingOrder.has_transaction && (
                                     <Button
                                         type="button"
                                         variant="outline"
@@ -1137,6 +1162,36 @@ export default function OrdersIndex() {
                                         <CreditCard className="h-4 w-4" />
                                         Submit Payment
                                     </Button>
+                                )}
+
+                                {viewingOrder.status === 'pending' && viewingOrder.has_transaction && (
+                                    <>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="inline-flex items-center gap-2 rounded-xl border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                                            onClick={() => {
+                                                closeViewDrawer();
+                                                verifyOrder(viewingOrder);
+                                            }}
+                                        >
+                                            <BadgeCheck className="h-4 w-4" />
+                                            Accept
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="inline-flex items-center gap-2 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                            onClick={() => {
+                                                closeViewDrawer();
+                                                openReject(viewingOrder);
+                                            }}
+                                        >
+                                            <XCircle className="h-4 w-4" />
+                                            Deny
+                                        </Button>
+                                    </>
                                 )}
 
                                 {viewingOrder.status === 'paid' && (

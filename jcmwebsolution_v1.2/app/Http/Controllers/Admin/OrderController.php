@@ -8,8 +8,8 @@ use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -21,7 +21,14 @@ class OrderController extends Controller
     {
         $search = trim((string) $request->query('search', ''));
 
-        $orders = Order::with(['user', 'product', 'plan', 'latestTransaction', 'subscription'])
+        $orders = Order::with([
+            'user',
+            'product',
+            'plan',
+            'transaction',
+            'latestTransaction',
+            'subscription',
+        ])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('order_code', 'like', "%{$search}%")
@@ -38,7 +45,8 @@ class OrderController extends Controller
                             $subQ->where('plan_name', 'like', "%{$search}%");
                         })
                         ->orWhereHas('transactions', function ($subQ) use ($search) {
-                            $subQ->where('reference_number', 'like', "%{$search}%")
+                            $subQ->where('transaction_code', 'like', "%{$search}%")
+                                ->orWhere('reference_number', 'like', "%{$search}%")
                                 ->orWhere('payment_method', 'like', "%{$search}%")
                                 ->orWhere('status', 'like', "%{$search}%");
                         });
@@ -48,6 +56,8 @@ class OrderController extends Controller
             ->paginate(10)
             ->withQueryString()
             ->through(function ($order) {
+                $transaction = $order->transaction ?? $order->latestTransaction;
+
                 $statusLabel = match ($order->status) {
                     'paid' => 'for verification',
                     'failed' => 'failed',
@@ -70,16 +80,17 @@ class OrderController extends Controller
                     'verified_at' => optional($order->verified_at)?->format('M d, Y h:i A'),
                     'has_subscription' => $order->subscription ? true : false,
                     'subscription_code' => $order->subscription?->subscription_code,
-                    'transaction' => $order->latestTransaction ? [
-                        'id' => $order->latestTransaction->id,
-                        'transaction_code' => $order->latestTransaction->transaction_code,
-                        'payment_method' => $order->latestTransaction->payment_method,
-                        'reference_number' => $order->latestTransaction->reference_number,
-                        'amount' => $order->latestTransaction->amount,
-                        'status' => $order->latestTransaction->status,
-                        'paid_at' => optional($order->latestTransaction->paid_at)?->format('M d, Y h:i A'),
-                        'verified_at' => optional($order->latestTransaction->verified_at)?->format('M d, Y h:i A'),
-                        'notes' => $order->latestTransaction->notes,
+                    'has_transaction' => $transaction ? true : false,
+                    'transaction' => $transaction ? [
+                        'id' => $transaction->id,
+                        'transaction_code' => $transaction->transaction_code,
+                        'payment_method' => $transaction->payment_method,
+                        'reference_number' => $transaction->reference_number,
+                        'amount' => $transaction->amount,
+                        'status' => $transaction->status,
+                        'paid_at' => optional($transaction->paid_at)?->format('M d, Y h:i A'),
+                        'verified_at' => optional($transaction->verified_at)?->format('M d, Y h:i A'),
+                        'notes' => $transaction->notes,
                     ] : null,
                 ];
             });
@@ -142,6 +153,7 @@ class OrderController extends Controller
             'user_id' => $validated['user_id'],
             'product_id' => $plan->product_id,
             'plan_id' => $plan->id,
+            'transaction_id' => null,
             'billing_type' => $validated['billing_type'],
             'amount' => $amount,
             'duration_days' => $durationDays,
@@ -157,6 +169,12 @@ class OrderController extends Controller
 
     public function submitPayment(Request $request, Order $order): RedirectResponse
     {
+        if ($order->transaction_id || $order->latestTransaction) {
+            return redirect()
+                ->route('admin.orders.index')
+                ->with('success', 'This order already has payment details. Please accept or deny it instead.');
+        }
+
         $validated = $request->validate([
             'payment_method' => ['required', 'in:gcash,maya,bank_transfer,cash,other'],
             'reference_number' => ['required', 'string', 'max:150'],
@@ -166,7 +184,7 @@ class OrderController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $order) {
-            Transaction::create([
+            $transaction = Transaction::create([
                 'transaction_code' => $this->generateTransactionCode(),
                 'order_id' => $order->id,
                 'user_id' => $order->user_id,
@@ -181,6 +199,7 @@ class OrderController extends Controller
             ]);
 
             $order->update([
+                'transaction_id' => $transaction->id,
                 'status' => 'paid',
                 'paid_at' => now(),
             ]);
@@ -194,17 +213,24 @@ class OrderController extends Controller
     public function verify(Order $order): RedirectResponse
     {
         DB::transaction(function () use ($order) {
-            $transaction = $order->latestTransaction;
+            $transaction = $order->transaction ?? $order->latestTransaction;
 
             if ($transaction) {
                 $transaction->update([
                     'status' => 'verified',
                     'verified_at' => now(),
                 ]);
+
+                if (!$order->transaction_id) {
+                    $order->update([
+                        'transaction_id' => $transaction->id,
+                    ]);
+                }
             }
 
             $order->update([
                 'status' => 'verified',
+                'paid_at' => $order->paid_at ?? now(),
                 'verified_at' => now(),
             ]);
 
@@ -216,8 +242,8 @@ class OrderController extends Controller
                 $endDate = match ($order->billing_type) {
                     'monthly' => $startDate->copy()->addMonth(),
                     'yearly' => $startDate->copy()->addYear(),
-                    'trial', 'custom' => $startDate->copy()->addDays((int) $order->duration_days),
-                    default => $startDate->copy()->addDays((int) $order->duration_days),
+                    'trial', 'custom' => $startDate->copy()->addDays((int) ($order->duration_days ?? 30)),
+                    default => $startDate->copy()->addDays((int) ($order->duration_days ?? 30)),
                 };
 
                 Subscription::create([
@@ -230,7 +256,7 @@ class OrderController extends Controller
                     'status' => 'active',
                     'start_date' => $startDate->toDateString(),
                     'end_date' => $endDate->toDateString(),
-                    'duration_days' => (int) $order->duration_days,
+                    'duration_days' => (int) ($order->duration_days ?? 30),
                     'amount' => $order->amount,
                     'notes' => 'Auto-created from verified order: ' . $order->order_code,
                 ]);
@@ -239,7 +265,7 @@ class OrderController extends Controller
 
         return redirect()
             ->route('admin.orders.index')
-            ->with('success', 'Order verified successfully and subscription created.');
+            ->with('success', 'Order accepted successfully and subscription created.');
     }
 
     public function reject(Request $request, Order $order): RedirectResponse
@@ -249,13 +275,19 @@ class OrderController extends Controller
         ]);
 
         DB::transaction(function () use ($validated, $order) {
-            $transaction = $order->latestTransaction;
+            $transaction = $order->transaction ?? $order->latestTransaction;
 
             if ($transaction) {
                 $transaction->update([
                     'status' => 'rejected',
                     'notes' => $validated['notes'] ?? $transaction->notes,
                 ]);
+
+                if (!$order->transaction_id) {
+                    $order->update([
+                        'transaction_id' => $transaction->id,
+                    ]);
+                }
             }
 
             $order->update([
@@ -266,7 +298,7 @@ class OrderController extends Controller
 
         return redirect()
             ->route('admin.orders.index')
-            ->with('success', 'Order marked as failed.');
+            ->with('success', 'Order denied successfully.');
     }
 
     public function destroy(Order $order): RedirectResponse

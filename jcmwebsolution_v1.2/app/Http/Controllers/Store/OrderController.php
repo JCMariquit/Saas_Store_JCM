@@ -165,7 +165,8 @@ class OrderController extends Controller
             }
 
             if (!empty($validated['plan_id'])) {
-                $plan = Plan::where('id', $validated['plan_id'])
+                $plan = Plan::query()
+                    ->where('id', $validated['plan_id'])
                     ->where('product_id', $product->id)
                     ->where('status', 'active')
                     ->firstOrFail();
@@ -208,6 +209,7 @@ class OrderController extends Controller
         }
 
         $order = null;
+        $transaction = null;
 
         DB::transaction(function () use (
             $product,
@@ -219,7 +221,8 @@ class OrderController extends Controller
             $validated,
             $paymentProofPath,
             $paymentMethod,
-            &$order
+            &$order,
+            &$transaction
         ) {
             $order = Order::create([
                 'order_code' => $this->generateOrderCode(),
@@ -228,6 +231,8 @@ class OrderController extends Controller
                 'product_id' => $product?->id,
                 'plan_id' => $product ? $plan?->id : null,
                 'service_id' => $service?->id,
+
+                'transaction_id' => null,
 
                 'billing_type' => $billingType,
                 'payment_method_id' => $paymentMethod->id,
@@ -238,18 +243,24 @@ class OrderController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
 
-            Transaction::create([
+            $transaction = Transaction::create([
                 'transaction_code' => $this->generateTransactionCode(),
                 'order_id' => $order->id,
                 'user_id' => Auth::id(),
                 'payment_method_id' => $paymentMethod->id,
                 'payment_method' => $paymentMethod->slug,
                 'reference_number' => $validated['reference_number'],
+                'account_name' => $paymentMethod->account_name,
+                'account_number' => $paymentMethod->account_number,
                 'amount' => $amount,
                 'payment_proof' => $paymentProofPath,
                 'status' => 'pending',
                 'paid_at' => now(),
                 'notes' => 'Payment submitted together with order.',
+            ]);
+
+            $order->update([
+                'transaction_id' => $transaction->id,
             ]);
 
             if (!empty($validated['cart_id'])) {
@@ -274,6 +285,7 @@ class OrderController extends Controller
             'redirect_to' => route('dashboard'),
             'redirect_after' => 5,
             'order_code' => $order?->order_code,
+            'transaction_code' => $transaction?->transaction_code,
         ]);
     }
 

@@ -63,4 +63,8 @@ class Order extends Model
     {
         return $this->hasOne(Transaction::class, 'order_id')->latestOfMany();
     }
+    public function transaction()
+    {
+        return $this->belongsTo(Transaction::class, 'transaction_id');
+    }
 }

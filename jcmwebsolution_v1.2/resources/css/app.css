@@ -148,6 +148,10 @@
 }
 
 @layer base {
+    html {
+        font-size: 15px;
+    }
+
     * {
         @apply border-border;
     }

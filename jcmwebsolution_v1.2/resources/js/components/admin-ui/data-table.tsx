@@ -47,7 +47,7 @@ export function DataTable({
         .join(' ');
 
     return (
-        <div className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm ring-1 ring-blue-100/50 transition hover:shadow-md hover:shadow-blue-500/10">
+        <div className="overflow-hidden rounded-[6px] border border-blue-200 bg-white shadow-sm ring-1 ring-blue-100/50 transition hover:border-blue-400 hover:shadow-md hover:shadow-blue-500/10">
             <div className="overflow-x-auto">
                 <table className="min-w-full border-collapse">
                     <thead className="bg-gradient-to-r from-slate-100 via-slate-50 to-blue-50">

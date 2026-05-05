@@ -20,7 +20,7 @@ export function PageHero({
     actionIcon,
 }: PageHeroProps) {
     return (
-        <div className="group relative overflow-hidden rounded-[15px] border border-blue-300/80 bg-gradient-to-br from-white via-blue-50 to-blue-100/80 shadow-[0_12px_34px_rgba(37,99,235,0.12)] transition-all duration-300 hover:shadow-[0_16px_42px_rgba(37,99,235,0.16)]">
+        <div className="group relative overflow-hidden rounded-[6px] border border-blue-300/80 bg-gradient-to-br from-white via-blue-50 to-blue-100/80 shadow-[0_12px_34px_rgba(37,99,235,0.12)] transition-all duration-300 hover:shadow-[0_16px_42px_rgba(37,99,235,0.16)]">
             {/* heavy left accent */}
             <div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-b from-blue-700 via-blue-500 to-cyan-400" />
 

@@ -183,17 +183,46 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
-        if ($product->thumbnail && Storage::disk('public')->exists($product->thumbnail)) {
-            Storage::disk('public')->delete($product->thumbnail);
+        $hasSubscriptions = DB::table('subscriptions')
+            ->whereIn('plan_id', function ($query) use ($product) {
+                $query->select('id')
+                    ->from('plans')
+                    ->where('product_id', $product->id);
+            })
+            ->exists();
+
+        $hasOrders = DB::table('orders')
+            ->where('product_id', $product->id)
+            ->exists();
+
+        if ($hasSubscriptions || $hasOrders) {
+            $product->update([
+                'status' => 'inactive',
+            ]);
+
+            return redirect()
+                ->route('admin.products.index')
+                ->with('success', 'Product cannot be deleted because it has existing orders or subscriptions. It was deactivated instead.');
         }
 
-        foreach ($product->images as $image) {
-            if ($image->image_path && Storage::disk('public')->exists($image->image_path)) {
-                Storage::disk('public')->delete($image->image_path);
+        DB::transaction(function () use ($product) {
+            if ($product->thumbnail && Storage::disk('public')->exists($product->thumbnail)) {
+                Storage::disk('public')->delete($product->thumbnail);
             }
-        }
 
-        $product->delete();
+            foreach ($product->images as $image) {
+                if ($image->image_path && Storage::disk('public')->exists($image->image_path)) {
+                    Storage::disk('public')->delete($image->image_path);
+                }
+            }
+
+            $product->images()->delete();
+            $product->features()->delete();
+            $product->overviews()->delete();
+            $product->plans()->delete();
+
+            $product->delete();
+        });
 
         return redirect()
             ->route('admin.products.index')

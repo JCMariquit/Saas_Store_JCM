@@ -53,7 +53,7 @@ export function StatsCard({
     return (
         <div
             className={`
-                group relative overflow-hidden rounded-2xl border p-4
+                group relative overflow-hidden rounded-[6px] border p-4
                 shadow-sm transition-all duration-300
                 hover:-translate-y-1 hover:shadow-lg
                 ${styles.card} ${styles.border} ${styles.glow}

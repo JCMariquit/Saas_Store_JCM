@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Plan;
 
 class Product extends Model
 {
@@ -35,5 +34,15 @@ class Product extends Model
     public function plans()
     {
         return $this->hasMany(Plan::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
     }
 }

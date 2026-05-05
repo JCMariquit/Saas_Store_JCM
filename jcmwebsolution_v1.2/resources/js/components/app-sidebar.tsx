@@ -1,8 +1,6 @@
-import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
@@ -10,88 +8,173 @@ import {
 } from '@/components/ui/sidebar';
 import { Link, usePage } from '@inertiajs/react';
 import {
-    Bell,
     LayoutGrid,
-    MessageCircle,
-    Package,
-    ReceiptText,
-    Settings,
-    ShoppingBag,
     Users,
+    CreditCard,
+    Boxes,
+    Layers3,
+    FileBarChart2,
+    ReceiptText,
+    FolderKanban,
+    ShoppingCart,
+    BarChart3,
+    MonitorSmartphone,
+    Globe,
+    Wallet,
+    ChevronDown,
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import AppLogo from './app-logo';
 
-const adminNavItems = [
-    { title: 'Dashboard', url: '/admin/dashboard', icon: LayoutGrid },
-    { title: 'Messages', url: '/admin/messages', icon: MessageCircle },
-    { title: 'Notifications', url: '/admin/notifications', icon: Bell },
-    { title: 'Orders', url: '/admin/orders', icon: ShoppingBag },
-    { title: 'Products', url: '/admin/products', icon: Package },
-    { title: 'Users', url: '/admin/users', icon: Users },
-    { title: 'Settings', url: '/admin/settings', icon: Settings },
-    { title: 'Transactions', url: '/admin/transactions', icon: ReceiptText },
+type MenuItem = {
+    title: string;
+    url: string;
+    icon: React.ElementType;
+};
+
+type MenuGroup = {
+    title: string;
+    icon: React.ElementType;
+    items: MenuItem[];
+};
+
+const menuGroups: MenuGroup[] = [
+    {
+        title: 'Overview',
+        icon: LayoutGrid,
+        items: [
+            { title: 'Dashboard', url: '/admin/dashboard', icon: LayoutGrid },
+        ],
+    },
+    {
+        title: 'Management',
+        icon: FolderKanban,
+        items: [
+            { title: 'Users', url: '/admin/users', icon: Users },
+            { title: 'Products', url: '/admin/products', icon: Boxes },
+            { title: 'Services', url: '/admin/services', icon: Boxes },
+            { title: 'Plans', url: '/admin/plans', icon: Layers3 },
+            { title: 'Payment Methods', url: '/admin/payment-methods', icon: Wallet },
+        ],
+    },
+    {
+        title: 'Sales',
+        icon: ShoppingCart,
+        items: [
+            { title: 'Orders', url: '/admin/orders', icon: ReceiptText },
+            { title: 'Subscriptions', url: '/admin/subscriptions', icon: CreditCard },
+            { title: 'Transactions', url: '/admin/transactions', icon: ReceiptText },
+        ],
+    },
+    {
+        title: 'System',
+        icon: Globe,
+        items: [
+            { title: 'Website Builder', url: '/admin/website/builder', icon: Globe },
+            { title: 'Websites', url: '/admin/websites', icon: MonitorSmartphone },
+        ],
+    },
+    {
+        title: 'Analytics',
+        icon: BarChart3,
+        items: [
+            { title: 'Reports', url: '/admin/reports', icon: FileBarChart2 },
+        ],
+    },
 ];
 
 export function AppSidebar() {
     const { url } = usePage();
 
+    const initialOpenState = useMemo(() => {
+        const state: Record<string, boolean> = {};
+        menuGroups.forEach(group => {
+            state[group.title] = group.items.some(item => url.startsWith(item.url));
+        });
+        return state;
+    }, [url]);
+
+    const [openGroups, setOpenGroups] = useState(initialOpenState);
+
+    const toggleGroup = (title: string) => {
+        setOpenGroups(prev => ({
+            ...prev,
+            [title]: !prev[title],
+        }));
+    };
+
     return (
-        <Sidebar
-            collapsible="icon"
-            variant="sidebar"
-            className="border-r-0 bg-[#1f2f35] text-white"
-        >
-            <SidebarHeader className="h-16 border-b-0 bg-[#9f0028] p-0 text-white">
-                <SidebarMenu className="h-full">
-                    <SidebarMenuItem className="h-full">
-                        <SidebarMenuButton
-                            size="lg"
-                            asChild
-                            className="h-full w-full rounded-none bg-[#9f0028] px-5 text-white hover:bg-[#8b0023] hover:text-white"
-                        >
-                            <Link href="/admin/dashboard" prefetch>
-                                <AppLogo />
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarHeader>
+        <Sidebar className="!bg-[#1f2f35] !text-white border-r-0">
+            <div className="flex h-full flex-col !bg-[#1f2f35]">
 
-            <SidebarContent className="bg-[#1f2f35] px-2 py-4">
-                <div className="px-3 pb-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Main Navigation
-                </div>
+                {/* HEADER */}
+                <SidebarHeader className="h-16 !bg-[#9f0028] p-0 border-b-0">
+                    <SidebarMenu className="h-full">
+                        <SidebarMenuItem className="h-full">
+                            <SidebarMenuButton
+                                asChild
+                                className="h-full w-full px-5 !bg-[#9f0028] hover:!bg-[#8b0023] !text-white"
+                            >
+                                <Link href="/admin/dashboard">
+                                    <AppLogo />
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarHeader>
 
-                <SidebarMenu>
-                    {adminNavItems.map((item) => {
-                        const Icon = item.icon;
-                        const active = url.startsWith(item.url);
+                {/* CONTENT */}
+                <SidebarContent className="!bg-[#1f2f35] px-2 py-4">
+
+                    <div className="px-3 pb-2 text-xs uppercase text-slate-400">
+                        Main Navigation
+                    </div>
+
+                    {menuGroups.map(group => {
+                        const Icon = group.icon;
+                        const isOpen = openGroups[group.title];
 
                         return (
-                            <SidebarMenuItem key={item.url}>
-                                <SidebarMenuButton
-                                    asChild
-                                    isActive={active}
-className={`mb-1 rounded-md px-3 py-2 text-sm font-semibold transition ${
-    active
-        ? '!bg-[#0f1f24] !text-white border-l-4 border-[#9f0028]'
-        : 'text-slate-100 hover:bg-[#263f47] hover:text-white'
-}`}
+                            <div key={group.title}>
+                                <button
+                                    onClick={() => toggleGroup(group.title)}
+                                    className="flex w-full items-center justify-between px-3 py-2 text-sm text-slate-200 hover:bg-[#263f47] rounded-md"
                                 >
-                                    <Link href={item.url} prefetch>
+                                    <div className="flex items-center gap-2">
                                         <Icon className="h-4 w-4" />
-                                        <span>{item.title}</span>
-                                    </Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
+                                        {group.title}
+                                    </div>
+                                    <ChevronDown className={`h-4 w-4 ${isOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                {isOpen && (
+                                    <div className="pl-2 mt-1 space-y-1">
+                                        {group.items.map(item => {
+                                            const ActiveIcon = item.icon;
+                                            const active = url.startsWith(item.url);
+
+                                            return (
+                                                <Link
+                                                    key={item.title}
+                                                    href={item.url}
+                                                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm ${
+                                                        active
+                                                            ? '!bg-[#0f1f24] !text-white border-l-4 border-[#9f0028]'
+                                                            : 'text-slate-300 hover:bg-[#263f47] hover:text-white'
+                                                    }`}
+                                                >
+                                                    <ActiveIcon className="h-4 w-4" />
+                                                    {item.title}
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         );
                     })}
-                </SidebarMenu>
-            </SidebarContent>
-
-            <SidebarFooter className="border-t border-white/10 bg-[#1f2f35] p-2 text-white [&_*]:text-white">
-                <NavUser />
-            </SidebarFooter>
+                </SidebarContent>
+            </div>
         </Sidebar>
     );
 }

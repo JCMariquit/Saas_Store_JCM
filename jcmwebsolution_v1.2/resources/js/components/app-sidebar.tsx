@@ -22,8 +22,6 @@ import {
     Globe,
     Wallet,
     ChevronDown,
-    MessageCircle,
-    Bell,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import AppLogo from './app-logo';
@@ -46,8 +44,6 @@ const menuGroups: MenuGroup[] = [
         icon: LayoutGrid,
         items: [
             { title: 'Dashboard', url: '/admin/dashboard', icon: LayoutGrid },
-            { title: 'Messages', url: '/admin/messages', icon: MessageCircle },
-            { title: 'Notifications', url: '/admin/notifications', icon: Bell },
         ],
     },
     {

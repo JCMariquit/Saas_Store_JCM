@@ -67,7 +67,7 @@ class ServiceController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('services/create');
+        return Inertia::render('admin/services/create');
     }
 
     public function store(Request $request): RedirectResponse

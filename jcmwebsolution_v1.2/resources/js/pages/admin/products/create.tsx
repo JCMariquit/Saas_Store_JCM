@@ -19,7 +19,7 @@ import AppLayout from '@/layouts/admin-layout';
 
 type Feature = {
     title: string;
-};
+}; 
 
 type Overview = {
     title: string;

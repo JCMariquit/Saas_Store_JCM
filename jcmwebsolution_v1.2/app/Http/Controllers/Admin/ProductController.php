@@ -64,7 +64,7 @@ class ProductController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('products/create');
+        return Inertia::render('admin/products/create');
     }
 
     public function store(Request $request): RedirectResponse

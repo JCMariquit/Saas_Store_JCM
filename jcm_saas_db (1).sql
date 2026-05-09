@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 05, 2026 at 10:04 AM
+-- Generation Time: May 08, 2026 at 09:14 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -68,7 +68,8 @@ CREATE TABLE `carts` (
 --
 
 INSERT INTO `carts` (`id`, `user_id`, `product_id`, `plan_id`, `quantity`, `status`, `notes`, `created_at`, `updated_at`) VALUES
-(8, 2, 6, 5, 1, 'active', NULL, '2026-05-03 22:58:24', '2026-05-03 22:58:24');
+(8, 2, 6, 5, 1, 'active', NULL, '2026-05-03 22:58:24', '2026-05-03 22:58:24'),
+(9, 1, 7, NULL, 1, 'active', NULL, '2026-05-07 22:43:14', '2026-05-07 22:43:14');
 
 -- --------------------------------------------------------
 
@@ -151,7 +152,8 @@ INSERT INTO `messages` (`id`, `user_id`, `sender_id`, `receiver_id`, `message`, 
 (4, 2, 2, 1, 'd', 'user', 0, '2026-04-27 21:52:56', '2026-04-27 18:11:14', '2026-04-27 21:52:56'),
 (5, 2, 2, 1, 'rert', 'user', 0, '2026-04-29 19:54:42', '2026-04-29 19:31:23', '2026-04-29 19:54:42'),
 (6, 2, 2, 1, 'ete', 'user', 0, '2026-04-29 19:54:42', '2026-04-29 19:31:25', '2026-04-29 19:54:42'),
-(7, 2, 2, 1, 'erte', 'user', 0, '2026-04-29 19:54:42', '2026-04-29 19:31:27', '2026-04-29 19:54:42');
+(7, 2, 2, 1, 'erte', 'user', 0, '2026-04-29 19:54:42', '2026-04-29 19:31:27', '2026-04-29 19:54:42'),
+(8, 1, 1, 1, 'ss', 'user', 1, NULL, '2026-05-07 22:42:57', '2026-05-07 22:42:57');
 
 -- --------------------------------------------------------
 
@@ -200,7 +202,8 @@ CREATE TABLE `notifications` (
 INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `is_read`, `read_at`, `created_at`, `updated_at`) VALUES
 (1, 1, '1Welcome to JCM Web Solution', 'Your account is ready. You can now send inquiries and receive project updates.', 'system', 0, '2026-04-26 18:36:33', '2026-04-26 04:24:39', '2026-04-26 18:36:33'),
 (2, 2, 'System Maintenance', 'Jcm Websolution will be unable to use start in Dec1 12 am to 5 am, due to system update and maintenance', 'system', 0, '2026-04-29 19:31:55', '2026-04-26 07:56:55', '2026-04-29 19:31:55'),
-(6, 2, '12', '12', 'announcement', 0, '2026-04-29 19:31:53', '2026-04-26 08:14:35', '2026-04-29 19:31:53');
+(6, 2, '12', '12', 'announcement', 0, '2026-04-29 19:31:53', '2026-04-26 08:14:35', '2026-04-29 19:31:53'),
+(8, 2, '12', '12', 'announcement', 0, '2026-04-29 19:31:53', '2026-04-26 08:14:35', '2026-04-29 19:31:53');
 
 -- --------------------------------------------------------
 
@@ -229,14 +232,6 @@ CREATE TABLE `orders` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `orders`
---
-
-INSERT INTO `orders` (`id`, `transaction_id`, `order_code`, `user_id`, `product_id`, `service_id`, `plan_id`, `billing_type`, `payment_method_id`, `subscription_id`, `amount`, `duration_days`, `status`, `ordered_at`, `paid_at`, `verified_at`, `notes`, `created_at`, `updated_at`) VALUES
-(15, 3, 'ORD-20260428-PUK28A', 2, 6, NULL, 5, 'monthly', NULL, NULL, 699.00, 30, 'pending', '2026-04-27 18:55:25', NULL, NULL, NULL, '2026-04-27 18:55:25', '2026-05-05 07:45:33'),
-(17, 5, 'ORD-20260504-AJPCPT', 2, 6, NULL, 5, 'monthly', NULL, NULL, 699.00, 30, 'verified', '2026-05-03 18:48:08', '2026-05-05 00:00:47', '2026-05-05 00:00:47', NULL, '2026-05-03 18:48:08', '2026-05-05 00:00:47');
 
 -- --------------------------------------------------------
 
@@ -297,13 +292,6 @@ CREATE TABLE `plans` (
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `plans`
---
-
-INSERT INTO `plans` (`id`, `product_id`, `plan_name`, `price`, `duration_days`, `description`, `status`, `created_at`, `updated_at`) VALUES
-(5, 6, 'Basic', 699.00, 30, 'basic Plam pf Hotel Booking System', 'active', '2026-04-23 19:58:30', '2026-04-23 19:58:37');
-
 -- --------------------------------------------------------
 
 --
@@ -328,8 +316,8 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `product_code`, `name`, `description`, `thumbnail`, `price`, `pricing_type`, `status`, `created_at`, `updated_at`) VALUES
-(6, 'PRD-NKTU8G', 'cancel', 'Hotel & Resort Boking system is a system where client can book a room in a hotel or a resort anywhere around the globe.', NULL, NULL, 'plan', 'active', '2026-04-23 16:56:15', '2026-05-05 08:04:18'),
-(7, 'PRD-RA06RM', 'Hotel and Resort Booking System', 'Hotel & Resort Boking system is a system where client can book a room in a hotel or a resort anywhere around the globe.', NULL, NULL, 'plan', 'active', '2026-05-04 18:11:04', '2026-05-04 18:11:04');
+(7, 'PRD-RA06RM', 'Hotel and Resort Booking System', 'Hotel & Resort Boking system is a system where client can book a room in a hotel or a resort anywhere around the globe.', NULL, NULL, 'plan', 'active', '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
+(9, 'PRD-XZU4MP', 'Test 1', 'Short Description test', 'products/TjE8oUncoTAfihiRL5svYCru2pvFxd9KFGqvCJC2.png', NULL, 'plan', 'active', '2026-05-07 22:33:51', '2026-05-07 22:33:51');
 
 -- --------------------------------------------------------
 
@@ -354,7 +342,9 @@ CREATE TABLE `product_features` (
 
 INSERT INTO `product_features` (`id`, `product_id`, `feature_title`, `feature_description`, `icon`, `sort_order`, `created_at`, `updated_at`) VALUES
 (4, 7, 'f1', NULL, NULL, 0, '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
-(5, 7, 'f2', NULL, NULL, 1, '2026-05-04 18:11:04', '2026-05-04 18:11:04');
+(5, 7, 'f2', NULL, NULL, 1, '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
+(6, 9, 'f1', NULL, NULL, 0, '2026-05-07 22:33:51', '2026-05-07 22:33:51'),
+(7, 9, 'f2', NULL, NULL, 1, '2026-05-07 22:33:51', '2026-05-07 22:33:51');
 
 -- --------------------------------------------------------
 
@@ -378,7 +368,9 @@ CREATE TABLE `product_images` (
 
 INSERT INTO `product_images` (`id`, `product_id`, `image_path`, `alt_text`, `sort_order`, `created_at`, `updated_at`) VALUES
 (5, 7, 'products/LeGF2UCI6Wbtq3Y4tCITYHsvb2WHenvWHFgclG2z.png', 'Hotel and Resort Booking System image 1', 0, '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
-(6, 7, 'products/a0JBQ5GxBCdGR3suZ77bBP63sWCjhEDhByMTYwLs.png', 'Hotel and Resort Booking System image 2', 1, '2026-05-04 18:11:04', '2026-05-04 18:11:04');
+(6, 7, 'products/a0JBQ5GxBCdGR3suZ77bBP63sWCjhEDhByMTYwLs.png', 'Hotel and Resort Booking System image 2', 1, '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
+(7, 9, 'products/TjE8oUncoTAfihiRL5svYCru2pvFxd9KFGqvCJC2.png', 'Test 1 image 1', 0, '2026-05-07 22:33:51', '2026-05-07 22:33:51'),
+(8, 9, 'products/vhlrdragFgw8t9XT0NzB5KMiMEnfGJSV2ClPJqXW.png', 'Test 1 image 2', 1, '2026-05-07 22:33:51', '2026-05-07 22:33:51');
 
 -- --------------------------------------------------------
 
@@ -401,7 +393,8 @@ CREATE TABLE `product_overview` (
 --
 
 INSERT INTO `product_overview` (`id`, `product_id`, `title`, `content`, `sort_order`, `created_at`, `updated_at`) VALUES
-(2, 7, 'Hotel and Resolrt Booking System', 'Hotel and Resolrt Booking System', 0, '2026-05-04 18:11:04', '2026-05-04 18:11:04');
+(2, 7, 'Hotel and Resolrt Booking System', 'Hotel and Resolrt Booking System', 0, '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
+(3, 9, 'test', 'Short DescriptionShort DescriptionShort Description', 0, '2026-05-07 22:33:51', '2026-05-07 22:33:51');
 
 -- --------------------------------------------------------
 
@@ -429,7 +422,7 @@ CREATE TABLE `services` (
 --
 
 INSERT INTO `services` (`id`, `code`, `name`, `description`, `thumbnail`, `service_type`, `pricing_type`, `base_price`, `status`, `sort_order`, `created_at`, `updated_at`) VALUES
-(5, 'SRV-WEB-00001', 'Test Service', 'Test Service Description', NULL, 'custom', 'fixed', 10000.00, 'active', 0, '2026-04-27 21:54:27', '2026-04-27 21:54:36');
+(6, 'qewf3', 'test', 'terwq', 'services/wcf3ML4zRaNZ79YGB4YWqm2JdhyxDqhieFxt7hhx.png', 'custom', 'fixed', NULL, 'active', 10000, '2026-05-07 22:35:05', '2026-05-07 22:35:05');
 
 -- --------------------------------------------------------
 
@@ -453,8 +446,7 @@ CREATE TABLE `service_features` (
 --
 
 INSERT INTO `service_features` (`id`, `service_id`, `feature_title`, `feature_description`, `icon`, `sort_order`, `created_at`, `updated_at`) VALUES
-(1, 5, 'F1', NULL, NULL, 0, '2026-04-27 21:54:27', '2026-04-27 21:54:27'),
-(2, 5, 'F2', NULL, NULL, 1, '2026-04-27 21:54:27', '2026-04-27 21:54:27');
+(3, 6, 'f1', NULL, NULL, 0, '2026-05-07 22:35:05', '2026-05-07 22:35:05');
 
 -- --------------------------------------------------------
 
@@ -472,6 +464,15 @@ CREATE TABLE `service_images` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `service_images`
+--
+
+INSERT INTO `service_images` (`id`, `service_id`, `image_path`, `alt_text`, `sort_order`, `created_at`, `updated_at`) VALUES
+(1, 6, 'services/wcf3ML4zRaNZ79YGB4YWqm2JdhyxDqhieFxt7hhx.png', 'test image 1', 0, '2026-05-07 22:35:05', '2026-05-07 22:35:05'),
+(2, 6, 'services/9uTcBfpX9YtR70MADDJ9JXcWMWVlfipcwyoarWFK.png', 'test image 2', 1, '2026-05-07 22:35:05', '2026-05-07 22:35:05'),
+(3, 6, 'services/UUd4SW1v99bQwJxjKBTUmjtKxHyzXV5vFbWTGRsR.png', 'test image 3', 2, '2026-05-07 22:35:05', '2026-05-07 22:35:05');
+
 -- --------------------------------------------------------
 
 --
@@ -487,6 +488,13 @@ CREATE TABLE `service_overview` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `service_overview`
+--
+
+INSERT INTO `service_overview` (`id`, `service_id`, `title`, `content`, `sort_order`, `created_at`, `updated_at`) VALUES
+(1, 6, 'f1', 'f1', 0, '2026-05-07 22:35:05', '2026-05-07 22:35:05');
 
 -- --------------------------------------------------------
 
@@ -508,7 +516,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('b5hpa9NVSUEkNLH98vDmK26iwQEzgHVyNJ5siMCv', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiNG55aXA4M0c2dnNXTVVHT2NaelV5Y1huWWo1TlNzMjZBeXNETzZUMSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo0NDoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL3Byb2R1Y3RzP3NlYXJjaD0iO3M6NToicm91dGUiO3M6MjA6ImFkbWluLnByb2R1Y3RzLmluZGV4Ijt9fQ==', 1777968145);
+('Ls1aXjNzuPqbJz0IhkkOVcYc9g8s2GrF4phHaXLL', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoidGFPbW9iM2RMb0I2eHJlUzl2MlVDZkRqbnV3Q0lFTFVkMmhKbmpTdyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czozOiJ1cmwiO2E6MDp7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9jYXJ0cyI7czo1OiJyb3V0ZSI7czoxMToiY2FydHMuaW5kZXgiO319', 1778224416);
 
 -- --------------------------------------------------------
 
@@ -533,13 +541,6 @@ CREATE TABLE `subscriptions` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `subscriptions`
---
-
-INSERT INTO `subscriptions` (`id`, `user_id`, `product_id`, `order_id`, `plan_id`, `subscription_code`, `subscription_type`, `status`, `start_date`, `end_date`, `duration_days`, `amount`, `notes`, `created_at`, `updated_at`) VALUES
-(14, 2, 6, 17, 5, 'SUB-PMMSNG', 'monthly', 'active', '2026-05-05', '2026-06-05', 30, 699.00, 'Auto-created from verified order: ORD-20260504-AJPCPT', '2026-05-05 00:00:47', '2026-05-05 00:00:47');
 
 -- --------------------------------------------------------
 
@@ -566,14 +567,6 @@ CREATE TABLE `transactions` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `transactions`
---
-
-INSERT INTO `transactions` (`id`, `transaction_code`, `order_id`, `user_id`, `payment_method`, `reference_number`, `account_name`, `account_number`, `amount`, `payment_proof`, `status`, `paid_at`, `verified_at`, `notes`, `verified_by`, `created_at`, `updated_at`) VALUES
-(3, 'TXN-ZVVWAP', 15, 2, 'gcash', '123', NULL, NULL, 699.00, NULL, 'pending', '2026-04-27 18:55:25', NULL, 'Payment submitted together with order.', NULL, '2026-04-27 18:55:25', '2026-04-27 18:55:25'),
-(5, 'TXN-VDPHKL', 17, 2, 'gcash', '14234', NULL, NULL, 699.00, NULL, 'verified', '2026-05-03 18:48:08', '2026-05-05 00:00:47', 'Payment submitted together with order.', NULL, '2026-05-03 18:48:08', '2026-05-05 00:00:47');
 
 -- --------------------------------------------------------
 
@@ -810,7 +803,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `failed_jobs`
@@ -828,7 +821,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `messages`
 --
 ALTER TABLE `messages`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `migrations`
@@ -840,7 +833,7 @@ ALTER TABLE `migrations`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `orders`
@@ -864,49 +857,49 @@ ALTER TABLE `plans`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `product_features`
 --
 ALTER TABLE `product_features`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `product_images`
 --
 ALTER TABLE `product_images`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `product_overview`
 --
 ALTER TABLE `product_overview`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `services`
 --
 ALTER TABLE `services`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `service_features`
 --
 ALTER TABLE `service_features`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `service_images`
 --
 ALTER TABLE `service_images`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `service_overview`
 --
 ALTER TABLE `service_overview`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `subscriptions`
@@ -1002,7 +995,7 @@ ALTER TABLE `service_overview`
 --
 ALTER TABLE `subscriptions`
   ADD CONSTRAINT `fk_subscriptions_order_id` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_subscriptions_plan_id` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_subscriptions_plan_id` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_subscriptions_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_subscriptions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 

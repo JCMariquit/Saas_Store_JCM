@@ -141,3 +141,44 @@
         @apply bg-background text-foreground;
     }
 }
+@keyframes collapsible-down {
+    from {
+        height: 0;
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        height: var(--radix-collapsible-content-height);
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes collapsible-up {
+    from {
+        height: var(--radix-collapsible-content-height);
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        height: 0;
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+}
+
+.animate-collapsible-down {
+    animation: collapsible-down 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-collapsible-up {
+    animation: collapsible-up 210ms cubic-bezier(0.4, 0, 1, 1);
+}
+.sidebar-scrollbar-hidden {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.sidebar-scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+}

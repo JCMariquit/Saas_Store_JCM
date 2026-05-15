@@ -6,7 +6,7 @@ import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Error Pages',
+        title: 'Button Variants',
         href: dashboard().url,
     },
 ];

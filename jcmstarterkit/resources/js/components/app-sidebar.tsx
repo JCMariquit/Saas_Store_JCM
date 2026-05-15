@@ -1,29 +1,34 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     BarChart3,
+    Bell,
     CalendarDays,
     ChevronRight,
-    ClipboardList,
     Code2,
     CreditCard,
-    FileText,
+    FolderKanban,
+    Grid3X3,
     Heart,
     Home,
     Layers,
+    LayoutDashboard,
     LayoutGrid,
+    ListCollapse,
+    LockKeyhole,
+    MousePointerClick,
     Package,
-    Settings,
-    ShieldCheck,
+    PanelRightOpen,
+    PanelTop,
     ShoppingCart,
     SlidersHorizontal,
-    Sparkles,
     Table,
-    UserRound,
+    TextCursorInput,
     Users,
 } from 'lucide-react';
 
 import type { ElementType } from 'react';
 import { useState } from 'react';
+
 import {
     Collapsible,
     CollapsibleContent,
@@ -79,166 +84,257 @@ type SidebarSection = {
 
 const menuSections: SidebarSection[] = [
     {
-        label: 'JCM Web Dev',
+        label: 'Template',
         items: [
-            { title: 'Dashboard', href: dashboard(), icon: Home, done: true },
-            { title: 'Tasks', href: '#', icon: ClipboardList },
-            { title: 'Projects', href: '#', icon: Sparkles },
+            {
+                title: 'Dashboards',
+                icon: LayoutDashboard,
+                badge: '4',
+                children: [
+                    { title: 'Dashboard 1', href: dashboard()},
+                    { title: 'Dashboard 2', href: '/dashboards/dashboard-2' },
+                    { title: 'Dashboard 3', href: '/dashboards/dashboard-3' },
+                    { title: 'Dashboard 4', href: '/dashboards/dashboard-4' },
+                ],
+            },
+            {
+                title: 'Starter Pages',
+                icon: Home,
+                children: [
+                    { title: 'Blank Page', href: '/pages/blank' },
+                    { title: 'Landing Page', href: '/pages/landing' },
+                    { title: 'Pricing Page', href: '/pages/pricing' },
+                    { title: 'Profile Page', href: '/pages/profile' },
+                    { title: 'Settings Page', href: '/pages/settings' },
+                ],
+            },
         ],
     },
     {
-        label: 'Core UI',
+        label: 'UI Kit',
         items: [
             {
-            title: 'Apps',
-            icon: LayoutGrid,
-            children: [
-                {
-                    title: 'App Shell',
-                    href: '/apps/app-shell',
-                },
-                {
-                    title: 'Layouts',
-                    href: '/apps/layouts',
-                },
-                {
-                    title: 'Navigation',
-                    href: '/apps/navigation',
-                },
-                {
-                    title: 'Auth Screens',
-                    href: '/apps/auth-screens',
-                },
-                {
-                    title: 'Error Pages',
-                    href: '/apps/error-pages',
-                },
-            ],
-            },
-            {
-                title: 'CMS',
-                icon: Settings,
+                title: 'Buttons',
+                icon: MousePointerClick,
                 children: [
-                    { title: 'Pages', href: '#' },
-                    { title: 'Sections', href: '#' },
-                    { title: 'Banners', href: '#' },
-                    { title: 'Media Library', href: '#' },
+                    { title: 'Button Variants', href: '/ui/buttons' },
+                    { title: 'Icon Buttons', href: '/ui/icon-buttons' },
+                    { title: 'Button Groups', href: '/ui/button-groups' },
+                    { title: 'Loading Buttons', href: '/ui/loading-buttons' },
                 ],
             },
             {
-                title: 'Charts',
-                icon: BarChart3,
+                title: 'Accordion',
+                icon: ListCollapse,
                 children: [
-                    { title: 'Overview Cards', href: '#' },
-                    { title: 'Line Chart', href: '#' },
-                    { title: 'Bar Chart', href: '#' },
-                    { title: 'Pie Chart', href: '#' },
-                    { title: 'Area Chart', href: '#' },
-                    { title: 'Mini Sparkline', href: '#' },
+                    { title: 'Basic Accordion', href: '/ui/accordion' },
+                    { title: 'Borderless Accordion', href: '/ui/accordion-borderless' },
+                    { title: 'Nested Accordion', href: '/ui/accordion-nested' },
+                    { title: 'FAQ Accordion', href: '/ui/accordion-faq' },
                 ],
             },
             {
-                title: 'UI Elements',
+                title: 'Cards',
                 icon: Layers,
                 children: [
-                    { title: 'Accordion', href: '#' },
-                    { title: 'Alert', href: '#' },
-                    { title: 'Badge', href: '#' },
-                    { title: 'Button', href: '#' },
-                    { title: 'Card', href: '#' },
-                    { title: 'Modal', href: '#' },
-                    { title: 'Drawer', href: '#' },
-                    { title: 'Tabs', href: '#' },
-                    { title: 'Toast', href: '#' },
+                    { title: 'Basic Cards', href: '/ui/cards' },
+                    { title: 'Stats Cards', href: '/ui/stats-cards' },
+                    { title: 'Profile Cards', href: '/ui/profile-cards' },
+                    { title: 'Pricing Cards', href: '/ui/pricing-cards' },
                 ],
             },
             {
-                title: 'Forms',
-                icon: FileText,
+                title: 'Overlays',
+                icon: PanelRightOpen,
                 children: [
-                    { title: 'Input', href: '#' },
-                    { title: 'Select', href: '#' },
-                    { title: 'Checkbox', href: '#' },
-                    { title: 'Radio Group', href: '#' },
-                    { title: 'Date Picker', href: '#' },
-                    { title: 'Form Validation', href: '#' },
+                    { title: 'Modal', href: '/ui/modal' },
+                    { title: 'Drawer', href: '/ui/drawer' },
+                    { title: 'Dropdown', href: '/ui/dropdown' },
+                    { title: 'Popover', href: '/ui/popover' },
+                    { title: 'Tooltip', href: '/ui/tooltip' },
+                ],
+            },
+            {
+                title: 'Feedback',
+                icon: Bell,
+                children: [
+                    { title: 'Alerts', href: '/ui/alerts' },
+                    { title: 'Badges', href: '/ui/badges' },
+                    { title: 'Toasts', href: '/ui/toasts' },
+                    { title: 'Empty States', href: '/ui/empty-states' },
+                ],
+            },
+        ],
+    },
+    {
+        label: 'Components',
+        items: [
+            {
+                title: 'Forms',
+                icon: TextCursorInput,
+                children: [
+                    { title: 'Input Fields', href: '/forms/inputs' },
+                    { title: 'Select Menu', href: '/forms/select' },
+                    { title: 'Checkbox', href: '/forms/checkbox' },
+                    { title: 'Radio Group', href: '/forms/radio' },
+                    { title: 'Switch / Toggle', href: '/forms/switch' },
+                    { title: 'Date Picker', href: '/forms/date-picker' },
+                    { title: 'Form Layouts', href: '/forms/layouts' },
+                    { title: 'Validation', href: '/forms/validation' },
                 ],
             },
             {
                 title: 'Tables',
                 icon: Table,
                 children: [
-                    { title: 'Simple Table', href: '#' },
-                    { title: 'Data Table', href: '#' },
-                    { title: 'Filters', href: '#' },
-                    { title: 'Pagination', href: '#' },
-                    { title: 'Export Actions', href: '#' },
+                    { title: 'Basic Table', href: '/tables/basic' },
+                    { title: 'Data Table', href: '/tables/data-table' },
+                    { title: 'With Filters', href: '/tables/filters' },
+                    { title: 'With Pagination', href: '/tables/pagination' },
+                    { title: 'Export Table', href: '/tables/export' },
+                ],
+            },
+            {
+                title: 'Charts',
+                icon: BarChart3,
+                children: [
+                    { title: 'Overview Charts', href: '/charts/overview' },
+                    { title: 'Line Chart', href: '/charts/line' },
+                    { title: 'Bar Chart', href: '/charts/bar' },
+                    { title: 'Area Chart', href: '/charts/area' },
+                    { title: 'Pie / Donut Chart', href: '/charts/pie' },
+                    { title: 'Sparkline', href: '/charts/sparkline' },
+                ],
+            },
+            {
+                title: 'Navigation',
+                icon: PanelTop,
+                children: [
+                    { title: 'Navbar', href: '/navigation/navbar' },
+                    { title: 'Sidebar', href: '/navigation/sidebar' },
+                    { title: 'Tabs', href: '/navigation/tabs' },
+                    { title: 'Breadcrumbs', href: '/navigation/breadcrumbs' },
+                    { title: 'Pagination', href: '/navigation/pagination' },
                 ],
             },
         ],
     },
     {
-        label: 'Business Apps',
+        label: 'Layouts',
         items: [
+            {
+                title: 'Page Layouts',
+                icon: LayoutGrid,
+                children: [
+                    { title: 'App Shell', href: '/apps/app-shell', done: true },
+                    { title: 'Grid Layout', href: '/layouts/grid' },
+                    { title: 'Split Layout', href: '/layouts/split' },
+                    { title: 'Sidebar Layout', href: '/layouts/sidebar' },
+                    { title: 'Dashboard Layout', href: '/layouts/dashboard' },
+                ],
+            },
+            {
+                title: 'Widgets',
+                icon: Grid3X3,
+                children: [
+                    { title: 'Metric Widgets', href: '/widgets/metrics' },
+                    { title: 'Activity Feed', href: '/widgets/activity-feed' },
+                    { title: 'Timeline', href: '/widgets/timeline' },
+                    { title: 'Kanban Board', href: '/widgets/kanban' },
+                ],
+            },
+        ],
+    },
+    {
+        label: 'Apps',
+        items: [
+            {
+                title: 'Project Manager',
+                icon: FolderKanban,
+                children: [
+                    { title: 'Projects', href: '/apps/projects' },
+                    { title: 'Tasks', href: '/apps/tasks' },
+                    { title: 'Kanban', href: '/apps/kanban' },
+                    { title: 'Team', href: '/apps/team' },
+                ],
+            },
             {
                 title: 'Booking System',
                 icon: CalendarDays,
                 badge: 'Main',
                 children: [
-                    { title: 'Appointments', href: '#' },
-                    { title: 'Calendar View', href: '#' },
-                    { title: 'Services', href: '#' },
-                    { title: 'Customers', href: '#' },
-                    { title: 'Staff Schedules', href: '#' },
+                    { title: 'Appointments', href: '/booking/appointments' },
+                    { title: 'Calendar View', href: '/booking/calendar' },
+                    { title: 'Services', href: '/booking/services' },
+                    { title: 'Customers', href: '/booking/customers' },
+                    { title: 'Staff Schedules', href: '/booking/staff' },
                 ],
             },
             {
                 title: 'POS System',
                 icon: ShoppingCart,
                 children: [
-                    { title: 'Sales', href: '#' },
-                    { title: 'Products', href: '#' },
-                    { title: 'Categories', href: '#' },
-                    { title: 'Receipts', href: '#' },
-                    { title: 'Cashier Screen', href: '#' },
+                    { title: 'Sales', href: '/pos/sales' },
+                    { title: 'Products', href: '/pos/products' },
+                    { title: 'Categories', href: '/pos/categories' },
+                    { title: 'Receipts', href: '/pos/receipts' },
+                    { title: 'Cashier Screen', href: '/pos/cashier' },
                 ],
             },
             {
                 title: 'Inventory',
                 icon: Package,
                 children: [
-                    { title: 'Stock List', href: '#' },
-                    { title: 'Stock In', href: '#' },
-                    { title: 'Stock Out', href: '#' },
-                    { title: 'Suppliers', href: '#' },
+                    { title: 'Stock List', href: '/inventory/stocks' },
+                    { title: 'Stock In', href: '/inventory/stock-in' },
+                    { title: 'Stock Out', href: '/inventory/stock-out' },
+                    { title: 'Suppliers', href: '/inventory/suppliers' },
                 ],
             },
             {
                 title: 'Subscriptions',
                 icon: CreditCard,
                 children: [
-                    { title: 'Products', href: '#' },
-                    { title: 'Plans', href: '#' },
-                    { title: 'Orders', href: '#' },
-                    { title: 'Transactions', href: '#' },
+                    { title: 'Products', href: '/subscriptions/products' },
+                    { title: 'Plans', href: '/subscriptions/plans' },
+                    { title: 'Orders', href: '/subscriptions/orders' },
+                    { title: 'Transactions', href: '/subscriptions/transactions' },
                 ],
             },
-            { title: 'Customers', href: '#', icon: Users },
         ],
     },
     {
-        label: 'System',
+        label: 'Auth & System',
         items: [
-            { title: 'Users', href: '#', icon: UserRound },
-            { title: 'Roles & Permissions', href: '#', icon: ShieldCheck },
+            {
+                title: 'Authentication',
+                icon: LockKeyhole,
+                children: [
+                    { title: 'Login', href: '/auth/login-preview' },
+                    { title: 'Register', href: '/auth/register-preview' },
+                    { title: 'Forgot Password', href: '/auth/forgot-password-preview' },
+                    { title: 'Reset Password', href: '/auth/reset-password-preview' },
+                    { title: 'Verify Email', href: '/auth/verify-email-preview' },
+                ],
+            },
+            {
+                title: 'Users',
+                icon: Users,
+                children: [
+                    { title: 'User List', href: '/system/users' },
+                    { title: 'User Profile', href: '/system/profile' },
+                    { title: 'Roles', href: '/system/roles' },
+                    { title: 'Permissions', href: '/system/permissions' },
+                ],
+            },
             {
                 title: 'Settings',
                 icon: SlidersHorizontal,
                 children: [
-                    { title: 'General Settings', href: '#' },
-                    { title: 'Branding', href: '#' },
-                    { title: 'Notifications', href: '#' },
-                    { title: 'Payment Settings', href: '#' },
+                    { title: 'General Settings', href: '/settings/general' },
+                    { title: 'Branding', href: '/settings/branding' },
+                    { title: 'Notifications', href: '/settings/notifications' },
+                    { title: 'Payment Settings', href: '/settings/payments' },
                 ],
             },
         ],
@@ -332,7 +428,10 @@ export function AppSidebar() {
                 <TooltipProvider delayDuration={150}>
                     <div className="space-y-4 group-data-[collapsible=icon]:hidden">
                         {menuSections.map((section) => (
-                            <SidebarGroup key={section.label} className="px-0 py-0">
+                            <SidebarGroup
+                                key={section.label}
+                                className="px-0 py-0"
+                            >
                                 <SidebarGroupLabel className="mb-1 px-3 text-[10px] font-bold uppercase tracking-wide text-muted-foreground/80">
                                     {section.label}
                                 </SidebarGroupLabel>
@@ -344,30 +443,28 @@ export function AppSidebar() {
                                             section.label,
                                             item.title,
                                         );
-
                                         const hasChildren = Boolean(
                                             item.children?.length,
                                         );
-
                                         const itemActive = item.href
                                             ? isHrefActive(item.href)
                                             : false;
-
                                         const childActive = item.children?.some(
-                                            (child) => isHrefActive(child.href),
+                                            (child) =>
+                                                isHrefActive(child.href),
                                         );
-
                                         const isActive = Boolean(
                                             itemActive || childActive,
                                         );
-
                                         const isOpen =
                                             activeMenuKeys.has(menuKey) ||
                                             openMenuKey === menuKey;
 
                                         if (!hasChildren) {
                                             return (
-                                                <SidebarMenuItem key={item.title}>
+                                                <SidebarMenuItem
+                                                    key={item.title}
+                                                >
                                                     <SidebarMenuButton
                                                         asChild
                                                         className={[
@@ -379,8 +476,13 @@ export function AppSidebar() {
                                                         ].join(' ')}
                                                     >
                                                         <Link
-                                                            href={item.href ?? '#'}
-                                                            prefetch={item.href !== '#'}
+                                                            href={
+                                                                item.href ?? '#'
+                                                            }
+                                                            prefetch={
+                                                                item.href !==
+                                                                '#'
+                                                            }
                                                             className="relative z-10 flex w-full items-center gap-2.5"
                                                         >
                                                             <ItemIcon className="size-4 shrink-0" />
@@ -391,11 +493,15 @@ export function AppSidebar() {
 
                                                             {item.badge && (
                                                                 <span className="shrink-0 rounded-md bg-background px-1.5 py-0.5 text-[10px] font-bold leading-none text-foreground ring-1 ring-border/60">
-                                                                    {item.badge}
+                                                                    {
+                                                                        item.badge
+                                                                    }
                                                                 </span>
                                                             )}
 
-                                                            <DevMarker done={item.done} />
+                                                            <DevMarker
+                                                                done={item.done}
+                                                            />
                                                         </Link>
                                                     </SidebarMenuButton>
                                                 </SidebarMenuItem>
@@ -431,11 +537,15 @@ export function AppSidebar() {
                                                         <span className="flex shrink-0 items-center gap-1.5">
                                                             {item.badge && (
                                                                 <span className="rounded-md bg-background px-1.5 py-0.5 text-[10px] font-bold leading-none text-foreground ring-1 ring-border/60">
-                                                                    {item.badge}
+                                                                    {
+                                                                        item.badge
+                                                                    }
                                                                 </span>
                                                             )}
 
-                                                            <DevMarker done={item.done} />
+                                                            <DevMarker
+                                                                done={item.done}
+                                                            />
 
                                                             <ChevronRight className="size-3.5 transition-transform duration-300 ease-out group-data-[state=open]/collapsible:rotate-90" />
                                                         </span>
@@ -562,15 +672,19 @@ export function AppSidebar() {
                                                         className={[
                                                             'flex h-8 items-center gap-2 rounded-md px-2.5 text-xs font-medium transition-colors',
                                                             'text-muted-foreground hover:bg-accent hover:text-foreground',
-                                                            isHrefActive(child.href)
+                                                            isHrefActive(
+                                                                child.href,
+                                                            )
                                                                 ? 'bg-accent text-foreground'
                                                                 : '',
                                                         ].join(' ')}
                                                     >
                                                         <span className="h-px w-2 shrink-0 rounded-full bg-current opacity-60" />
+
                                                         <span className="min-w-0 flex-1 truncate">
                                                             {child.title}
                                                         </span>
+
                                                         <DevMarker
                                                             done={child.done}
                                                         />
@@ -579,7 +693,9 @@ export function AppSidebar() {
                                             ) : (
                                                 <Link
                                                     href={item.href ?? '#'}
-                                                    prefetch={item.href !== '#'}
+                                                    prefetch={
+                                                        item.href !== '#'
+                                                    }
                                                     className={[
                                                         'flex h-8 items-center gap-2 rounded-md px-2.5 text-xs font-medium transition-colors',
                                                         'text-muted-foreground hover:bg-accent hover:text-foreground',
@@ -589,10 +705,14 @@ export function AppSidebar() {
                                                     ].join(' ')}
                                                 >
                                                     <ItemIcon className="size-4 shrink-0" />
+
                                                     <span className="min-w-0 flex-1 truncate">
                                                         {item.title}
                                                     </span>
-                                                    <DevMarker done={item.done} />
+
+                                                    <DevMarker
+                                                        done={item.done}
+                                                    />
                                                 </Link>
                                             )}
                                         </DropdownMenuContent>

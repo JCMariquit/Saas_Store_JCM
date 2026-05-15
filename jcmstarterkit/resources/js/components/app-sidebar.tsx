@@ -90,15 +90,30 @@ const menuSections: SidebarSection[] = [
         label: 'Core UI',
         items: [
             {
-                title: 'Apps',
-                icon: LayoutGrid,
-                children: [
-                    { title: 'App Shell', href: '#' },
-                    { title: 'Layouts', href: '#' },
-                    { title: 'Navigation', href: '#' },
-                    { title: 'Auth Screens', href: '#' },
-                    { title: 'Error Pages', href: '#' },
-                ],
+            title: 'Apps',
+            icon: LayoutGrid,
+            children: [
+                {
+                    title: 'App Shell',
+                    href: '/apps/app-shell',
+                },
+                {
+                    title: 'Layouts',
+                    href: '/apps/layouts',
+                },
+                {
+                    title: 'Navigation',
+                    href: '/apps/navigation',
+                },
+                {
+                    title: 'Auth Screens',
+                    href: '/apps/auth-screens',
+                },
+                {
+                    title: 'Error Pages',
+                    href: '/apps/error-pages',
+                },
+            ],
             },
             {
                 title: 'CMS',

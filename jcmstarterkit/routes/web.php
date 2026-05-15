@@ -6,21 +6,23 @@ use Laravel\Fortify\Features;
 
 Route::prefix('/')->group(function () {
 
-    Route::get('/', function () {
-        return Inertia::render('welcome', [
-            'canRegister' => Features::enabled(Features::registration()),
-        ]);
-    })->name('home');
+    Route::get('/', fn() => Inertia::render('welcome', ['canRegister' => Features::enabled(Features::registration())]))->name('home');
 
-    Route::middleware(['auth', 'verified'])
-        ->prefix('dashboard')
-        ->group(function () {
+    Route::middleware(['auth', 'verified'])->group(function () {
 
-            Route::get('/', function () {
-                return Inertia::render('dashboard');
-            })->name('dashboard');
-
+        Route::prefix('dashboard')->group(function () {
+            Route::inertia('/', 'dashboard')->name('dashboard');
         });
+
+        Route::prefix('apps')->name('apps.')->group(function () {
+            Route::inertia('/app-shell', 'apps/app-shell')->name('app-shell');
+            Route::inertia('/layouts', 'apps/layout')->name('layouts');
+            Route::inertia('/navigation', 'apps/navigation')->name('navigation');
+            Route::inertia('/auth-screens', 'apps/auth-screen')->name('auth-screens');
+            Route::inertia('/error-pages', 'apps/error-pages')->name('error-pages');
+        });
+
+    });
 
 });
 

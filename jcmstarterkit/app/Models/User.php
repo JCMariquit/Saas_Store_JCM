@@ -9,8 +9,6 @@ class User extends Authenticatable
 {
     use Notifiable;
 
-    protected $connection = 'mysql_main';
-
     protected $table = 'users';
 
     protected $fillable = [

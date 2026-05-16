@@ -1,7 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { ArrowRight, CheckCircle2, Sparkles } from 'lucide-react';
 
-import { dashboard, login, register } from '@/routes';
+import { login, register } from '@/routes';
 import type { SharedData } from '@/types';
 
 export default function Welcome({
@@ -61,7 +61,7 @@ export default function Welcome({
                             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                                 {auth.user ? (
                                     <Link
-                                        href={dashboard()}
+                                        href="/dashboard"
                                         className="inline-flex h-12 items-center justify-center rounded-2xl bg-primary px-7 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90"
                                     >
                                         Go to Dashboard
@@ -129,51 +129,13 @@ export default function Welcome({
                                 <div className="space-y-4 p-5">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="rounded-2xl border bg-muted/30 p-4">
-                                            <p className="text-xs text-muted-foreground">
-                                                Bookings
-                                            </p>
-                                            <p className="mt-2 text-2xl font-semibold">
-                                                128
-                                            </p>
+                                            <p className="text-xs text-muted-foreground">Bookings</p>
+                                            <p className="mt-2 text-2xl font-semibold">128</p>
                                         </div>
 
                                         <div className="rounded-2xl border bg-muted/30 p-4">
-                                            <p className="text-xs text-muted-foreground">
-                                                Services
-                                            </p>
-                                            <p className="mt-2 text-2xl font-semibold">
-                                                24
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border bg-muted/30 p-4">
-                                        <div className="mb-4 flex items-center justify-between">
-                                            <p className="text-sm font-medium">
-                                                System Modules
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                Active
-                                            </p>
-                                        </div>
-
-                                        <div className="space-y-3">
-                                            {[
-                                                'Booking Management',
-                                                'Product Plans',
-                                                'Subscriptions',
-                                                'Manual Payments',
-                                            ].map((item) => (
-                                                <div
-                                                    key={item}
-                                                    className="flex items-center justify-between rounded-xl bg-background px-3 py-2"
-                                                >
-                                                    <span className="text-sm">
-                                                        {item}
-                                                    </span>
-                                                    <CheckCircle2 className="size-4 text-primary" />
-                                                </div>
-                                            ))}
+                                            <p className="text-xs text-muted-foreground">Services</p>
+                                            <p className="mt-2 text-2xl font-semibold">24</p>
                                         </div>
                                     </div>
                                 </div>

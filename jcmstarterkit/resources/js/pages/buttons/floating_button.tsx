@@ -4,7 +4,7 @@ import { Code2, Layers, PackageCheck, Sparkles } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
-const pageTitle = 'Button Group';
+const pageTitle = 'Button Floating';
 const pageDescription =
     'Development placeholder page for JCM Starter Kit modules, UI previews, and future components.';
 

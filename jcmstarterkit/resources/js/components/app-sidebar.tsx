@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 import type { ElementType } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
     Collapsible,
@@ -90,7 +90,7 @@ const menuSections: SidebarSection[] = [
                 icon: LayoutDashboard,
                 badge: '4',
                 children: [
-                    { title: 'Dashboard 1', href: '/dashboard', done: false },
+                    { title: 'Dashboard 1', href: '/dashboard', done: true },
                     { title: 'Dashboard 2', href: '/dashboard/dashboard-2' },
                     { title: 'Dashboard 3', href: '/dashboard/dashboard-3' },
                     { title: 'Dashboard 4', href: '/dashboard/dashboard-4' },
@@ -105,135 +105,128 @@ const menuSections: SidebarSection[] = [
                     { title: 'Pricing Page', href: '/starter-page/pricing' },
                     { title: 'Profile Page', href: '/starter-page/profile' },
                     { title: 'Settings Page', href: '/starter-page/settings-page' },
+                    { title: 'Contact Page', href: '/starter-page/contact' },
+                    { title: 'About Page', href: '/starter-page/about' },
                 ],
             },
         ],
     },
     {
-        label: 'UI Kit',
+        label: 'Foundation',
         items: [
             {
-                title: 'Buttons',
-                icon: MousePointerClick,
-                children: [
-                    { title: 'Button Group', href: '/buttons/button-group' },
-                    { title: 'Button Variants', href: '/buttons/button-variants' },
-                    { title: 'Icon Buttons', href: '/buttons/icon-buttons' },
-                    { title: 'Loading Buttons', href: '/buttons/loading-buttons' },
-                    { title: 'Split Buttons', href: '/buttons/split-buttons' },
-                    { title: 'Dropdown Buttons', href: '/buttons/dropdown-buttons' },
-                    { title: 'Floating Actions', href: '/buttons/floating-buttons' },
-                ],
-            },
-            {
-                title: 'Accordions',
-                icon: ListCollapse,
-                children: [
-                    { title: 'Basic Accordion', href: '/accordions/basic-accordion' },
-                    { title: 'Borderless Accordion', href: '/accordions/borderless-accordion' },
-                    { title: 'Nested Accordion', href: '/accordions/nested-accordion' },
-                    { title: 'FAQ Accordion', href: '/accordions/faq-accordion' },
-                    { title: 'Card Accordion', href: '/accordions/card-accordion' },
-                    { title: 'Settings Accordion', href: '/accordions/setting-accordion' },
-                ],
-            },
-            {
-                title: 'Cards',
+                title: 'Components',
                 icon: Layers,
                 children: [
-                    { title: 'Basic Cards', href: '/cards/basic-cards' },
-                    { title: 'Stats Cards', href: '/cards/stat-cards' },
-                    { title: 'Profile Cards', href: '/cards/profile-cards' },
-                    { title: 'Pricing Cards', href: '/cards/pricing-cards' },
-                    { title: 'Feature Cards', href: '/cards/feature-cards' },
-                    { title: 'Action Cards', href: '/cards/action-cards' },
-                    { title: 'Kanban Cards', href: '/cards/kanban-cards' },
+                    { title: 'Buttons', href: '/components/buttons' },
+                    { title: 'Accordions', href: '/components/accordions' },
+                    { title: 'Cards', href: '/components/cards' },
+                    { title: 'Badges', href: '/components/badges' },
+                    { title: 'Alerts', href: '/components/alerts' },
+                    { title: 'Avatars', href: '/components/avatars' },
+                    { title: 'Tabs', href: '/components/tabs' },
+                    { title: 'Tooltips', href: '/components/tooltips' },
+                    { title: 'Dropdowns', href: '/components/dropdowns' },
+                    { title: 'Popovers', href: '/components/popovers' },
+                    { title: 'Modals', href: '/components/modals' },
+                    { title: 'Drawers', href: '/components/drawers' },
+
+                    { title: 'Checkboxes', href: '/components/checkboxes' },
+                    { title: 'Collapsibles', href: '/components/collapsibles' },
+                    { title: 'Dialogs', href: '/components/dialogs' },
+                    { title: 'Icons', href: '/components/icons' },
+                    { title: 'Input OTP', href: '/components/input-otp' },
+                    { title: 'Inputs', href: '/components/inputs' },
+                    { title: 'Labels', href: '/components/labels' },
+                    { title: 'Navigation Menus', href: '/components/navigation-menus' },
+                    { title: 'Placeholder Patterns', href: '/components/placeholder-patterns' },
+                    { title: 'Selects', href: '/components/selects' },
+                    { title: 'Separators', href: '/components/separators' },
+                    { title: 'Sheets', href: '/components/sheets' },
+                    { title: 'Sidebars', href: '/components/sidebars' },
+                    { title: 'Skeletons', href: '/components/skeletons' },
+                    { title: 'Spinners', href: '/components/spinners' },
+                    { title: 'Toggle Groups', href: '/components/toggle-groups' },
+                    { title: 'Toggles', href: '/components/toggles' },
                 ],
             },
             {
                 title: 'Forms',
                 icon: TextCursorInput,
                 children: [
-                    { title: 'Input Fields', href: '#' },
-                    { title: 'Select Menus', href: '#' },
-                    { title: 'Checkboxes', href: '#' },
-                    { title: 'Radio Groups', href: '#' },
-                    { title: 'Switches', href: '#' },
-                    { title: 'Date Pickers', href: '#' },
-                    { title: 'File Uploads', href: '#' },
-                    { title: 'Form Layouts', href: '#' },
-                    { title: 'Validation States', href: '#' },
-                ],
-            },
-            {
-                title: 'Overlays',
-                icon: PanelRightOpen,
-                children: [
-                    { title: 'Modal', href: '#' },
-                    { title: 'Drawer', href: '#' },
-                    { title: 'Dropdown', href: '#' },
-                    { title: 'Popover', href: '#' },
-                    { title: 'Tooltip', href: '#' },
-                    { title: 'Command Menu', href: '#' },
-                    { title: 'Confirm Dialog', href: '#' },
-                ],
-            },
-            {
-                title: 'Feedback',
-                icon: Bell,
-                children: [
-                    { title: 'Alerts', href: '#' },
-                    { title: 'Badges', href: '#' },
-                    { title: 'Toasts', href: '#' },
-                    { title: 'Progress Bars', href: '#' },
-                    { title: 'Skeleton Loaders', href: '#' },
-                    { title: 'Empty States', href: '#' },
-                    { title: 'Error States', href: '#' },
+                    { title: 'Inputs', href: '/forms/inputs' },
+                    { title: 'Selects', href: '/forms/selects' },
+                    { title: 'Checkboxes', href: '/forms/checkboxes' },
+                    { title: 'Radio Groups', href: '/forms/radio-groups' },
+                    { title: 'Switches', href: '/forms/switches' },
+                    { title: 'Date Pickers', href: '/forms/date-pickers' },
+                    { title: 'File Uploads', href: '/forms/file-uploads' },
+                    { title: 'Form Layouts', href: '/forms/layouts' },
+                    { title: 'Validation', href: '/forms/validation' },
+                    { title: 'Multi Step Form', href: '/forms/multi-step' },
                 ],
             },
         ],
     },
     {
-        label: 'Data Display',
+        label: 'Content',
         items: [
             {
-                title: 'Tables',
+                title: 'Content Blocks',
+                icon: Grid3X3,
+                children: [
+                    { title: 'Hero Sections', href: '/content/heroes' },
+                    { title: 'Feature Sections', href: '/content/features' },
+                    { title: 'CTA Sections', href: '/content/cta' },
+                    { title: 'Pricing Sections', href: '/content/pricing' },
+                    { title: 'FAQ Sections', href: '/content/faqs' },
+                    { title: 'Team Sections', href: '/content/team' },
+                    { title: 'Testimonials', href: '/content/testimonials' },
+                    { title: 'Footer Sections', href: '/content/footers' },
+                ],
+            },
+            {
+                title: 'Pages',
+                icon: PanelTop,
+                children: [
+                    { title: 'About', href: '/pages/about' },
+                    { title: 'Contact', href: '/pages/contact' },
+                    { title: 'FAQ', href: '/pages/faq' },
+                    { title: 'Terms', href: '/pages/terms' },
+                    { title: 'Privacy Policy', href: '/pages/privacy' },
+                    { title: 'Maintenance', href: '/pages/maintenance' },
+                    { title: 'Coming Soon', href: '/pages/coming-soon' },
+                ],
+            },
+        ],
+    },
+    {
+        label: 'Data',
+        items: [
+            {
+                title: 'Data Display',
                 icon: Table,
                 children: [
-                    { title: 'Basic Table', href: '#' },
-                    { title: 'Data Table', href: '#' },
-                    { title: 'Selectable Rows', href: '#' },
-                    { title: 'With Filters', href: '#' },
-                    { title: 'With Pagination', href: '#' },
-                    { title: 'Export Table', href: '#' },
-                    { title: 'Expandable Rows', href: '#' },
+                    { title: 'Tables', href: '/data/tables' },
+                    { title: 'Data Tables', href: '/data/data-tables' },
+                    { title: 'Lists', href: '/data/lists' },
+                    { title: 'Timeline', href: '/data/timeline' },
+                    { title: 'Kanban Board', href: '/data/kanban' },
+                    { title: 'Calendar View', href: '/data/calendar' },
+                    { title: 'Descriptions', href: '/data/descriptions' },
+                    { title: 'Empty States', href: '/data/empty-states' },
                 ],
             },
             {
-                title: 'Charts',
+                title: 'Analytics',
                 icon: BarChart3,
                 children: [
-                    { title: 'Overview Charts', href: '#' },
-                    { title: 'Line Chart', href: '#' },
-                    { title: 'Bar Chart', href: '#' },
-                    { title: 'Area Chart', href: '#' },
-                    { title: 'Pie Chart', href: '#' },
-                    { title: 'Donut Chart', href: '#' },
-                    { title: 'Radar Chart', href: '#' },
-                    { title: 'Heatmap', href: '#' },
-                    { title: 'KPI Widgets', href: '#' },
-                ],
-            },
-            {
-                title: 'Lists',
-                icon: LayoutGrid,
-                children: [
-                    { title: 'Simple List', href: '#' },
-                    { title: 'Activity List', href: '#' },
-                    { title: 'Notification List', href: '#' },
-                    { title: 'Timeline List', href: '#' },
-                    { title: 'User List', href: '#' },
-                    { title: 'File List', href: '#' },
+                    { title: 'Charts', href: '/analytics/charts' },
+                    { title: 'KPI Widgets', href: '/analytics/kpi-widgets' },
+                    { title: 'Reports', href: '/analytics/reports' },
+                    { title: 'Heatmaps', href: '/analytics/heatmaps' },
+                    { title: 'Statistics Cards', href: '/analytics/statistics' },
+                    { title: 'Export Views', href: '/analytics/exports' },
                 ],
             },
         ],
@@ -245,24 +238,22 @@ const menuSections: SidebarSection[] = [
                 title: 'Navigation UI',
                 icon: PanelTop,
                 children: [
-                    { title: 'Navbar', href: '#' },
-                    { title: 'Sidebar', href: '#' },
-                    { title: 'Tabs', href: '#' },
-                    { title: 'Breadcrumbs', href: '#' },
-                    { title: 'Pagination', href: '#' },
-                    { title: 'Stepper', href: '#' },
-                    { title: 'Mega Menu', href: '#' },
+                    { title: 'Navbar', href: '/navigation/navbar' },
+                    { title: 'Sidebar', href: '/navigation/sidebar' },
+                    { title: 'Tabs', href: '/navigation/tabs' },
+                    { title: 'Breadcrumbs', href: '/navigation/breadcrumbs' },
+                    { title: 'Pagination', href: '/navigation/pagination' },
+                    { title: 'Menus', href: '/navigation/menus' },
                 ],
             },
             {
-                title: 'Wizards',
+                title: 'Flows',
                 icon: SlidersHorizontal,
                 children: [
-                    { title: 'Basic Wizard', href: '#' },
-                    { title: 'Form Wizard', href: '#' },
-                    { title: 'Checkout Wizard', href: '#' },
-                    { title: 'Setup Wizard', href: '#' },
-                    { title: 'Vertical Stepper', href: '#' },
+                    { title: 'Stepper', href: '/flows/stepper' },
+                    { title: 'Wizard', href: '/flows/wizard' },
+                    { title: 'Checkout Flow', href: '/flows/checkout' },
+                    { title: 'Setup Flow', href: '/flows/setup' },
                 ],
             },
         ],
@@ -274,26 +265,11 @@ const menuSections: SidebarSection[] = [
                 title: 'Page Layouts',
                 icon: LayoutGrid,
                 children: [
-                    { title: 'App Shell', href: '/apps/app-shell' },
-                    { title: 'Layouts', href: '/apps/layouts' },
-                    { title: 'Navigation', href: '/apps/navigation' },
-                    { title: 'Auth Screens', href: '/apps/auth-screens' },
-                    { title: 'Error Pages', href: '/apps/error-pages' },
-                    { title: 'Split Layout', href: '#' },
-                    { title: 'Grid Layout', href: '#' },
-                    { title: 'Sidebar Layout', href: '#' },
-                ],
-            },
-            {
-                title: 'Sections',
-                icon: Grid3X3,
-                children: [
-                    { title: 'Hero Sections', href: '#' },
-                    { title: 'Feature Sections', href: '#' },
-                    { title: 'CTA Sections', href: '#' },
-                    { title: 'Pricing Sections', href: '#' },
-                    { title: 'FAQ Sections', href: '#' },
-                    { title: 'Footer Sections', href: '#' },
+                    { title: 'Grid Layouts', href: '/layouts/grids' },
+                    { title: 'Split Layouts', href: '/layouts/splits' },
+                    { title: 'Sidebar Layouts', href: '/layouts/sidebars' },
+                    { title: 'Auth Layouts', href: '/layouts/auth' },
+                    { title: 'Error Pages', href: '/layouts/errors' },
                 ],
             },
         ],
@@ -302,106 +278,90 @@ const menuSections: SidebarSection[] = [
         label: 'Apps',
         items: [
             {
-                title: 'Project Manager',
-                icon: FolderKanban,
-                children: [
-                    { title: 'Projects', href: '#' },
-                    { title: 'Tasks', href: '#' },
-                    { title: 'Kanban Board', href: '#' },
-                    { title: 'Team', href: '#' },
-                    { title: 'Calendar', href: '#' },
-                ],
-            },
-            {
-                title: 'Booking System',
-                icon: CalendarDays,
-                badge: 'Main',
-                children: [
-                    { title: 'Appointments', href: '#' },
-                    { title: 'Calendar View', href: '#' },
-                    { title: 'Services', href: '#' },
-                    { title: 'Customers', href: '#' },
-                    { title: 'Staff Schedules', href: '#' },
-                ],
-            },
-            {
-                title: 'POS System',
-                icon: ShoppingCart,
-                children: [
-                    { title: 'Sales', href: '#' },
-                    { title: 'Products', href: '#' },
-                    { title: 'Categories', href: '#' },
-                    { title: 'Receipts', href: '#' },
-                    { title: 'Cashier Screen', href: '#' },
-                ],
-            },
-            {
-                title: 'Inventory',
+                title: 'Business Apps',
                 icon: Package,
                 children: [
-                    { title: 'Stock List', href: '#' },
-                    { title: 'Stock In', href: '#' },
-                    { title: 'Stock Out', href: '#' },
-                    { title: 'Suppliers', href: '#' },
-                    { title: 'Purchase Orders', href: '#' },
+                    { title: 'Booking System', href: '/apps/booking' },
+                    { title: 'POS System', href: '/apps/pos' },
+                    { title: 'Inventory', href: '/apps/inventory' },
+                    { title: 'Subscriptions', href: '/apps/subscriptions' },
+                    { title: 'Project Manager', href: '/apps/projects' },
+                    { title: 'CRM', href: '/apps/crm' },
+                    { title: 'HRIS', href: '/apps/hris' },
+                    { title: 'Accounting', href: '/apps/accounting' },
                 ],
             },
             {
-                title: 'Subscriptions',
-                icon: CreditCard,
+                title: 'Commerce',
+                icon: ShoppingCart,
                 children: [
-                    { title: 'Products', href: '#' },
-                    { title: 'Plans', href: '#' },
-                    { title: 'Orders', href: '#' },
-                    { title: 'Transactions', href: '#' },
-                    { title: 'Invoices', href: '#' },
+                    { title: 'Products', href: '/commerce/products' },
+                    { title: 'Categories', href: '/commerce/categories' },
+                    { title: 'Orders', href: '/commerce/orders' },
+                    { title: 'Customers', href: '/commerce/customers' },
+                    { title: 'Invoices', href: '/commerce/invoices' },
+                    { title: 'Payments', href: '/commerce/payments' },
+                    { title: 'Coupons', href: '/commerce/coupons' },
+                ],
+            },
+            {
+                title: 'Communication',
+                icon: Bell,
+                children: [
+                    { title: 'Inbox', href: '/communication/inbox' },
+                    { title: 'Messages', href: '/communication/messages' },
+                    { title: 'Notifications', href: '/communication/notifications' },
+                    { title: 'Announcements', href: '/communication/announcements' },
+                    { title: 'Chat UI', href: '/communication/chat' },
                 ],
             },
         ],
     },
     {
-        label: 'Auth & System',
+        label: 'System',
         items: [
             {
                 title: 'Authentication',
                 icon: LockKeyhole,
                 children: [
-                    { title: 'Login', href: '/login' },
-                    { title: 'Register', href: '/register' },
-                    { title: 'Forgot Password', href: '/forgot-password' },
-                    { title: 'Reset Password', href: '#' },
-                    { title: 'Verify Email', href: '#' },
-                    { title: 'Two Factor Auth', href: '#' },
+                    { title: 'Login', href: '/login', done: true },
+                    { title: 'Register', href: '/register', done: true },
+                    { title: 'Forgot Password', href: '/forgot-password', done: true },
+                    { title: 'Reset Password', href: '/reset-password' },
+                    { title: 'Verify Email', href: '/verify-email' },
+                    { title: 'Two Factor Auth', href: '/two-factor-auth' },
+                    { title: 'Lock Screen', href: '/auth/lock-screen' },
                 ],
             },
             {
-                title: 'Users',
+                title: 'Users & Access',
                 icon: Users,
                 children: [
-                    { title: 'User List', href: '#' },
-                    { title: 'User Profile', href: '#' },
-                    { title: 'Roles', href: '#' },
-                    { title: 'Permissions', href: '#' },
-                    { title: 'Activity Logs', href: '#' },
+                    { title: 'Users', href: '/users' },
+                    { title: 'User Profile', href: '/users/profile' },
+                    { title: 'Roles', href: '/roles' },
+                    { title: 'Permissions', href: '/permissions' },
+                    { title: 'Activity Logs', href: '/activity-logs' },
+                    { title: 'Audit Trail', href: '/audit-trail' },
                 ],
             },
             {
                 title: 'Settings',
                 icon: SlidersHorizontal,
                 children: [
-                    { title: 'Profile', href: '/settings/profile' },
-                    { title: 'Password', href: '/settings/password' },
-                    { title: 'Appearance', href: '/settings/appearance' },
-                    { title: 'General Settings', href: '#' },
-                    { title: 'Branding', href: '#' },
-                    { title: 'Notifications', href: '#' },
-                    { title: 'Payments', href: '#' },
+                    { title: 'Profile', href: '/settings/profile', done: true },
+                    { title: 'Password', href: '/settings/password', done: true },
+                    { title: 'Appearance', href: '/settings/appearance', done: true },
+                    { title: 'General', href: '/settings/general' },
+                    { title: 'Branding', href: '/settings/branding' },
+                    { title: 'Notifications', href: '/settings/notifications' },
+                    { title: 'Billing', href: '/settings/billing' },
+                    { title: 'API Keys', href: '/settings/api-keys' },
                 ],
             },
         ],
     },
 ];
-
 function DevMarker({ done }: { done?: boolean }) {
     if (done) return null;
 
@@ -418,7 +378,33 @@ function DevMarker({ done }: { done?: boolean }) {
 export function AppSidebar() {
     const page = usePage();
     const currentUrl = page.url;
+    const sidebarContentRef = useRef<HTMLDivElement | null>(null);
     const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
+
+    useEffect(() => {
+        const sidebar = sidebarContentRef.current;
+        if (!sidebar) return;
+
+        const savedScroll = sessionStorage.getItem('jcm-sidebar-scroll');
+
+        if (savedScroll) {
+            requestAnimationFrame(() => {
+                sidebar.scrollTop = Number(savedScroll);
+            });
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            const activeItem = sidebar.querySelector('[data-sidebar-active="true"]');
+
+            if (activeItem instanceof HTMLElement) {
+                activeItem.scrollIntoView({
+                    block: 'center',
+                    behavior: 'smooth',
+                });
+            }
+        });
+    }, [currentUrl]);
 
     const isHrefActive = (href: string) => {
         if (href === '#') return false;
@@ -465,7 +451,16 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent className="sidebar-scrollbar-hidden px-2.5 py-2 group-data-[collapsible=icon]:px-2">
+            <SidebarContent
+                ref={sidebarContentRef}
+                onScroll={(event) => {
+                    sessionStorage.setItem(
+                        'jcm-sidebar-scroll',
+                        String(event.currentTarget.scrollTop),
+                    );
+                }}
+                className="sidebar-scrollbar-hidden px-2.5 py-2 group-data-[collapsible=icon]:px-2"
+            >
                 <TooltipProvider delayDuration={150}>
                     <div className="space-y-4 group-data-[collapsible=icon]:hidden">
                         {menuSections.map((section) => (
@@ -521,7 +516,23 @@ export function AppSidebar() {
                                                                 const childActive = isHrefActive(child.href);
 
                                                                 return (
-                                                                    <Link key={child.title} href={child.href} prefetch={child.href !== '#'} className={`group/child flex h-7 items-center gap-2 rounded-md px-2 text-xs font-medium transition-all duration-200 text-muted-foreground hover:bg-accent/60 hover:text-foreground ${childActive ? 'bg-accent/70 text-foreground' : ''}`}>
+                                                                    <Link
+                                                                        key={child.title}
+                                                                        href={child.href}
+                                                                        prefetch={child.href !== '#'}
+                                                                        data-sidebar-active={childActive ? 'true' : undefined}
+                                                                        onClick={() => {
+                                                                            const sidebar = sidebarContentRef.current;
+
+                                                                            if (sidebar) {
+                                                                                sessionStorage.setItem(
+                                                                                    'jcm-sidebar-scroll',
+                                                                                    String(sidebar.scrollTop),
+                                                                                );
+                                                                            }
+                                                                        }}
+                                                                        className={`group/child flex h-7 items-center gap-2 rounded-md px-2 text-xs font-medium transition-all duration-200 text-muted-foreground hover:bg-accent/60 hover:text-foreground ${childActive ? 'bg-accent/70 text-foreground' : ''}`}
+                                                                    >
                                                                         <span className="h-px w-2 shrink-0 rounded-full bg-current opacity-60" />
                                                                         <span className="min-w-0 flex-1 truncate">{child.title}</span>
                                                                         <DevMarker done={child.done} />

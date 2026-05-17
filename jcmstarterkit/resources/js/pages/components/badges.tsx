@@ -4,7 +4,7 @@ import { Code2, Layers, PackageCheck, Sparkles } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
-const pageTitle = 'Button DropDown';
+const pageTitle = 'Badges';
 const pageDescription =
     'Development placeholder page for JCM Starter Kit modules, UI previews, and future components.';
 
@@ -15,7 +15,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Buttons() {
+export default function Components() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={pageTitle} />

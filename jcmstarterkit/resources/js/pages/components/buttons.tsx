@@ -111,7 +111,7 @@ export default function Buttons() {
 
                 <PreviewCard title="Soft Variants">
                     <Button variant="soft">Soft</Button>
-                    <Button variant="successSoft">Success Soft</Button>
+                    <Button variant="successSoft">Success Softs</Button>
                     <Button variant="warningSoft">Warning Soft</Button>
                     <Button variant="infoSoft">Info Soft</Button>
                     <Button variant="dangerSoft">Danger Soft</Button>
@@ -392,4 +392,4 @@ export default function Buttons() {
             </div>
         </AppLayout>
     );
-}
+}   

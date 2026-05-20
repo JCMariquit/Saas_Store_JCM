@@ -27,44 +27,51 @@ export function AppSidebarHeader({
     const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false);
 
     const iconButtonClass =
-        'relative flex size-10 items-center justify-center rounded-[6px] transition-colors duration-200 hover:bg-accent/50';
+        'group relative flex size-10 items-center justify-center rounded-[10px] text-muted-foreground transition-all duration-200 hover:bg-sidebar-accent/70 hover:text-foreground';
 
-    const iconClass = 'size-[18px]';
+    const iconWrapClass =
+        'flex size-7 items-center justify-center rounded-[9px] bg-background/70 text-muted-foreground shadow-[0_1px_6px_rgba(0,0,0,0.04)] ring-1 ring-border/50 transition-colors group-hover:text-foreground';
+
+    const iconClass = 'size-[16px]';
 
     return (
         <>
-            <header className="flex h-16 shrink-0 items-center justify-between px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4">
-                <div className="flex min-w-0 items-center gap-2">
+            <header className="jcm-app-header relative z-20 mx-4 mt-4 flex h-[68px] shrink-0 items-center justify-between rounded-[24px] border border-border/60 bg-sidebar px-5 shadow-[0_2px_10px_rgba(0,0,0,0.04)] transition-all duration-300 group-has-data-[collapsible=icon]/sidebar-wrapper:h-14 md:px-4">
+                <div className="flex min-w-0 items-center gap-3">
                     <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         onClick={toggleSidebar}
-                        className="-ml-1 size-9 rounded-[6px] text-muted-foreground transition-colors duration-200 hover:bg-accent/50 hover:text-foreground"
+                        className="group size-10 rounded-[10px] text-muted-foreground transition-all duration-200 hover:bg-sidebar-accent/70 hover:text-foreground"
                     >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="21"
-                            height="21"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-foreground"
-                        >
-                            <path d="M4 6h16" />
-                            <path d="M4 12h10" />
-                            <path d="M4 18h16" />
-                            <path d="M19 9l3 3-3 3" />
-                        </svg>
+                        <span className={iconWrapClass}>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="text-current"
+                            >
+                                <path d="M4 6h16" />
+                                <path d="M4 12h10" />
+                                <path d="M4 18h16" />
+                                <path d="M19 9l3 3-3 3" />
+                            </svg>
+                        </span>
                     </Button>
 
-                    <Breadcrumbs breadcrumbs={breadcrumbs} />
+                    <div className="min-w-0">
+                        <Breadcrumbs breadcrumbs={breadcrumbs} />
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                     <TooltipProvider delayDuration={150}>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -75,7 +82,9 @@ export function AppSidebarHeader({
                                     onClick={() => setMessageDrawerOpen(true)}
                                     className={iconButtonClass}
                                 >
-                                    <MessageSquare className={`${iconClass} text-sky-500`} />
+                                    <span className={iconWrapClass}>
+                                        <MessageSquare className={`${iconClass} text-sky-500`} />
+                                    </span>
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>Messages</TooltipContent>
@@ -90,16 +99,17 @@ export function AppSidebarHeader({
                                     onClick={() => setNotificationDrawerOpen(true)}
                                     className={iconButtonClass}
                                 >
-                                    <Bell className={`${iconClass} text-amber-500`} />
-                                    <span className="absolute right-[10px] top-[10px] size-1.5 rounded-full bg-amber-500" />
+                                    <span className={iconWrapClass}>
+                                        <Bell className={`${iconClass} text-amber-500`} />
+                                    </span>
+                                    <span className="absolute right-[7px] top-[7px] size-2 rounded-full border-2 border-sidebar bg-amber-500" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>Notifications</TooltipContent>
                         </Tooltip>
-
                     </TooltipProvider>
 
-                    <div className="ml-1">
+                    <div className="ml-1 rounded-[14px] bg-background/70 p-1 shadow-[0_1px_6px_rgba(0,0,0,0.04)] ring-1 ring-border/50">
                         <NavUser />
                     </div>
                 </div>
@@ -114,7 +124,6 @@ export function AppSidebarHeader({
                 open={notificationDrawerOpen}
                 onOpenChange={setNotificationDrawerOpen}
             />
-
         </>
     );
 }

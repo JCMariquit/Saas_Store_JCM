@@ -36,7 +36,7 @@ export function AppSidebarHeader({
 
     return (
         <>
-            <header className="jcm-app-header relative z-20 mx-4 mt-4 flex h-[68px] shrink-0 items-center justify-between rounded-[24px] border border-border/60 bg-sidebar px-5 shadow-[0_2px_10px_rgba(0,0,0,0.04)] transition-all duration-300 group-has-data-[collapsible=icon]/sidebar-wrapper:h-14 md:px-4">
+            <header className="jcm-app-header relative z-20 mx-4 mt-4 flex h-[68px] shrink-0 items-center justify-between rounded-[26px] border border-black/[0.08] dark:border-white/[0.10] bg-sidebar px-5 shadow-[0_8px_30px_rgba(0,0,0,0.03)] ring-1 ring-black/[0.03] dark:ring-white/[0.04] backdrop-blur-md transition-all duration-300 group-has-data-[collapsible=icon]/sidebar-wrapper:h-14 md:px-4">
                 <div className="flex min-w-0 items-center gap-3">
                     <Button
                         type="button"

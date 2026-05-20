@@ -19,6 +19,13 @@ return [
             'synchronous' => null,
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | POS Database
+        |--------------------------------------------------------------------------
+        | Dito mapupunta lahat ng POS data:
+        | categories, products, stock batches, stock movements, sales, etc.
+        */
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
@@ -39,6 +46,12 @@ return [
             ]) : [],
         ],
 
+        /*
+        |--------------------------------------------------------------------------
+        | JCM SaaS Main Database
+        |--------------------------------------------------------------------------
+        | Dito galing ang users, subscriptions, plans, products ng SaaS.
+        */
         'saas' => [
             'driver' => env('SAAS_DB_CONNECTION', 'mysql'),
             'url' => env('SAAS_DB_URL'),
@@ -120,7 +133,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_database_'),
+            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_') . '_database_'),
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 

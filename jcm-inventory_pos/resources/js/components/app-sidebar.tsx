@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
     BarChart3,
     Boxes,
@@ -52,7 +52,7 @@ type SidebarGroup = {
 };
 
 const directItems: SidebarItem[] = [
-    { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid, active: true },
+    { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid },
     { title: 'POS Terminal', url: '/pos', icon: ShoppingCart, paidOnly: true },
     { title: 'Transactions', url: '/sales/transactions', icon: Receipt, badge: 'DEV' },
 ];
@@ -94,6 +94,15 @@ const groupedItems: SidebarGroup[] = [
         ],
     },
 ];
+
+function isUrlActive(currentUrl: string, itemUrl: string) {
+    if (itemUrl === '#') return false;
+
+    const cleanCurrentUrl = currentUrl.split('?')[0];
+    const cleanItemUrl = itemUrl.split('?')[0];
+
+    return cleanCurrentUrl === cleanItemUrl || cleanCurrentUrl.startsWith(`${cleanItemUrl}/`);
+}
 
 function MenuBadge({ badge }: { badge?: SidebarBadge }) {
     if (!badge) return null;
@@ -189,15 +198,17 @@ function DirectItem({
     isPaid: boolean;
     onLocked: () => void;
 }) {
+    const { url } = usePage();
     const Icon = item.icon;
     const locked = item.paidOnly && !isPaid;
+    const active = isUrlActive(url, item.url);
 
     const innerContent = (
         <>
             <span
                 className={[
                     'flex size-7 items-center justify-center rounded-[9px] transition-colors',
-                    item.active
+                    active
                         ? 'bg-primary/10 text-primary'
                         : 'text-sidebar-foreground/40 group-hover:bg-background/70 group-hover:text-sidebar-foreground/70',
                 ].join(' ')}
@@ -226,7 +237,7 @@ function DirectItem({
                     locked
                         ? 'cursor-pointer text-sidebar-foreground/45 hover:bg-amber-500/10 hover:text-sidebar-foreground'
                         : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground',
-                    item.active
+                    active
                         ? 'bg-background text-sidebar-foreground shadow-[0_1px_8px_rgba(0,0,0,0.05)] ring-1 ring-border/60'
                         : '',
                     'group-data-[collapsible=icon]/sidebar:size-10 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:px-0',
@@ -259,17 +270,40 @@ function SidebarDropdown({
     isPaid: boolean;
     onLocked: () => void;
 }) {
-    const [open, setOpen] = React.useState(false);
+    const { url } = usePage();
     const GroupIcon = group.icon;
+
+    const hasActiveItem = group.items.some((item) => isUrlActive(url, item.url));
+
+    const [open, setOpen] = React.useState(hasActiveItem);
+
+    React.useEffect(() => {
+        if (hasActiveItem) {
+            setOpen(true);
+        }
+    }, [hasActiveItem]);
 
     return (
         <div className="space-y-1">
             <button
                 type="button"
                 onClick={() => setOpen((value) => !value)}
-                className="group flex h-10 w-full items-center gap-3 rounded-[10px] px-3 text-[14px] font-medium text-sidebar-foreground/60 transition-all duration-200 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground group-data-[collapsible=icon]/sidebar:size-10 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:px-0"
+                className={[
+                    'group flex h-10 w-full items-center gap-3 rounded-[10px] px-3 text-[14px] font-medium transition-all duration-200',
+                    hasActiveItem
+                        ? 'bg-background text-sidebar-foreground shadow-[0_1px_8px_rgba(0,0,0,0.05)] ring-1 ring-border/60'
+                        : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground',
+                    'group-data-[collapsible=icon]/sidebar:size-10 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:px-0',
+                ].join(' ')}
             >
-                <span className="flex size-7 items-center justify-center rounded-[9px] text-sidebar-foreground/40 transition-colors group-hover:bg-background/70 group-hover:text-sidebar-foreground/70">
+                <span
+                    className={[
+                        'flex size-7 items-center justify-center rounded-[9px] transition-colors',
+                        hasActiveItem
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-sidebar-foreground/40 group-hover:bg-background/70 group-hover:text-sidebar-foreground/70',
+                    ].join(' ')}
+                >
                     <GroupIcon className="size-[16px]" />
                 </span>
 
@@ -295,6 +329,7 @@ function SidebarDropdown({
                     {group.items.map((item) => {
                         const Icon = item.icon;
                         const locked = item.paidOnly && !isPaid;
+                        const active = isUrlActive(url, item.url);
 
                         if (locked) {
                             return (
@@ -316,10 +351,24 @@ function SidebarDropdown({
                                 key={item.title}
                                 href={item.url}
                                 prefetch
-                                className="group flex h-9 items-center gap-2 rounded-[9px] px-3 text-[13px] font-medium text-sidebar-foreground/55 transition-all hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+                                className={[
+                                    'group flex h-9 items-center gap-2 rounded-[9px] px-3 text-[13px] font-medium transition-all',
+                                    active
+                                        ? 'bg-primary/10 text-primary'
+                                        : 'text-sidebar-foreground/55 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
+                                ].join(' ')}
                             >
-                                <Icon className="size-[14px] text-sidebar-foreground/35 group-hover:text-sidebar-foreground/65" />
+                                <Icon
+                                    className={[
+                                        'size-[14px]',
+                                        active
+                                            ? 'text-primary'
+                                            : 'text-sidebar-foreground/35 group-hover:text-sidebar-foreground/65',
+                                    ].join(' ')}
+                                />
+
                                 <span className="truncate">{item.title}</span>
+
                                 <MenuBadge badge={item.badge} />
                             </Link>
                         );

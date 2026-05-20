@@ -19,11 +19,11 @@ export type ThemePreset =
     | 'light-clean';
 
 const defaults = {
-    appearance: 'dark' as Appearance,
-    accentColor: 'emerald' as AccentColor,
-    sidebarColor: 'dark' as SidebarColor,
-    headerColor: 'default' as HeaderColor,
-    contentBg: 'default' as ContentBg,
+    appearance: 'light' as Appearance,
+    accentColor: 'blue' as AccentColor,
+    sidebarColor: 'default' as SidebarColor,
+    headerColor: 'borderless' as HeaderColor,
+    contentBg: 'plain' as ContentBg,
     radiusStyle: 'md' as RadiusStyle,
     densityStyle: 'comfortable' as DensityStyle,
     fontStyle: 'default' as FontStyle,
@@ -125,12 +125,14 @@ const themePresets: Record<
     },
 };
 
+const allowedHeaderColors: HeaderColor[] = ['default', 'borderless', 'accent'];
+
 const applyTheme = (appearance: Appearance) => {
     document.documentElement.classList.toggle('dark', appearance === 'dark');
 };
 
 const applyAccentColor = (color: AccentColor) => {
-    const value = accentColors[color] ?? accentColors.emerald;
+    const value = accentColors[color] ?? accentColors.blue;
 
     document.documentElement.style.setProperty('--primary', value);
     document.documentElement.style.setProperty('--ring', value);
@@ -163,16 +165,26 @@ const applyThemeParts = ({
     document.documentElement.dataset.shadowStyle = shadowStyle;
 };
 
+const getSavedHeaderColor = () => {
+    const saved = localStorage.getItem('header-color') as HeaderColor | null;
+
+    if (!saved || !allowedHeaderColors.includes(saved)) {
+        return defaults.headerColor;
+    }
+
+    return saved;
+};
+
 export function initializeTheme() {
     const appearance = (localStorage.getItem('appearance') as Appearance | null) || defaults.appearance;
     const accentColor = (localStorage.getItem('accent-color') as AccentColor | null) || defaults.accentColor;
-    const sidebarColor = (localStorage.getItem('sidebar-color') as SidebarColor | null) || defaults.sidebarColor;
-    const headerColor = (localStorage.getItem('header-color') as HeaderColor | null) || defaults.headerColor;
-    const contentBg = (localStorage.getItem('content-bg') as ContentBg | null) || defaults.contentBg;
+    const sidebarColor = defaults.sidebarColor;
+    const headerColor = getSavedHeaderColor();
+    const contentBg = defaults.contentBg;
     const radiusStyle = (localStorage.getItem('radius-style') as RadiusStyle | null) || defaults.radiusStyle;
-    const densityStyle = (localStorage.getItem('density-style') as DensityStyle | null) || defaults.densityStyle;
-    const fontStyle = (localStorage.getItem('font-style') as FontStyle | null) || defaults.fontStyle;
-    const shadowStyle = (localStorage.getItem('shadow-style') as ShadowStyle | null) || defaults.shadowStyle;
+    const densityStyle = defaults.densityStyle;
+    const fontStyle = defaults.fontStyle;
+    const shadowStyle = defaults.shadowStyle;
 
     applyTheme(appearance);
     applyAccentColor(accentColor);
@@ -280,7 +292,7 @@ export function useAppearance() {
         localStorage.setItem('appearance', selected.appearance);
         localStorage.setItem('accent-color', selected.accentColor);
         localStorage.setItem('sidebar-color', selected.sidebarColor);
-        localStorage.setItem('header-color', selected.headerColor);
+        localStorage.setItem('header-color', allowedHeaderColors.includes(selected.headerColor) ? selected.headerColor : defaults.headerColor);
         localStorage.setItem('content-bg', selected.contentBg);
         localStorage.setItem('radius-style', selected.radiusStyle);
         localStorage.setItem('density-style', selected.densityStyle);
@@ -289,7 +301,10 @@ export function useAppearance() {
 
         applyTheme(selected.appearance);
         applyAccentColor(selected.accentColor);
-        applyThemeParts(selected);
+        applyThemeParts({
+            ...selected,
+            headerColor: allowedHeaderColors.includes(selected.headerColor) ? selected.headerColor : defaults.headerColor,
+        });
     };
 
     const resetAppearance = () => {
@@ -307,13 +322,13 @@ export function useAppearance() {
     useEffect(() => {
         const savedAppearance = (localStorage.getItem('appearance') as Appearance | null) || defaults.appearance;
         const savedAccentColor = (localStorage.getItem('accent-color') as AccentColor | null) || defaults.accentColor;
-        const savedSidebarColor = (localStorage.getItem('sidebar-color') as SidebarColor | null) || defaults.sidebarColor;
-        const savedHeaderColor = (localStorage.getItem('header-color') as HeaderColor | null) || defaults.headerColor;
-        const savedContentBg = (localStorage.getItem('content-bg') as ContentBg | null) || defaults.contentBg;
+        const savedSidebarColor = defaults.sidebarColor;
+        const savedHeaderColor = getSavedHeaderColor();
+        const savedContentBg = defaults.contentBg;
         const savedRadiusStyle = (localStorage.getItem('radius-style') as RadiusStyle | null) || defaults.radiusStyle;
-        const savedDensityStyle = (localStorage.getItem('density-style') as DensityStyle | null) || defaults.densityStyle;
-        const savedFontStyle = (localStorage.getItem('font-style') as FontStyle | null) || defaults.fontStyle;
-        const savedShadowStyle = (localStorage.getItem('shadow-style') as ShadowStyle | null) || defaults.shadowStyle;
+        const savedDensityStyle = defaults.densityStyle;
+        const savedFontStyle = defaults.fontStyle;
+        const savedShadowStyle = defaults.shadowStyle;
 
         setAppearance(savedAppearance);
         setAccentColor(savedAccentColor);
@@ -324,6 +339,13 @@ export function useAppearance() {
         setDensityStyle(savedDensityStyle);
         setFontStyle(savedFontStyle);
         setShadowStyle(savedShadowStyle);
+
+        localStorage.setItem('sidebar-color', savedSidebarColor);
+        localStorage.setItem('header-color', savedHeaderColor);
+        localStorage.setItem('content-bg', savedContentBg);
+        localStorage.setItem('density-style', savedDensityStyle);
+        localStorage.setItem('font-style', savedFontStyle);
+        localStorage.setItem('shadow-style', savedShadowStyle);
 
         applyTheme(savedAppearance);
         applyAccentColor(savedAccentColor);

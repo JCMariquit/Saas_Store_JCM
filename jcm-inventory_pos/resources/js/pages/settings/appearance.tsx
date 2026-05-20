@@ -3,26 +3,17 @@ import { Head } from '@inertiajs/react';
 import {
     Check,
     Layers,
-    Moon,
     Palette,
     RotateCcw,
-    Settings2,
     Sparkles,
-    Sun,
 } from 'lucide-react';
 
 import AppLayout from '@/layouts/app-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import {
     type AccentColor,
-    type Appearance,
-    type ContentBg,
-    type DensityStyle,
-    type FontStyle,
     type HeaderColor,
     type RadiusStyle,
-    type ShadowStyle,
-    type SidebarColor,
     type ThemePreset,
     useAppearance,
 } from '@/hooks/use-appearance';
@@ -35,7 +26,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-type TabKey = 'presets' | 'colors' | 'layout' | 'advanced';
+type TabKey = 'presets' | 'colors' | 'layout';
 
 const tabs: {
     key: TabKey;
@@ -45,7 +36,6 @@ const tabs: {
     { key: 'presets', label: 'Presets', icon: Sparkles },
     { key: 'colors', label: 'Colors', icon: Palette },
     { key: 'layout', label: 'Layout', icon: Layers },
-    { key: 'advanced', label: 'Advanced', icon: Settings2 },
 ];
 
 const presetOptions: {
@@ -92,15 +82,6 @@ const presetOptions: {
     },
 ];
 
-const appearanceOptions: {
-    value: Appearance;
-    label: string;
-    icon: React.ElementType;
-}[] = [
-    { value: 'light', label: 'Light', icon: Sun },
-    { value: 'dark', label: 'Dark', icon: Moon },
-];
-
 const accentOptions: {
     value: AccentColor;
     label: string;
@@ -118,44 +99,14 @@ const accentOptions: {
     { value: 'slate', label: 'Slate', preview: 'bg-slate-700' },
 ];
 
-const sidebarOptions: {
-    value: SidebarColor;
-    label: string;
-    preview: string;
-}[] = [
-    { value: 'default', label: 'Default', preview: 'bg-background' },
-    { value: 'dark', label: 'Dark', preview: 'bg-zinc-950' },
-    { value: 'emerald', label: 'Emerald', preview: 'bg-emerald-950' },
-    { value: 'blue', label: 'Blue', preview: 'bg-blue-950' },
-    { value: 'violet', label: 'Violet', preview: 'bg-violet-950' },
-    { value: 'slate', label: 'Slate', preview: 'bg-slate-950' },
-    { value: 'zinc', label: 'Zinc', preview: 'bg-zinc-900' },
-];
-
 const headerOptions: {
     value: HeaderColor;
     label: string;
     description: string;
 }[] = [
     { value: 'default', label: 'Default', description: 'Standard header surface' },
-    { value: 'glass', label: 'Glass', description: 'Transparent blur header' },
-    { value: 'dark', label: 'Dark', description: 'Dark header surface' },
-    { value: 'accent', label: 'Accent', description: 'Use selected accent color' },
-    { value: 'clean', label: 'Clean', description: 'Flat clean header' },
     { value: 'borderless', label: 'Borderless', description: 'Minimal header without border' },
-];
-
-const contentOptions: {
-    value: ContentBg;
-    label: string;
-    description: string;
-}[] = [
-    { value: 'default', label: 'Default', description: 'Standard workspace' },
-    { value: 'soft', label: 'Soft', description: 'Soft tinted workspace' },
-    { value: 'gray', label: 'Gray', description: 'Neutral gray workspace' },
-    { value: 'dark', label: 'Dark', description: 'Dark app workspace' },
-    { value: 'tinted', label: 'Tinted', description: 'Accent tinted workspace' },
-    { value: 'plain', label: 'Plain', description: 'Simple plain workspace' },
+    { value: 'accent', label: 'Accent', description: 'Use selected accent color' },
 ];
 
 const radiusOptions: {
@@ -168,36 +119,6 @@ const radiusOptions: {
     { value: 'md', label: 'Medium', description: 'Balanced corners' },
     { value: 'xl', label: 'Large', description: 'Soft rounded UI' },
     { value: 'full', label: 'Full', description: 'Pill style controls' },
-];
-
-const densityOptions: {
-    value: DensityStyle;
-    label: string;
-    description: string;
-}[] = [
-    { value: 'compact', label: 'Compact', description: 'Tighter spacing' },
-    { value: 'comfortable', label: 'Comfortable', description: 'Balanced spacing' },
-    { value: 'spacious', label: 'Spacious', description: 'More breathing room' },
-];
-
-const fontOptions: {
-    value: FontStyle;
-    label: string;
-    description: string;
-}[] = [
-    { value: 'default', label: 'Default', description: 'Starter kit default' },
-    { value: 'modern', label: 'Modern', description: 'Cleaner modern feel' },
-    { value: 'classic', label: 'Classic', description: 'More traditional admin look' },
-];
-
-const shadowOptions: {
-    value: ShadowStyle;
-    label: string;
-    description: string;
-}[] = [
-    { value: 'none', label: 'None', description: 'Flat interface' },
-    { value: 'soft', label: 'Soft', description: 'Subtle depth' },
-    { value: 'medium', label: 'Medium', description: 'More visible elevation' },
 ];
 
 function OptionCard({
@@ -262,24 +183,12 @@ export default function Appearance() {
     const [activeTab, setActiveTab] = React.useState<TabKey>('presets');
 
     const {
-        appearance,
         accentColor,
-        sidebarColor,
         headerColor,
-        contentBg,
         radiusStyle,
-        densityStyle,
-        fontStyle,
-        shadowStyle,
-        updateAppearance,
         updateAccentColor,
-        updateSidebarColor,
         updateHeaderColor,
-        updateContentBg,
         updateRadiusStyle,
-        updateDensityStyle,
-        updateFontStyle,
-        updateShadowStyle,
         applyPreset,
         resetAppearance,
     } = useAppearance();
@@ -294,7 +203,7 @@ export default function Appearance() {
                         <div>
                             <h2 className="text-xl font-semibold">Appearance settings</h2>
                             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                                Customize presets, colors, layout, density, radius, and professional app styling.
+                                Customize presets, accent color, header style, and radius for your workspace.
                             </p>
                         </div>
 
@@ -363,37 +272,6 @@ export default function Appearance() {
                                     </button>
                                 ))}
                             </div>
-
-                            <div className="rounded-2xl border bg-card p-5">
-                                <SectionHeader
-                                    title="Theme mode"
-                                    description="Choose light or dark mode. Default system theme is dark."
-                                />
-
-                                <div className="mt-4 inline-flex rounded-xl bg-muted p-1">
-                                    {appearanceOptions.map((option) => {
-                                        const Icon = option.icon;
-                                        const active = appearance === option.value;
-
-                                        return (
-                                            <button
-                                                key={option.value}
-                                                type="button"
-                                                onClick={() => updateAppearance(option.value)}
-                                                className={[
-                                                    'flex items-center gap-2 rounded-lg px-4 py-2 text-sm transition',
-                                                    active
-                                                        ? 'bg-background text-foreground shadow-sm'
-                                                        : 'text-muted-foreground hover:text-foreground',
-                                                ].join(' ')}
-                                            >
-                                                <Icon className="size-4" />
-                                                {option.label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
                         </div>
                     )}
 
@@ -414,26 +292,6 @@ export default function Appearance() {
                                             onClick={() => updateAccentColor(item.value)}
                                         >
                                             <span className={`size-5 rounded-full ${item.preview}`} />
-                                        </OptionCard>
-                                    ))}
-                                </div>
-                            </section>
-
-                            <section className="space-y-4">
-                                <SectionHeader
-                                    title="Sidebar color"
-                                    description="Change the sidebar surface color."
-                                />
-
-                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                    {sidebarOptions.map((item) => (
-                                        <OptionCard
-                                            key={item.value}
-                                            active={sidebarColor === item.value}
-                                            title={item.label}
-                                            onClick={() => updateSidebarColor(item.value)}
-                                        >
-                                            <span className={`size-5 rounded-full border ${item.preview}`} />
                                         </OptionCard>
                                     ))}
                                 </div>
@@ -464,25 +322,6 @@ export default function Appearance() {
 
                             <section className="space-y-4">
                                 <SectionHeader
-                                    title="Workspace background"
-                                    description="Change the main content background."
-                                />
-
-                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                    {contentOptions.map((item) => (
-                                        <OptionCard
-                                            key={item.value}
-                                            active={contentBg === item.value}
-                                            title={item.label}
-                                            description={item.description}
-                                            onClick={() => updateContentBg(item.value)}
-                                        />
-                                    ))}
-                                </div>
-                            </section>
-
-                            <section className="space-y-4">
-                                <SectionHeader
                                     title="Radius style"
                                     description="Adjust how rounded the system feels."
                                 />
@@ -495,67 +334,6 @@ export default function Appearance() {
                                             title={item.label}
                                             description={item.description}
                                             onClick={() => updateRadiusStyle(item.value)}
-                                        />
-                                    ))}
-                                </div>
-                            </section>
-                        </div>
-                    )}
-
-                    {activeTab === 'advanced' && (
-                        <div className="space-y-8">
-                            <section className="space-y-4">
-                                <SectionHeader
-                                    title="Density"
-                                    description="Control spacing across the interface."
-                                />
-
-                                <div className="grid gap-3 sm:grid-cols-3">
-                                    {densityOptions.map((item) => (
-                                        <OptionCard
-                                            key={item.value}
-                                            active={densityStyle === item.value}
-                                            title={item.label}
-                                            description={item.description}
-                                            onClick={() => updateDensityStyle(item.value)}
-                                        />
-                                    ))}
-                                </div>
-                            </section>
-
-                            <section className="space-y-4">
-                                <SectionHeader
-                                    title="Font style"
-                                    description="Choose the personality of the admin interface."
-                                />
-
-                                <div className="grid gap-3 sm:grid-cols-3">
-                                    {fontOptions.map((item) => (
-                                        <OptionCard
-                                            key={item.value}
-                                            active={fontStyle === item.value}
-                                            title={item.label}
-                                            description={item.description}
-                                            onClick={() => updateFontStyle(item.value)}
-                                        />
-                                    ))}
-                                </div>
-                            </section>
-
-                            <section className="space-y-4">
-                                <SectionHeader
-                                    title="Shadow style"
-                                    description="Control how much elevation the UI uses."
-                                />
-
-                                <div className="grid gap-3 sm:grid-cols-3">
-                                    {shadowOptions.map((item) => (
-                                        <OptionCard
-                                            key={item.value}
-                                            active={shadowStyle === item.value}
-                                            title={item.label}
-                                            description={item.description}
-                                            onClick={() => updateShadowStyle(item.value)}
                                         />
                                     ))}
                                 </div>

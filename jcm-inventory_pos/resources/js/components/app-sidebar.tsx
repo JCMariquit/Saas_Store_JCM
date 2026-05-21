@@ -394,7 +394,7 @@ function AppSidebar() {
             <Sidebar
                 collapsible="icon"
                 variant="sidebar"
-                className="h-[calc(100vh-2rem)] border-0 bg-sidebar"
+                className="h-screen border-0 bg-sidebar"
             >
                 <SidebarHeader className="px-4 pb-5 pt-6 group-data-[collapsible=icon]/sidebar:px-2">
                     <SidebarMenu>
@@ -461,7 +461,7 @@ function AppSidebar() {
                     </div>
                 </SidebarContent>
 
-                <SidebarFooter className="mt-auto px-4 pb-5 transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
+                <SidebarFooter className="mt-auto px-4 pb-2 transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
                     <div className="rounded-[16px] border border-border/60 bg-background/70 px-4 py-3 shadow-sm">
                         <p className="text-[11px] font-semibold text-sidebar-foreground/70">
                             by JCM

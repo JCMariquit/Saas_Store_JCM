@@ -1,8 +1,8 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { FormEvent, useState } from 'react';
-import { Package, Plus, Search, TrendingDown, AlertTriangle, Boxes, X } from 'lucide-react';
+import { FormEvent, useEffect, useState } from 'react';
+import { AlertTriangle, Boxes, Package, Plus, RotateCcw, Search, TrendingDown, X } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -73,6 +73,26 @@ export default function StocksIndex({ products, categories, summary, filters }: 
         expiry_date: '',
     });
 
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            router.get(
+                '/inventory/stocks',
+                {
+                    search,
+                    category_id: categoryFilter,
+                    stock_status: stockStatus,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        }, 400);
+
+        return () => clearTimeout(timeout);
+    }, [search, categoryFilter, stockStatus]);
+
     const formatMoney = (value: string | number) => {
         return `₱${Number(value ?? 0).toLocaleString(undefined, {
             minimumFractionDigits: 2,
@@ -95,18 +115,17 @@ export default function StocksIndex({ products, categories, summary, filters }: 
         return <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">Normal</span>;
     };
 
-    const submitSearch = (e: FormEvent) => {
-        e.preventDefault();
+    const resetFilters = () => {
+        setSearch('');
+        setCategoryFilter('');
+        setStockStatus('');
 
         router.get(
             '/inventory/stocks',
-            {
-                search,
-                category_id: categoryFilter,
-                stock_status: stockStatus,
-            },
+            {},
             {
                 preserveState: true,
+                preserveScroll: true,
                 replace: true,
             },
         );
@@ -149,45 +168,10 @@ export default function StocksIndex({ products, categories, summary, filters }: 
 
             <div className="flex flex-col gap-4 p-4">
                 <div className="grid gap-4 md:grid-cols-4">
-                    <div className="rounded-xl border bg-background p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-muted-foreground">Total Products</p>
-                                <h2 className="mt-1 text-2xl font-semibold">{summary.total_products}</h2>
-                            </div>
-                            <Package className="size-5 text-muted-foreground" />
-                        </div>
-                    </div>
-
-                    <div className="rounded-xl border bg-background p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-muted-foreground">Low Stock</p>
-                                <h2 className="mt-1 text-2xl font-semibold">{summary.low_stock}</h2>
-                            </div>
-                            <AlertTriangle className="size-5 text-muted-foreground" />
-                        </div>
-                    </div>
-
-                    <div className="rounded-xl border bg-background p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-muted-foreground">Out of Stock</p>
-                                <h2 className="mt-1 text-2xl font-semibold">{summary.out_of_stock}</h2>
-                            </div>
-                            <TrendingDown className="size-5 text-muted-foreground" />
-                        </div>
-                    </div>
-
-                    <div className="rounded-xl border bg-background p-5 shadow-sm">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-muted-foreground">Inventory Value</p>
-                                <h2 className="mt-1 text-2xl font-semibold">{formatMoney(summary.inventory_value)}</h2>
-                            </div>
-                            <Boxes className="size-5 text-muted-foreground" />
-                        </div>
-                    </div>
+                    <SummaryCard title="Total Products" value={summary.total_products} icon={<Package className="size-5 text-muted-foreground" />} />
+                    <SummaryCard title="Low Stock" value={summary.low_stock} icon={<AlertTriangle className="size-5 text-muted-foreground" />} />
+                    <SummaryCard title="Out of Stock" value={summary.out_of_stock} icon={<TrendingDown className="size-5 text-muted-foreground" />} />
+                    <SummaryCard title="Inventory Value" value={formatMoney(summary.inventory_value)} icon={<Boxes className="size-5 text-muted-foreground" />} />
                 </div>
 
                 <div className="overflow-hidden rounded-xl border bg-background shadow-sm">
@@ -199,21 +183,21 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                     </div>
 
                     <div className="p-5">
-                        <form onSubmit={submitSearch} className="mb-4 grid gap-3 md:grid-cols-4">
+                        <div className="mb-4 grid gap-3 md:grid-cols-4">
                             <div className="relative md:col-span-2">
                                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                                 <input
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search product..."
-                                    className="h-10 w-full rounded-md border bg-background pl-10 pr-3 text-sm"
+                                    placeholder="Auto search product, SKU, barcode..."
+                                    className="h-10 w-full rounded-md border bg-background pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
                                 />
                             </div>
 
                             <select
                                 value={categoryFilter}
                                 onChange={(e) => setCategoryFilter(e.target.value)}
-                                className="h-10 rounded-md border bg-background px-3 text-sm"
+                                className="h-10 rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
                             >
                                 <option value="">All Categories</option>
                                 {categories.map((category) => (
@@ -227,7 +211,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                 <select
                                     value={stockStatus}
                                     onChange={(e) => setStockStatus(e.target.value)}
-                                    className="h-10 flex-1 rounded-md border bg-background px-3 text-sm"
+                                    className="h-10 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
                                 >
                                     <option value="">All Stock</option>
                                     <option value="normal">Normal</option>
@@ -235,9 +219,16 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                     <option value="out">Out of Stock</option>
                                 </select>
 
-                                <button className="rounded-md border px-4 text-sm hover:bg-muted">Search</button>
+                                <button
+                                    type="button"
+                                    onClick={resetFilters}
+                                    className="inline-flex h-10 items-center justify-center rounded-md border px-3 text-sm hover:bg-muted"
+                                    title="Reset filters"
+                                >
+                                    <RotateCcw className="size-4" />
+                                </button>
                             </div>
-                        </form>
+                        </div>
 
                         <div className="overflow-hidden rounded-lg border">
                             <table className="w-full text-sm">
@@ -263,9 +254,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                                 </td>
 
                                                 <td className="px-4 py-3">{product.category?.name ?? '-'}</td>
-
                                                 <td className="px-4 py-3 font-medium">{Number(product.quantity ?? 0)}</td>
-
                                                 <td className="px-4 py-3">{Number(product.reorder_level ?? 0)}</td>
 
                                                 <td className="px-4 py-3">
@@ -277,7 +266,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                                 <td className="px-4 py-3 text-right">
                                                     <button
                                                         onClick={() => openAdjustModal(product)}
-                                                        className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+                                                        className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
                                                     >
                                                         <Plus className="size-4" />
                                                         Adjust
@@ -287,7 +276,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={7} className="py-10 text-center text-muted-foreground">
+                                            <td colSpan={7} className="py-12 text-center text-muted-foreground">
                                                 No stock records found.
                                             </td>
                                         </tr>
@@ -306,7 +295,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                     <button
                                         key={index}
                                         disabled={!link.url}
-                                        onClick={() => link.url && router.get(link.url, {}, { preserveState: true })}
+                                        onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
                                         className={`rounded-md border px-3 py-1.5 text-sm ${
                                             link.active
                                                 ? 'bg-primary text-primary-foreground'
@@ -410,7 +399,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                 </div>
 
                                 <div className="flex justify-end gap-2 pt-2">
-                                    <button type="button" onClick={closeModal} className="rounded-md border px-4 py-2 text-sm">
+                                    <button type="button" onClick={closeModal} className="rounded-md border px-4 py-2 text-sm hover:bg-muted">
                                         Cancel
                                     </button>
 
@@ -424,5 +413,27 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                 )}
             </div>
         </AppLayout>
+    );
+}
+
+function SummaryCard({
+    title,
+    value,
+    icon,
+}: {
+    title: string;
+    value: string | number;
+    icon: React.ReactNode;
+}) {
+    return (
+        <div className="rounded-xl border bg-background p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="text-sm text-muted-foreground">{title}</p>
+                    <h2 className="mt-1 text-2xl font-semibold">{value}</h2>
+                </div>
+                {icon}
+            </div>
+        </div>
     );
 }

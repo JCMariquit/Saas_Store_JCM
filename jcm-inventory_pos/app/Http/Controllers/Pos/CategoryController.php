@@ -21,15 +21,21 @@ class CategoryController extends Controller
 
         $categories = Category::query()
             ->where('tenant_id', $tenantId)
-            ->when($request->search, function ($query, $search) {
-                $query->where('name', 'like', "%{$search}%");
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->search;
+
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('slug', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
             })
             ->orderBy('sort_order')
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();
 
-        return Inertia::render('pos/inventory/categories/index', [
+        return Inertia::render('inventory/categories/index', [
             'categories' => $categories,
             'filters' => [
                 'search' => $request->search,
@@ -50,10 +56,13 @@ class CategoryController extends Controller
         ]);
 
         Category::create([
-            ...$validated,
             'tenant_id' => $tenantId,
-            'slug' => Str::slug($validated['name']),
+            'parent_id' => $validated['parent_id'] ?? null,
+            'name' => $validated['name'],
+            'slug' => $this->generateUniqueSlug($validated['name'], $tenantId),
+            'description' => $validated['description'] ?? null,
             'sort_order' => $validated['sort_order'] ?? 0,
+            'status' => $validated['status'],
         ]);
 
         return back()->with('success', 'Category created successfully.');
@@ -72,9 +81,12 @@ class CategoryController extends Controller
         ]);
 
         $category->update([
-            ...$validated,
-            'slug' => Str::slug($validated['name']),
+            'parent_id' => $validated['parent_id'] ?? null,
+            'name' => $validated['name'],
+            'slug' => $this->generateUniqueSlug($validated['name'], $category->tenant_id, $category->id),
+            'description' => $validated['description'] ?? null,
             'sort_order' => $validated['sort_order'] ?? 0,
+            'status' => $validated['status'],
         ]);
 
         return back()->with('success', 'Category updated successfully.');
@@ -87,5 +99,25 @@ class CategoryController extends Controller
         $category->delete();
 
         return back()->with('success', 'Category deleted successfully.');
+    }
+
+    private function generateUniqueSlug(string $name, int $tenantId, ?int $ignoreId = null): string
+    {
+        $baseSlug = Str::slug($name);
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (
+            Category::query()
+                ->where('tenant_id', $tenantId)
+                ->where('slug', $slug)
+                ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+                ->exists()
+        ) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+
+        return $slug;
     }
 }

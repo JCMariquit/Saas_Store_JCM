@@ -53,7 +53,7 @@ type SidebarGroup = {
 
 const directItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid },
-    { title: 'POS Terminal', url: '/pos', icon: ShoppingCart, paidOnly: true },
+    { title: 'POS Terminal', url: '/pos', icon: ShoppingCart, paidOnly: false },
     { title: 'Transactions', url: '/sales/transactions', icon: Receipt, badge: 'DEV' },
 ];
 

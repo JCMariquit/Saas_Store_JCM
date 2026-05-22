@@ -445,7 +445,7 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                                                 className="rounded-md p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
                                                 title="Remove"
                                             >
-                                                <Trash2 className="size-4" />
+                                                <Trash2 className="size-4" /> 
                                             </button>
                                         </div>
 

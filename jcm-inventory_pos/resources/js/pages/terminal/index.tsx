@@ -326,7 +326,6 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                                         <th className="px-4 py-3 font-medium">Category</th>
                                         <th className="px-4 py-3 text-right font-medium">Price</th>
                                         <th className="px-4 py-3 text-center font-medium">Stock</th>
-                                        <th className="px-4 py-3 text-center font-medium">Cart</th>
                                         <th className="px-4 py-3 text-right font-medium">Action</th>
                                     </tr>
                                 </thead>
@@ -395,15 +394,6 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                                                             </span>
                                                         </td>
 
-                                                        <td className="px-4 py-3 text-center">
-                                                            {inCart ? (
-                                                                <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                                                                    {inCart.quantity}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-xs text-muted-foreground">—</span>
-                                                            )}
-                                                        </td>
 
                                                         <td className="px-4 py-3 text-right">
                                                             <button

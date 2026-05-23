@@ -15,6 +15,7 @@ import {
     ShoppingCart,
     Trash2,
     Wallet,
+    ChevronDown,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -70,6 +71,7 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
     const [search, setSearch] = useState(filters?.search ?? '');
     const [categoryFilter, setCategoryFilter] = useState(filters?.category_id ?? '');
     const [cart, setCart] = useState<CartItem[]>([]);
+    const [openProductId, setOpenProductId] = useState<number | null>(null);
 
     const checkoutForm = useForm({
         payment_method: 'cash',
@@ -247,10 +249,10 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="POS Terminal" />
 
-            <div className="grid h-full gap-4 p-4 xl:grid-cols-[minmax(0,1fr)_430px]">
-                <div className="flex min-w-0 flex-col gap-4">
-                    <Card tone="topline" variant="default" className="overflow-hidden">
-                        <CardHeader className="border-b p-5">
+            <div className="grid h-[calc(100vh-5rem)] min-h-0 gap-4 overflow-hidden p-4 xl:grid-cols-[minmax(0,1fr)_430px]">
+                <div className="flex min-w-0 flex-col gap-4 overflow-hidden">
+                    <Card tone="topline" variant="default" className="shrink-0 overflow-hidden">
+                        <CardHeader className="shrink-0 border-b p-4">
                             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                 <div>
                                     <CardTitle className="flex items-center gap-2 text-xl">
@@ -270,7 +272,7 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                             </div>
                         </CardHeader>
 
-                        <CardContent className="p-5">
+                        <CardContent className="p-4">
                             <div className="grid gap-3 md:grid-cols-[1fr_240px_44px]">
                                 <div className="relative">
                                     <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -307,92 +309,186 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                         </CardContent>
                     </Card>
 
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                        {products.data.map((product) => {
-                            const stock = Number(product.quantity ?? 0);
-                            const isOut = product.stock_tracking === 'tracked' && stock <= 0;
-                            const isLow = product.stock_tracking === 'tracked' && stock > 0 && stock <= 5;
-                            const inCart = cart.find((item) => item.product_id === product.id);
+                    <Card className="min-h-0 flex-1 overflow-hidden">
+                        <CardHeader className="shrink-0 border-b p-4">
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <Package className="size-4" />
+                                Product List
+                            </CardTitle>
+                        </CardHeader>
 
-                            return (
-                                <Card
-                                    key={product.id}
-                                    interactive
-                                    tone="topline"
-                                    variant={isOut ? 'danger' : isLow ? 'warning' : 'default'}
-                                    className="overflow-hidden"
-                                >
-                                    <CardContent className="p-4">
-                                        <div className="flex min-h-[185px] flex-col justify-between gap-4">
-                                            <div>
-                                                <div className="flex items-start justify-between gap-3">
-                                                    <div className="min-w-0">
-                                                        <h3 className="line-clamp-2 font-semibold">{product.name}</h3>
-                                                        <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                                                            <Barcode className="size-3.5" />
-                                                            <span>SKU: {product.sku || 'N/A'}</span>
-                                                        </div>
-                                                    </div>
+                        <CardContent className="min-h-0 overflow-auto p-0">
+                            <table className="w-full text-sm">
+                                <thead className="sticky top-0 z-10 bg-muted/70 text-left backdrop-blur">
+                                    <tr>
+                                        <th className="w-10 px-4 py-3"></th>
+                                        <th className="px-4 py-3 font-medium">Product</th>
+                                        <th className="px-4 py-3 font-medium">Category</th>
+                                        <th className="px-4 py-3 text-right font-medium">Price</th>
+                                        <th className="px-4 py-3 text-center font-medium">Stock</th>
+                                        <th className="px-4 py-3 text-center font-medium">Cart</th>
+                                        <th className="px-4 py-3 text-right font-medium">Action</th>
+                                    </tr>
+                                </thead>
 
-                                                    <span className="shrink-0 rounded-md bg-muted px-2 py-1 text-xs">
-                                                        {product.category?.name ?? 'No Category'}
-                                                    </span>
-                                                </div>
+                                <tbody>
+                                    {products.data.length > 0 ? (
+                                        products.data.map((product) => {
+                                            const stock = Number(product.quantity ?? 0);
+                                            const isOut = product.stock_tracking === 'tracked' && stock <= 0;
+                                            const isLow = product.stock_tracking === 'tracked' && stock > 0 && stock <= 5;
+                                            const inCart = cart.find((item) => item.product_id === product.id);
+                                            const isOpen = openProductId === product.id;
 
-                                                <div className="mt-5 grid grid-cols-2 gap-3">
-                                                    <div className="rounded-lg bg-muted/60 p-3">
-                                                        <p className="text-xs text-muted-foreground">Price</p>
-                                                        <p className="mt-1 text-xl font-bold">{money(product.selling_price)}</p>
-                                                    </div>
+                                            return (
+                                                <>
+                                                    <tr
+                                                        key={product.id}
+                                                        className="border-t hover:bg-muted/40"
+                                                    >
+                                                        <td className="px-4 py-3">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setOpenProductId(isOpen ? null : product.id)
+                                                                }
+                                                                className="inline-flex size-8 items-center justify-center rounded-md border hover:bg-muted"
+                                                                title="More info"
+                                                            >
+                                                                <ChevronDown
+                                                                    className={`size-4 transition-transform ${
+                                                                        isOpen ? 'rotate-180' : ''
+                                                                    }`}
+                                                                />
+                                                            </button>
+                                                        </td>
 
-                                                    <div className="rounded-lg bg-muted/60 p-3 text-right">
-                                                        <p className="text-xs text-muted-foreground">Stock</p>
-                                                        <p className={`mt-1 font-bold ${isOut ? 'text-red-600' : isLow ? 'text-orange-600' : ''}`}>
-                                                            {product.stock_tracking === 'tracked' ? stock : '∞'}
-                                                        </p>
-                                                    </div>
-                                                </div>
+                                                        <td className="px-4 py-3">
+                                                            <div className="font-medium">{product.name}</div>
+                                                            <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                                                                <Barcode className="size-3.5" />
+                                                                SKU: {product.sku || 'N/A'}
+                                                            </div>
+                                                        </td>
 
-                                                {inCart && (
-                                                    <div className="mt-3 rounded-md bg-primary/10 px-3 py-2 text-xs font-medium text-primary">
-                                                        In cart: {inCart.quantity}
-                                                    </div>
-                                                )}
-                                            </div>
+                                                        <td className="px-4 py-3">
+                                                            <span className="rounded-md bg-muted px-2 py-1 text-xs">
+                                                                {product.category?.name ?? 'No Category'}
+                                                            </span>
+                                                        </td>
 
-                                            <button
-                                                disabled={isOut}
-                                                onClick={() => addToCart(product)}
-                                                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                                            >
-                                                <Plus className="size-4" />
-                                                {inCart ? 'Add More' : 'Add to Cart'}
-                                            </button>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            );
-                        })}
+                                                        <td className="px-4 py-3 text-right font-semibold">
+                                                            {money(product.selling_price)}
+                                                        </td>
 
-                        {products.data.length === 0 && (
-                            <Card className="sm:col-span-2 lg:col-span-3">
-                                <CardContent className="p-12 text-center">
-                                    <Package className="mx-auto mb-3 size-10 text-muted-foreground" />
-                                    <h3 className="font-semibold">No active products found</h3>
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        Try changing your search or category filter.
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </div>
+                                                        <td className="px-4 py-3 text-center">
+                                                            <span
+                                                                className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ${
+                                                                    isOut
+                                                                        ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+                                                                        : isLow
+                                                                        ? 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
+                                                                        : 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
+                                                                }`}
+                                                            >
+                                                                {product.stock_tracking === 'tracked' ? stock : '∞'}
+                                                            </span>
+                                                        </td>
 
-                    <div className="flex flex-wrap gap-1">
+                                                        <td className="px-4 py-3 text-center">
+                                                            {inCart ? (
+                                                                <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                                                                    {inCart.quantity}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-xs text-muted-foreground">—</span>
+                                                            )}
+                                                        </td>
+
+                                                        <td className="px-4 py-3 text-right">
+                                                            <button
+                                                                disabled={isOut}
+                                                                onClick={() => addToCart(product)}
+                                                                className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                                                            >
+                                                                <Plus className="size-4" />
+                                                                {inCart ? 'Add More' : 'Add'}
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+
+                                                    {isOpen && (
+                                                        <tr className="border-t bg-muted/20">
+                                                            <td></td>
+                                                            <td colSpan={6} className="px-4 py-4">
+                                                                <div className="grid gap-3 rounded-lg border bg-card p-4 md:grid-cols-4">
+                                                                    <div>
+                                                                        <div className="text-xs text-muted-foreground">
+                                                                            Product Name
+                                                                        </div>
+                                                                        <div className="mt-1 font-medium">
+                                                                            {product.name}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div>
+                                                                        <div className="text-xs text-muted-foreground">
+                                                                            SKU
+                                                                        </div>
+                                                                        <div className="mt-1 font-medium">
+                                                                            {product.sku || 'N/A'}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div>
+                                                                        <div className="text-xs text-muted-foreground">
+                                                                            Barcode
+                                                                        </div>
+                                                                        <div className="mt-1 font-medium">
+                                                                            {product.barcode || 'N/A'}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div>
+                                                                        <div className="text-xs text-muted-foreground">
+                                                                            Stock Tracking
+                                                                        </div>
+                                                                        <div className="mt-1 font-medium capitalize">
+                                                                            {product.stock_tracking.replace('_', ' ')}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={7} className="px-4 py-16 text-center">
+                                                <Package className="mx-auto mb-3 size-10 text-muted-foreground" />
+                                                <h3 className="font-semibold">No active products found</h3>
+                                                <p className="mt-1 text-sm text-muted-foreground">
+                                                    Try changing your search or category filter.
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </CardContent>
+                    </Card>
+
+                    <div className="shrink-0 flex flex-wrap gap-1">
                         {products.links.map((link, index) => (
                             <button
                                 key={index}
                                 disabled={!link.url}
-                                onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
+                                onClick={() =>
+                                    link.url &&
+                                    router.get(link.url, {}, { preserveState: true, preserveScroll: true })
+                                }
                                 className={`rounded-md border px-3 py-1.5 text-sm ${
                                     link.active
                                         ? 'bg-primary text-primary-foreground'
@@ -408,13 +504,13 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                     tone="topline"
                     variant="success"
                     className="
-                        sticky top-4
-                        flex h-[calc(100vh-2rem)]
+                        sticky top-0
+                        flex h-full
                         min-h-0 flex-col
                         overflow-hidden
                     "
                 >
-                    <CardHeader className="border-b p-5">
+                    <CardHeader className="shrink-0 border-b p-4">
                         <CardTitle className="flex items-center justify-between text-xl">
                             <span className="flex items-center gap-2">
                                 <ShoppingCart className="size-5" />
@@ -427,8 +523,8 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                         </CardTitle>
                     </CardHeader>
 
-                    <CardContent className="space-y-4 p-5">
-                        <div className="max-h-[300px] space-y-3 overflow-y-auto pr-1">
+                    <CardContent className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+                        <div className="max-h-[190px] space-y-3 overflow-y-auto pr-1">
                             {cart.length > 0 ? (
                                 cart.map((item) => (
                                     <div key={item.product_id} className="rounded-lg border bg-card p-3 shadow-xs">
@@ -445,7 +541,7 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                                                 className="rounded-md p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
                                                 title="Remove"
                                             >
-                                                <Trash2 className="size-4" /> 
+                                                <Trash2 className="size-4" />
                                             </button>
                                         </div>
 

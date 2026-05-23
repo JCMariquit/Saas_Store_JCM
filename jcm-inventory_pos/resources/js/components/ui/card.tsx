@@ -133,8 +133,11 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
                 'transition-all duration-200 ease-out',
                 'dark:border-border/60 dark:bg-card/95',
                 toneClasses[tone]?.[variant],
-                interactive && 'cursor-pointer hover:-translate-y-0.5 hover:border-border hover:shadow-md',
-                !interactive && 'hover:border-border hover:shadow-md',
+                interactive &&
+                    'cursor-pointer hover:-translate-y-0.5 hover:shadow-md',
+
+                !interactive &&
+                    'hover:shadow-md',
                 className,
             )}
             {...props}

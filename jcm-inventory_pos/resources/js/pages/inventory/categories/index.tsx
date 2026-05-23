@@ -159,12 +159,35 @@ export default function CategoriesIndex({ categories, filters }: CategoriesPageP
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <div className="grid gap-4 md:grid-cols-3">
-                    <SummaryCard title="Total Categories" value={summary.total} />
-                    <SummaryCard title="Active Categories" value={summary.active} />
-                    <SummaryCard title="Inactive Categories" value={summary.inactive} />
+                    <Card tone="topline" variant="default" className="overflow-hidden shadow-sm">
+                        <CardHeader className="p-5 pb-2">
+                            <CardDescription>Total Categories</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-5 pt-0">
+                            <CardTitle>{summary.total}</CardTitle>
+                        </CardContent>
+                    </Card>
+
+                    <Card tone="topline" variant="success" className="overflow-hidden shadow-sm">
+                        <CardHeader className="p-5 pb-2">
+                            <CardDescription>Active Categories</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-5 pt-0">
+                            <CardTitle>{summary.active}</CardTitle>
+                        </CardContent>
+                    </Card>
+
+                    <Card tone="topline" variant="neutral" className="overflow-hidden shadow-sm">
+                        <CardHeader className="p-5 pb-2">
+                            <CardDescription>Inactive Categories</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-5 pt-0">
+                            <CardTitle>{summary.inactive}</CardTitle>
+                        </CardContent>
+                    </Card>
                 </div>
 
-                <Card className="overflow-hidden shadow-sm">
+                <Card tone="topline" variant="default" className="overflow-hidden shadow-sm">
                     <CardHeader className="flex flex-col gap-4 border-b p-5 md:flex-row md:items-center md:justify-between">
                         <div>
                             <CardTitle className="text-xl">Categories</CardTitle>
@@ -219,7 +242,10 @@ export default function CategoriesIndex({ categories, filters }: CategoriesPageP
                                 <tbody>
                                     {categories.data.length > 0 ? (
                                         categories.data.map((category) => (
-                                            <tr key={category.id} className="border-t border-sidebar-border/70 dark:border-sidebar-border">
+                                            <tr
+                                                key={category.id}
+                                                className="border-t border-sidebar-border/70 dark:border-sidebar-border"
+                                            >
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-3">
                                                         <div className="flex size-10 items-center justify-center rounded-md bg-muted">
@@ -278,10 +304,13 @@ export default function CategoriesIndex({ categories, filters }: CategoriesPageP
                                                     <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted">
                                                         <FolderTree className="size-5 text-muted-foreground" />
                                                     </div>
+
                                                     <h3 className="font-medium">No categories found</h3>
+
                                                     <p className="mt-1 text-sm text-muted-foreground">
                                                         Create your first category to organize your POS products.
                                                     </p>
+
                                                     <button
                                                         onClick={openCreateModal}
                                                         className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
@@ -307,7 +336,10 @@ export default function CategoriesIndex({ categories, filters }: CategoriesPageP
                                     <button
                                         key={index}
                                         disabled={!link.url}
-                                        onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
+                                        onClick={() =>
+                                            link.url &&
+                                            router.get(link.url, {}, { preserveState: true, preserveScroll: true })
+                                        }
                                         className={`rounded-md border px-3 py-1.5 text-sm ${
                                             link.active
                                                 ? 'bg-primary text-primary-foreground'
@@ -324,20 +356,20 @@ export default function CategoriesIndex({ categories, filters }: CategoriesPageP
 
             {isOpen && (
                 <Modal>
-                    <div className="flex items-center justify-between border-b p-5">
+                    <CardHeader className="flex flex-row items-center justify-between border-b p-5">
                         <div>
-                            <h2 className="text-lg font-semibold">
+                            <CardTitle className="text-lg">
                                 {editingCategory ? 'Edit Category' : 'Add Category'}
-                            </h2>
-                            <p className="text-sm text-muted-foreground">
+                            </CardTitle>
+                            <CardDescription>
                                 {editingCategory ? 'Update category details.' : 'Create a new product category.'}
-                            </p>
+                            </CardDescription>
                         </div>
 
                         <button onClick={closeModal} className="rounded-md p-2 hover:bg-muted">
                             <X className="size-4" />
                         </button>
-                    </div>
+                    </CardHeader>
 
                     <form onSubmit={submit} className="space-y-4 p-5">
                         <Field label="Name" error={form.errors.name}>
@@ -401,27 +433,28 @@ export default function CategoriesIndex({ categories, filters }: CategoriesPageP
 
             {viewingCategory && (
                 <Modal>
-                    <div className="flex items-center justify-between border-b p-5">
+                    <CardHeader className="flex flex-row items-center justify-between border-b p-5">
                         <div>
-                            <h2 className="text-lg font-semibold">Category Details</h2>
-                            <p className="text-sm text-muted-foreground">View selected category information.</p>
+                            <CardTitle className="text-lg">Category Details</CardTitle>
+                            <CardDescription>View selected category information.</CardDescription>
                         </div>
 
                         <button onClick={() => setViewingCategory(null)} className="rounded-md p-2 hover:bg-muted">
                             <X className="size-4" />
                         </button>
-                    </div>
+                    </CardHeader>
 
-                    <div className="space-y-4 p-5 text-sm">
+                    <CardContent className="space-y-4 p-5 text-sm">
                         <DetailRow label="Name" value={viewingCategory.name} />
                         <DetailRow label="Slug" value={viewingCategory.slug} />
                         <DetailRow label="Description" value={viewingCategory.description || 'No description'} />
                         <DetailRow label="Sort Order" value={String(viewingCategory.sort_order)} />
+
                         <div className="flex items-center justify-between rounded-md border p-3">
                             <span className="text-muted-foreground">Status</span>
                             <StatusBadge status={viewingCategory.status} />
                         </div>
-                    </div>
+                    </CardContent>
                 </Modal>
             )}
         </AppLayout>

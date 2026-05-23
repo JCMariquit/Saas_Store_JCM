@@ -41,7 +41,7 @@ class PosTerminalController extends Controller
                 $query->where('category_id', $request->category_id);
             })
             ->orderBy('name')
-            ->paginate(24)
+            ->paginate(20)
             ->withQueryString();
 
         $categories = Category::query()

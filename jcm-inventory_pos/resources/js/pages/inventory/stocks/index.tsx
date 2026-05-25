@@ -1,7 +1,8 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Boxes, Package, Plus, RotateCcw, Search, TrendingDown, X } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -59,7 +60,7 @@ type PageProps = {
 export default function StocksIndex({ products, categories, summary, filters }: PageProps) {
     const [search, setSearch] = useState(filters?.search ?? '');
     const [categoryFilter, setCategoryFilter] = useState(filters?.category_id ?? '');
-    const [stockStatus, setStockStatus] = useState(filters?.stock_status ?? '');
+    const [activeStockTab, setActiveStockTab] = useState<'on_stock' | 'out_of_stock'>('on_stock');
     const [isOpen, setIsOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
@@ -80,7 +81,6 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                 {
                     search,
                     category_id: categoryFilter,
-                    stock_status: stockStatus,
                 },
                 {
                     preserveState: true,
@@ -91,7 +91,25 @@ export default function StocksIndex({ products, categories, summary, filters }: 
         }, 400);
 
         return () => clearTimeout(timeout);
-    }, [search, categoryFilter, stockStatus]);
+    }, [search, categoryFilter]);
+
+    const visibleProducts = useMemo(() => {
+        return products.data.filter((product) => {
+            const quantity = Number(product.quantity ?? 0);
+
+            if (activeStockTab === 'out_of_stock') {
+                return quantity <= 0;
+            }
+
+            return quantity > 0;
+        });
+    }, [products.data, activeStockTab]);
+
+    const visibleInventoryValue = useMemo(() => {
+        return visibleProducts.reduce((total, product) => {
+            return total + Number(product.quantity ?? 0) * Number(product.cost_price ?? 0);
+        }, 0);
+    }, [visibleProducts]);
 
     const formatMoney = (value: string | number) => {
         return `₱${Number(value ?? 0).toLocaleString(undefined, {
@@ -105,20 +123,32 @@ export default function StocksIndex({ products, categories, summary, filters }: 
         const reorderLevel = Number(product.reorder_level ?? 0);
 
         if (quantity <= 0) {
-            return <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">Out</span>;
+            return (
+                <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
+                    Out
+                </span>
+            );
         }
 
         if (quantity <= reorderLevel) {
-            return <span className="rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-medium text-yellow-700">Low</span>;
+            return (
+                <span className="rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-medium text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300">
+                    Low
+                </span>
+            );
         }
 
-        return <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">Normal</span>;
+        return (
+            <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-300">
+                Normal
+            </span>
+        );
     };
 
     const resetFilters = () => {
         setSearch('');
         setCategoryFilter('');
-        setStockStatus('');
+        setActiveStockTab('on_stock');
 
         router.get(
             '/inventory/stocks',
@@ -144,6 +174,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
             expiry_date: '',
         });
 
+        form.clearErrors();
         setIsOpen(true);
     };
 
@@ -166,99 +197,161 @@ export default function StocksIndex({ products, categories, summary, filters }: 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Stocks Management" />
 
-            <div className="flex flex-col gap-4 p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <div className="grid gap-4 md:grid-cols-4">
-                    <SummaryCard title="Total Products" value={summary.total_products} icon={<Package className="size-5 text-muted-foreground" />} />
-                    <SummaryCard title="Low Stock" value={summary.low_stock} icon={<AlertTriangle className="size-5 text-muted-foreground" />} />
-                    <SummaryCard title="Out of Stock" value={summary.out_of_stock} icon={<TrendingDown className="size-5 text-muted-foreground" />} />
-                    <SummaryCard title="Inventory Value" value={formatMoney(summary.inventory_value)} icon={<Boxes className="size-5 text-muted-foreground" />} />
+                    <SummaryCard
+                        title="Total Products"
+                        value={summary.total_products}
+                        icon={<Package className="size-5 text-muted-foreground" />}
+                        variant="default"
+                    />
+
+                    <SummaryCard
+                        title="Low Stock"
+                        value={summary.low_stock}
+                        icon={<AlertTriangle className="size-5 text-muted-foreground" />}
+                        variant="warning"
+                    />
+
+                    <SummaryCard
+                        title="Out of Stock"
+                        value={summary.out_of_stock}
+                        icon={<TrendingDown className="size-5 text-muted-foreground" />}
+                        variant="danger"
+                    />
+
+                    <SummaryCard
+                        title={activeStockTab === 'out_of_stock' ? 'Out of Stock Value' : 'On Stock Value'}
+                        value={formatMoney(activeStockTab === 'out_of_stock' ? 0 : visibleInventoryValue)}
+                        icon={<Boxes className="size-5 text-muted-foreground" />}
+                        variant="success"
+                    />
                 </div>
 
-                <div className="overflow-hidden rounded-xl border bg-background shadow-sm">
-                    <div className="border-b p-5">
-                        <h1 className="text-xl font-semibold">Stock Management</h1>
-                        <p className="mt-1 text-sm text-muted-foreground">
+                <Card tone="topline" variant="default" className="overflow-hidden shadow-sm">
+                    <CardHeader className="border-b p-5">
+                        <CardTitle className="text-xl">Stock Management</CardTitle>
+                        <CardDescription className="mt-1">
                             Monitor inventory levels and record stock movements.
-                        </p>
-                    </div>
+                        </CardDescription>
+                    </CardHeader>
 
-                    <div className="p-5">
-                        <div className="mb-4 grid gap-3 md:grid-cols-4">
-                            <div className="relative md:col-span-2">
-                                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                                <input
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Auto search product, SKU, barcode..."
-                                    className="h-10 w-full rounded-md border bg-background pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                                />
+                    <CardContent className="p-5">
+                        <div className="mb-4 flex flex-col gap-4">
+                            <div className="inline-flex w-fit rounded-md border border-input bg-muted/40 p-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveStockTab('on_stock')}
+                                    className={`rounded px-4 py-1.5 text-sm font-medium transition ${
+                                        activeStockTab === 'on_stock'
+                                            ? 'bg-background text-foreground shadow-sm'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    On Stock
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveStockTab('out_of_stock')}
+                                    className={`rounded px-4 py-1.5 text-sm font-medium transition ${
+                                        activeStockTab === 'out_of_stock'
+                                            ? 'bg-background text-foreground shadow-sm'
+                                            : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                >
+                                    Out of Stock
+                                </button>
                             </div>
 
-                            <select
-                                value={categoryFilter}
-                                onChange={(e) => setCategoryFilter(e.target.value)}
-                                className="h-10 rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                            >
-                                <option value="">All Categories</option>
-                                {categories.map((category) => (
-                                    <option key={category.id} value={category.id}>
-                                        {category.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="grid gap-3 md:grid-cols-4">
+                                <div className="relative md:col-span-2">
+                                    <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                                    <input
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        placeholder="Auto search product, SKU, barcode..."
+                                        className="h-10 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    />
+                                </div>
 
-                            <div className="flex gap-2">
                                 <select
-                                    value={stockStatus}
-                                    onChange={(e) => setStockStatus(e.target.value)}
-                                    className="h-10 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    value={categoryFilter}
+                                    onChange={(e) => setCategoryFilter(e.target.value)}
+                                    className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
                                 >
-                                    <option value="">All Stock</option>
-                                    <option value="normal">Normal</option>
-                                    <option value="low">Low Stock</option>
-                                    <option value="out">Out of Stock</option>
+                                    <option value="">All Categories</option>
+                                    {categories.map((category) => (
+                                        <option key={category.id} value={category.id}>
+                                            {category.name}
+                                        </option>
+                                    ))}
                                 </select>
 
                                 <button
                                     type="button"
                                     onClick={resetFilters}
-                                    className="inline-flex h-10 items-center justify-center rounded-md border px-3 text-sm hover:bg-muted"
-                                    title="Reset filters"
+                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-input px-3 text-sm hover:bg-muted"
                                 >
                                     <RotateCcw className="size-4" />
+                                    Reset
                                 </button>
                             </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-lg border">
+                        <div className="overflow-hidden rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
                             <table className="w-full text-sm">
-                                <thead className="bg-muted/50">
+                                <thead className="bg-muted/50 text-left">
                                     <tr>
-                                        <th className="px-4 py-3 text-left font-medium">Product</th>
-                                        <th className="px-4 py-3 text-left font-medium">Category</th>
-                                        <th className="px-4 py-3 text-left font-medium">Current Stock</th>
-                                        <th className="px-4 py-3 text-left font-medium">Reorder Level</th>
-                                        <th className="px-4 py-3 text-left font-medium">Value</th>
-                                        <th className="px-4 py-3 text-left font-medium">Status</th>
+                                        <th className="px-4 py-3 font-medium">Product</th>
+                                        <th className="px-4 py-3 font-medium">Category</th>
+                                        <th className="px-4 py-3 font-medium">Current Stock</th>
+                                        <th className="px-4 py-3 font-medium">Reorder Level</th>
+                                        <th className="px-4 py-3 font-medium">Value</th>
+                                        <th className="px-4 py-3 font-medium">Status</th>
                                         <th className="px-4 py-3 text-right font-medium">Action</th>
                                     </tr>
                                 </thead>
 
                                 <tbody>
-                                    {products.data.length > 0 ? (
-                                        products.data.map((product) => (
-                                            <tr key={product.id} className="border-t">
+                                    {visibleProducts.length > 0 ? (
+                                        visibleProducts.map((product) => (
+                                            <tr
+                                                key={product.id}
+                                                className="border-t border-sidebar-border/70 dark:border-sidebar-border"
+                                            >
                                                 <td className="px-4 py-3">
-                                                    <div className="font-medium">{product.name}</div>
-                                                    <div className="text-xs text-muted-foreground">SKU: {product.sku ?? 'N/A'}</div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex size-10 items-center justify-center rounded-md bg-muted">
+                                                            <Package className="size-4 text-muted-foreground" />
+                                                        </div>
+
+                                                        <div>
+                                                            <div className="font-medium">{product.name}</div>
+                                                            <div className="mt-1 text-xs text-muted-foreground">
+                                                                SKU: {product.sku ?? 'N/A'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </td>
 
-                                                <td className="px-4 py-3">{product.category?.name ?? '-'}</td>
-                                                <td className="px-4 py-3 font-medium">{Number(product.quantity ?? 0)}</td>
-                                                <td className="px-4 py-3">{Number(product.reorder_level ?? 0)}</td>
+                                                <td className="px-4 py-3 text-muted-foreground">
+                                                    {product.category?.name ?? '-'}
+                                                </td>
+
+                                                <td className="px-4 py-3 font-medium">
+                                                    {Number(product.quantity ?? 0)}
+                                                </td>
 
                                                 <td className="px-4 py-3">
-                                                    {formatMoney(Number(product.quantity ?? 0) * Number(product.cost_price ?? 0))}
+                                                    {Number(product.reorder_level ?? 0)}
+                                                </td>
+
+                                                <td className="px-4 py-3 font-medium">
+                                                    {formatMoney(
+                                                        Number(product.quantity ?? 0) *
+                                                            Number(product.cost_price ?? 0),
+                                                    )}
                                                 </td>
 
                                                 <td className="px-4 py-3">{stockBadge(product)}</td>
@@ -266,7 +359,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                                 <td className="px-4 py-3 text-right">
                                                     <button
                                                         onClick={() => openAdjustModal(product)}
-                                                        className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+                                                        className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"
                                                     >
                                                         <Plus className="size-4" />
                                                         Adjust
@@ -276,8 +369,24 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={7} className="py-12 text-center text-muted-foreground">
-                                                No stock records found.
+                                            <td colSpan={7} className="px-4 py-14 text-center">
+                                                <div className="mx-auto flex max-w-sm flex-col items-center">
+                                                    <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted">
+                                                        <Boxes className="size-5 text-muted-foreground" />
+                                                    </div>
+
+                                                    <h3 className="font-medium">
+                                                        {activeStockTab === 'out_of_stock'
+                                                            ? 'No out of stock products found'
+                                                            : 'No on stock products found'}
+                                                    </h3>
+
+                                                    <p className="mt-1 text-sm text-muted-foreground">
+                                                        {activeStockTab === 'out_of_stock'
+                                                            ? 'Products with zero quantity will appear here.'
+                                                            : 'Products with available quantity will appear here.'}
+                                                    </p>
+                                                </div>
                                             </td>
                                         </tr>
                                     )}
@@ -287,7 +396,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
 
                         <div className="mt-4 flex flex-col gap-3 text-sm md:flex-row md:items-center md:justify-between">
                             <div className="text-muted-foreground">
-                                Showing {products.from ?? 0} to {products.to ?? 0} of {products.total} results
+                                Showing {visibleProducts.length} of {products.total} results
                             </div>
 
                             <div className="flex flex-wrap gap-1">
@@ -295,7 +404,10 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                     <button
                                         key={index}
                                         disabled={!link.url}
-                                        onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
+                                        onClick={() =>
+                                            link.url &&
+                                            router.get(link.url, {}, { preserveState: true, preserveScroll: true })
+                                        }
                                         className={`rounded-md border px-3 py-1.5 text-sm ${
                                             link.active
                                                 ? 'bg-primary text-primary-foreground'
@@ -306,110 +418,108 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                 ))}
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
 
                 {isOpen && selectedProduct && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                        <div className="w-full max-w-lg rounded-xl border bg-background shadow-xl">
-                            <div className="flex items-center justify-between border-b p-5">
-                                <div>
-                                    <h2 className="text-lg font-semibold">Adjust Stock</h2>
-                                    <p className="text-sm text-muted-foreground">{selectedProduct.name}</p>
-                                </div>
-
-                                <button onClick={closeModal} className="rounded-md p-2 hover:bg-muted">
-                                    <X className="size-4" />
-                                </button>
+                    <Modal>
+                        <CardHeader className="flex flex-row items-center justify-between border-b p-5">
+                            <div>
+                                <CardTitle className="text-lg">Adjust Stock</CardTitle>
+                                <CardDescription>{selectedProduct.name}</CardDescription>
                             </div>
 
-                            <form onSubmit={submitAdjustment} className="space-y-4 p-5">
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium">Movement Type</label>
-                                    <select
-                                        value={form.data.movement_type}
-                                        onChange={(e) => form.setData('movement_type', e.target.value)}
-                                        className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                                    >
-                                        <option value="stock_in">Stock In</option>
-                                        <option value="adjustment_in">Adjustment In</option>
-                                        <option value="adjustment_out">Adjustment Out</option>
-                                        <option value="damage">Damage</option>
-                                        <option value="expired">Expired</option>
-                                    </select>
-                                </div>
+                            <button onClick={closeModal} className="rounded-md p-2 hover:bg-muted">
+                                <X className="size-4" />
+                            </button>
+                        </CardHeader>
 
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <div>
-                                        <label className="mb-1 block text-sm font-medium">Quantity</label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            value={form.data.quantity}
-                                            onChange={(e) => form.setData('quantity', e.target.value)}
-                                            className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                                        />
-                                        {form.errors.quantity && <p className="mt-1 text-xs text-red-600">{form.errors.quantity}</p>}
-                                    </div>
+                        <form onSubmit={submitAdjustment} className="space-y-4 p-5">
+                            <Field label="Movement Type" error={form.errors.movement_type}>
+                                <select
+                                    value={form.data.movement_type}
+                                    onChange={(e) => form.setData('movement_type', e.target.value)}
+                                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                >
+                                    <option value="stock_in">Stock In</option>
+                                    <option value="adjustment_in">Adjustment In</option>
+                                    <option value="adjustment_out">Adjustment Out</option>
+                                    <option value="damage">Damage</option>
+                                    <option value="expired">Expired</option>
+                                </select>
+                            </Field>
 
-                                    <div>
-                                        <label className="mb-1 block text-sm font-medium">Unit Cost</label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            value={form.data.unit_cost}
-                                            onChange={(e) => form.setData('unit_cost', e.target.value)}
-                                            className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                                        />
-                                    </div>
-                                </div>
-
-                                {form.data.movement_type === 'stock_in' && (
-                                    <div className="grid gap-4 md:grid-cols-2">
-                                        <div>
-                                            <label className="mb-1 block text-sm font-medium">Received Date</label>
-                                            <input
-                                                type="date"
-                                                value={form.data.received_date}
-                                                onChange={(e) => form.setData('received_date', e.target.value)}
-                                                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="mb-1 block text-sm font-medium">Expiry Date</label>
-                                            <input
-                                                type="date"
-                                                value={form.data.expiry_date}
-                                                onChange={(e) => form.setData('expiry_date', e.target.value)}
-                                                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium">Remarks</label>
-                                    <textarea
-                                        rows={3}
-                                        value={form.data.remarks}
-                                        onChange={(e) => form.setData('remarks', e.target.value)}
-                                        className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <Field label="Quantity" error={form.errors.quantity}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={form.data.quantity}
+                                        onChange={(e) => form.setData('quantity', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
                                     />
-                                </div>
+                                </Field>
 
-                                <div className="flex justify-end gap-2 pt-2">
-                                    <button type="button" onClick={closeModal} className="rounded-md border px-4 py-2 text-sm hover:bg-muted">
-                                        Cancel
-                                    </button>
+                                <Field label="Unit Cost" error={form.errors.unit_cost}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={form.data.unit_cost}
+                                        onChange={(e) => form.setData('unit_cost', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    />
+                                </Field>
+                            </div>
 
-                                    <button disabled={form.processing} className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-50">
-                                        Save Movement
-                                    </button>
+                            {form.data.movement_type === 'stock_in' && (
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <Field label="Received Date" error={form.errors.received_date}>
+                                        <input
+                                            type="date"
+                                            value={form.data.received_date}
+                                            onChange={(e) => form.setData('received_date', e.target.value)}
+                                            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                        />
+                                    </Field>
+
+                                    <Field label="Expiry Date" error={form.errors.expiry_date}>
+                                        <input
+                                            type="date"
+                                            value={form.data.expiry_date}
+                                            onChange={(e) => form.setData('expiry_date', e.target.value)}
+                                            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                        />
+                                    </Field>
                                 </div>
-                            </form>
-                        </div>
-                    </div>
+                            )}
+
+                            <Field label="Remarks" error={form.errors.remarks}>
+                                <textarea
+                                    rows={3}
+                                    value={form.data.remarks}
+                                    onChange={(e) => form.setData('remarks', e.target.value)}
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                />
+                            </Field>
+
+                            <div className="flex justify-end gap-2 border-t pt-5">
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    disabled={form.processing}
+                                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                                >
+                                    Save Movement
+                                </button>
+                            </div>
+                        </form>
+                    </Modal>
                 )}
             </div>
         </AppLayout>
@@ -420,20 +530,51 @@ function SummaryCard({
     title,
     value,
     icon,
+    variant = 'default',
 }: {
     title: string;
     value: string | number;
-    icon: React.ReactNode;
+    icon: ReactNode;
+    variant?: 'default' | 'success' | 'neutral' | 'warning' | 'danger';
 }) {
     return (
-        <div className="rounded-xl border bg-background p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-sm text-muted-foreground">{title}</p>
-                    <h2 className="mt-1 text-2xl font-semibold">{value}</h2>
+        <Card tone="topline" variant={variant} className="min-h-[120px] overflow-hidden shadow-sm">
+            <CardHeader className="p-5 pb-2">
+                <div className="flex items-start justify-between gap-3">
+                    <CardDescription>{title}</CardDescription>
+                    {icon}
                 </div>
-                {icon}
-            </div>
+            </CardHeader>
+
+            <CardContent className="p-5 pt-0">
+                <CardTitle>{value}</CardTitle>
+            </CardContent>
+        </Card>
+    );
+}
+
+function Field({
+    label,
+    error,
+    children,
+}: {
+    label: string;
+    error?: string;
+    children: ReactNode;
+}) {
+    return (
+        <div>
+            <label className="mb-1 block text-sm font-medium">{label}</label>
+            {children}
+            {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+        </div>
+    );
+}
+
+function Modal({ children }: { children: ReactNode }) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <Card className="w-full max-w-lg overflow-hidden shadow-xl">{children}</Card>
         </div>
     );
 }

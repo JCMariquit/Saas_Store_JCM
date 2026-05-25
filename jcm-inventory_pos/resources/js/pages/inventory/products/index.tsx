@@ -1,7 +1,8 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { Barcode, Boxes, Pencil, Plus, RotateCcw, Search, Trash2, X } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -98,7 +99,9 @@ export default function ProductsIndex({ products, categories, filters }: Product
     const summary = useMemo(() => {
         const total = products.total ?? 0;
         const active = products.data.filter((p) => p.status === 'active').length;
-        const lowStock = products.data.filter((p) => Number(p.quantity ?? 0) <= Number(p.reorder_level ?? 0) && Number(p.quantity ?? 0) > 0).length;
+        const lowStock = products.data.filter(
+            (p) => Number(p.quantity ?? 0) <= Number(p.reorder_level ?? 0) && Number(p.quantity ?? 0) > 0,
+        ).length;
         const outStock = products.data.filter((p) => Number(p.quantity ?? 0) <= 0).length;
 
         return { total, active, lowStock, outStock };
@@ -233,28 +236,33 @@ export default function ProductsIndex({ products, categories, filters }: Product
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Products" />
 
-            <div className="flex flex-col gap-4 p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <div className="grid gap-4 md:grid-cols-4">
-                    <SummaryCard title="Total Products" value={summary.total} />
-                    <SummaryCard title="Active Products" value={summary.active} />
-                    <SummaryCard title="Low Stock" value={summary.lowStock} />
-                    <SummaryCard title="Out of Stock" value={summary.outStock} />
+                    <SummaryCard title="Total Products" value={summary.total} variant="default" />
+                    <SummaryCard title="Active Products" value={summary.active} variant="success" />
+                    <SummaryCard title="Low Stock" value={summary.lowStock} variant="warning" />
+                    <SummaryCard title="Out of Stock" value={summary.outStock} variant="danger" />
                 </div>
 
-                <div className="overflow-hidden rounded-xl border bg-background shadow-sm">
-                    <div className="flex flex-col gap-4 border-b p-5 md:flex-row md:items-center md:justify-between">
+                <Card tone="topline" variant="default" className="overflow-hidden shadow-sm">
+                    <CardHeader className="flex flex-col gap-4 border-b p-5 md:flex-row md:items-center md:justify-between">
                         <div>
-                            <h1 className="text-xl font-semibold">Products</h1>
-                            <p className="mt-1 text-sm text-muted-foreground">Manage POS inventory products.</p>
+                            <CardTitle className="text-xl">Products</CardTitle>
+                            <CardDescription className="mt-1">
+                                Manage POS inventory products, stock tracking, prices, and product status.
+                            </CardDescription>
                         </div>
 
-                        <button onClick={openCreateModal} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+                        <button
+                            onClick={openCreateModal}
+                            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90"
+                        >
                             <Plus className="size-4" />
                             Add Product
                         </button>
-                    </div>
+                    </CardHeader>
 
-                    <div className="p-5">
+                    <CardContent className="p-5">
                         <div className="mb-4 grid gap-3 md:grid-cols-4">
                             <div className="relative md:col-span-2">
                                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -262,18 +270,20 @@ export default function ProductsIndex({ products, categories, filters }: Product
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Auto search product, SKU, barcode..."
-                                    className="h-10 w-full rounded-md border bg-background pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    className="h-10 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
                                 />
                             </div>
 
                             <select
                                 value={categoryFilter}
                                 onChange={(e) => setCategoryFilter(e.target.value)}
-                                className="h-10 rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
                             >
                                 <option value="">All Categories</option>
                                 {categories.map((category) => (
-                                    <option key={category.id} value={category.id}>{category.name}</option>
+                                    <option key={category.id} value={category.id}>
+                                        {category.name}
+                                    </option>
                                 ))}
                             </select>
 
@@ -281,7 +291,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
                                 <select
                                     value={statusFilter}
                                     onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="h-10 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    className="h-10 flex-1 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
                                 >
                                     <option value="">All Status</option>
                                     <option value="active">Active</option>
@@ -292,7 +302,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
                                 <button
                                     type="button"
                                     onClick={resetFilters}
-                                    className="inline-flex h-10 items-center justify-center rounded-md border px-3 text-sm hover:bg-muted"
+                                    className="inline-flex h-10 items-center justify-center rounded-md border border-input px-3 text-sm hover:bg-muted"
                                     title="Reset filters"
                                 >
                                     <RotateCcw className="size-4" />
@@ -300,16 +310,16 @@ export default function ProductsIndex({ products, categories, filters }: Product
                             </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-lg border">
+                        <div className="overflow-hidden rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
                             <table className="w-full text-sm">
-                                <thead className="bg-muted/50">
+                                <thead className="bg-muted/50 text-left">
                                     <tr>
-                                        <th className="px-4 py-3 text-left font-medium">Product</th>
-                                        <th className="px-4 py-3 text-left font-medium">Category</th>
-                                        <th className="px-4 py-3 text-left font-medium">Stock</th>
-                                        <th className="px-4 py-3 text-left font-medium">Cost</th>
-                                        <th className="px-4 py-3 text-left font-medium">Price</th>
-                                        <th className="px-4 py-3 text-left font-medium">Status</th>
+                                        <th className="px-4 py-3 font-medium">Product</th>
+                                        <th className="px-4 py-3 font-medium">Category</th>
+                                        <th className="px-4 py-3 font-medium">Stock</th>
+                                        <th className="px-4 py-3 font-medium">Cost</th>
+                                        <th className="px-4 py-3 font-medium">Price</th>
+                                        <th className="px-4 py-3 font-medium">Status</th>
                                         <th className="px-4 py-3 text-right font-medium">Actions</th>
                                     </tr>
                                 </thead>
@@ -317,11 +327,14 @@ export default function ProductsIndex({ products, categories, filters }: Product
                                 <tbody>
                                     {products.data.length > 0 ? (
                                         products.data.map((product) => (
-                                            <tr key={product.id} className="border-t">
+                                            <tr
+                                                key={product.id}
+                                                className="border-t border-sidebar-border/70 dark:border-sidebar-border"
+                                            >
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-3">
                                                         <div className="flex size-10 items-center justify-center rounded-md bg-muted">
-                                                            <Boxes className="size-4" />
+                                                            <Boxes className="size-4 text-muted-foreground" />
                                                         </div>
 
                                                         <div>
@@ -335,24 +348,36 @@ export default function ProductsIndex({ products, categories, filters }: Product
                                                     </div>
                                                 </td>
 
-                                                <td className="px-4 py-3">{product.category?.name ?? '-'}</td>
+                                                <td className="px-4 py-3 text-muted-foreground">
+                                                    {product.category?.name ?? '-'}
+                                                </td>
 
                                                 <td className="px-4 py-3">
-                                                    <div className="font-medium">{Number(product.quantity ?? 0)} {product.unit ?? 'pcs'}</div>
+                                                    <div className="font-medium">
+                                                        {Number(product.quantity ?? 0)} {product.unit ?? 'pcs'}
+                                                    </div>
                                                     <div className="text-xs">{stockBadge(product)}</div>
                                                 </td>
 
-                                                <td className="px-4 py-3">{money(product.cost_price)}</td>
+                                                <td className="px-4 py-3 text-muted-foreground">{money(product.cost_price)}</td>
                                                 <td className="px-4 py-3 font-medium">{money(product.selling_price)}</td>
                                                 <td className="px-4 py-3">{statusBadge(product.status)}</td>
 
                                                 <td className="px-4 py-3">
                                                     <div className="flex justify-end gap-2">
-                                                        <button onClick={() => openEditModal(product)} className="inline-flex size-8 items-center justify-center rounded-md border hover:bg-muted">
+                                                        <button
+                                                            onClick={() => openEditModal(product)}
+                                                            className="inline-flex size-8 items-center justify-center rounded-md border border-input hover:bg-muted"
+                                                            title="Edit"
+                                                        >
                                                             <Pencil className="size-4" />
                                                         </button>
 
-                                                        <button onClick={() => deleteProduct(product)} className="inline-flex size-8 items-center justify-center rounded-md border text-red-600 hover:bg-red-50 dark:hover:bg-red-950">
+                                                        <button
+                                                            onClick={() => deleteProduct(product)}
+                                                            className="inline-flex size-8 items-center justify-center rounded-md border border-input text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                            title="Delete"
+                                                        >
                                                             <Trash2 className="size-4" />
                                                         </button>
                                                     </div>
@@ -361,8 +386,26 @@ export default function ProductsIndex({ products, categories, filters }: Product
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={7} className="py-10 text-center text-muted-foreground">
-                                                No products found.
+                                            <td colSpan={7} className="px-4 py-14 text-center">
+                                                <div className="mx-auto flex max-w-sm flex-col items-center">
+                                                    <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted">
+                                                        <Boxes className="size-5 text-muted-foreground" />
+                                                    </div>
+
+                                                    <h3 className="font-medium">No products found</h3>
+
+                                                    <p className="mt-1 text-sm text-muted-foreground">
+                                                        Create your first product to start managing POS inventory.
+                                                    </p>
+
+                                                    <button
+                                                        onClick={openCreateModal}
+                                                        className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                                                    >
+                                                        <Plus className="size-4" />
+                                                        Add Product
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     )}
@@ -380,144 +423,243 @@ export default function ProductsIndex({ products, categories, filters }: Product
                                     <button
                                         key={index}
                                         disabled={!link.url}
-                                        onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
+                                        onClick={() =>
+                                            link.url &&
+                                            router.get(link.url, {}, { preserveState: true, preserveScroll: true })
+                                        }
                                         className={`rounded-md border px-3 py-1.5 text-sm ${
-                                            link.active ? 'bg-primary text-primary-foreground' : 'hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50'
+                                            link.active
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50'
                                         }`}
                                         dangerouslySetInnerHTML={{ __html: link.label }}
                                     />
                                 ))}
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
 
                 {isOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-                        <div className="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-xl border bg-background shadow-xl">
-                            <div className="flex items-center justify-between border-b p-5">
-                                <div>
-                                    <h2 className="text-lg font-semibold">{editingProduct ? 'Edit Product' : 'Add Product'}</h2>
-                                    <p className="text-sm text-muted-foreground">{editingProduct ? 'Update product details.' : 'Create new POS inventory item.'}</p>
-                                </div>
-
-                                <button onClick={closeModal} className="rounded-md p-2 hover:bg-muted">
-                                    <X className="size-4" />
-                                </button>
+                    <Modal>
+                        <CardHeader className="flex flex-row items-center justify-between border-b p-5">
+                            <div>
+                                <CardTitle className="text-lg">
+                                    {editingProduct ? 'Edit Product' : 'Add Product'}
+                                </CardTitle>
+                                <CardDescription>
+                                    {editingProduct ? 'Update product details.' : 'Create new POS inventory item.'}
+                                </CardDescription>
                             </div>
 
-                            <form onSubmit={submit} className="max-h-[75vh] space-y-5 overflow-y-auto p-5">
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <Field label="Product Name" error={form.errors.name}>
-                                        <input value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm" />
-                                    </Field>
+                            <button onClick={closeModal} className="rounded-md p-2 hover:bg-muted">
+                                <X className="size-4" />
+                            </button>
+                        </CardHeader>
 
-                                    <Field label="Category" error={form.errors.category_id}>
-                                        <select value={form.data.category_id} onChange={(e) => form.setData('category_id', e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                                            <option value="">Select Category</option>
-                                            {categories.map((category) => (
-                                                <option key={category.id} value={category.id}>{category.name}</option>
-                                            ))}
-                                        </select>
-                                    </Field>
-
-                                    <Field label="SKU" error={form.errors.sku}>
-                                        <input value={form.data.sku} onChange={(e) => form.setData('sku', e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm" />
-                                    </Field>
-
-                                    <Field label="Barcode" error={form.errors.barcode}>
-                                        <div className="relative">
-                                            <Barcode className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                                            <input value={form.data.barcode} onChange={(e) => form.setData('barcode', e.target.value)} className="h-10 w-full rounded-md border bg-background pl-10 pr-3 text-sm" />
-                                        </div>
-                                    </Field>
-
-                                    <Field label="Cost Price" error={form.errors.cost_price}>
-                                        <input type="number" step="0.01" value={form.data.cost_price} onChange={(e) => form.setData('cost_price', e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm" />
-                                    </Field>
-
-                                    <Field label="Selling Price" error={form.errors.selling_price}>
-                                        <input type="number" step="0.01" value={form.data.selling_price} onChange={(e) => form.setData('selling_price', e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm" />
-                                    </Field>
-
-                                    <Field label="Quantity" error={form.errors.quantity}>
-                                        <input type="number" step="0.01" disabled={!!editingProduct} value={form.data.quantity} onChange={(e) => form.setData('quantity', e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm disabled:bg-muted disabled:text-muted-foreground" />
-                                    </Field>
-
-                                    <Field label="Reorder Level" error={form.errors.reorder_level}>
-                                        <input type="number" step="0.01" value={form.data.reorder_level} onChange={(e) => form.setData('reorder_level', e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm" />
-                                    </Field>
-
-                                    <Field label="Unit" error={form.errors.unit}>
-                                        <input value={form.data.unit} onChange={(e) => form.setData('unit', e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm" />
-                                    </Field>
-
-                                    <Field label="Status" error={form.errors.status}>
-                                        <select value={form.data.status} onChange={(e) => form.setData('status', e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                                            <option value="active">Active</option>
-                                            <option value="inactive">Inactive</option>
-                                            <option value="draft">Draft</option>
-                                        </select>
-                                    </Field>
-
-                                    <Field label="Stock Tracking" error={form.errors.stock_tracking}>
-                                        <select value={form.data.stock_tracking} onChange={(e) => form.setData('stock_tracking', e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                                            <option value="tracked">Tracked</option>
-                                            <option value="not_tracked">Not Tracked</option>
-                                        </select>
-                                    </Field>
-
-                                    <Field label="Product Type" error={form.errors.product_type}>
-                                        <select value={form.data.product_type} onChange={(e) => form.setData('product_type', e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                                            <option value="standard">Standard</option>
-                                            <option value="service">Service</option>
-                                        </select>
-                                    </Field>
-                                </div>
-
-                                <Field label="Description" error={form.errors.description}>
-                                    <textarea rows={3} value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
+                        <form onSubmit={submit} className="max-h-[75vh] space-y-5 overflow-y-auto p-5">
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <Field label="Product Name" error={form.errors.name}>
+                                    <input
+                                        value={form.data.name}
+                                        onChange={(e) => form.setData('name', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    />
                                 </Field>
 
-                                {editingProduct && (
-                                    <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
-                                        Quantity is managed in <b>Stock Management</b>. Use stock in/out or adjustment instead of editing quantity here.
+                                <Field label="Category" error={form.errors.category_id}>
+                                    <select
+                                        value={form.data.category_id}
+                                        onChange={(e) => form.setData('category_id', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    >
+                                        <option value="">Select Category</option>
+                                        {categories.map((category) => (
+                                            <option key={category.id} value={category.id}>
+                                                {category.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </Field>
+
+                                <Field label="SKU" error={form.errors.sku}>
+                                    <input
+                                        value={form.data.sku}
+                                        onChange={(e) => form.setData('sku', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    />
+                                </Field>
+
+                                <Field label="Barcode" error={form.errors.barcode}>
+                                    <div className="relative">
+                                        <Barcode className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                                        <input
+                                            value={form.data.barcode}
+                                            onChange={(e) => form.setData('barcode', e.target.value)}
+                                            className="h-10 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                        />
                                     </div>
-                                )}
+                                </Field>
 
-                                <div className="flex justify-end gap-2 border-t pt-5">
-                                    <button type="button" onClick={closeModal} className="rounded-md border px-4 py-2 text-sm hover:bg-muted">
-                                        Cancel
-                                    </button>
+                                <Field label="Cost Price" error={form.errors.cost_price}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={form.data.cost_price}
+                                        onChange={(e) => form.setData('cost_price', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    />
+                                </Field>
 
-                                    <button disabled={form.processing} className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90 disabled:opacity-50">
-                                        {editingProduct ? 'Update Product' : 'Create Product'}
-                                    </button>
+                                <Field label="Selling Price" error={form.errors.selling_price}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={form.data.selling_price}
+                                        onChange={(e) => form.setData('selling_price', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    />
+                                </Field>
+
+                                <Field label="Quantity" error={form.errors.quantity}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        disabled={!!editingProduct}
+                                        value={form.data.quantity}
+                                        onChange={(e) => form.setData('quantity', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring disabled:bg-muted disabled:text-muted-foreground"
+                                    />
+                                </Field>
+
+                                <Field label="Reorder Level" error={form.errors.reorder_level}>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={form.data.reorder_level}
+                                        onChange={(e) => form.setData('reorder_level', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    />
+                                </Field>
+
+                                <Field label="Unit" error={form.errors.unit}>
+                                    <input
+                                        value={form.data.unit}
+                                        onChange={(e) => form.setData('unit', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    />
+                                </Field>
+
+                                <Field label="Status" error={form.errors.status}>
+                                    <select
+                                        value={form.data.status}
+                                        onChange={(e) => form.setData('status', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    >
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                        <option value="draft">Draft</option>
+                                    </select>
+                                </Field>
+
+                                <Field label="Stock Tracking" error={form.errors.stock_tracking}>
+                                    <select
+                                        value={form.data.stock_tracking}
+                                        onChange={(e) => form.setData('stock_tracking', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    >
+                                        <option value="tracked">Tracked</option>
+                                        <option value="not_tracked">Not Tracked</option>
+                                    </select>
+                                </Field>
+
+                                <Field label="Product Type" error={form.errors.product_type}>
+                                    <select
+                                        value={form.data.product_type}
+                                        onChange={(e) => form.setData('product_type', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    >
+                                        <option value="standard">Standard</option>
+                                        <option value="service">Service</option>
+                                    </select>
+                                </Field>
+                            </div>
+
+                            <Field label="Description" error={form.errors.description}>
+                                <textarea
+                                    rows={3}
+                                    value={form.data.description}
+                                    onChange={(e) => form.setData('description', e.target.value)}
+                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                />
+                            </Field>
+
+                            {editingProduct && (
+                                <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
+                                    Quantity is managed in <b>Stock Management</b>. Use stock in/out or adjustment instead of
+                                    editing quantity here.
                                 </div>
-                            </form>
-                        </div>
-                    </div>
+                            )}
+
+                            <div className="flex justify-end gap-2 border-t pt-5">
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    disabled={form.processing}
+                                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                                >
+                                    {editingProduct ? 'Update Product' : 'Create Product'}
+                                </button>
+                            </div>
+                        </form>
+                    </Modal>
                 )}
             </div>
         </AppLayout>
     );
 }
 
-function SummaryCard({ title, value }: { title: string; value: number }) {
+function SummaryCard({
+    title,
+    value,
+    variant = 'default',
+}: {
+    title: string;
+    value: number;
+    variant?: 'default' | 'success' | 'neutral' | 'warning' | 'danger';
+}) {
     return (
-        <div className="rounded-xl border bg-background p-5 shadow-sm">
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <h2 className="mt-1 text-2xl font-semibold">{value}</h2>
-        </div>
+        <Card tone="topline" variant={variant} className="min-h-[120px] overflow-hidden shadow-sm">
+            <CardHeader className="p-5 pb-2">
+                <CardDescription>{title}</CardDescription>
+            </CardHeader>
+            <CardContent className="p-5 pt-0">
+                <CardTitle>{value}</CardTitle>
+            </CardContent>
+        </Card>
     );
 }
 
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
     return (
         <div>
             <label className="mb-1 block text-sm font-medium">{label}</label>
             {children}
             {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+        </div>
+    );
+}
+
+function Modal({ children }: { children: ReactNode }) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <Card className="max-h-[90vh] w-full max-w-3xl overflow-hidden shadow-xl">{children}</Card>
         </div>
     );
 }

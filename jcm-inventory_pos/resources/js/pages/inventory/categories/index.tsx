@@ -461,20 +461,6 @@ export default function CategoriesIndex({ categories, filters }: CategoriesPageP
     );
 }
 
-function SummaryCard({ title, value }: { title: string; value: number }) {
-    return (
-        <Card className="shadow-sm">
-            <CardHeader className="p-5 pb-2">
-                <CardDescription>{title}</CardDescription>
-            </CardHeader>
-
-            <CardContent className="p-5 pt-0">
-                <CardTitle>{value}</CardTitle>
-            </CardContent>
-        </Card>
-    );
-}
-
 function StatusBadge({ status }: { status: 'active' | 'inactive' }) {
     return (
         <span

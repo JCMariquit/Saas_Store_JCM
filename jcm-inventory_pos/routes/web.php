@@ -4,6 +4,7 @@ use App\Http\Controllers\Pos\CategoryController;
 use App\Http\Controllers\Pos\PosTerminalController;
 use App\Http\Controllers\Pos\ProductController;
 use App\Http\Controllers\Pos\StocksController;
+use App\Http\Controllers\Sales\TransactionsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -53,9 +54,7 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('sales')->name('sales.')->group(function () {
-        Route::get('/transactions', function () {
-            return Inertia::render('sales/transactions/index');
-        })->name('transactions');
+        Route::get('/transactions', [TransactionsController::class, 'index'])->name('transactions');
 
         Route::get('/returns', function () {
             return Inertia::render('sales/returns/index');

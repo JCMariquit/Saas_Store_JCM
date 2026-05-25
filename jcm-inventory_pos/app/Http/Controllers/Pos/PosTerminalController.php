@@ -40,6 +40,19 @@ class PosTerminalController extends Controller
             ->when($request->filled('category_id'), function ($query) use ($request) {
                 $query->where('category_id', $request->category_id);
             })
+            ->when($request->filled('stock_status'), function ($query) use ($request) {
+                if ($request->stock_status === 'in_stock') {
+                    $query->where(function ($q) {
+                        $q->where('stock_tracking', 'not_tracked')
+                            ->orWhere('quantity', '>', 0);
+                    });
+                }
+
+                if ($request->stock_status === 'out_of_stock') {
+                    $query->where('stock_tracking', 'tracked')
+                        ->where('quantity', '<=', 0);
+                }
+            })
             ->orderBy('name')
             ->paginate(20)
             ->withQueryString();
@@ -56,6 +69,7 @@ class PosTerminalController extends Controller
             'filters' => [
                 'search' => $request->search,
                 'category_id' => $request->category_id,
+                'stock_status' => $request->stock_status,
             ],
         ]);
     }
@@ -200,7 +214,7 @@ class PosTerminalController extends Controller
         return back()->with([
             'success' => 'Sale completed successfully.',
             'sale_id' => $sale->id,
-            'sale_no' => $sale->sale_no,
+            'sale_no' => $sale->sale_no, 
         ]);
     }
 

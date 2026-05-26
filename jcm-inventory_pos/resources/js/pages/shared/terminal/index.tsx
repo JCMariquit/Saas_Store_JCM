@@ -22,11 +22,17 @@ import {
 } from 'lucide-react';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 
+const POS_TERMINAL_URL = '/shared/pos/terminal';
+const POS_CHECKOUT_URL = '/shared/pos/checkout';
+
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'POS Terminal', href: '/pos/terminal' },
+    { title: 'POS Terminal', href: POS_TERMINAL_URL },
 ];
 
-type Category = { id: number; name: string };
+type Category = {
+    id: number;
+    name: string;
+};
 
 type Product = {
     id: number;
@@ -101,7 +107,7 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
     useEffect(() => {
         const timeout = setTimeout(() => {
             router.get(
-                '/pos/terminal',
+                POS_TERMINAL_URL,
                 {
                     search,
                     category_id: categoryFilter,
@@ -142,7 +148,7 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
         setStockStatus('');
 
         router.get(
-            '/pos/terminal',
+            POS_TERMINAL_URL,
             {},
             {
                 preserveState: true,
@@ -254,7 +260,7 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
         }
 
         router.post(
-            '/pos/checkout',
+            POS_CHECKOUT_URL,
             {
                 items: cart.map((item) => ({
                     product_id: item.product_id,

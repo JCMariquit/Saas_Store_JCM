@@ -49,7 +49,7 @@ class ProductController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return Inertia::render('inventory/products/index', [
+        return Inertia::render('owner/inventory/products/index', [
             'products' => $products,
             'categories' => $categories,
             'filters' => [

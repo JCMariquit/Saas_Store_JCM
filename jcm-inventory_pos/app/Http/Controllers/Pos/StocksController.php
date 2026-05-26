@@ -69,7 +69,7 @@ class StocksController extends Controller
             'inventory_value' => Product::where('tenant_id', $tenantId)->where('stock_tracking', 'tracked')->selectRaw('COALESCE(SUM(quantity * cost_price), 0) as total')->value('total'),
         ];
 
-        return Inertia::render('inventory/stocks/index', [
+        return Inertia::render('owner/inventory/stocks/index', [
             'products' => $products,
             'categories' => $categories,
             'summary' => $summary,

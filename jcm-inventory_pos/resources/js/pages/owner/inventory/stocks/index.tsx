@@ -5,10 +5,13 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Boxes, Package, Plus, RotateCcw, Search, TrendingDown, X } from 'lucide-react';
 
+const STOCKS_URL = '/client/inventory/stocks';
+const STOCKS_ADJUST_URL = '/client/inventory/stocks/adjust';
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Stocks',
-        href: '/inventory/stocks',
+        href: STOCKS_URL,
     },
 ];
 
@@ -76,8 +79,8 @@ export default function StocksIndex({ products, categories, summary, filters }: 
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            router.get(
-                '/inventory/stocks',
+        router.get(
+            STOCKS_URL,
                 {
                     search,
                     category_id: categoryFilter,
@@ -151,7 +154,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
         setActiveStockTab('on_stock');
 
         router.get(
-            '/inventory/stocks',
+            STOCKS_URL,
             {},
             {
                 preserveState: true,
@@ -187,7 +190,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
     const submitAdjustment = (e: FormEvent) => {
         e.preventDefault();
 
-        form.post('/inventory/stocks/adjust', {
+        form.post(STOCKS_ADJUST_URL, {
             preserveScroll: true,
             onSuccess: closeModal,
         });

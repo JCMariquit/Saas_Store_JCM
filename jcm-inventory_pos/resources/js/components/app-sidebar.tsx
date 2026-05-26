@@ -33,6 +33,8 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
+type UserRole = 'client' | 'cashier';
+
 type SidebarBadge = 'DEV' | 'NEW' | 'BETA' | 'SOON';
 
 type SidebarItem = {
@@ -51,39 +53,57 @@ type SidebarGroup = {
     items: SidebarItem[];
 };
 
-const directItems: SidebarItem[] = [
-    { title: 'Dashboard', url: '/dashboard', icon: LayoutGrid },
-    { title: 'POS Terminal', url: '/pos', icon: ShoppingCart, paidOnly: false },
-    { title: 'Transactions', url: '/sales/transactions', icon: Receipt, badge: 'DEV' },
+const clientDirectItems: SidebarItem[] = [
+    { title: 'Dashboard', url: '/client/dashboard', icon: LayoutGrid },
+    { title: 'POS Terminal', url: '/shared/pos/terminal', icon: ShoppingCart },
+    { title: 'Transactions', url: '/client/sales/transactions', icon: Receipt, badge: 'DEV' },
 ];
 
-const groupedItems: SidebarGroup[] = [
+const cashierDirectItems: SidebarItem[] = [
+    { title: 'Dashboard', url: '/cashier/dashboard', icon: LayoutGrid },
+    { title: 'POS Terminal', url: '/shared/pos/terminal', icon: ShoppingCart },
+];
+
+const clientGroupedItems: SidebarGroup[] = [
     {
         title: 'Inventory',
         icon: Boxes,
         badge: 'DEV',
         items: [
-            { title: 'Products', url: '/inventory/products', icon: Package2, badge: 'DEV' },
-            { title: 'Categories', url: '/inventory/categories', icon: Tags, badge: 'DEV' },
-            { title: 'Stock Management', url: '/inventory/stocks', icon: Boxes, badge: 'DEV' },
+            { title: 'Products', url: '/client/inventory/products', icon: Package2, badge: 'DEV' },
+            { title: 'Categories', url: '/client/inventory/categories', icon: Tags, badge: 'DEV' },
+            { title: 'Stock Management', url: '/client/inventory/stocks', icon: Boxes, badge: 'DEV' },
         ],
     },
     {
         title: 'Sales',
         icon: Receipt,
         items: [
-            { title: 'Returns', url: '/sales/returns', icon: RotateCcw, paidOnly: true, badge: 'SOON' },
-            { title: 'Customers', url: '/customers', icon: Users, badge: 'BETA' },
+            { title: 'Returns', url: '/client/sales/returns', icon: RotateCcw, badge: 'SOON' },
+            { title: 'Customers', url: '/client/customers', icon: Users, badge: 'BETA' },
         ],
     },
     {
         title: 'Reports',
         icon: BarChart3,
         items: [
-            { title: 'Sales Reports', url: '/reports/sales', icon: BarChart3, badge: 'SOON' },
-            { title: 'Inventory Reports', url: '/reports/inventory', icon: WalletCards, badge: 'SOON' },
+            { title: 'Sales Reports', url: '/client/reports/sales', icon: BarChart3, badge: 'SOON' },
+            { title: 'Inventory Reports', url: '/client/reports/inventory', icon: WalletCards, badge: 'SOON' },
         ],
     },
+    {
+        title: 'Account',
+        icon: Settings,
+        items: [
+            { title: 'Billing', url: '/client/billing', icon: WalletCards },
+            { title: 'Settings', url: '/settings/profile', icon: Settings },
+            { title: 'Help', url: '#', icon: CircleHelp },
+            { title: 'Logout', url: '#', icon: LogOut },
+        ],
+    },
+];
+
+const cashierGroupedItems: SidebarGroup[] = [
     {
         title: 'System',
         icon: Settings,
@@ -178,7 +198,7 @@ function BillingLockModal({
 
                     <button
                         type="button"
-                        onClick={() => router.visit('/billing')}
+                        onClick={() => router.visit('/client/billing')}
                         className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                     >
                         Go to Billing
@@ -274,7 +294,6 @@ function SidebarDropdown({
     const GroupIcon = group.icon;
 
     const hasActiveItem = group.items.some((item) => isUrlActive(url, item.url));
-
     const [open, setOpen] = React.useState(hasActiveItem);
 
     React.useEffect(() => {
@@ -346,6 +365,34 @@ function SidebarDropdown({
                             );
                         }
 
+                        if (item.title === 'Logout') {
+                            return (
+                                <button
+                                    key={item.title}
+                                    type="button"
+                                    onClick={() => router.post('/logout')}
+                                    className="group flex h-9 w-full items-center gap-2 rounded-[9px] px-3 text-left text-[13px] font-medium text-sidebar-foreground/55 transition-all hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+                                >
+                                    <Icon className="size-[14px] text-sidebar-foreground/35 group-hover:text-sidebar-foreground/65" />
+                                    <span className="truncate">{item.title}</span>
+                                </button>
+                            );
+                        }
+
+                        if (item.url === '#') {
+                            return (
+                                <button
+                                    key={item.title}
+                                    type="button"
+                                    className="group flex h-9 w-full items-center gap-2 rounded-[9px] px-3 text-left text-[13px] font-medium text-sidebar-foreground/55 transition-all hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+                                >
+                                    <Icon className="size-[14px] text-sidebar-foreground/35 group-hover:text-sidebar-foreground/65" />
+                                    <span className="truncate">{item.title}</span>
+                                    <MenuBadge badge={item.badge} />
+                                </button>
+                            );
+                        }
+
                         return (
                             <Link
                                 key={item.title}
@@ -382,7 +429,20 @@ function SidebarDropdown({
 function AppSidebar() {
     const [billingModalOpen, setBillingModalOpen] = React.useState(false);
 
-    const isPaid = false;
+    const page = usePage<{
+        auth?: {
+            user?: {
+                role?: UserRole;
+            };
+        };
+    }>();
+
+    const role = page.props.auth?.user?.role ?? 'cashier';
+
+    const directItems = role === 'client' ? clientDirectItems : cashierDirectItems;
+    const groupedItems = role === 'client' ? clientGroupedItems : cashierGroupedItems;
+
+    const isPaid = true;
 
     return (
         <>
@@ -416,7 +476,7 @@ function AppSidebar() {
                                             JCM POS
                                         </span>
                                         <span className="mt-0.5 block truncate text-[11px] font-medium text-sidebar-foreground/45">
-                                            Inventory & Sales
+                                            {role === 'client' ? 'Store Owner Portal' : 'Cashier Portal'}
                                         </span>
                                     </div>
                                 </Link>
@@ -428,7 +488,7 @@ function AppSidebar() {
                 <SidebarContent className="gap-5 px-0 group-data-[collapsible=icon]/sidebar:gap-5">
                     <div className="space-y-2">
                         <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35 transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
-                            Main
+                            {role === 'client' ? 'Owner' : 'Cashier'}
                         </p>
 
                         <SidebarMenu className="space-y-0.5 px-3 group-data-[collapsible=icon]/sidebar:px-2">
@@ -443,22 +503,24 @@ function AppSidebar() {
                         </SidebarMenu>
                     </div>
 
-                    <div className="space-y-2">
-                        <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35 transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
-                            Modules
-                        </p>
+                    {groupedItems.length > 0 && (
+                        <div className="space-y-2">
+                            <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35 transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
+                                {role === 'client' ? 'Management' : 'Tools'}
+                            </p>
 
-                        <div className="space-y-1 px-3 group-data-[collapsible=icon]/sidebar:px-2">
-                            {groupedItems.map((group) => (
-                                <SidebarDropdown
-                                    key={group.title}
-                                    group={group}
-                                    isPaid={isPaid}
-                                    onLocked={() => setBillingModalOpen(true)}
-                                />
-                            ))}
+                            <div className="space-y-1 px-3 group-data-[collapsible=icon]/sidebar:px-2">
+                                {groupedItems.map((group) => (
+                                    <SidebarDropdown
+                                        key={group.title}
+                                        group={group}
+                                        isPaid={isPaid}
+                                        onLocked={() => setBillingModalOpen(true)}
+                                    />
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </SidebarContent>
 
                 <SidebarFooter className="mt-auto px-4 pb-2 transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
@@ -467,7 +529,7 @@ function AppSidebar() {
                             by JCM
                         </p>
                         <p className="mt-0.5 text-[10px] text-sidebar-foreground/40">
-                            POS development build
+                            {role === 'client' ? 'POS owner build' : 'POS cashier build'}
                         </p>
                     </div>
                 </SidebarFooter>

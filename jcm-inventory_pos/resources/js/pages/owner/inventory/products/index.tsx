@@ -5,8 +5,13 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { Barcode, Boxes, Pencil, Plus, RotateCcw, Search, Trash2, X } from 'lucide-react';
 
+const PRODUCTS_URL = '/client/inventory/products';
+
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Products', href: '/inventory/products' },
+    {
+        title: 'Products',
+        href: PRODUCTS_URL,
+    },
 ];
 
 type Category = {
@@ -79,7 +84,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
     useEffect(() => {
         const timeout = setTimeout(() => {
             router.get(
-                '/inventory/products',
+                PRODUCTS_URL,
                 {
                     search,
                     category_id: categoryFilter,
@@ -143,7 +148,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
         setStatusFilter('');
 
         router.get(
-            '/inventory/products',
+            PRODUCTS_URL,
             {},
             {
                 preserveState: true,
@@ -211,14 +216,14 @@ export default function ProductsIndex({ products, categories, filters }: Product
         e.preventDefault();
 
         if (editingProduct) {
-            form.put(`/inventory/products/${editingProduct.id}`, {
+            form.put(`${PRODUCTS_URL}/${editingProduct.id}`, {
                 preserveScroll: true,
                 onSuccess: closeModal,
             });
             return;
         }
 
-        form.post('/inventory/products', {
+        form.post(PRODUCTS_URL, {
             preserveScroll: true,
             onSuccess: closeModal,
         });
@@ -227,7 +232,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
     const deleteProduct = (product: Product) => {
         if (!confirm(`Delete "${product.name}"?`)) return;
 
-        router.delete(`/inventory/products/${product.id}`, {
+        router.delete(`${PRODUCTS_URL}/${product.id}`, {
             preserveScroll: true,
         });
     };

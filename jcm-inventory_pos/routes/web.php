@@ -15,84 +15,102 @@ Route::get('/', function () {
 Route::middleware(['auth'])->group(function () {
 
     Route::get('/dashboard', function () {
-        return Inertia::render('dashboard');
+        $role = auth()->user()->role;
+
+        return match ($role) {
+            'client' => redirect()->route('client.dashboard'),
+            'cashier' => redirect()->route('cashier.dashboard'),
+            default => abort(403, 'Unauthorized access.'),
+        };
     })->name('dashboard');
 
     /*
     |--------------------------------------------------------------------------
-    | POS Terminal
+    | Shared Area
+    | Client + Cashier
     |--------------------------------------------------------------------------
     */
-    Route::get('/pos', function () {
-        return redirect()->route('pos.terminal.index');
-    })->name('pos');
+    Route::middleware(['role:client,cashier'])
+        ->prefix('shared')
+        ->name('shared.')
+        ->group(function () {
+            Route::get('/pos/terminal', [PosTerminalController::class, 'index'])
+                ->name('pos.terminal.index');
 
-    Route::prefix('pos')->name('pos.')->group(function () {
-        Route::get('/terminal', [PosTerminalController::class, 'index'])->name('terminal.index');
-        Route::post('/checkout', [PosTerminalController::class, 'checkout'])->name('checkout');
-    });
+            Route::post('/pos/checkout', [PosTerminalController::class, 'checkout'])
+                ->name('pos.checkout');
+        });
 
     /*
     |--------------------------------------------------------------------------
-    | Inventory Module
+    | Client Area
+    | Store owner / subscriber
     |--------------------------------------------------------------------------
     */
-    Route::prefix('inventory')->name('inventory.')->group(function () {
-        Route::resource('products', ProductController::class)
-            ->except(['create', 'show', 'edit']);
+    Route::middleware(['role:client'])
+        ->prefix('client')
+        ->name('client.')
+        ->group(function () {
 
-        Route::resource('categories', CategoryController::class)
-            ->except(['create', 'show', 'edit']);
+            Route::get('/dashboard', function () {
+                return Inertia::render('owner/dashboard');
+            })->name('dashboard');
 
-        Route::get('/stocks', [StocksController::class, 'index'])->name('stocks.index');
-        Route::post('/stocks/adjust', [StocksController::class, 'adjust'])->name('stocks.adjust');
-    });
+            Route::prefix('inventory')->name('inventory.')->group(function () {
+                Route::resource('products', ProductController::class)
+                    ->except(['create', 'show', 'edit']);
+
+                Route::resource('categories', CategoryController::class)
+                    ->except(['create', 'show', 'edit']);
+
+                Route::get('/stocks', [StocksController::class, 'index'])
+                    ->name('stocks.index');
+
+                Route::post('/stocks/adjust', [StocksController::class, 'adjust'])
+                    ->name('stocks.adjust');
+            });
+
+            Route::prefix('sales')->name('sales.')->group(function () {
+                Route::get('/transactions', [TransactionsController::class, 'index'])
+                    ->name('transactions.index');
+
+                Route::get('/returns', function () {
+                    return Inertia::render('owner/sales/returns/index');
+                })->name('returns.index');
+            });
+
+            Route::get('/customers', function () {
+                return Inertia::render('owner/customers/index');
+            })->name('customers.index');
+
+            Route::prefix('reports')->name('reports.')->group(function () {
+                Route::get('/sales', function () {
+                    return Inertia::render('owner/reports/sales/index');
+                })->name('sales.index');
+
+                Route::get('/inventory', function () {
+                    return Inertia::render('owner/reports/inventory/index');
+                })->name('inventory.index');
+            });
+
+            Route::get('/billing', function () {
+                return Inertia::render('owner/billing/index');
+            })->name('billing.index');
+        });
 
     /*
     |--------------------------------------------------------------------------
-    | Sales Module
+    | Cashier Area
     |--------------------------------------------------------------------------
     */
-    Route::prefix('sales')->name('sales.')->group(function () {
-        Route::get('/transactions', [TransactionsController::class, 'index'])->name('transactions');
-
-        Route::get('/returns', function () {
-            return Inertia::render('sales/returns/index');
-        })->name('returns');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Customers
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/customers', function () {
-        return Inertia::render('customers/index');
-    })->name('customers');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Reports Module
-    |--------------------------------------------------------------------------
-    */
-    Route::prefix('reports')->name('reports.')->group(function () {
-        Route::get('/sales', function () {
-            return Inertia::render('reports/sales/index');
-        })->name('sales');
-
-        Route::get('/inventory', function () {
-            return Inertia::render('reports/inventory/index');
-        })->name('inventory');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Billing
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/billing', function () {
-        return Inertia::render('billing/index');
-    })->name('billing');
+    Route::middleware(['role:cashier'])
+        ->prefix('cashier')
+        ->name('cashier.')
+        ->group(function () {
+            Route::get('/dashboard', function () {
+                return Inertia::render('cashier/dashboard');
+            })->name('dashboard');
+        });
 });
 
 require __DIR__ . '/settings.php';

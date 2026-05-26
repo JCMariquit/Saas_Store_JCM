@@ -18,10 +18,12 @@ import {
 } from 'lucide-react';
 import { Fragment, useEffect, useState } from 'react';
 
+const TRANSACTIONS_URL = '/client/sales/transactions';
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Transactions',
-        href: '/sales/transactions',
+        href: TRANSACTIONS_URL,
     },
 ];
 
@@ -94,7 +96,7 @@ export default function TransactionsIndex({ transactions, summary, filters }: Pa
     useEffect(() => {
         const timeout = setTimeout(() => {
             router.get(
-                '/sales/transactions',
+                TRANSACTIONS_URL,
                 {
                     search,
                     status,
@@ -135,7 +137,7 @@ export default function TransactionsIndex({ transactions, summary, filters }: Pa
         setPaymentMethod('');
 
         router.get(
-            '/sales/transactions',
+            TRANSACTIONS_URL,
             {},
             {
                 preserveState: true,

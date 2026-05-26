@@ -35,7 +35,7 @@ class CategoryController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return Inertia::render('inventory/categories/index', [
+        return Inertia::render('owner/inventory/categories/index', [
             'categories' => $categories,
             'filters' => [
                 'search' => $request->search,

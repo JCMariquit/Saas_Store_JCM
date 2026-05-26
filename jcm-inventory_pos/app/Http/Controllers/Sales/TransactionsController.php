@@ -75,7 +75,7 @@ class TransactionsController extends Controller
                 ->sum('quantity'),
         ];
 
-        return Inertia::render('sales/transactions/index', [
+        return Inertia::render('owner/sales/transactions/index', [
             'transactions' => $transactions,
             'summary' => $summary,
             'filters' => [

@@ -63,7 +63,7 @@ class PosTerminalController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return Inertia::render('terminal/index', [
+        return Inertia::render('shared/terminal/index', [
             'products' => $products,
             'categories' => $categories,
             'filters' => [

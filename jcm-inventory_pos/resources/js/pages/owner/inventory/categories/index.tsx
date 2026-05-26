@@ -5,10 +5,12 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { Eye, FolderTree, Pencil, Plus, RotateCcw, Search, Trash2, X } from 'lucide-react';
 
+const CATEGORIES_URL = '/client/inventory/categories';
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Categories',
-        href: '/inventory/categories',
+        href: CATEGORIES_URL,
     },
 ];
 
@@ -57,7 +59,7 @@ export default function CategoriesIndex({ categories, filters }: CategoriesPageP
     useEffect(() => {
         const timeout = setTimeout(() => {
             router.get(
-                '/inventory/categories',
+                CATEGORIES_URL,
                 { search },
                 {
                     preserveState: true,
@@ -118,14 +120,14 @@ export default function CategoriesIndex({ categories, filters }: CategoriesPageP
         e.preventDefault();
 
         if (editingCategory) {
-            form.put(`/inventory/categories/${editingCategory.id}`, {
+            form.put(`${CATEGORIES_URL}/${editingCategory.id}`, {
                 preserveScroll: true,
                 onSuccess: closeModal,
             });
             return;
         }
 
-        form.post('/inventory/categories', {
+        form.post(CATEGORIES_URL, {
             preserveScroll: true,
             onSuccess: closeModal,
         });
@@ -134,7 +136,7 @@ export default function CategoriesIndex({ categories, filters }: CategoriesPageP
     const deleteCategory = (category: Category) => {
         if (!confirm(`Delete category "${category.name}"?`)) return;
 
-        router.delete(`/inventory/categories/${category.id}`, {
+        router.delete(`${CATEGORIES_URL}/${category.id}`, {
             preserveScroll: true,
         });
     };
@@ -143,7 +145,7 @@ export default function CategoriesIndex({ categories, filters }: CategoriesPageP
         setSearch('');
 
         router.get(
-            '/inventory/categories',
+            CATEGORIES_URL,
             {},
             {
                 preserveState: true,

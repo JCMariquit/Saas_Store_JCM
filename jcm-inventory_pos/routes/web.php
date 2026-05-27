@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\Pos\CategoryController;
-use App\Http\Controllers\Pos\PosTerminalController;
-use App\Http\Controllers\Pos\ProductController;
-use App\Http\Controllers\Pos\StocksController;
-use App\Http\Controllers\Sales\TransactionsController;
+use App\Http\Controllers\Owner\CategoryController;
+use App\Http\Controllers\Owner\ProductController;
+use App\Http\Controllers\Owner\StocksController;
+use App\Http\Controllers\Shared\PosTerminalController;
+use App\Http\Controllers\Shared\TransactionsController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -69,7 +69,7 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::middleware(['role:cashier'])->prefix('cashier')->name('cashier.')->group(function () {
         Route::get('/dashboard', function () { return Inertia::render('staff/dashboard'); })->name('dashboard');
-        Route::get('/transactions', function () { return Inertia::render('staff/transactions/index'); })->name('transactions.index');
+        Route::get('/transactions', [TransactionsController::class, 'index'])->name('transactions.index');
     });
 });
 

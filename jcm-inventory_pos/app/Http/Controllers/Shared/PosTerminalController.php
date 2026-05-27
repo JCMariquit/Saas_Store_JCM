@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Http\Controllers\Pos;
+namespace App\Http\Controllers\Shared;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pos\Category;
-use App\Models\Pos\Payment;
-use App\Models\Pos\Product;
-use App\Models\Pos\Sale;
-use App\Models\Pos\SaleItem;
-use App\Models\Pos\StockMovement;
+use App\Models\Category;
+use App\Models\Payment;
+use App\Models\Product;
+use App\Models\Sale;
+use App\Models\SaleItem;
+use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;

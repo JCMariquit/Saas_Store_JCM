@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Pos;
+namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pos\Category;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -12,7 +12,9 @@ class CategoryController extends Controller
 {
     private function tenantId(): int
     {
-        return auth()->id();
+        $user = auth()->user();
+
+        return (int) ($user->client_id ?: $user->id);
     }
 
     public function index(Request $request)
@@ -70,7 +72,7 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category)
     {
-        abort_if($category->tenant_id !== $this->tenantId(), 403);
+        abort_if((int) $category->tenant_id !== $this->tenantId(), 403);
 
         $validated = $request->validate([
             'parent_id' => ['nullable', 'integer'],
@@ -83,7 +85,7 @@ class CategoryController extends Controller
         $category->update([
             'parent_id' => $validated['parent_id'] ?? null,
             'name' => $validated['name'],
-            'slug' => $this->generateUniqueSlug($validated['name'], $category->tenant_id, $category->id),
+            'slug' => $this->generateUniqueSlug($validated['name'], (int) $category->tenant_id, $category->id),
             'description' => $validated['description'] ?? null,
             'sort_order' => $validated['sort_order'] ?? 0,
             'status' => $validated['status'],
@@ -94,7 +96,7 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
-        abort_if($category->tenant_id !== $this->tenantId(), 403);
+        abort_if((int) $category->tenant_id !== $this->tenantId(), 403);
 
         $category->delete();
 
@@ -104,7 +106,7 @@ class CategoryController extends Controller
     private function generateUniqueSlug(string $name, int $tenantId, ?int $ignoreId = null): string
     {
         $baseSlug = Str::slug($name);
-        $slug = $baseSlug;
+        $slug = $baseSlug ?: 'category';
         $counter = 1;
 
         while (

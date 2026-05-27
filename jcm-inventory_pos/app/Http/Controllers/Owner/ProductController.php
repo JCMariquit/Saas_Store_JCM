@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Pos;
+namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pos\Category;
-use App\Models\Pos\Product;
-use App\Models\Pos\ProductStockBatch;
-use App\Models\Pos\StockMovement;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\ProductStockBatch;
+use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;

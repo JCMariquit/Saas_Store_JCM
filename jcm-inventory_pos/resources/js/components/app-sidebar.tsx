@@ -63,8 +63,16 @@ const cashierDirectItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/cashier/dashboard', icon: LayoutGrid },
     { title: 'POS Terminal', url: '/shared/pos/terminal', icon: ShoppingCart },
 ];
-
 const clientGroupedItems: SidebarGroup[] = [
+    {
+        title: 'Management',
+        icon: Users,
+        badge: 'NEW',
+        items: [
+            { title: 'Staff', url: '/client/management/staff', icon: Users, badge: 'NEW' },
+            { title: 'Store Profile', url: '/client/management/store-profile', icon: Settings, badge: 'NEW' },
+        ],
+    },
     {
         title: 'Inventory',
         icon: Boxes,
@@ -104,6 +112,13 @@ const clientGroupedItems: SidebarGroup[] = [
 ];
 
 const cashierGroupedItems: SidebarGroup[] = [
+    {
+        title: 'Sales',
+        icon: Receipt,
+        items: [
+            { title: 'Transactions', url: '/staff/transactions', icon: Receipt, badge: 'NEW' },
+        ],
+    },
     {
         title: 'System',
         icon: Settings,

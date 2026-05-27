@@ -20,14 +20,12 @@ import {
     Wallet,
     X,
 } from 'lucide-react';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, type ReactNode, useEffect, useMemo, useState } from 'react';
 
 const POS_TERMINAL_URL = '/shared/pos/terminal';
 const POS_CHECKOUT_URL = '/shared/pos/checkout';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'POS Terminal', href: POS_TERMINAL_URL },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'POS Terminal', href: POS_TERMINAL_URL }];
 
 type Category = {
     id: number;
@@ -65,7 +63,12 @@ type PageProps = {
         category_id?: string | null;
         stock_status?: string | null;
     };
+    cashier?: {
+        id: number;
+        name: string;
+    };
 };
+
 
 type CartItem = {
     product_id: number;
@@ -86,9 +89,11 @@ type LastSale = {
     referenceNo?: string | null;
     remarks?: string | null;
     date: string;
+    cashierName: string;
 };
 
-export default function PosTerminalIndex({ products, categories, filters }: PageProps) {
+export default function PosTerminalIndex({ products, categories, filters, cashier }: PageProps) {
+    const cashierName = cashier?.name ?? 'Cashier';
     const [search, setSearch] = useState(filters?.search ?? '');
     const [categoryFilter, setCategoryFilter] = useState(filters?.category_id ?? '');
     const [stockStatus, setStockStatus] = useState(filters?.stock_status ?? '');
@@ -108,29 +113,16 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
         const timeout = setTimeout(() => {
             router.get(
                 POS_TERMINAL_URL,
-                {
-                    search,
-                    category_id: categoryFilter,
-                    stock_status: stockStatus,
-                },
-                {
-                    preserveState: true,
-                    preserveScroll: true,
-                    replace: true,
-                },
+                { search, category_id: categoryFilter, stock_status: stockStatus },
+                { preserveState: true, preserveScroll: true, replace: true },
             );
         }, 350);
 
         return () => clearTimeout(timeout);
     }, [search, categoryFilter, stockStatus]);
 
-    const subtotal = useMemo(() => {
-        return cart.reduce((total, item) => total + item.price * item.quantity, 0);
-    }, [cart]);
-
-    const cartCount = useMemo(() => {
-        return cart.reduce((total, item) => total + item.quantity, 0);
-    }, [cart]);
+    const subtotal = useMemo(() => cart.reduce((total, item) => total + item.price * item.quantity, 0), [cart]);
+    const cartCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
 
     const amountPaid = Number(checkoutForm.data.amount_paid || 0);
     const changeAmount = amountPaid - subtotal;
@@ -146,16 +138,7 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
         setSearch('');
         setCategoryFilter('');
         setStockStatus('');
-
-        router.get(
-            POS_TERMINAL_URL,
-            {},
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
+        router.get(POS_TERMINAL_URL, {}, { preserveState: true, preserveScroll: true, replace: true });
     };
 
     const addToCart = (product: Product) => {
@@ -213,9 +196,7 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
     const decrementQty = (productId: number) => {
         setCart((current) =>
             current
-                .map((item) =>
-                    item.product_id === productId ? { ...item, quantity: item.quantity - 1 } : item,
-                )
+                .map((item) => (item.product_id === productId ? { ...item, quantity: item.quantity - 1 } : item))
                 .filter((item) => item.quantity > 0),
         );
     };
@@ -283,6 +264,7 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                         referenceNo: checkoutForm.data.reference_no,
                         remarks: checkoutForm.data.remarks,
                         date: new Date().toLocaleString(),
+                        cashierName,
                     });
 
                     setReceiptModalOpen(true);
@@ -461,7 +443,8 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                                             products.data.map((product) => {
                                                 const stock = Number(product.quantity ?? 0);
                                                 const isOut = product.stock_tracking === 'tracked' && stock <= 0;
-                                                const isLow = product.stock_tracking === 'tracked' && stock > 0 && stock <= 5;
+                                                const isLow =
+                                                    product.stock_tracking === 'tracked' && stock > 0 && stock <= 5;
                                                 const inCart = cart.find((item) => item.product_id === product.id);
                                                 const isOpen = openProductId === product.id;
 
@@ -471,10 +454,16 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                                                             <td className="px-4 py-3">
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => setOpenProductId(isOpen ? null : product.id)}
+                                                                    onClick={() =>
+                                                                        setOpenProductId(isOpen ? null : product.id)
+                                                                    }
                                                                     className="inline-flex size-8 items-center justify-center rounded-lg border bg-background transition hover:bg-muted"
                                                                 >
-                                                                    <ChevronDown className={`size-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                                                                    <ChevronDown
+                                                                        className={`size-4 transition-transform ${
+                                                                            isOpen ? 'rotate-180' : ''
+                                                                        }`}
+                                                                    />
                                                                 </button>
                                                             </td>
 
@@ -527,27 +516,19 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                                                                 <td></td>
                                                                 <td colSpan={5} className="px-4 py-4">
                                                                     <div className="grid gap-3 rounded-xl border bg-background p-4 md:grid-cols-4">
-                                                                        <div>
-                                                                            <div className="text-xs text-muted-foreground">Product Name</div>
-                                                                            <div className="mt-1 font-medium">{product.name}</div>
-                                                                        </div>
-
-                                                                        <div>
-                                                                            <div className="text-xs text-muted-foreground">SKU</div>
-                                                                            <div className="mt-1 font-medium">{product.sku || 'N/A'}</div>
-                                                                        </div>
-
-                                                                        <div>
-                                                                            <div className="text-xs text-muted-foreground">Barcode</div>
-                                                                            <div className="mt-1 font-medium">{product.barcode || 'N/A'}</div>
-                                                                        </div>
-
-                                                                        <div>
-                                                                            <div className="text-xs text-muted-foreground">Stock Tracking</div>
-                                                                            <div className="mt-1 font-medium capitalize">
-                                                                                {product.stock_tracking.replace('_', ' ')}
-                                                                            </div>
-                                                                        </div>
+                                                                        <Info label="Product Name" value={product.name} />
+                                                                        <Info label="SKU" value={product.sku || 'N/A'} />
+                                                                        <Info
+                                                                            label="Barcode"
+                                                                            value={product.barcode || 'N/A'}
+                                                                        />
+                                                                        <Info
+                                                                            label="Stock Tracking"
+                                                                            value={product.stock_tracking.replace(
+                                                                                '_',
+                                                                                ' ',
+                                                                            )}
+                                                                        />
                                                                     </div>
                                                                 </td>
                                                             </tr>
@@ -578,8 +559,7 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                                 key={index}
                                 disabled={!link.url}
                                 onClick={() =>
-                                    link.url &&
-                                    router.get(link.url, {}, { preserveState: true, preserveScroll: true })
+                                    link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })
                                 }
                                 className={`rounded-md border px-3 py-1.5 text-sm ${
                                     link.active
@@ -648,9 +628,7 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                                                 </button>
                                             </div>
 
-                                            <div className="font-semibold">
-                                                {money(item.price * item.quantity)}
-                                            </div>
+                                            <div className="font-semibold">{money(item.price * item.quantity)}</div>
                                         </div>
                                     </div>
                                 ))
@@ -677,10 +655,30 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                             <div>
                                 <label className="mb-1 block text-sm font-medium">Payment Method</label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <PaymentButton active={checkoutForm.data.payment_method === 'cash'} icon={<Banknote className="size-4" />} label="Cash" onClick={() => checkoutForm.setData('payment_method', 'cash')} />
-                                    <PaymentButton active={checkoutForm.data.payment_method === 'gcash'} icon={<Wallet className="size-4" />} label="GCash" onClick={() => checkoutForm.setData('payment_method', 'gcash')} />
-                                    <PaymentButton active={checkoutForm.data.payment_method === 'card'} icon={<CreditCard className="size-4" />} label="Card" onClick={() => checkoutForm.setData('payment_method', 'card')} />
-                                    <PaymentButton active={checkoutForm.data.payment_method === 'bank_transfer'} icon={<Wallet className="size-4" />} label="Bank" onClick={() => checkoutForm.setData('payment_method', 'bank_transfer')} />
+                                    <PaymentButton
+                                        active={checkoutForm.data.payment_method === 'cash'}
+                                        icon={<Banknote className="size-4" />}
+                                        label="Cash"
+                                        onClick={() => checkoutForm.setData('payment_method', 'cash')}
+                                    />
+                                    <PaymentButton
+                                        active={checkoutForm.data.payment_method === 'gcash'}
+                                        icon={<Wallet className="size-4" />}
+                                        label="GCash"
+                                        onClick={() => checkoutForm.setData('payment_method', 'gcash')}
+                                    />
+                                    <PaymentButton
+                                        active={checkoutForm.data.payment_method === 'card'}
+                                        icon={<CreditCard className="size-4" />}
+                                        label="Card"
+                                        onClick={() => checkoutForm.setData('payment_method', 'card')}
+                                    />
+                                    <PaymentButton
+                                        active={checkoutForm.data.payment_method === 'bank_transfer'}
+                                        icon={<Wallet className="size-4" />}
+                                        label="Bank"
+                                        onClick={() => checkoutForm.setData('payment_method', 'bank_transfer')}
+                                    />
                                 </div>
                             </div>
 
@@ -774,7 +772,8 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                                 <div>
                                     <h2 className="text-lg font-bold">Sale completed successfully</h2>
                                     <p className="mt-1 text-sm text-muted-foreground">
-                                        Choose whether to print the receipt or start a new sale.
+                                        Processed by {lastSale.cashierName}. Choose whether to print the receipt or
+                                        start a new sale.
                                     </p>
                                 </div>
                             </div>
@@ -788,65 +787,107 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
                             </button>
                         </div>
 
-                        <div id="pos-receipt-print" className="p-5">
-                            <div className="text-center">
-                                <div className="text-lg font-bold">JCM Web Solution</div>
-                                <div className="text-xs text-muted-foreground">POS Receipt</div>
-                                <div className="mt-1 text-xs text-muted-foreground">{lastSale.date}</div>
-                            </div>
-
-                            <div className="my-4 border-t border-dashed"></div>
-
-                            <div className="space-y-3">
-                                {lastSale.items.map((item) => (
-                                    <div key={item.product_id} className="flex items-start justify-between gap-3 text-sm">
-                                        <div>
-                                            <div className="font-medium">{item.name}</div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {item.quantity} × {money(item.price)}
-                                            </div>
-                                        </div>
-
-                                        <div className="font-semibold">
-                                            {money(item.price * item.quantity)}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="my-4 border-t border-dashed"></div>
-
-                            <div className="space-y-2 text-sm">
-                                <SummaryLine label="Subtotal" value={money(lastSale.subtotal)} />
-                                <SummaryLine label="Discount" value={money(0)} muted />
-                                <SummaryLine label="Tax" value={money(0)} muted />
-
-                                <div className="flex justify-between border-t pt-3 text-base font-bold">
-                                    <span>Total</span>
-                                    <span>{money(lastSale.subtotal)}</span>
+                        <div id="pos-receipt-print" className="mx-auto bg-white p-5 text-black">
+                            <div className="mx-auto w-[280px] font-mono text-[11px] leading-tight">
+                                <div className="text-center">
+                                    <div className="text-sm font-bold tracking-wide">JCM WEB SOLUTION</div>
+                                    <div className="mt-1 text-[10px]">POS RECEIPT</div>
+                                    <div className="text-[10px]">Marinduque, Philippines</div>
                                 </div>
 
-                                <SummaryLine label="Amount Paid" value={money(lastSale.amountPaid)} />
-                                <SummaryLine label="Change" value={money(lastSale.change)} />
-                                <SummaryLine label="Payment Method" value={lastSale.paymentMethod.replace('_', ' ').toUpperCase()} />
+                                <div className="my-3 border-t border-dashed border-black"></div>
+
+                                <div className="space-y-1 text-[10px]">
+                                    <div className="flex justify-between">
+                                        <span>DATE</span>
+                                        <span>{lastSale.date}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>CASHIER</span>
+                                        <span className="font-bold">{lastSale.cashierName}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>PAYMENT</span>
+                                        <span>{lastSale.paymentMethod.replace('_', ' ').toUpperCase()}</span>
+                                    </div>
+                                </div>
+
+                                <div className="my-3 border-t border-dashed border-black"></div>
+
+                                <div className="grid grid-cols-[32px_1fr_60px] gap-1 text-[10px] font-bold">
+                                    <span>QTY</span>
+                                    <span>DESC</span>
+                                    <span className="text-right">AMT</span>
+                                </div>
+
+                                <div className="my-1 border-t border-dashed border-black"></div>
+
+                                <div className="space-y-2">
+                                    {lastSale.items.map((item) => (
+                                        <div key={item.product_id} className="grid grid-cols-[32px_1fr_60px] gap-1 text-[10px]">
+                                            <span>{item.quantity}</span>
+                                            <span>
+                                                <span className="block font-semibold">{item.name}</span>
+                                                <span className="block text-[9px]">
+                                                    {item.quantity} x {money(item.price)}
+                                                </span>
+                                            </span>
+                                            <span className="text-right font-semibold">{money(item.price * item.quantity)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="my-3 border-t border-dashed border-black"></div>
+
+                                <div className="space-y-1 text-[11px]">
+                                    <div className="flex justify-between">
+                                        <span>SUBTOTAL</span>
+                                        <span>{money(lastSale.subtotal)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>TAX</span>
+                                        <span>{money(0)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>DISCOUNT</span>
+                                        <span>{money(0)}</span>
+                                    </div>
+                                    <div className="mt-2 flex justify-between text-sm font-bold">
+                                        <span>AMT</span>
+                                        <span>{money(lastSale.subtotal)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>PAID</span>
+                                        <span>{money(lastSale.amountPaid)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>CHANGE</span>
+                                        <span>{money(lastSale.change)}</span>
+                                    </div>
+                                </div>
 
                                 {lastSale.referenceNo && (
-                                    <SummaryLine label="Reference No." value={lastSale.referenceNo} />
+                                    <>
+                                        <div className="my-3 border-t border-dashed border-black"></div>
+                                        <div className="text-[10px]">
+                                            REF: <span className="font-bold">{lastSale.referenceNo}</span>
+                                        </div>
+                                    </>
                                 )}
-                            </div>
 
-                            {lastSale.remarks && (
-                                <>
-                                    <div className="my-4 border-t border-dashed"></div>
-                                    <div className="text-xs">
-                                        <div className="font-medium">Remarks</div>
-                                        <div className="mt-1 text-muted-foreground">{lastSale.remarks}</div>
-                                    </div>
-                                </>
-                            )}
+                                {lastSale.remarks && (
+                                    <>
+                                        <div className="my-3 border-t border-dashed border-black"></div>
+                                        <div className="text-[10px]">REMARKS: {lastSale.remarks}</div>
+                                    </>
+                                )}
 
-                            <div className="mt-5 text-center text-xs text-muted-foreground">
-                                Thank you for your purchase.
+                                <div className="my-3 border-t border-dashed border-black"></div>
+
+                                <div className="text-center text-[10px]">
+                                    <div>THANK YOU FOR YOUR PURCHASE</div>
+                                    <div className="mt-2 text-[9px]">Powered by JCM Web Solution</div>
+                                </div>
                             </div>
                         </div>
 
@@ -875,15 +916,16 @@ export default function PosTerminalIndex({ products, categories, filters }: Page
     );
 }
 
-function SummaryLine({
-    label,
-    value,
-    muted = false,
-}: {
-    label: string;
-    value: string;
-    muted?: boolean;
-}) {
+function Info({ label, value }: { label: string; value: string }) {
+    return (
+        <div>
+            <div className="text-xs text-muted-foreground">{label}</div>
+            <div className="mt-1 font-medium capitalize">{value}</div>
+        </div>
+    );
+}
+
+function SummaryLine({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
     return (
         <div className={`flex justify-between text-sm ${muted ? 'text-muted-foreground' : ''}`}>
             <span>{label}</span>
@@ -899,7 +941,7 @@ function PaymentButton({
     onClick,
 }: {
     active: boolean;
-    icon: React.ReactNode;
+    icon: ReactNode;
     label: string;
     onClick: () => void;
 }) {

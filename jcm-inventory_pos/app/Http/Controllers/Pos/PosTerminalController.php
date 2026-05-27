@@ -17,7 +17,9 @@ class PosTerminalController extends Controller
 {
     private function tenantId(): int
     {
-        return auth()->id();
+        $user = auth()->user();
+
+        return (int) ($user->client_id ?: $user->id);
     }
 
     public function index(Request $request)
@@ -70,6 +72,10 @@ class PosTerminalController extends Controller
                 'search' => $request->search,
                 'category_id' => $request->category_id,
                 'stock_status' => $request->stock_status,
+            ],
+            'cashier' => [
+                'id' => auth()->id(),
+                'name' => auth()->user()?->name ?? 'Cashier',
             ],
         ]);
     }
@@ -214,7 +220,7 @@ class PosTerminalController extends Controller
         return back()->with([
             'success' => 'Sale completed successfully.',
             'sale_id' => $sale->id,
-            'sale_no' => $sale->sale_no, 
+            'sale_no' => $sale->sale_no,
         ]);
     }
 
@@ -222,7 +228,8 @@ class PosTerminalController extends Controller
     {
         $prefix = 'SALE-' . now()->format('Ymd') . '-';
 
-        $latest = Sale::where('sale_no', 'like', $prefix . '%')
+        $latest = Sale::where('tenant_id', $this->tenantId())
+            ->where('sale_no', 'like', $prefix . '%')
             ->orderByDesc('id')
             ->value('sale_no');
 

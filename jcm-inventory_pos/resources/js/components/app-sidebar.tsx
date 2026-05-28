@@ -6,7 +6,7 @@ import {
     ChevronDown,
     CircleHelp,
     Code2,
-    House,
+    HousePlus,
     LayoutGrid,
     Lock,
     LogOut,
@@ -68,11 +68,11 @@ const clientGroupedItems: SidebarGroup[] = [
     {
         title: 'Management',
         icon: Users,
-        badge: 'NEW',
+        badge: 'BETA',
         items: [
             { title: 'Staff', url: '/client/management/staff', icon: Users, badge: 'BETA' },
             { title: 'Store Profile', url: '/client/management/store-profile', icon: Settings, badge: 'BETA' },
-            { title: 'Store Profile', url: '/client/management/branches', icon: House, badge: 'DEV' },
+            { title: 'Branches', url: '/client/management/branches', icon: HousePlus, badge: 'BETA' },
         ],
     },
     {

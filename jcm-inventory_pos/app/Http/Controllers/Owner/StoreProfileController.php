@@ -14,30 +14,22 @@ class StoreProfileController extends Controller
 {
     public function index(Request $request)
     {
-        $profile = $this->getOrCreateProfile();
+        $clientId = auth()->id();
 
         $branches = Branch::query()
-            ->where('tenant_id', auth()->id())
+            ->where('tenant_id', $clientId)
             ->orderByDesc('is_main')
             ->orderBy('name')
-            ->get()
-            ->map(function (Branch $branch) {
-                return [
-                    ...$branch->toArray(),
-                    'logo_url' => $this->publicUrl($branch->logo_path),
-                    'cover_url' => $this->publicUrl($branch->cover_path),
-                ];
-            });
+            ->get(['id', 'tenant_id', 'name', 'code', 'is_main', 'is_active', 'created_at', 'updated_at']);
 
         if ($branches->isEmpty()) {
-            $mainBranch = $this->getOrCreateMainBranch($profile);
-
-            $branches = collect([
-                [
-                    ...$mainBranch->toArray(),
-                    'logo_url' => $this->publicUrl($mainBranch->logo_path),
-                    'cover_url' => $this->publicUrl($mainBranch->cover_path),
-                ],
+            return Inertia::render('owner/management/store-profile/index', [
+                'profile' => null,
+                'branches' => [],
+                'selected_branch' => null,
+                'selected_branch_id' => null,
+                'logo_url' => null,
+                'cover_url' => null,
             ]);
         }
 
@@ -47,11 +39,35 @@ class StoreProfileController extends Controller
             ?? $branches->firstWhere('is_main', true)
             ?? $branches->first();
 
+        $profile = StoreProfile::query()
+            ->where('client_id', $clientId)
+            ->where('branch_id', $selectedBranch->id)
+            ->first();
+
+        abort_if(
+            !$profile,
+            404,
+            'Store profile not found for this branch. Create the branch again or run a backfill for old branches.'
+        );
+
+        $branchItems = $branches->map(function (Branch $branch) use ($clientId) {
+            $profile = StoreProfile::query()
+                ->where('client_id', $clientId)
+                ->where('branch_id', $branch->id)
+                ->first();
+
+            return $this->formatBranch($branch, $profile);
+        });
+
         return Inertia::render('owner/management/store-profile/index', [
-            'profile' => $profile,
-            'branches' => $branches->values(),
-            'selected_branch' => $selectedBranch,
-            'selected_branch_id' => $selectedBranch['id'] ?? null,
+            'profile' => [
+                ...$profile->toArray(),
+                'logo_url' => $this->publicUrl($profile->logo_path),
+                'cover_url' => $this->publicUrl($profile->cover_path),
+            ],
+            'branches' => $branchItems->values(),
+            'selected_branch' => $this->formatBranch($selectedBranch, $profile),
+            'selected_branch_id' => $selectedBranch->id,
             'logo_url' => $this->publicUrl($profile->logo_path),
             'cover_url' => $this->publicUrl($profile->cover_path),
         ]);
@@ -59,8 +75,6 @@ class StoreProfileController extends Controller
 
     public function update(Request $request)
     {
-        $profile = $this->getOrCreateProfile();
-
         $clientId = auth()->id();
 
         $validated = $request->validate([
@@ -102,22 +116,13 @@ class StoreProfileController extends Controller
             ->where('id', $validated['branch_id'])
             ->firstOrFail();
 
-        $profilePayload = [
-            'store_name' => $validated['store_name'],
-            'business_type' => $validated['business_type'] ?? null,
-            'description' => $validated['description'] ?? null,
-            'email' => $validated['email'] ?? null,
-            'phone' => $validated['phone'] ?? null,
-            'tin' => $validated['tin'] ?? null,
-            'permit_no' => $validated['permit_no'] ?? null,
-            'currency' => $validated['currency'],
-            'timezone' => $validated['timezone'],
-            'receipt_header' => $validated['receipt_header'] ?? null,
-            'receipt_footer' => $validated['receipt_footer'] ?? null,
-            'country' => $validated['country'],
-        ];
+        $profile = StoreProfile::query()
+            ->where('client_id', $clientId)
+            ->where('branch_id', $branch->id)
+            ->firstOrFail();
 
-        $branchPayload = [
+        $payload = [
+            'store_name' => $validated['store_name'],
             'business_type' => $validated['business_type'] ?? null,
             'description' => $validated['description'] ?? null,
             'email' => $validated['email'] ?? null,
@@ -134,53 +139,26 @@ class StoreProfileController extends Controller
             'timezone' => $validated['timezone'],
             'receipt_header' => $validated['receipt_header'] ?? null,
             'receipt_footer' => $validated['receipt_footer'] ?? null,
+            'is_active' => true,
         ];
 
-        if ($branch->is_main) {
-            $branchPayload['name'] = $validated['store_name'];
-        }
-
         if ($request->hasFile('logo')) {
-            if ($branch->is_main) {
-                $this->deletePublicFile($profile->logo_path);
+            $this->deletePublicFile($profile->logo_path);
 
-                $profilePayload['logo_path'] = $request
-                    ->file('logo')
-                    ->store('store/logos', 'public');
-
-                $branchPayload['logo_path'] = $profilePayload['logo_path'];
-            } else {
-                $this->deletePublicFile($branch->logo_path);
-
-                $branchPayload['logo_path'] = $request
-                    ->file('logo')
-                    ->store('branches/logos', 'public');
-            }
+            $payload['logo_path'] = $request
+                ->file('logo')
+                ->store('store-profiles/logos', 'public');
         }
 
         if ($request->hasFile('cover')) {
-            if ($branch->is_main) {
-                $this->deletePublicFile($profile->cover_path);
+            $this->deletePublicFile($profile->cover_path);
 
-                $profilePayload['cover_path'] = $request
-                    ->file('cover')
-                    ->store('store/covers', 'public');
-
-                $branchPayload['cover_path'] = $profilePayload['cover_path'];
-            } else {
-                $this->deletePublicFile($branch->cover_path);
-
-                $branchPayload['cover_path'] = $request
-                    ->file('cover')
-                    ->store('branches/covers', 'public');
-            }
+            $payload['cover_path'] = $request
+                ->file('cover')
+                ->store('store-profiles/covers', 'public');
         }
 
-        if ($branch->is_main) {
-            $profile->update($profilePayload);
-        }
-
-        $branch->update($branchPayload);
+        $profile->update($payload);
 
         return redirect()
             ->route('client.management.store-profile.index', [
@@ -189,71 +167,57 @@ class StoreProfileController extends Controller
             ->with('success', 'Store profile updated successfully.');
     }
 
-    private function getOrCreateProfile(): StoreProfile
+    private function formatBranch(Branch $branch, ?StoreProfile $profile = null): array
     {
-        return StoreProfile::firstOrCreate(
-            [
-                'client_id' => auth()->id(),
-            ],
-            [
-                'store_name' => auth()->user()->name . "'s Store",
-                'country' => 'Philippines',
-                'currency' => 'PHP',
-                'timezone' => 'Asia/Manila',
-                'is_active' => true,
-            ]
-        );
-    }
+        return [
+            'id' => $branch->id,
+            'tenant_id' => $branch->tenant_id,
+            'name' => $branch->name,
+            'code' => $branch->code,
+            'is_main' => (bool) $branch->is_main,
+            'is_active' => (bool) $branch->is_active,
 
-    private function getOrCreateMainBranch(StoreProfile $profile): Branch
-    {
-        return Branch::firstOrCreate(
-            [
-                'tenant_id' => auth()->id(),
-                'code' => 'MAIN',
-            ],
-            [
-                'name' => $profile->store_name ?: 'Main Branch',
-                'business_type' => $profile->business_type,
-                'description' => $profile->description,
-                'email' => $profile->email,
-                'phone' => $profile->phone,
-                'address_line' => $profile->address_line,
-                'barangay' => $profile->barangay,
-                'city' => $profile->city,
-                'province' => $profile->province,
-                'postal_code' => $profile->postal_code,
-                'country' => $profile->country ?: 'Philippines',
-                'logo_path' => $profile->logo_path,
-                'cover_path' => $profile->cover_path,
-                'tin' => $profile->tin,
-                'permit_no' => $profile->permit_no,
-                'currency' => $profile->currency ?: 'PHP',
-                'timezone' => $profile->timezone ?: 'Asia/Manila',
-                'receipt_header' => $profile->receipt_header,
-                'receipt_footer' => $profile->receipt_footer,
-                'is_main' => true,
-                'is_active' => true,
-            ]
-        );
+            'profile_id' => $profile?->id,
+            'store_name' => $profile?->store_name ?? $branch->name,
+            'business_type' => $profile?->business_type,
+            'description' => $profile?->description,
+            'email' => $profile?->email,
+            'phone' => $profile?->phone,
+
+            'address_line' => $profile?->address_line,
+            'barangay' => $profile?->barangay,
+            'city' => $profile?->city,
+            'province' => $profile?->province,
+            'postal_code' => $profile?->postal_code,
+            'country' => $profile?->country ?? 'Philippines',
+
+            'tin' => $profile?->tin,
+            'permit_no' => $profile?->permit_no,
+
+            'currency' => $profile?->currency ?? 'PHP',
+            'timezone' => $profile?->timezone ?? 'Asia/Manila',
+
+            'receipt_header' => $profile?->receipt_header,
+            'receipt_footer' => $profile?->receipt_footer,
+
+            'logo_path' => $profile?->logo_path,
+            'cover_path' => $profile?->cover_path,
+            'logo_url' => $this->publicUrl($profile?->logo_path),
+            'cover_url' => $this->publicUrl($profile?->cover_path),
+
+            'updated_at' => $profile?->updated_at?->toDateTimeString()
+                ?? optional($branch->updated_at)->toDateTimeString(),
+        ];
     }
 
     private function publicUrl(?string $path): ?string
     {
-        if (!$path) {
-            return null;
-        }
-
-        return Storage::disk('public')->url($path);
+        return $path ? Storage::disk('public')->url($path) : null;
     }
 
     private function deletePublicFile(?string $path): void
     {
-        if (!$path) {
-            return;
-        }
-
-        if (Storage::disk('public')->exists($path)) {
+        if ($path && Storage::disk('public')->exists($path)) {
             Storage::disk('public')->delete($path);
         }
     }

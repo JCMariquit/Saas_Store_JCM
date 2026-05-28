@@ -17,14 +17,6 @@ class Branch extends Model
         'tenant_id',
         'name',
         'code',
-        'email',
-        'phone',
-        'address_line',
-        'barangay',
-        'city',
-        'province',
-        'postal_code',
-        'country',
         'is_main',
         'is_active',
     ];
@@ -33,4 +25,9 @@ class Branch extends Model
         'is_main' => 'boolean',
         'is_active' => 'boolean',
     ];
+
+    public function storeProfile()
+    {
+        return $this->hasOne(StoreProfile::class, 'branch_id', 'id');
+    }
 }

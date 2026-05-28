@@ -30,32 +30,16 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-type StoreProfile = {
-    id: number;
-    client_id: number;
-    store_name: string;
-    business_type?: string | null;
-    description?: string | null;
-    email?: string | null;
-    phone?: string | null;
-    country: string;
-    logo_path?: string | null;
-    cover_path?: string | null;
-    tin?: string | null;
-    permit_no?: string | null;
-    currency: string;
-    timezone: string;
-    receipt_header?: string | null;
-    receipt_footer?: string | null;
-    is_active: boolean;
-    updated_at?: string;
-};
-
 type Branch = {
     id: number;
     tenant_id: number;
     name: string;
     code?: string | null;
+    is_main: boolean;
+    is_active: boolean;
+
+    profile_id?: number | null;
+    store_name?: string | null;
     business_type?: string | null;
     description?: string | null;
     email?: string | null;
@@ -65,20 +49,47 @@ type Branch = {
     city?: string | null;
     province?: string | null;
     postal_code?: string | null;
-    country: string;
+    country?: string | null;
+    tin?: string | null;
+    permit_no?: string | null;
+    currency?: string | null;
+    timezone?: string | null;
+    receipt_header?: string | null;
+    receipt_footer?: string | null;
+    logo_path?: string | null;
+    cover_path?: string | null;
+    logo_url?: string | null;
+    cover_url?: string | null;
+    updated_at?: string | null;
+};
+
+type StoreProfile = {
+    id?: number;
+    client_id?: number;
+    branch_id?: number;
+    store_name?: string | null;
+    business_type?: string | null;
+    description?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    address_line?: string | null;
+    barangay?: string | null;
+    city?: string | null;
+    province?: string | null;
+    postal_code?: string | null;
+    country?: string | null;
     logo_path?: string | null;
     cover_path?: string | null;
     logo_url?: string | null;
     cover_url?: string | null;
     tin?: string | null;
     permit_no?: string | null;
-    currency: string;
-    timezone: string;
+    currency?: string | null;
+    timezone?: string | null;
     receipt_header?: string | null;
     receipt_footer?: string | null;
-    is_main: boolean;
-    is_active: boolean;
-    updated_at?: string;
+    is_active?: boolean;
+    updated_at?: string | null;
 };
 
 type StoreProfileForm = {
@@ -113,13 +124,56 @@ type StoreProfilePageProps = {
     cover_url?: string | null;
 };
 
+function storageUrl(url?: string | null): string | null {
+    if (!url) return null;
+
+    if (url.startsWith('blob:')) return url;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+
+    if (url.startsWith('/storage/')) return url;
+    if (url.startsWith('storage/')) return `/${url}`;
+
+    return `/storage/${url.replace(/^\/+/, '')}`;
+}
+
+function cacheBust(url?: string | null, version?: string | null): string | null {
+    const cleanUrl = storageUrl(url);
+
+    if (!cleanUrl) return null;
+    if (cleanUrl.startsWith('blob:')) return cleanUrl;
+
+    return `${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}v=${encodeURIComponent(version ?? String(Date.now()))}`;
+}
+
+function branchToForm(branch: Branch): StoreProfileForm {
+    return {
+        branch_id: String(branch.id),
+        store_name: branch.store_name ?? branch.name ?? '',
+        business_type: branch.business_type ?? '',
+        description: branch.description ?? '',
+        email: branch.email ?? '',
+        phone: branch.phone ?? '',
+        address_line: branch.address_line ?? '',
+        barangay: branch.barangay ?? '',
+        city: branch.city ?? '',
+        province: branch.province ?? '',
+        postal_code: branch.postal_code ?? '',
+        country: branch.country ?? 'Philippines',
+        tin: branch.tin ?? '',
+        permit_no: branch.permit_no ?? '',
+        currency: branch.currency ?? 'PHP',
+        timezone: branch.timezone ?? 'Asia/Manila',
+        receipt_header: branch.receipt_header ?? '',
+        receipt_footer: branch.receipt_footer ?? '',
+        logo: null,
+        cover: null,
+    };
+}
+
 export default function StoreProfileIndex({
-    profile,
     branches = [],
     selected_branch,
     selected_branch_id,
-    logo_url,
-    cover_url,
 }: StoreProfilePageProps) {
     const [saveModal, setSaveModal] = useState({
         open: false,
@@ -136,93 +190,44 @@ export default function StoreProfileIndex({
         return branches.find((branch) => String(branch.id) === selectedBranchId) ?? selected_branch;
     }, [branches, selectedBranchId, selected_branch]);
 
-    const activeLogoUrl = selectedBranch?.is_main ? logo_url : selectedBranch?.logo_url || logo_url;
-    const activeCoverUrl = selectedBranch?.is_main ? cover_url : selectedBranch?.cover_url || cover_url;
+    const form = useForm<StoreProfileForm>(branchToForm(selectedBranch));
 
     const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(
-        activeLogoUrl ? `${activeLogoUrl}?v=${selectedBranch?.updated_at ?? profile.updated_at ?? Date.now()}` : null,
+        cacheBust(selectedBranch?.logo_url ?? selectedBranch?.logo_path, selectedBranch?.updated_at),
     );
 
     const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(
-        activeCoverUrl ? `${activeCoverUrl}?v=${selectedBranch?.updated_at ?? profile.updated_at ?? Date.now()}` : null,
+        cacheBust(selectedBranch?.cover_url ?? selectedBranch?.cover_path, selectedBranch?.updated_at),
     );
-
-    const form = useForm<StoreProfileForm>({
-        branch_id: selectedBranchId,
-        store_name: profile.store_name ?? '',
-        business_type: selectedBranch?.business_type ?? profile.business_type ?? '',
-        description: selectedBranch?.description ?? profile.description ?? '',
-        email: selectedBranch?.email ?? profile.email ?? '',
-        phone: selectedBranch?.phone ?? profile.phone ?? '',
-        address_line: selectedBranch?.address_line ?? '',
-        barangay: selectedBranch?.barangay ?? '',
-        city: selectedBranch?.city ?? '',
-        province: selectedBranch?.province ?? '',
-        postal_code: selectedBranch?.postal_code ?? '',
-        country: selectedBranch?.country ?? profile.country ?? 'Philippines',
-        tin: selectedBranch?.tin ?? profile.tin ?? '',
-        permit_no: selectedBranch?.permit_no ?? profile.permit_no ?? '',
-        currency: selectedBranch?.currency ?? profile.currency ?? 'PHP',
-        timezone: selectedBranch?.timezone ?? profile.timezone ?? 'Asia/Manila',
-        receipt_header:
-            selectedBranch?.receipt_header?.trim()
-                ? selectedBranch.receipt_header
-                : profile.receipt_header ?? '',
-
-        receipt_footer:
-            selectedBranch?.receipt_footer?.trim()
-                ? selectedBranch.receipt_footer
-                : profile.receipt_footer ?? '',
-        logo: null,
-        cover: null,
-    });
 
     useEffect(() => {
         if (!selectedBranch) return;
 
-        const nextLogoUrl = selectedBranch.is_main ? logo_url : selectedBranch.logo_url || logo_url;
-        const nextCoverUrl = selectedBranch.is_main ? cover_url : selectedBranch.cover_url || cover_url;
+        form.setData(branchToForm(selectedBranch));
 
-        form.setData({
-            branch_id: String(selectedBranch.id),
-            store_name: profile.store_name ?? '',
-            business_type: selectedBranch.business_type ?? profile.business_type ?? '',
-            description: selectedBranch.description ?? profile.description ?? '',
-            email: selectedBranch.email ?? profile.email ?? '',
-            phone: selectedBranch.phone ?? profile.phone ?? '',
-            address_line: selectedBranch.address_line ?? '',
-            barangay: selectedBranch.barangay ?? '',
-            city: selectedBranch.city ?? '',
-            province: selectedBranch.province ?? '',
-            postal_code: selectedBranch.postal_code ?? '',
-            country: selectedBranch.country ?? profile.country ?? 'Philippines',
-            tin: selectedBranch.tin ?? profile.tin ?? '',
-            permit_no: selectedBranch.permit_no ?? profile.permit_no ?? '',
-            currency: selectedBranch.currency ?? profile.currency ?? 'PHP',
-            timezone: selectedBranch.timezone ?? profile.timezone ?? 'Asia/Manila',
-            receipt_header:
-                selectedBranch.receipt_header?.trim()
-                    ? selectedBranch.receipt_header
-                    : profile.receipt_header ?? '',
-
-            receipt_footer:
-                selectedBranch.receipt_footer?.trim()
-                    ? selectedBranch.receipt_footer
-                    : profile.receipt_footer ?? '',
-            logo: null,
-            cover: null,
-        });
-
-        setLogoPreviewUrl(nextLogoUrl ? `${nextLogoUrl}?v=${selectedBranch.updated_at ?? profile.updated_at ?? Date.now()}` : null);
-        setCoverPreviewUrl(nextCoverUrl ? `${nextCoverUrl}?v=${selectedBranch.updated_at ?? profile.updated_at ?? Date.now()}` : null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedBranchId, selectedBranch, profile, logo_url, cover_url]);
+        setLogoPreviewUrl(cacheBust(selectedBranch.logo_url ?? selectedBranch.logo_path, selectedBranch.updated_at));
+        setCoverPreviewUrl(cacheBust(selectedBranch.cover_url ?? selectedBranch.cover_path, selectedBranch.updated_at));
+    }, [selectedBranchId, selectedBranch]);
 
     const fullAddress = useMemo(() => {
-        return [form.data.address_line, form.data.barangay, form.data.city, form.data.province, form.data.postal_code, form.data.country]
+        return [
+            form.data.address_line,
+            form.data.barangay,
+            form.data.city,
+            form.data.province,
+            form.data.postal_code,
+            form.data.country,
+        ]
             .filter(Boolean)
             .join(', ');
-    }, [form.data]);
+    }, [
+        form.data.address_line,
+        form.data.barangay,
+        form.data.city,
+        form.data.province,
+        form.data.postal_code,
+        form.data.country,
+    ]);
 
     const logoPreview = form.data.logo ? URL.createObjectURL(form.data.logo) : logoPreviewUrl;
     const coverPreview = form.data.cover ? URL.createObjectURL(form.data.cover) : coverPreviewUrl;
@@ -251,11 +256,16 @@ export default function StoreProfileIndex({
                 form.setData('logo', null);
                 form.setData('cover', null);
 
-                setSaveModal({
-                    open: true,
-                    type: 'success',
-                    title: 'Store Profile Saved',
-                    message: 'The selected branch profile has been updated successfully.',
+                router.reload({
+                    only: ['branches', 'selected_branch', 'selected_branch_id', 'profile', 'logo_url', 'cover_url'],
+                    onSuccess: () => {
+                        setSaveModal({
+                            open: true,
+                            type: 'success',
+                            title: 'Store Profile Saved',
+                            message: 'The selected branch profile has been updated successfully.',
+                        });
+                    },
                 });
             },
             onError: () => {
@@ -342,7 +352,7 @@ export default function StoreProfileIndex({
                                             onChange={(e) => {
                                                 const file = e.target.files?.[0] ?? null;
                                                 form.setData('cover', file);
-                                                if (file) setCoverPreviewUrl(URL.createObjectURL(file));
+                                                setCoverPreviewUrl(file ? URL.createObjectURL(file) : cacheBust(selectedBranch?.cover_url ?? selectedBranch?.cover_path));
                                             }}
                                         />
                                     </label>
@@ -369,7 +379,7 @@ export default function StoreProfileIndex({
                                                         onChange={(e) => {
                                                             const file = e.target.files?.[0] ?? null;
                                                             form.setData('logo', file);
-                                                            if (file) setLogoPreviewUrl(URL.createObjectURL(file));
+                                                            setLogoPreviewUrl(file ? URL.createObjectURL(file) : cacheBust(selectedBranch?.logo_url ?? selectedBranch?.logo_path));
                                                         }}
                                                     />
                                                 </label>

@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\StoreProfile;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -22,23 +23,13 @@ class BranchController extends Controller
 
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('code', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('city', 'like', "%{$search}%")
-                        ->orWhere('province', 'like', "%{$search}%");
+                        ->orWhere('code', 'like', "%{$search}%");
                 });
             })
+            ->with('storeProfile')
             ->orderByDesc('is_main')
             ->latest()
-            ->get()
-            ->map(function (Branch $branch) {
-                return [
-                    ...$branch->toArray(),
-                    'logo_url' => $this->publicUrl($branch->logo_path),
-                    'cover_url' => $this->publicUrl($branch->cover_path),
-                ];
-            });
+            ->get();
 
         return Inertia::render('owner/management/branches/index', [
             'branches' => $branches,
@@ -61,62 +52,37 @@ class BranchController extends Controller
                 Rule::unique('pos.branches', 'code')
                     ->where(fn ($query) => $query->where('tenant_id', $clientId)),
             ],
-
-            'business_type' => ['nullable', 'string', 'max:150'],
-            'description' => ['nullable', 'string'],
-
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
-
-            'address_line' => ['nullable', 'string', 'max:255'],
-            'barangay' => ['nullable', 'string', 'max:150'],
-            'city' => ['nullable', 'string', 'max:150'],
-            'province' => ['nullable', 'string', 'max:150'],
-            'postal_code' => ['nullable', 'string', 'max:20'],
-            'country' => ['required', 'string', 'max:100'],
-
-            'tin' => ['nullable', 'string', 'max:100'],
-            'permit_no' => ['nullable', 'string', 'max:100'],
-
-            'currency' => ['required', 'string', 'max:10'],
-            'timezone' => ['required', 'string', 'max:100'],
-
-            'receipt_header' => ['nullable', 'string'],
-            'receipt_footer' => ['nullable', 'string'],
-
-            'is_main' => ['required', 'boolean'],
-            'is_active' => ['required', 'boolean'],
-
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
-            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'is_main' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
         ]);
 
-        if ($request->hasFile('logo')) {
-            $validated['logo_path'] = $request
-                ->file('logo')
-                ->store('branches/logos', 'public');
-        }
+        $branch = DB::connection('pos')->transaction(function () use ($validated, $clientId) {
+            $isMain = (bool) ($validated['is_main'] ?? false);
 
-        if ($request->hasFile('cover')) {
-            $validated['cover_path'] = $request
-                ->file('cover')
-                ->store('branches/covers', 'public');
-        }
+            if ($isMain) {
+                Branch::query()
+                    ->where('tenant_id', $clientId)
+                    ->update(['is_main' => false]);
+            }
 
-        unset($validated['logo'], $validated['cover']);
+            $branch = Branch::create([
+                'tenant_id' => $clientId,
+                'name' => $validated['name'],
+                'code' => $validated['code'] ?? null,
+                'is_main' => $isMain,
+                'is_active' => (bool) ($validated['is_active'] ?? true),
+            ]);
 
-        if ((bool) $validated['is_main']) {
-            Branch::query()
-                ->where('tenant_id', $clientId)
-                ->update(['is_main' => false]);
-        }
+            $this->createDefaultStoreProfile($branch);
 
-        Branch::create([
-            ...$validated,
-            'tenant_id' => $clientId,
-        ]);
+            return $branch;
+        });
 
-        return back()->with('success', 'Branch created successfully.');
+        return redirect()
+            ->route('client.management.store-profile.index', [
+                'branch_id' => $branch->id,
+            ])
+            ->with('success', 'Branch created successfully. You can now update its store profile.');
     }
 
     public function update(Request $request, Branch $branch)
@@ -135,62 +101,40 @@ class BranchController extends Controller
                     ->where(fn ($query) => $query->where('tenant_id', $clientId))
                     ->ignore($branch->id),
             ],
-
-            'business_type' => ['nullable', 'string', 'max:150'],
-            'description' => ['nullable', 'string'],
-
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
-
-            'address_line' => ['nullable', 'string', 'max:255'],
-            'barangay' => ['nullable', 'string', 'max:150'],
-            'city' => ['nullable', 'string', 'max:150'],
-            'province' => ['nullable', 'string', 'max:150'],
-            'postal_code' => ['nullable', 'string', 'max:20'],
-            'country' => ['required', 'string', 'max:100'],
-
-            'tin' => ['nullable', 'string', 'max:100'],
-            'permit_no' => ['nullable', 'string', 'max:100'],
-
-            'currency' => ['required', 'string', 'max:10'],
-            'timezone' => ['required', 'string', 'max:100'],
-
-            'receipt_header' => ['nullable', 'string'],
-            'receipt_footer' => ['nullable', 'string'],
-
-            'is_main' => ['required', 'boolean'],
-            'is_active' => ['required', 'boolean'],
-
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
-            'cover' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'is_main' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
         ]);
 
-        if ($request->hasFile('logo')) {
-            $this->deletePublicFile($branch->logo_path);
+        DB::connection('pos')->transaction(function () use ($validated, $clientId, $branch) {
+            $isMain = (bool) ($validated['is_main'] ?? false);
 
-            $validated['logo_path'] = $request
-                ->file('logo')
-                ->store('branches/logos', 'public');
-        }
+            if ($isMain) {
+                Branch::query()
+                    ->where('tenant_id', $clientId)
+                    ->where('id', '!=', $branch->id)
+                    ->update(['is_main' => false]);
+            }
 
-        if ($request->hasFile('cover')) {
-            $this->deletePublicFile($branch->cover_path);
+            $branch->update([
+                'name' => $validated['name'],
+                'code' => $validated['code'] ?? null,
+                'is_main' => $isMain,
+                'is_active' => (bool) ($validated['is_active'] ?? true),
+            ]);
 
-            $validated['cover_path'] = $request
-                ->file('cover')
-                ->store('branches/covers', 'public');
-        }
+            $profile = StoreProfile::query()
+                ->where('client_id', $clientId)
+                ->where('branch_id', $branch->id)
+                ->first();
 
-        unset($validated['logo'], $validated['cover']);
-
-        if ((bool) $validated['is_main']) {
-            Branch::query()
-                ->where('tenant_id', $clientId)
-                ->where('id', '!=', $branch->id)
-                ->update(['is_main' => false]);
-        }
-
-        $branch->update($validated);
+            if (!$profile) {
+                $this->createDefaultStoreProfile($branch);
+            } elseif (!$profile->store_name) {
+                $profile->update([
+                    'store_name' => $branch->name,
+                ]);
+            }
+        });
 
         return back()->with('success', 'Branch updated successfully.');
     }
@@ -199,16 +143,16 @@ class BranchController extends Controller
     {
         $this->authorizeBranch($branch);
 
-        abort_if(
-            $branch->is_main,
-            422,
-            'Main branch cannot be deleted.'
-        );
+        abort_if($branch->is_main, 422, 'Main branch cannot be deleted.');
 
-        $this->deletePublicFile($branch->logo_path);
-        $this->deletePublicFile($branch->cover_path);
+        DB::connection('pos')->transaction(function () use ($branch) {
+            StoreProfile::query()
+                ->where('client_id', auth()->id())
+                ->where('branch_id', $branch->id)
+                ->delete();
 
-        $branch->delete();
+            $branch->delete();
+        });
 
         return back()->with('success', 'Branch deleted successfully.');
     }
@@ -217,11 +161,7 @@ class BranchController extends Controller
     {
         $this->authorizeBranch($branch);
 
-        abort_if(
-            $branch->is_main && $branch->is_active,
-            422,
-            'Main branch cannot be deactivated.'
-        );
+        abort_if($branch->is_main && $branch->is_active, 422, 'Main branch cannot be deactivated.');
 
         $branch->update([
             'is_active' => ! $branch->is_active,
@@ -230,32 +170,25 @@ class BranchController extends Controller
         return back()->with('success', 'Branch status updated successfully.');
     }
 
-    private function authorizeBranch(Branch $branch): void
+    private function createDefaultStoreProfile(Branch $branch): StoreProfile
     {
-        abort_if(
-            (int) $branch->tenant_id !== (int) auth()->id(),
-            403,
-            'Unauthorized branch access.'
+        return StoreProfile::firstOrCreate(
+            [
+                'client_id' => $branch->tenant_id,
+                'branch_id' => $branch->id,
+            ],
+            [
+                'store_name' => $branch->name,
+                'country' => 'Philippines',
+                'currency' => 'PHP',
+                'timezone' => 'Asia/Manila',
+                'is_active' => true,
+            ]
         );
     }
 
-    private function publicUrl(?string $path): ?string
+    private function authorizeBranch(Branch $branch): void
     {
-        if (!$path) {
-            return null;
-        }
-
-        return Storage::disk('public')->url($path);
-    }
-
-    private function deletePublicFile(?string $path): void
-    {
-        if (!$path) {
-            return;
-        }
-
-        if (Storage::disk('public')->exists($path)) {
-            Storage::disk('public')->delete($path);
-        }
+        abort_if((int) $branch->tenant_id !== (int) auth()->id(), 403);
     }
 }

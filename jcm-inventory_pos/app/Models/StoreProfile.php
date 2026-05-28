@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class StoreProfile extends Model
 {
+    protected $connection = 'pos';
+
     protected $table = 'store_profiles';
 
     protected $fillable = [
         'client_id',
+        'branch_id',
         'store_name',
         'business_type',
         'description',
@@ -35,4 +38,9 @@ class StoreProfile extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'branch_id', 'id');
+    }
 }

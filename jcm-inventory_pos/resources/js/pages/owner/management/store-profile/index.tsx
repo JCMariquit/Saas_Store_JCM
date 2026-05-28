@@ -5,12 +5,15 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import {
     AlertCircle,
+    BadgeCheck,
     Building2,
     Camera,
     CheckCircle2,
     GitBranch,
-    ImageIcon,
+    Globe2,
+    Mail,
     MapPin,
+    Phone,
     ReceiptText,
     Save,
     Store,
@@ -133,13 +136,8 @@ export default function StoreProfileIndex({
         return branches.find((branch) => String(branch.id) === selectedBranchId) ?? selected_branch;
     }, [branches, selectedBranchId, selected_branch]);
 
-    const activeLogoUrl = selectedBranch?.is_main
-        ? logo_url
-        : selectedBranch?.logo_url || logo_url;
-
-    const activeCoverUrl = selectedBranch?.is_main
-        ? cover_url
-        : selectedBranch?.cover_url || cover_url;
+    const activeLogoUrl = selectedBranch?.is_main ? logo_url : selectedBranch?.logo_url || logo_url;
+    const activeCoverUrl = selectedBranch?.is_main ? cover_url : selectedBranch?.cover_url || cover_url;
 
     const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(
         activeLogoUrl ? `${activeLogoUrl}?v=${selectedBranch?.updated_at ?? profile.updated_at ?? Date.now()}` : null,
@@ -166,8 +164,15 @@ export default function StoreProfileIndex({
         permit_no: selectedBranch?.permit_no ?? profile.permit_no ?? '',
         currency: selectedBranch?.currency ?? profile.currency ?? 'PHP',
         timezone: selectedBranch?.timezone ?? profile.timezone ?? 'Asia/Manila',
-        receipt_header: selectedBranch?.receipt_header ?? profile.receipt_header ?? '',
-        receipt_footer: selectedBranch?.receipt_footer ?? profile.receipt_footer ?? '',
+        receipt_header:
+            selectedBranch?.receipt_header?.trim()
+                ? selectedBranch.receipt_header
+                : profile.receipt_header ?? '',
+
+        receipt_footer:
+            selectedBranch?.receipt_footer?.trim()
+                ? selectedBranch.receipt_footer
+                : profile.receipt_footer ?? '',
         logo: null,
         cover: null,
     });
@@ -175,13 +180,8 @@ export default function StoreProfileIndex({
     useEffect(() => {
         if (!selectedBranch) return;
 
-        const nextLogoUrl = selectedBranch.is_main
-            ? logo_url
-            : selectedBranch.logo_url || logo_url;
-
-        const nextCoverUrl = selectedBranch.is_main
-            ? cover_url
-            : selectedBranch.cover_url || cover_url;
+        const nextLogoUrl = selectedBranch.is_main ? logo_url : selectedBranch.logo_url || logo_url;
+        const nextCoverUrl = selectedBranch.is_main ? cover_url : selectedBranch.cover_url || cover_url;
 
         form.setData({
             branch_id: String(selectedBranch.id),
@@ -200,19 +200,22 @@ export default function StoreProfileIndex({
             permit_no: selectedBranch.permit_no ?? profile.permit_no ?? '',
             currency: selectedBranch.currency ?? profile.currency ?? 'PHP',
             timezone: selectedBranch.timezone ?? profile.timezone ?? 'Asia/Manila',
-            receipt_header: selectedBranch.receipt_header ?? profile.receipt_header ?? '',
-            receipt_footer: selectedBranch.receipt_footer ?? profile.receipt_footer ?? '',
+            receipt_header:
+                selectedBranch.receipt_header?.trim()
+                    ? selectedBranch.receipt_header
+                    : profile.receipt_header ?? '',
+
+            receipt_footer:
+                selectedBranch.receipt_footer?.trim()
+                    ? selectedBranch.receipt_footer
+                    : profile.receipt_footer ?? '',
             logo: null,
             cover: null,
         });
 
-        setLogoPreviewUrl(
-            nextLogoUrl ? `${nextLogoUrl}?v=${selectedBranch.updated_at ?? profile.updated_at ?? Date.now()}` : null,
-        );
-
-        setCoverPreviewUrl(
-            nextCoverUrl ? `${nextCoverUrl}?v=${selectedBranch.updated_at ?? profile.updated_at ?? Date.now()}` : null,
-        );
+        setLogoPreviewUrl(nextLogoUrl ? `${nextLogoUrl}?v=${selectedBranch.updated_at ?? profile.updated_at ?? Date.now()}` : null);
+        setCoverPreviewUrl(nextCoverUrl ? `${nextCoverUrl}?v=${selectedBranch.updated_at ?? profile.updated_at ?? Date.now()}` : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedBranchId, selectedBranch, profile, logo_url, cover_url]);
 
     const fullAddress = useMemo(() => {
@@ -271,119 +274,175 @@ export default function StoreProfileIndex({
             <Head title="Store Profile" />
 
             <form onSubmit={submit} className="flex h-full flex-1 flex-col gap-5 p-4 md:p-6">
-                <div className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-gradient-to-br from-background via-background to-muted/30 p-5 shadow-sm md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
-                            <Store className="size-3.5" />
-                            POS Branch Profile
-                        </div>
-
-                        <h1 className="mt-3 text-2xl font-semibold tracking-tight">Store Profile</h1>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Manage branding, address, and receipt settings per branch.
-                        </p>
+                <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-background shadow-sm">
+                    <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.08]">
+                        {coverPreview && <img src={coverPreview} alt="Store cover background" className="h-full w-full object-cover" />}
                     </div>
 
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <div className="relative min-w-[280px]">
-                            <GitBranch className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                            <select
-                                value={selectedBranchId}
-                                onChange={(e) => handleBranchChange(e.target.value)}
-                                className="h-11 w-full rounded-xl border border-border bg-background pl-10 pr-9 text-sm font-medium text-foreground shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                            >
-                                {branches.map((branch) => (
-                                    <option key={branch.id} value={String(branch.id)}>
-                                        {branch.name}
-                                        {branch.code ? ` (${branch.code})` : ''}
-                                        {branch.is_main ? ' — Main' : ''}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-muted/50" />
+                    <div className="absolute -right-20 -top-20 size-64 rounded-full bg-primary/10 blur-3xl" />
+                    <div className="absolute -bottom-24 left-10 size-64 rounded-full bg-blue-500/10 blur-3xl" />
 
-                        <button
-                            disabled={form.processing || !selectedBranch}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 disabled:opacity-50"
-                        >
-                            <Save className="size-4" />
-                            {form.processing ? 'Saving...' : 'Save Profile'}
-                        </button>
-                    </div>
-                </div>
-
-                <Card tone="topline" variant="default" className="overflow-hidden border border-border/70 bg-background shadow-sm">
-                    <div className="relative h-64 bg-muted md:h-72">
-                        {coverPreview ? (
-                            <img src={coverPreview} alt="Store cover" className="h-full w-full object-cover" />
-                        ) : (
-                            <div className="flex h-full items-center justify-center">
-                                <ImageIcon className="size-10 text-muted-foreground" />
+                    <div className="relative p-5 md:p-6">
+                        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                            <div>
+                                <div className="inline-flex items-center gap-2 rounded-lg border border-border/80 bg-background/80 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm backdrop-blur">
+                                    <Store className="size-3.5" />
+                                    POS Branch Profile
+                                </div>
                             </div>
-                        )}
 
-                        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/45 to-transparent" />
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <div className="relative min-w-full sm:min-w-[330px]">
+                                    <GitBranch className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                                    <select
+                                        value={selectedBranchId}
+                                        onChange={(e) => handleBranchChange(e.target.value)}
+                                        className="h-11 w-full rounded-xl border border-border/80 bg-background/90 pl-10 pr-9 text-sm font-semibold text-foreground shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                                    >
+                                        {branches.map((branch) => (
+                                            <option key={branch.id} value={String(branch.id)}>
+                                                {branch.name}
+                                                {branch.code ? ` (${branch.code})` : ''}
+                                                {branch.is_main ? ' — Main' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                        <label className="absolute right-4 top-4 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-white/20 bg-black/65 px-3 py-2 text-sm font-semibold text-white shadow-sm backdrop-blur transition hover:bg-black/80">
-                            <Camera className="size-4" />
-                            Change Cover
-                            <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0] ?? null;
-                                    form.setData('cover', file);
-                                    if (file) setCoverPreviewUrl(URL.createObjectURL(file));
-                                }}
-                            />
-                        </label>
-                    </div>
+                                <button
+                                    disabled={form.processing || !selectedBranch}
+                                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 disabled:opacity-50"
+                                >
+                                    <Save className="size-4" />
+                                    {form.processing ? 'Saving...' : 'Save Profile'}
+                                </button>
+                            </div>
+                        </div>
 
-                    <CardContent className="relative p-5">
-                        <div className="-mt-24 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                            <div className="flex items-end gap-4">
-                                <div className="flex size-32 overflow-hidden rounded-2xl border-4 border-background bg-muted shadow-xl ring-1 ring-border">
-                                    {logoPreview ? (
-                                        <img src={logoPreview} alt="Store logo" className="h-full w-full object-cover" />
+                        <div className="mt-6 overflow-hidden rounded-2xl border border-border/70 bg-background/80 shadow-sm backdrop-blur">
+                            <div className="relative min-h-[260px]">
+                                <div className="absolute inset-0">
+                                    {coverPreview ? (
+                                        <img src={coverPreview} alt="Store cover" className="h-full w-full object-cover" />
                                     ) : (
-                                        <div className="flex h-full w-full items-center justify-center">
-                                            <Store className="size-9 text-muted-foreground" />
-                                        </div>
+                                        <div className="h-full w-full bg-gradient-to-br from-muted via-background to-muted" />
                                     )}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-background via-background/88 to-background/45" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-transparent to-background/50" />
                                 </div>
 
-                                <div className="pb-2">
-                                    <h2 className="text-xl font-semibold">{form.data.store_name || 'Your Store Name'}</h2>
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        {selectedBranch?.name || 'Selected Branch'}
-                                        {selectedBranch?.code ? ` (${selectedBranch.code})` : ''}
-                                        {selectedBranch?.is_main ? ' — Main' : ''}
-                                    </p>
+                                <div className="relative min-h-[340px] p-5 md:p-6">
+                                    <label className="absolute right-5 top-5 z-20 flex size-10 cursor-pointer items-center justify-center rounded-xl border border-white/15 bg-black/55 text-white shadow-lg backdrop-blur transition hover:bg-black/75">
+                                        <Camera className="size-4" />
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0] ?? null;
+                                                form.setData('cover', file);
+                                                if (file) setCoverPreviewUrl(URL.createObjectURL(file));
+                                            }}
+                                        />
+                                    </label>
+
+                                    <div className="flex min-h-[320px] flex-col justify-end pt-16 md:pt-24">
+                                        <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
+                                            <div className="relative">
+                                                <div className="flex size-28 overflow-hidden rounded-2xl border border-border/80 bg-background shadow-xl ring-4 ring-background/70 md:size-32">
+                                                    {logoPreview ? (
+                                                        <img src={logoPreview} alt="Store logo" className="h-full w-full object-cover" />
+                                                    ) : (
+                                                        <div className="flex h-full w-full items-center justify-center bg-muted">
+                                                            <Store className="size-10 text-muted-foreground" />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <label className="absolute -bottom-2 -right-2 flex size-9 cursor-pointer items-center justify-center rounded-xl border border-border bg-background text-foreground shadow-sm transition hover:bg-muted">
+                                                    <Upload className="size-4" />
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0] ?? null;
+                                                            form.setData('logo', file);
+                                                            if (file) setLogoPreviewUrl(URL.createObjectURL(file));
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
+
+                                            <div className="max-w-3xl pb-1">
+                                                <div className="mb-2 flex flex-wrap items-center gap-2">
+                                                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                                                        <BadgeCheck className="size-3.5" />
+                                                        {selectedBranch?.is_main ? 'Main Branch' : 'Branch'}
+                                                    </span>
+
+                                                    <span className="inline-flex rounded-lg border border-border/80 bg-background/70 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                                                        {selectedBranch?.is_active ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                </div>
+
+                                                <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
+                                                    {form.data.store_name || 'Your Store Name'}
+                                                </h2>
+
+                                                <p className="mt-2 text-sm font-medium text-muted-foreground">
+                                                    {selectedBranch?.name || 'Selected Branch'}
+                                                    {selectedBranch?.code ? ` (${selectedBranch.code})` : ''}
+                                                    {selectedBranch?.is_main ? ' — Main' : ''}
+                                                </p>
+
+                                                <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                                    {form.data.business_type && (
+                                                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background/70 px-2.5 py-1.5">
+                                                            <Building2 className="size-3.5" />
+                                                            {form.data.business_type}
+                                                        </span>
+                                                    )}
+
+                                                    {form.data.email && (
+                                                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background/70 px-2.5 py-1.5">
+                                                            <Mail className="size-3.5" />
+                                                            {form.data.email}
+                                                        </span>
+                                                    )}
+
+                                                    {form.data.phone && (
+                                                        <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background/70 px-2.5 py-1.5">
+                                                            <Phone className="size-3.5" />
+                                                            {form.data.phone}
+                                                        </span>
+                                                    )}
+
+                                                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-background/70 px-2.5 py-1.5">
+                                                        <Globe2 className="size-3.5" />
+                                                        {form.data.currency} • {form.data.timezone}
+                                                    </span>
+                                                </div>
+
+                                                {fullAddress && (
+                                                    <p className="mt-3 flex max-w-3xl items-start gap-2 text-sm text-muted-foreground">
+                                                        <MapPin className="mt-0.5 size-4 shrink-0" />
+                                                        <span>{fullAddress}</span>
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-
-                            <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-semibold shadow-sm transition hover:bg-muted">
-                                <Upload className="size-4" />
-                                Upload Logo
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0] ?? null;
-                                        form.setData('logo', file);
-                                        if (file) setLogoPreviewUrl(URL.createObjectURL(file));
-                                    }}
-                                />
-                            </label>
                         </div>
 
                         {(form.errors.logo || form.errors.cover) && (
-                            <div className="mt-3 text-xs text-red-600">{form.errors.logo || form.errors.cover}</div>
+                            <div className="mt-3 text-xs font-medium text-red-600">{form.errors.logo || form.errors.cover}</div>
                         )}
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
                 <div className="grid gap-5 lg:grid-cols-3">
                     <div className="space-y-5 lg:col-span-2">
@@ -469,11 +528,7 @@ export default function StoreProfileIndex({
                             </Field>
                         </SectionCard>
 
-                        <SectionCard
-                            icon={<MapPin className="size-5" />}
-                            title="Branch Address"
-                            description="Address for the selected branch."
-                        >
+                        <SectionCard icon={<MapPin className="size-5" />} title="Branch Address" description="Address for the selected branch.">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <Field label="Address Line" error={form.errors.address_line}>
                                     <input
@@ -591,14 +646,10 @@ export default function StoreProfileIndex({
                             <CardContent className="p-5">
                                 <div className="rounded-xl border border-border/80 bg-background p-5 font-mono text-sm shadow-sm">
                                     <div className="text-center">
-                                        {logoPreview && (
-                                            <img src={logoPreview} alt="Logo preview" className="mx-auto mb-3 size-14 rounded object-cover" />
-                                        )}
+                                        {logoPreview && <img src={logoPreview} alt="Logo preview" className="mx-auto mb-3 size-14 rounded object-cover" />}
 
                                         <div className="font-bold uppercase">{form.data.store_name || 'STORE NAME'}</div>
-                                        <div className="mt-1 text-xs text-muted-foreground">
-                                            {selectedBranch?.name || 'Branch'}
-                                        </div>
+                                        <div className="mt-1 text-xs text-muted-foreground">{selectedBranch?.name || 'Branch'}</div>
 
                                         {fullAddress && <div className="mt-2 text-xs">{fullAddress}</div>}
                                         {form.data.phone && <div className="text-xs">Tel: {form.data.phone}</div>}
@@ -621,9 +672,7 @@ export default function StoreProfileIndex({
                                     </div>
 
                                     <div className="my-4 border-t border-dashed border-border" />
-                                    <div className="text-center text-xs">
-                                        {form.data.receipt_footer || 'Thank you for shopping with us.'}
-                                    </div>
+                                    <div className="text-center text-xs">{form.data.receipt_footer || 'Thank you for shopping with us.'}</div>
                                 </div>
                             </CardContent>
                         </Card>

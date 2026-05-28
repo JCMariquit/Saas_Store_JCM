@@ -30,41 +30,55 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 type Staff = {
     id: number;
+    tenant_id: number;
+    branch_id: number;
     name: string;
     email: string;
+    phone?: string | null;
+    username: string;
     role: 'cashier';
-    client_id: number;
-    created_by: number;
     is_active: boolean;
     created_at: string;
     updated_at: string;
+};
+
+type Branch = {
+    id: number;
+    name: string;
+    code?: string | null;
+    is_main: boolean;
 };
 
 type StaffForm = {
     name: string;
     email: string;
     password: string;
+    branch_id: string;
     is_active: boolean;
 };
 
 type StaffPageProps = {
     staff: Staff[];
+    branches: Branch[];
     filters?: {
         search?: string | null;
     };
 };
 
-export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
+export default function StaffIndex({ staff = [], branches = [], filters }: StaffPageProps) {
     const [search, setSearch] = useState(filters?.search ?? '');
     const [statusFilter, setStatusFilter] = useState('');
     const [isOpen, setIsOpen] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
 
+    const defaultBranchId = branches[0]?.id ? String(branches[0].id) : '';
+
     const form = useForm<StaffForm>({
         name: '',
         email: '',
         password: '',
+        branch_id: defaultBranchId,
         is_active: true,
     });
 
@@ -83,6 +97,14 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
 
         return () => clearTimeout(timeout);
     }, [search]);
+
+    const branchName = (branchId: number) => {
+        const branch = branches.find((item) => item.id === branchId);
+
+        if (!branch) return 'No branch';
+
+        return `${branch.name}${branch.code ? ` (${branch.code})` : ''}${branch.is_main ? ' — Main' : ''}`;
+    };
 
     const filteredStaff = useMemo(() => {
         if (!statusFilter) return staff;
@@ -118,8 +140,10 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
             name: '',
             email: '',
             password: '',
+            branch_id: defaultBranchId,
             is_active: true,
         });
+
         form.clearErrors();
         setShowPassword(false);
     };
@@ -137,6 +161,7 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
             name: item.name ?? '',
             email: item.email ?? '',
             password: '',
+            branch_id: item.branch_id ? String(item.branch_id) : defaultBranchId,
             is_active: item.is_active,
         });
 
@@ -206,7 +231,7 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
                     <div>
                         <h1 className="text-2xl font-semibold tracking-tight">Staff Management</h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Manage cashier accounts connected to your POS store.
+                            Manage cashier accounts connected to your POS branches.
                         </p>
                     </div>
 
@@ -242,7 +267,7 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
                             <div>
                                 <CardTitle className="text-xl">Cashier Accounts</CardTitle>
                                 <CardDescription className="mt-1">
-                                    Staff accounts are saved as cashier users and linked to your owner account.
+                                    Staff accounts are saved under your POS system and assigned to a branch.
                                 </CardDescription>
                             </div>
 
@@ -276,7 +301,7 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
                                 <input
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Search staff name or email..."
+                                    placeholder="Search staff name, email, or username..."
                                     className="h-10 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
                                 />
                             </div>
@@ -297,6 +322,7 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
                                     <tr>
                                         <th className="px-4 py-3 font-medium">Staff</th>
                                         <th className="px-4 py-3 font-medium">Role</th>
+                                        <th className="px-4 py-3 font-medium">Branch</th>
                                         <th className="px-4 py-3 font-medium">Status</th>
                                         <th className="px-4 py-3 font-medium">Created</th>
                                         <th className="px-4 py-3 text-right font-medium">Actions</th>
@@ -328,6 +354,10 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
                                                         <ShieldCheck className="size-3.5" />
                                                         Cashier
                                                     </span>
+                                                </td>
+
+                                                <td className="px-4 py-3 text-muted-foreground">
+                                                    {branchName(item.branch_id)}
                                                 </td>
 
                                                 <td className="px-4 py-3">
@@ -378,7 +408,7 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={5} className="px-4 py-16 text-center">
+                                            <td colSpan={6} className="px-4 py-16 text-center">
                                                 <div className="mx-auto flex max-w-sm flex-col items-center">
                                                     <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted">
                                                         <UsersRound className="size-5 text-muted-foreground" />
@@ -387,7 +417,7 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
                                                     <h3 className="font-medium">No staff found</h3>
 
                                                     <p className="mt-1 text-sm text-muted-foreground">
-                                                        Create your first cashier account to start using the POS terminal.
+                                                        Create your first cashier account and assign it to a branch.
                                                     </p>
 
                                                     <button
@@ -418,8 +448,8 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
                                 <CardTitle className="text-lg">{editingStaff ? 'Edit Staff' : 'Add Staff'}</CardTitle>
                                 <CardDescription>
                                     {editingStaff
-                                        ? 'Update cashier details or reset their password.'
-                                        : 'Create a cashier account under your store.'}
+                                        ? 'Update cashier details, branch assignment, or reset their password.'
+                                        : 'Create a cashier account and assign it to a branch.'}
                                 </CardDescription>
                             </div>
 
@@ -447,6 +477,23 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
                                         placeholder="cashier@email.com"
                                         className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
                                     />
+                                </Field>
+
+                                <Field label="Branch" error={form.errors.branch_id}>
+                                    <select
+                                        value={form.data.branch_id}
+                                        onChange={(e) => form.setData('branch_id', e.target.value)}
+                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    >
+                                        <option value="">Select branch</option>
+                                        {branches.map((branch) => (
+                                            <option key={branch.id} value={String(branch.id)}>
+                                                {branch.name}
+                                                {branch.code ? ` (${branch.code})` : ''}
+                                                {branch.is_main ? ' — Main' : ''}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </Field>
 
                                 <Field
@@ -486,7 +533,7 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
 
                             <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
                                 Role is fixed as <b>Cashier</b>. This account can access POS terminal and cashier-side
-                                transaction pages only.
+                                transaction pages only. Branch assignment controls which store branch this staff belongs to.
                             </div>
 
                             <div className="flex justify-end gap-2 border-t pt-5">
@@ -499,7 +546,7 @@ export default function StaffIndex({ staff = [], filters }: StaffPageProps) {
                                 </button>
 
                                 <button
-                                    disabled={form.processing}
+                                    disabled={form.processing || branches.length === 0}
                                     className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                                 >
                                     {editingStaff ? 'Update Staff' : 'Create Staff'}

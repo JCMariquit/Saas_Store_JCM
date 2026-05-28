@@ -18,8 +18,6 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
-        'client_id',
-        'created_by',
         'is_active',
     ];
 
@@ -39,35 +37,9 @@ class User extends Authenticatable
         ];
     }
 
-    public function owner()
-    {
-        return $this->belongsTo(User::class, 'client_id');
-    }
-
-    public function staff()
-    {
-        return $this->hasMany(User::class, 'client_id')
-            ->where('role', 'cashier');
-    }
-
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function createdUsers()
-    {
-        return $this->hasMany(User::class, 'created_by');
-    }
-
     public function scopeClients($query)
     {
         return $query->where('role', 'client');
-    }
-
-    public function scopeCashiers($query)
-    {
-        return $query->where('role', 'cashier');
     }
 
     public function scopeActive($query)
@@ -78,11 +50,6 @@ class User extends Authenticatable
     public function isClient(): bool
     {
         return $this->role === 'client';
-    }
-
-    public function isCashier(): bool
-    {
-        return $this->role === 'cashier';
     }
 
     public function isAdmin(): bool

@@ -3,16 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class StoreProfile extends Model
+class Branch extends Model
 {
-    protected $table = 'store_profiles';
+    use SoftDeletes;
+
+    protected $connection = 'pos';
+
+    protected $table = 'branches';
 
     protected $fillable = [
-        'client_id',
-        'store_name',
-        'business_type',
-        'description',
+        'tenant_id',
+        'name',
+        'code',
         'email',
         'phone',
         'address_line',
@@ -21,18 +25,12 @@ class StoreProfile extends Model
         'province',
         'postal_code',
         'country',
-        'logo_path',
-        'cover_path',
-        'tin',
-        'permit_no',
-        'currency',
-        'timezone',
-        'receipt_header',
-        'receipt_footer',
+        'is_main',
         'is_active',
     ];
 
     protected $casts = [
+        'is_main' => 'boolean',
         'is_active' => 'boolean',
     ];
 }

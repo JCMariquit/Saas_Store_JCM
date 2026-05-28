@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\Branch;
+use App\Models\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -15,25 +16,39 @@ class StaffController extends Controller
     {
         $clientId = auth()->id();
 
-        $staff = User::query()
-            ->where('role', 'cashier')
-            ->where('client_id', $clientId)
+        $branches = Branch::query()
+            ->where('tenant_id', $clientId)
+            ->where('is_active', true)
+            ->orderByDesc('is_main')
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+                'code',
+                'is_main',
+            ]);
+
+        $staff = Staff::query()
+            ->where('tenant_id', $clientId)
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->toString();
 
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('username', 'like', "%{$search}%");
                 });
             })
             ->latest()
             ->get([
                 'id',
+                'tenant_id',
+                'branch_id',
                 'name',
                 'email',
+                'phone',
+                'username',
                 'role',
-                'client_id',
-                'created_by',
                 'is_active',
                 'created_at',
                 'updated_at',
@@ -41,6 +56,7 @@ class StaffController extends Controller
 
         return Inertia::render('owner/management/staff/index', [
             'staff' => $staff,
+            'branches' => $branches,
             'filters' => [
                 'search' => $request->input('search', ''),
             ],
@@ -59,47 +75,72 @@ class StaffController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+
             'email' => [
                 'required',
                 'email',
                 'max:255',
-                Rule::unique('users', 'email'),
+                Rule::unique('pos.staff', 'email')
+                    ->where(fn ($query) => $query->where('tenant_id', $clientId)),
             ],
+
             'password' => ['required', 'string', 'min:8'],
+
+            'branch_id' => [
+                'required',
+                Rule::exists('pos.branches', 'id')
+                    ->where(fn ($query) => $query->where('tenant_id', $clientId)),
+            ],
         ]);
 
-        User::create([
+        Staff::create([
+            'tenant_id' => $clientId,
+            'branch_id' => $validated['branch_id'],
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'username' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => 'cashier',
-            'client_id' => $clientId,
-            'created_by' => $clientId,
             'is_active' => 1,
         ]);
 
         return back()->with('success', 'Staff added successfully.');
     }
 
-    public function update(Request $request, User $staff)
+    public function update(Request $request, Staff $staff)
     {
         $this->authorizeStaff($staff);
 
+        $clientId = auth()->id();
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+
             'email' => [
                 'required',
                 'email',
                 'max:255',
-                Rule::unique('users', 'email')->ignore($staff->id),
+                Rule::unique('pos.staff', 'email')
+                    ->where(fn ($query) => $query->where('tenant_id', $clientId))
+                    ->ignore($staff->id),
             ],
-            'is_active' => ['required', 'boolean'],
+
             'password' => ['nullable', 'string', 'min:8'],
+
+            'branch_id' => [
+                'required',
+                Rule::exists('pos.branches', 'id')
+                    ->where(fn ($query) => $query->where('tenant_id', $clientId)),
+            ],
+
+            'is_active' => ['required', 'boolean'],
         ]);
 
         $payload = [
+            'branch_id' => $validated['branch_id'],
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'username' => $validated['email'],
             'is_active' => $validated['is_active'],
         ];
 
@@ -112,7 +153,7 @@ class StaffController extends Controller
         return back()->with('success', 'Staff updated successfully.');
     }
 
-    public function destroy(User $staff)
+    public function destroy(Staff $staff)
     {
         $this->authorizeStaff($staff);
 
@@ -121,7 +162,7 @@ class StaffController extends Controller
         return back()->with('success', 'Staff deleted successfully.');
     }
 
-    public function toggleStatus(User $staff)
+    public function toggleStatus(Staff $staff)
     {
         $this->authorizeStaff($staff);
 
@@ -132,10 +173,10 @@ class StaffController extends Controller
         return back()->with('success', 'Staff status updated successfully.');
     }
 
-    private function authorizeStaff(User $staff): void
+    private function authorizeStaff(Staff $staff): void
     {
         abort_if(
-            $staff->role !== 'cashier' || (int) $staff->client_id !== (int) auth()->id(),
+            (int) $staff->tenant_id !== (int) auth()->id(),
             403,
             'Unauthorized staff access.'
         );

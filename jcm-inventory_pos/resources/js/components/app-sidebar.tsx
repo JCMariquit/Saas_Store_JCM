@@ -6,6 +6,7 @@ import {
     ChevronDown,
     CircleHelp,
     Code2,
+    House,
     LayoutGrid,
     Lock,
     LogOut,
@@ -54,14 +55,14 @@ type SidebarGroup = {
 };
 
 const clientDirectItems: SidebarItem[] = [
-    { title: 'Dashboard', url: '/client/dashboard', icon: LayoutGrid },
-    { title: 'POS Terminal', url: '/shared/pos/terminal', icon: ShoppingCart },
-    { title: 'Transactions', url: '/client/sales/transactions', icon: Receipt, badge: 'DEV' },
+    { title: 'Dashboard', url: '/client/dashboard', icon: LayoutGrid, badge: 'DEV' },
+    { title: 'POS Terminal', url: '/shared/pos/terminal', icon: ShoppingCart, badge: 'BETA' },
+    { title: 'Transactions', url: '/client/sales/transactions', icon: Receipt, badge: 'BETA' },
 ];
 
 const cashierDirectItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/cashier/dashboard', icon: LayoutGrid },
-    { title: 'POS Terminal', url: '/shared/pos/terminal', icon: ShoppingCart },
+    { title: 'POS Terminal', url: '/shared/pos/terminal', icon: ShoppingCart, },
 ];
 const clientGroupedItems: SidebarGroup[] = [
     {
@@ -69,8 +70,9 @@ const clientGroupedItems: SidebarGroup[] = [
         icon: Users,
         badge: 'NEW',
         items: [
-            { title: 'Staff', url: '/client/management/staff', icon: Users, badge: 'NEW' },
-            { title: 'Store Profile', url: '/client/management/store-profile', icon: Settings, badge: 'NEW' },
+            { title: 'Staff', url: '/client/management/staff', icon: Users, badge: 'BETA' },
+            { title: 'Store Profile', url: '/client/management/store-profile', icon: Settings, badge: 'BETA' },
+            { title: 'Store Profile', url: '/client/management/branches', icon: House, badge: 'DEV' },
         ],
     },
     {

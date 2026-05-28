@@ -4,6 +4,7 @@ use App\Http\Controllers\Owner\CategoryController;
 use App\Http\Controllers\Owner\ProductController;
 use App\Http\Controllers\Owner\StaffController;
 use App\Http\Controllers\Owner\StocksController;
+use App\Http\Controllers\Owner\StoreProfileController;
 use App\Http\Controllers\Shared\PosTerminalController;
 use App\Http\Controllers\Shared\TransactionsController;
 use Illuminate\Support\Facades\Route;
@@ -55,9 +56,11 @@ Route::middleware(['auth'])->group(function () {
             ->except(['create', 'show', 'edit'])
             ->names('management.staff');
 
-        Route::get('/management/store-profile', function () {
-            return Inertia::render('owner/management/store-profile/index');
-        })->name('management.store-profile.index');
+        Route::get('/management/store-profile', [StoreProfileController::class, 'index'])
+            ->name('management.store-profile.index');
+
+        Route::post('/management/store-profile', [StoreProfileController::class, 'update'])
+            ->name('management.store-profile.update');
 
         Route::resource('/inventory/products', ProductController::class)
             ->except(['create', 'show', 'edit'])

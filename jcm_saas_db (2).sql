@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 19, 2026 at 10:36 AM
+-- Generation Time: May 28, 2026 at 09:32 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -154,13 +154,6 @@ CREATE TABLE `messages` (
 --
 
 INSERT INTO `messages` (`id`, `user_id`, `sender_id`, `receiver_id`, `message`, `sender_type`, `is_read`, `read_at`, `created_at`, `updated_at`) VALUES
-(1, 2, 2, 1, 'helllo', 'user', 0, '2026-04-26 03:28:12', '2026-04-25 20:22:37', '2026-04-26 03:28:12'),
-(2, 2, 2, 1, 'jujuju', 'user', 0, '2026-04-26 07:30:03', '2026-04-25 20:33:11', '2026-04-26 07:30:03'),
-(3, 2, 1, 2, 'hi', 'admin', 0, '2026-04-29 19:21:50', '2026-04-26 05:13:23', '2026-04-29 19:21:50'),
-(4, 2, 2, 1, 'd', 'user', 0, '2026-04-27 21:52:56', '2026-04-27 18:11:14', '2026-04-27 21:52:56'),
-(5, 2, 2, 1, 'rert', 'user', 0, '2026-04-29 19:54:42', '2026-04-29 19:31:23', '2026-04-29 19:54:42'),
-(6, 2, 2, 1, 'ete', 'user', 0, '2026-04-29 19:54:42', '2026-04-29 19:31:25', '2026-04-29 19:54:42'),
-(7, 2, 2, 1, 'erte', 'user', 0, '2026-04-29 19:54:42', '2026-04-29 19:31:27', '2026-04-29 19:54:42'),
 (8, 1, 1, 1, 'ss', 'user', 1, NULL, '2026-05-07 22:42:57', '2026-05-07 22:42:57');
 
 -- --------------------------------------------------------
@@ -208,10 +201,7 @@ CREATE TABLE `notifications` (
 --
 
 INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `is_read`, `read_at`, `created_at`, `updated_at`) VALUES
-(1, 1, '1Welcome to JCM Web Solution', 'Your account is ready. You can now send inquiries and receive project updates.', 'system', 0, '2026-04-26 18:36:33', '2026-04-26 04:24:39', '2026-04-26 18:36:33'),
-(2, 2, 'System Maintenance', 'Jcm Websolution will be unable to use start in Dec1 12 am to 5 am, due to system update and maintenance', 'system', 0, '2026-04-29 19:31:55', '2026-04-26 07:56:55', '2026-04-29 19:31:55'),
-(6, 2, '12', '12', 'announcement', 0, '2026-04-29 19:31:53', '2026-04-26 08:14:35', '2026-04-29 19:31:53'),
-(8, 2, '12', '12', 'announcement', 0, '2026-04-29 19:31:53', '2026-04-26 08:14:35', '2026-04-29 19:31:53');
+(1, 1, '1Welcome to JCM Web Solution', 'Your account is ready. You can now send inquiries and receive project updates.', 'system', 0, '2026-04-26 18:36:33', '2026-04-26 04:24:39', '2026-04-26 18:36:33');
 
 -- --------------------------------------------------------
 
@@ -595,6 +585,10 @@ CREATE TABLE `users` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `role` varchar(20) NOT NULL DEFAULT 'client',
+  `client_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `branch_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `system_used` enum('pos') DEFAULT NULL,
+  `created_by` bigint(20) UNSIGNED DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -602,9 +596,9 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `two_factor_secret`, `two_factor_recovery_codes`, `two_factor_confirmed_at`, `remember_token`, `created_at`, `updated_at`, `role`, `is_active`) VALUES
-(1, 'June Charles Mariquit', 'junecharlesmariquit553@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, NULL, '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'admin', 1),
-(2, 'jcm test client', 'jcm.tc1@gmail.com', NULL, '$2y$12$ZEOBWD0I/XP.g5WFLoZ14OP9s1d96zvlmXjU1SLoKoPtk42DGHb4K', NULL, NULL, NULL, NULL, '2026-04-14 08:44:29', '2026-04-14 08:44:29', 'client', 1);
+INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `two_factor_secret`, `two_factor_recovery_codes`, `two_factor_confirmed_at`, `remember_token`, `created_at`, `updated_at`, `role`, `client_id`, `branch_id`, `system_used`, `created_by`, `is_active`) VALUES
+(1, 'June Charles Mariquit', 'junecharlesmariquit553@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, 'PdonkKogJjsg4QQ3K7WplZCqGhNmrENVwsb49qTgGzUVS1OKpryBkGWHtyaC', '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'client', NULL, NULL, 'pos', NULL, 1),
+(7, 'admin', 'admin@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, 'AKzQuJt0QVa7Gfsmsdgbl7sZzNkzjrD04AxBAX7SjbmjrBx0ZVXnNHNNyqCn', '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'admin', NULL, NULL, NULL, NULL, 1);
 
 --
 -- Indexes for dumped tables
@@ -801,7 +795,12 @@ ALTER TABLE `transactions`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `users_email_unique` (`email`);
+  ADD UNIQUE KEY `users_email_unique` (`email`),
+  ADD KEY `users_role_client_id_index` (`role`,`client_id`),
+  ADD KEY `users_created_by_foreign` (`created_by`),
+  ADD KEY `users_branch_id_index` (`branch_id`),
+  ADD KEY `users_system_used_index` (`system_used`),
+  ADD KEY `users_client_branch_system_index` (`client_id`,`branch_id`,`system_used`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -925,7 +924,7 @@ ALTER TABLE `transactions`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- Constraints for dumped tables
@@ -1013,6 +1012,13 @@ ALTER TABLE `subscriptions`
 ALTER TABLE `transactions`
   ADD CONSTRAINT `fk_transactions_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_transactions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `users`
+--
+ALTER TABLE `users`
+  ADD CONSTRAINT `users_client_id_foreign` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `users_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

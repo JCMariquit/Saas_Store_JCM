@@ -13,6 +13,7 @@ class Category extends Model
 
     protected $fillable = [
         'tenant_id',
+        'branch_id',
         'parent_id',
         'name',
         'slug',
@@ -20,6 +21,21 @@ class Category extends Model
         'sort_order',
         'status',
     ];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(Category::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Category::class, 'parent_id');
+    }
 
     public function products()
     {

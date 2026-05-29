@@ -13,6 +13,7 @@ class Product extends Model
 
     protected $fillable = [
         'tenant_id',
+        'branch_id',
         'category_id',
         'name',
         'slug',
@@ -51,6 +52,11 @@ class Product extends Model
         'allow_discount' => 'boolean',
         'low_stock_alert' => 'boolean',
     ];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     public function category()
     {

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 28, 2026 at 09:32 AM
+-- Generation Time: May 29, 2026 at 10:22 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -81,6 +81,7 @@ CREATE TABLE `cache_locks` (
 CREATE TABLE `categories` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `tenant_id` bigint(20) UNSIGNED NOT NULL,
+  `branch_id` bigint(20) UNSIGNED DEFAULT NULL,
   `parent_id` bigint(20) UNSIGNED DEFAULT NULL,
   `name` varchar(150) NOT NULL,
   `slug` varchar(180) DEFAULT NULL,
@@ -96,8 +97,10 @@ CREATE TABLE `categories` (
 -- Dumping data for table `categories`
 --
 
-INSERT INTO `categories` (`id`, `tenant_id`, `parent_id`, `name`, `slug`, `description`, `sort_order`, `status`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, NULL, 'Soap', 'soap', 'Bath Soap, Cloth Soap', 0, 'active', '2026-05-20 18:54:10', '2026-05-21 00:32:30', NULL);
+INSERT INTO `categories` (`id`, `tenant_id`, `branch_id`, `parent_id`, `name`, `slug`, `description`, `sort_order`, `status`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 1, 1, NULL, 'Soap', 'soap', 'Bath Soap, Cloth Soap', 0, 'active', '2026-05-20 18:54:10', '2026-05-21 00:32:30', NULL),
+(2, 1, 11, NULL, '123', '123', '123', 0, 'active', '2026-05-29 00:02:49', '2026-05-29 00:02:49', NULL),
+(3, 1, 11, NULL, '13', '13', '123', 0, 'active', '2026-05-29 00:02:56', '2026-05-29 00:02:56', NULL);
 
 -- --------------------------------------------------------
 
@@ -187,7 +190,9 @@ CREATE TABLE `products` (
 INSERT INTO `products` (`id`, `tenant_id`, `branch_id`, `category_id`, `name`, `slug`, `sku`, `barcode`, `description`, `image_path`, `unit`, `cost_price`, `selling_price`, `wholesale_price`, `compare_at_price`, `quantity`, `reorder_level`, `max_stock_level`, `is_taxable`, `tax_rate`, `allow_discount`, `discount_type`, `discount_value`, `product_type`, `stock_tracking`, `low_stock_alert`, `status`, `created_at`, `updated_at`, `deleted_at`) VALUES
 (1, 1, 1, 1, 'Safe Guard', 'safe-guard', '123', '123123', NULL, NULL, 'pcs', 25.00, 30.00, NULL, NULL, 0.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-20 19:05:30', '2026-05-21 19:52:06', NULL),
 (2, 1, 1, 1, 'Dove', 'dove', NULL, NULL, NULL, NULL, 'pcs', 15.00, 25.00, NULL, NULL, 0.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-20 23:42:27', '2026-05-21 19:52:06', NULL),
-(3, 1, 1, 1, 'SafeGuard', 'safeguard', NULL, NULL, NULL, NULL, 'pcs', 45.00, 55.00, NULL, NULL, 70.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-24 17:04:06', '2026-05-26 21:39:27', NULL);
+(3, 1, 1, 1, 'SafeGuard', 'safeguard', NULL, NULL, NULL, NULL, 'pcs', 45.00, 55.00, NULL, NULL, 70.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-24 17:04:06', '2026-05-26 21:39:27', NULL),
+(7, 1, 11, 3, '13', '13', NULL, NULL, '123', NULL, 'pcs', 123.00, 123.00, NULL, NULL, 123.00, 13.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-29 00:09:38', '2026-05-29 00:09:38', NULL),
+(8, 1, 11, 2, 'sf', 'sf', NULL, NULL, NULL, NULL, 'pcs', 12.00, 50.00, NULL, NULL, 22.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-29 00:17:54', '2026-05-29 00:18:02', NULL);
 
 -- --------------------------------------------------------
 
@@ -219,7 +224,9 @@ CREATE TABLE `product_stock_batches` (
 INSERT INTO `product_stock_batches` (`id`, `tenant_id`, `branch_id`, `product_id`, `batch_no`, `quantity_received`, `quantity_remaining`, `unit_cost`, `selling_price`, `received_date`, `expiry_date`, `remarks`, `created_at`, `updated_at`) VALUES
 (1, 1, 1, 1, 'BATCH-20260521030530-1', 10.00, 10.00, 0.00, 30.00, '2026-05-21', NULL, 'Initial stock', '2026-05-20 19:05:30', '2026-05-20 19:05:30'),
 (2, 1, 1, 2, 'BATCH-20260521074227-2', 10.00, 10.00, 15.00, 25.00, '2026-05-21', NULL, 'Initial stock', '2026-05-20 23:42:27', '2026-05-20 23:42:27'),
-(3, 1, 1, 3, 'BATCH-20260525010406-3', 100.00, 100.00, 45.00, 55.00, '2026-05-25', NULL, 'Initial stock', '2026-05-24 17:04:06', '2026-05-24 17:04:06');
+(3, 1, 1, 3, 'BATCH-20260525010406-3', 100.00, 100.00, 45.00, 55.00, '2026-05-25', NULL, 'Initial stock', '2026-05-24 17:04:06', '2026-05-24 17:04:06'),
+(5, 1, 11, 7, 'BATCH-20260529080938-7', 123.00, 123.00, 123.00, 123.00, '2026-05-29', NULL, 'Initial stock', '2026-05-29 00:09:38', '2026-05-29 00:09:38'),
+(6, 1, 11, 8, 'BATCH-20260529081754-8', 22.00, 22.00, 12.00, 50.00, '2026-05-29', NULL, 'Initial stock', '2026-05-29 00:17:54', '2026-05-29 00:17:54');
 
 -- --------------------------------------------------------
 
@@ -338,7 +345,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('vTsMGd81cj64OCUoScYdQtN2IlOhgCHfE2goE6Q6', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiMGp4M0p1UTR0Uk0yV016Z2tMTlpBalpNVXpRbllYNWxiR3A3OUoxTiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9jbGllbnQvbWFuYWdlbWVudC9icmFuY2hlcyI7czo1OiJyb3V0ZSI7czozMjoiY2xpZW50Lm1hbmFnZW1lbnQuYnJhbmNoZXMuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779953485);
+('DxSzUnpGJYPq25qV3ne463XidTkiEzHCfFssgdQP', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiNWV1RlpZeVJaaVQ2NUs0MzZBc251ajBBNUhQM1pUVzZtS2haZ0t6SSI7czozOiJ1cmwiO2E6MDp7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Nzk6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9jbGllbnQvaW52ZW50b3J5L3N0b2Nrcz9icmFuY2hfaWQ9MTEmY2F0ZWdvcnlfaWQ9JnNlYXJjaD0iO3M6NToicm91dGUiO3M6Mjk6ImNsaWVudC5pbnZlbnRvcnkuc3RvY2tzLmluZGV4Ijt9fQ==', 1780042945);
 
 -- --------------------------------------------------------
 
@@ -426,7 +433,9 @@ INSERT INTO `stock_movements` (`id`, `tenant_id`, `branch_id`, `product_id`, `pr
 (19, 1, 1, 3, NULL, 'sale', 1.00, 45.00, 45.00, 77.00, 76.00, NULL, NULL, 'POS sale: SALE-20260527-00001', '2026-05-27 03:34:39', 1, '2026-05-26 19:34:39', '2026-05-26 19:34:39'),
 (20, 1, 1, 3, NULL, 'sale', 2.00, 45.00, 90.00, 76.00, 74.00, NULL, NULL, 'POS sale: SALE-20260527-00002', '2026-05-27 03:35:42', 2, '2026-05-26 19:35:42', '2026-05-26 19:35:42'),
 (21, 1, 1, 3, NULL, 'sale', 1.00, 45.00, 45.00, 74.00, 73.00, NULL, NULL, 'POS sale: SALE-20260527-00003', '2026-05-27 03:53:35', 2, '2026-05-26 19:53:35', '2026-05-26 19:53:35'),
-(22, 1, 1, 3, NULL, 'sale', 3.00, 45.00, 135.00, 73.00, 70.00, NULL, NULL, 'POS sale: SALE-20260527-00004', '2026-05-27 05:39:27', 2, '2026-05-26 21:39:27', '2026-05-26 21:39:27');
+(22, 1, 1, 3, NULL, 'sale', 3.00, 45.00, 135.00, 73.00, 70.00, NULL, NULL, 'POS sale: SALE-20260527-00004', '2026-05-27 05:39:27', 2, '2026-05-26 21:39:27', '2026-05-26 21:39:27'),
+(23, 1, 11, 7, 5, 'initial_stock', 123.00, 123.00, 15129.00, 0.00, 123.00, NULL, NULL, 'Initial stock on product creation', '2026-05-29 08:09:38', 1, '2026-05-29 00:09:38', '2026-05-29 00:09:38'),
+(24, 1, 11, 8, 6, 'initial_stock', 22.00, 12.00, 264.00, 0.00, 22.00, NULL, NULL, 'Initial stock on product creation', '2026-05-29 08:17:54', 1, '2026-05-29 00:17:54', '2026-05-29 00:17:54');
 
 -- --------------------------------------------------------
 
@@ -467,7 +476,7 @@ CREATE TABLE `store_profiles` (
 --
 
 INSERT INTO `store_profiles` (`id`, `client_id`, `branch_id`, `store_name`, `business_type`, `description`, `email`, `phone`, `address_line`, `barangay`, `city`, `province`, `postal_code`, `country`, `logo_path`, `cover_path`, `tin`, `permit_no`, `currency`, `timezone`, `receipt_header`, `receipt_footer`, `is_active`, `created_at`, `updated_at`) VALUES
-(41, 1, 11, '132', 'Hardware', '123', '123@gmail.com', '123', '123', '123', '123', '123', '123', 'Philippines', NULL, NULL, '123', '123', 'PHP', 'Asia/Manila', '123', '123', 1, '2026-05-27 23:23:22', '2026-05-27 23:24:00'),
+(41, 1, 11, '132', 'Hardware', '123', '123@gmail.com', '123', '123', '123', '123', '123', '123', 'Philippines', 'store-profiles/logos/mb1Pr6OHgxeOfDjpOmgZvBqrodPHu9mkv1j3PdLW.png', 'store-profiles/covers/VcVQ0eczEYUILDHiIl56Smv31X1B1haVGfySG7jA.png', '123', '123', 'PHP', 'Asia/Manila', '123', '123', 1, '2026-05-27 23:23:22', '2026-05-28 00:29:31'),
 (43, 1, 1, '11', 'Retail Store', NULL, 'junecharlesmariquit553@gmail.com', '11', '11', '11', '11', '11', '11', 'Philippines', 'store-profiles/logos/1KRA1P9BlfixC1KhiqV71KaFVTyfWScIcpJnz27g.png', 'store-profiles/covers/InylFgyJg8J5YCV9wTsOXEwgcGlzLtwVUwMmRQAt.png', '11', '11', 'PHP', 'Asia/Manila', '11', '11', 1, '2026-05-27 23:25:26', '2026-05-27 23:28:49');
 
 --
@@ -503,7 +512,9 @@ ALTER TABLE `categories`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `unique_category_name_per_tenant` (`tenant_id`,`name`),
   ADD KEY `idx_categories_tenant_id` (`tenant_id`),
-  ADD KEY `idx_categories_parent_id` (`parent_id`);
+  ADD KEY `idx_categories_parent_id` (`parent_id`),
+  ADD KEY `categories_tenant_branch_index` (`tenant_id`,`branch_id`),
+  ADD KEY `categories_branch_id_foreign` (`branch_id`);
 
 --
 -- Indexes for table `payments`
@@ -617,7 +628,7 @@ ALTER TABLE `branches`
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `payments`
@@ -629,13 +640,13 @@ ALTER TABLE `payments`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `product_stock_batches`
 --
 ALTER TABLE `product_stock_batches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `sales`
@@ -659,7 +670,7 @@ ALTER TABLE `staff`
 -- AUTO_INCREMENT for table `stock_movements`
 --
 ALTER TABLE `stock_movements`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `store_profiles`
@@ -670,6 +681,12 @@ ALTER TABLE `store_profiles`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `categories`
+--
+ALTER TABLE `categories`
+  ADD CONSTRAINT `categories_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `payments`

@@ -3,7 +3,19 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Boxes, Package, Plus, RotateCcw, Search, TrendingDown, X } from 'lucide-react';
+import {
+    AlertTriangle,
+    Boxes,
+    Building2,
+    MoreHorizontal,
+    Package,
+    Plus,
+    RotateCcw,
+    Search,
+    Store,
+    TrendingDown,
+    X,
+} from 'lucide-react';
 
 const STOCKS_URL = '/client/inventory/stocks';
 const STOCKS_ADJUST_URL = '/client/inventory/stocks/adjust';
@@ -15,6 +27,14 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+type Branch = {
+    id: number;
+    name: string;
+    code?: string | null;
+    is_main?: boolean;
+    is_active?: boolean;
+};
+
 type Category = {
     id: number;
     name: string;
@@ -22,6 +42,7 @@ type Category = {
 
 type Product = {
     id: number;
+    branch_id?: number | null;
     name: string;
     sku?: string | null;
     barcode?: string | null;
@@ -30,6 +51,7 @@ type Product = {
     cost_price: string | number;
     selling_price: string | number;
     category?: Category | null;
+    branch?: Branch | null;
 };
 
 type PaginationLink = {
@@ -47,6 +69,8 @@ type PageProps = {
         total: number;
     };
     categories: Category[];
+    branches?: Branch[];
+    selectedBranchId?: number | string | null;
     summary: {
         total_products: number;
         low_stock: number;
@@ -54,13 +78,25 @@ type PageProps = {
         inventory_value: string | number;
     };
     filters: {
+        branch_id?: string | number | null;
         search?: string | null;
         category_id?: string | null;
         stock_status?: string | null;
     };
 };
 
-export default function StocksIndex({ products, categories, summary, filters }: PageProps) {
+export default function StocksIndex({
+    products,
+    categories,
+    branches = [],
+    selectedBranchId,
+    summary,
+    filters,
+}: PageProps) {
+    const initialBranchId = String(filters?.branch_id ?? selectedBranchId ?? '');
+
+    const [selectedBranch, setSelectedBranch] = useState(initialBranchId);
+    const [showBranchPicker, setShowBranchPicker] = useState(!initialBranchId && branches.length > 0);
     const [search, setSearch] = useState(filters?.search ?? '');
     const [categoryFilter, setCategoryFilter] = useState(filters?.category_id ?? '');
     const [activeStockTab, setActiveStockTab] = useState<'on_stock' | 'out_of_stock'>('on_stock');
@@ -68,6 +104,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
     const form = useForm({
+        branch_id: initialBranchId,
         product_id: '',
         movement_type: 'stock_in',
         quantity: '',
@@ -77,11 +114,18 @@ export default function StocksIndex({ products, categories, summary, filters }: 
         expiry_date: '',
     });
 
+    const activeBranch = useMemo(() => {
+        return branches.find((branch) => String(branch.id) === String(selectedBranch)) ?? null;
+    }, [branches, selectedBranch]);
+
     useEffect(() => {
+        if (!selectedBranch) return;
+
         const timeout = setTimeout(() => {
-        router.get(
-            STOCKS_URL,
+            router.get(
+                STOCKS_URL,
                 {
+                    branch_id: selectedBranch,
                     search,
                     category_id: categoryFilter,
                 },
@@ -94,7 +138,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
         }, 400);
 
         return () => clearTimeout(timeout);
-    }, [search, categoryFilter]);
+    }, [selectedBranch, search, categoryFilter]);
 
     const visibleProducts = useMemo(() => {
         return products.data.filter((product) => {
@@ -119,6 +163,28 @@ export default function StocksIndex({ products, categories, summary, filters }: 
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         })}`;
+    };
+
+    const selectBranch = (branchId: number) => {
+        const id = String(branchId);
+
+        setSelectedBranch(id);
+        setCategoryFilter('');
+        form.setData('branch_id', id);
+        setShowBranchPicker(false);
+
+        router.get(
+            STOCKS_URL,
+            {
+                branch_id: id,
+                search,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
     };
 
     const stockBadge = (product: Product) => {
@@ -155,7 +221,9 @@ export default function StocksIndex({ products, categories, summary, filters }: 
 
         router.get(
             STOCKS_URL,
-            {},
+            {
+                branch_id: selectedBranch,
+            },
             {
                 preserveState: true,
                 preserveScroll: true,
@@ -168,9 +236,10 @@ export default function StocksIndex({ products, categories, summary, filters }: 
         setSelectedProduct(product);
 
         form.setData({
+            branch_id: String(product.branch_id ?? selectedBranch),
             product_id: String(product.id),
             movement_type: 'stock_in',
-            quantity: '',
+            quantity: String(Number(product.quantity ?? 0)),
             unit_cost: String(product.cost_price ?? ''),
             remarks: '',
             received_date: '',
@@ -190,6 +259,8 @@ export default function StocksIndex({ products, categories, summary, filters }: 
     const submitAdjustment = (e: FormEvent) => {
         e.preventDefault();
 
+        form.setData('branch_id', selectedBranch);
+
         form.post(STOCKS_ADJUST_URL, {
             preserveScroll: true,
             onSuccess: closeModal,
@@ -201,6 +272,53 @@ export default function StocksIndex({ products, categories, summary, filters }: 
             <Head title="Stocks Management" />
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                <Card tone="topline" variant="default" className="overflow-hidden shadow-sm">
+                    <CardHeader className="p-5">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="flex size-11 items-center justify-center rounded-lg border bg-muted/40">
+                                    <Store className="size-5 text-muted-foreground" />
+                                </div>
+
+                                <div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <CardTitle className="text-xl">
+                                            {activeBranch ? activeBranch.name : 'Select Branch'}
+                                        </CardTitle>
+
+                                        {activeBranch?.is_main && (
+                                            <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                                Main
+                                            </span>
+                                        )}
+
+                                        {activeBranch && (
+                                            <span className="rounded-md bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600">
+                                                Active
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <CardDescription className="mt-1">
+                                        {activeBranch
+                                            ? `Branch code: ${activeBranch.code || 'No code'}`
+                                            : 'Choose a branch to display and manage stocks.'}
+                                    </CardDescription>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowBranchPicker(true)}
+                                className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition hover:bg-muted"
+                            >
+                                <Building2 className="size-4" />
+                                {activeBranch ? 'Change Branch' : 'Select Branch'}
+                            </button>
+                        </div>
+                    </CardHeader>
+                </Card>
+
                 <div className="grid gap-4 md:grid-cols-4">
                     <SummaryCard
                         title="Total Products"
@@ -319,10 +437,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                 <tbody>
                                     {visibleProducts.length > 0 ? (
                                         visibleProducts.map((product) => (
-                                            <tr
-                                                key={product.id}
-                                                className="border-t border-sidebar-border/70 dark:border-sidebar-border"
-                                            >
+                                            <tr key={product.id} className="border-t border-sidebar-border/70 dark:border-sidebar-border">
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-3">
                                                         <div className="flex size-10 items-center justify-center rounded-md bg-muted">
@@ -342,19 +457,11 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                                     {product.category?.name ?? '-'}
                                                 </td>
 
-                                                <td className="px-4 py-3 font-medium">
-                                                    {Number(product.quantity ?? 0)}
-                                                </td>
-
-                                                <td className="px-4 py-3">
-                                                    {Number(product.reorder_level ?? 0)}
-                                                </td>
+                                                <td className="px-4 py-3 font-medium">{Number(product.quantity ?? 0)}</td>
+                                                <td className="px-4 py-3">{Number(product.reorder_level ?? 0)}</td>
 
                                                 <td className="px-4 py-3 font-medium">
-                                                    {formatMoney(
-                                                        Number(product.quantity ?? 0) *
-                                                            Number(product.cost_price ?? 0),
-                                                    )}
+                                                    {formatMoney(Number(product.quantity ?? 0) * Number(product.cost_price ?? 0))}
                                                 </td>
 
                                                 <td className="px-4 py-3">{stockBadge(product)}</td>
@@ -379,16 +486,29 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                                     </div>
 
                                                     <h3 className="font-medium">
-                                                        {activeStockTab === 'out_of_stock'
-                                                            ? 'No out of stock products found'
-                                                            : 'No on stock products found'}
+                                                        {!selectedBranch
+                                                            ? 'Select a branch first'
+                                                            : activeStockTab === 'out_of_stock'
+                                                              ? 'No out of stock products found'
+                                                              : 'No on stock products found'}
                                                     </h3>
 
                                                     <p className="mt-1 text-sm text-muted-foreground">
-                                                        {activeStockTab === 'out_of_stock'
-                                                            ? 'Products with zero quantity will appear here.'
-                                                            : 'Products with available quantity will appear here.'}
+                                                        {!selectedBranch
+                                                            ? 'Choose a branch to display and manage stocks.'
+                                                            : activeStockTab === 'out_of_stock'
+                                                              ? 'Products with zero quantity will appear here.'
+                                                              : 'Products with available quantity will appear here.'}
                                                     </p>
+
+                                                    {!selectedBranch && (
+                                                        <button
+                                                            onClick={() => setShowBranchPicker(true)}
+                                                            className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                                                        >
+                                                            Select Branch
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -409,7 +529,14 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                         disabled={!link.url}
                                         onClick={() =>
                                             link.url &&
-                                            router.get(link.url, {}, { preserveState: true, preserveScroll: true })
+                                            router.get(
+                                                link.url,
+                                                {},
+                                                {
+                                                    preserveState: true,
+                                                    preserveScroll: true,
+                                                },
+                                            )
                                         }
                                         className={`rounded-md border px-3 py-1.5 text-sm ${
                                             link.active
@@ -424,12 +551,80 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                     </CardContent>
                 </Card>
 
+                {showBranchPicker && (
+                    <Modal size="lg">
+                        <CardHeader className="flex flex-row items-center justify-between border-b p-5">
+                            <div>
+                                <CardTitle className="text-lg">Choose Branch</CardTitle>
+                                <CardDescription>Select which branch stocks you want to manage.</CardDescription>
+                            </div>
+
+                            {selectedBranch && (
+                                <button onClick={() => setShowBranchPicker(false)} className="rounded-md p-2 hover:bg-muted">
+                                    <X className="size-4" />
+                                </button>
+                            )}
+                        </CardHeader>
+
+                        <div className="grid max-h-[70vh] gap-4 overflow-y-auto p-5 md:grid-cols-2">
+                            {branches.map((branch) => (
+                                <button
+                                    type="button"
+                                    key={branch.id}
+                                    onClick={() => selectBranch(branch.id)}
+                                    className={`group overflow-hidden rounded-xl border text-left transition hover:border-primary/60 hover:bg-muted/40 ${
+                                        String(selectedBranch) === String(branch.id)
+                                            ? 'border-primary bg-primary/5'
+                                            : 'border-sidebar-border/70 dark:border-sidebar-border'
+                                    }`}
+                                >
+                                    <div className="flex items-start justify-between p-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex size-11 items-center justify-center rounded-full border bg-background">
+                                                <Store className="size-5 text-muted-foreground" />
+                                            </div>
+
+                                            <div>
+                                                <div className="font-semibold">{branch.name}</div>
+                                                <div className="text-xs uppercase text-muted-foreground">
+                                                    {branch.code || 'NO CODE'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <MoreHorizontal className="size-4 text-muted-foreground" />
+                                    </div>
+
+                                    <div className="flex gap-2 border-t px-4 py-3">
+                                        {branch.is_main && (
+                                            <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
+                                                Main
+                                            </span>
+                                        )}
+
+                                        <span className="rounded-full bg-green-500 px-2.5 py-1 text-xs font-medium text-white">
+                                            Active
+                                        </span>
+                                    </div>
+
+                                    <div className="border-t px-4 py-4 text-sm text-muted-foreground">
+                                        Click this branch to display and manage its stocks.
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </Modal>
+                )}
+
                 {isOpen && selectedProduct && (
                     <Modal>
                         <CardHeader className="flex flex-row items-center justify-between border-b p-5">
                             <div>
                                 <CardTitle className="text-lg">Adjust Stock</CardTitle>
-                                <CardDescription>{selectedProduct.name}</CardDescription>
+                                <CardDescription>
+                                    {selectedProduct.name}
+                                    {activeBranch ? ` • ${activeBranch.name}` : ''}
+                                </CardDescription>
                             </div>
 
                             <button onClick={closeModal} className="rounded-md p-2 hover:bg-muted">
@@ -438,6 +633,22 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                         </CardHeader>
 
                         <form onSubmit={submitAdjustment} className="space-y-4 p-5">
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <div className="rounded-md border bg-muted/40 p-3 text-sm">
+                                    <div className="text-muted-foreground">Current Stock</div>
+                                    <div className="mt-1 text-xl font-semibold">
+                                        {Number(selectedProduct.quantity ?? 0)}
+                                    </div>
+                                </div>
+
+                                <div className="rounded-md border bg-muted/40 p-3 text-sm">
+                                    <div className="text-muted-foreground">Branch</div>
+                                    <div className="mt-1 font-semibold">
+                                        {activeBranch?.name ?? 'Selected branch'}
+                                    </div>
+                                </div>
+                            </div>
+
                             <Field label="Movement Type" error={form.errors.movement_type}>
                                 <select
                                     value={form.data.movement_type}
@@ -515,7 +726,7 @@ export default function StocksIndex({ products, categories, summary, filters }: 
                                 </button>
 
                                 <button
-                                    disabled={form.processing}
+                                    disabled={form.processing || !selectedBranch}
                                     className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                                 >
                                     Save Movement
@@ -556,15 +767,7 @@ function SummaryCard({
     );
 }
 
-function Field({
-    label,
-    error,
-    children,
-}: {
-    label: string;
-    error?: string;
-    children: ReactNode;
-}) {
+function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
     return (
         <div>
             <label className="mb-1 block text-sm font-medium">{label}</label>
@@ -574,10 +777,18 @@ function Field({
     );
 }
 
-function Modal({ children }: { children: ReactNode }) {
+function Modal({
+    children,
+    size = 'default',
+}: {
+    children: ReactNode;
+    size?: 'default' | 'lg';
+}) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <Card className="w-full max-w-lg overflow-hidden shadow-xl">{children}</Card>
+            <Card className={`max-h-[90vh] w-full overflow-hidden shadow-xl ${size === 'lg' ? 'max-w-3xl' : 'max-w-lg'}`}>
+                {children}
+            </Card>
         </div>
     );
 }

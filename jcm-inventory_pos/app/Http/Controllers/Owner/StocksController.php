@@ -3,29 +3,70 @@
 namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductStockBatch;
 use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class StocksController extends Controller
 {
     private function tenantId(): int
     {
-        return auth()->id();
+        $user = auth()->user();
+
+        return (int) ($user->client_id ?: $user->id);
+    }
+
+    private function getSelectedBranchId(Request $request, int $tenantId): ?int
+    {
+        if ($request->filled('branch_id')) {
+            $branchId = (int) $request->branch_id;
+
+            return Branch::query()
+                ->where('tenant_id', $tenantId)
+                ->where('id', $branchId)
+                ->exists()
+                    ? $branchId
+                    : null;
+        }
+
+        return Branch::query()
+            ->where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->orderByDesc('is_main')
+            ->orderBy('name')
+            ->value('id');
     }
 
     public function index(Request $request)
     {
         $tenantId = $this->tenantId();
+        $selectedBranchId = $this->getSelectedBranchId($request, $tenantId);
 
-        $products = Product::query()
-            ->with('category:id,name')
+        $branches = Branch::query()
             ->where('tenant_id', $tenantId)
-            ->where('stock_tracking', 'tracked')
+            ->where('is_active', true)
+            ->orderByDesc('is_main')
+            ->orderBy('name')
+            ->get(['id', 'name', 'code', 'is_main', 'is_active']);
+
+        $productsQuery = Product::query()
+            ->with([
+                'category:id,name',
+                'branch:id,name,code',
+            ])
+            ->where('tenant_id', $tenantId)
+            ->when($selectedBranchId, function ($query) use ($selectedBranchId) {
+                $query->where('branch_id', $selectedBranchId);
+            })
+            ->where('stock_tracking', 'tracked');
+
+        $products = (clone $productsQuery)
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->search;
 
@@ -35,8 +76,14 @@ class StocksController extends Controller
                         ->orWhere('barcode', 'like', "%{$search}%");
                 });
             })
-            ->when($request->filled('category_id'), function ($query) use ($request) {
+            ->when($request->filled('category_id'), function ($query) use ($request, $selectedBranchId) {
                 $query->where('category_id', $request->category_id);
+
+                if ($selectedBranchId) {
+                    $query->whereHas('category', function ($categoryQuery) use ($selectedBranchId) {
+                        $categoryQuery->where('branch_id', $selectedBranchId);
+                    });
+                }
             })
             ->when($request->filled('stock_status'), function ($query) use ($request) {
                 if ($request->stock_status === 'out') {
@@ -58,22 +105,38 @@ class StocksController extends Controller
 
         $categories = Category::query()
             ->where('tenant_id', $tenantId)
+            ->when($selectedBranchId, function ($query) use ($selectedBranchId) {
+                $query->where('branch_id', $selectedBranchId);
+            })
             ->where('status', 'active')
             ->orderBy('name')
             ->get(['id', 'name']);
 
         $summary = [
-            'total_products' => Product::where('tenant_id', $tenantId)->where('stock_tracking', 'tracked')->count(),
-            'low_stock' => Product::where('tenant_id', $tenantId)->where('stock_tracking', 'tracked')->whereColumn('quantity', '<=', 'reorder_level')->where('quantity', '>', 0)->count(),
-            'out_of_stock' => Product::where('tenant_id', $tenantId)->where('stock_tracking', 'tracked')->where('quantity', '<=', 0)->count(),
-            'inventory_value' => Product::where('tenant_id', $tenantId)->where('stock_tracking', 'tracked')->selectRaw('COALESCE(SUM(quantity * cost_price), 0) as total')->value('total'),
+            'total_products' => (clone $productsQuery)->count(),
+
+            'low_stock' => (clone $productsQuery)
+                ->whereColumn('quantity', '<=', 'reorder_level')
+                ->where('quantity', '>', 0)
+                ->count(),
+
+            'out_of_stock' => (clone $productsQuery)
+                ->where('quantity', '<=', 0)
+                ->count(),
+
+            'inventory_value' => (clone $productsQuery)
+                ->selectRaw('COALESCE(SUM(quantity * cost_price), 0) as total')
+                ->value('total'),
         ];
 
         return Inertia::render('owner/inventory/stocks/index', [
             'products' => $products,
             'categories' => $categories,
+            'branches' => $branches,
+            'selectedBranchId' => $selectedBranchId,
             'summary' => $summary,
             'filters' => [
+                'branch_id' => $selectedBranchId,
                 'search' => $request->search,
                 'category_id' => $request->category_id,
                 'stock_status' => $request->stock_status,
@@ -86,7 +149,24 @@ class StocksController extends Controller
         $tenantId = $this->tenantId();
 
         $validated = $request->validate([
-            'product_id' => ['required', 'integer'],
+            'branch_id' => [
+                'required',
+                'integer',
+                Rule::exists('pos.branches', 'id')->where(function ($query) use ($tenantId) {
+                    $query->where('tenant_id', $tenantId);
+                }),
+            ],
+            'product_id' => [
+                'required',
+                'integer',
+                Rule::exists('pos.products', 'id')->where(function ($query) use ($tenantId, $request) {
+                    $query->where('tenant_id', $tenantId);
+
+                    if ($request->filled('branch_id')) {
+                        $query->where('branch_id', $request->branch_id);
+                    }
+                }),
+            ],
             'movement_type' => ['required', 'in:stock_in,adjustment_in,adjustment_out,damage,expired'],
             'quantity' => ['required', 'numeric', 'min:0.01'],
             'unit_cost' => ['nullable', 'numeric', 'min:0'],
@@ -96,7 +176,9 @@ class StocksController extends Controller
         ]);
 
         DB::connection('pos')->transaction(function () use ($validated, $tenantId) {
-            $product = Product::where('tenant_id', $tenantId)
+            $product = Product::query()
+                ->where('tenant_id', $tenantId)
+                ->where('branch_id', $validated['branch_id'])
                 ->where('id', $validated['product_id'])
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -121,6 +203,7 @@ class StocksController extends Controller
             if ($validated['movement_type'] === 'stock_in') {
                 $batch = ProductStockBatch::create([
                     'tenant_id' => $tenantId,
+                    'branch_id' => $validated['branch_id'],
                     'product_id' => $product->id,
                     'batch_no' => 'BATCH-' . now()->format('YmdHis') . '-' . $product->id,
                     'quantity_received' => $quantity,
@@ -142,6 +225,7 @@ class StocksController extends Controller
 
             StockMovement::create([
                 'tenant_id' => $tenantId,
+                'branch_id' => $validated['branch_id'],
                 'product_id' => $product->id,
                 'product_stock_batch_id' => $batchId,
                 'movement_type' => $validated['movement_type'],

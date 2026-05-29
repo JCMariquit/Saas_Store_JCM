@@ -78,11 +78,11 @@ const clientGroupedItems: SidebarGroup[] = [
     {
         title: 'Inventory',
         icon: Boxes,
-        badge: 'DEV',
+        badge: 'BETA',
         items: [
-            { title: 'Products', url: '/client/inventory/products', icon: Package2, badge: 'DEV' },
-            { title: 'Categories', url: '/client/inventory/categories', icon: Tags, badge: 'DEV' },
-            { title: 'Stock Management', url: '/client/inventory/stocks', icon: Boxes, badge: 'DEV' },
+            { title: 'Products', url: '/client/inventory/products', icon: Package2, badge: 'BETA' },
+            { title: 'Categories', url: '/client/inventory/categories', icon: Tags, badge: 'BETA' },
+            { title: 'Stock Management', url: '/client/inventory/stocks', icon: Boxes, badge: 'BETA' },
         ],
     },
     {

@@ -10,6 +10,7 @@ class ProductStockBatch extends Model
 
     protected $fillable = [
         'tenant_id',
+        'branch_id',
         'product_id',
         'batch_no',
         'quantity_received',
@@ -29,6 +30,11 @@ class ProductStockBatch extends Model
         'received_date' => 'date',
         'expiry_date' => 'date',
     ];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     public function product()
     {

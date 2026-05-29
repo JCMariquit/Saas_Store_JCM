@@ -3,7 +3,19 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
-import { Barcode, Boxes, Pencil, Plus, RotateCcw, Search, Trash2, X } from 'lucide-react';
+import {
+    Barcode,
+    Boxes,
+    Building2,
+    MoreHorizontal,
+    Pencil,
+    Plus,
+    RotateCcw,
+    Search,
+    Store,
+    Trash2,
+    X,
+} from 'lucide-react';
 
 const PRODUCTS_URL = '/client/inventory/products';
 
@@ -14,6 +26,14 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+type Branch = {
+    id: number;
+    name: string;
+    code?: string | null;
+    is_main?: boolean;
+    is_active?: boolean;
+};
+
 type Category = {
     id: number;
     name: string;
@@ -21,6 +41,7 @@ type Category = {
 
 type Product = {
     id: number;
+    branch_id?: number | null;
     name: string;
     slug: string;
     sku?: string | null;
@@ -34,6 +55,7 @@ type Product = {
     status: 'active' | 'inactive' | 'draft';
     stock_tracking: 'tracked' | 'not_tracked';
     category?: Category | null;
+    branch?: Branch | null;
 };
 
 type PaginationLink = {
@@ -50,15 +72,28 @@ type ProductsPageProps = {
         to: number | null;
         total: number;
     };
+    branches: Branch[];
+    selectedBranchId?: number | string | null;
     categories: Category[];
     filters: {
+        branch_id?: string | number | null;
         search?: string | null;
         category_id?: string | null;
         status?: string | null;
     };
 };
 
-export default function ProductsIndex({ products, categories, filters }: ProductsPageProps) {
+export default function ProductsIndex({
+    products,
+    branches = [],
+    selectedBranchId,
+    categories,
+    filters,
+}: ProductsPageProps) {
+    const initialBranchId = String(filters?.branch_id ?? selectedBranchId ?? '');
+    const [selectedBranch, setSelectedBranch] = useState(initialBranchId);
+    const [showBranchPicker, setShowBranchPicker] = useState(!initialBranchId && branches.length > 0);
+
     const [search, setSearch] = useState(filters?.search ?? '');
     const [categoryFilter, setCategoryFilter] = useState(filters?.category_id ?? '');
     const [statusFilter, setStatusFilter] = useState(filters?.status ?? '');
@@ -66,6 +101,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
     const form = useForm({
+        branch_id: initialBranchId,
         category_id: '',
         name: '',
         sku: '',
@@ -81,11 +117,18 @@ export default function ProductsIndex({ products, categories, filters }: Product
         status: 'active',
     });
 
+    const activeBranch = useMemo(() => {
+        return branches.find((branch) => String(branch.id) === String(selectedBranch)) ?? null;
+    }, [branches, selectedBranch]);
+
     useEffect(() => {
+        if (!selectedBranch) return;
+
         const timeout = setTimeout(() => {
             router.get(
                 PRODUCTS_URL,
                 {
+                    branch_id: selectedBranch,
                     search,
                     category_id: categoryFilter,
                     status: statusFilter,
@@ -99,7 +142,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
         }, 400);
 
         return () => clearTimeout(timeout);
-    }, [search, categoryFilter, statusFilter]);
+    }, [selectedBranch, search, categoryFilter, statusFilter]);
 
     const summary = useMemo(() => {
         const total = products.total ?? 0;
@@ -117,6 +160,29 @@ export default function ProductsIndex({ products, categories, filters }: Product
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         })}`;
+
+    const selectBranch = (branchId: number) => {
+        const id = String(branchId);
+
+        setSelectedBranch(id);
+        form.setData('branch_id', id);
+        setShowBranchPicker(false);
+
+        router.get(
+            PRODUCTS_URL,
+            {
+                branch_id: id,
+                search,
+                category_id: categoryFilter,
+                status: statusFilter,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
+    };
 
     const statusBadge = (status: Product['status']) => {
         const classes = {
@@ -149,7 +215,9 @@ export default function ProductsIndex({ products, categories, filters }: Product
 
         router.get(
             PRODUCTS_URL,
-            {},
+            {
+                branch_id: selectedBranch,
+            },
             {
                 preserveState: true,
                 preserveScroll: true,
@@ -160,6 +228,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
 
     const resetForm = () => {
         form.setData({
+            branch_id: selectedBranch,
             category_id: '',
             name: '',
             sku: '',
@@ -178,6 +247,11 @@ export default function ProductsIndex({ products, categories, filters }: Product
     };
 
     const openCreateModal = () => {
+        if (!selectedBranch) {
+            setShowBranchPicker(true);
+            return;
+        }
+
         setEditingProduct(null);
         resetForm();
         setIsOpen(true);
@@ -187,6 +261,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
         setEditingProduct(product);
 
         form.setData({
+            branch_id: String(product.branch_id ?? selectedBranch),
             category_id: product.category?.id?.toString() ?? '',
             name: product.name ?? '',
             sku: product.sku ?? '',
@@ -215,6 +290,8 @@ export default function ProductsIndex({ products, categories, filters }: Product
     const submit = (e: FormEvent) => {
         e.preventDefault();
 
+        form.setData('branch_id', selectedBranch);
+
         if (editingProduct) {
             form.put(`${PRODUCTS_URL}/${editingProduct.id}`, {
                 preserveScroll: true,
@@ -242,6 +319,53 @@ export default function ProductsIndex({ products, categories, filters }: Product
             <Head title="Products" />
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                <Card tone="topline" variant="default" className="overflow-hidden shadow-sm">
+                    <CardHeader className="p-5">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="flex size-11 items-center justify-center rounded-lg border bg-muted/40">
+                                    <Store className="size-5 text-muted-foreground" />
+                                </div>
+
+                                <div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <CardTitle className="text-xl">
+                                            {activeBranch ? activeBranch.name : 'Select Branch'}
+                                        </CardTitle>
+
+                                        {activeBranch?.is_main && (
+                                            <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                                Main
+                                            </span>
+                                        )}
+
+                                        {activeBranch && (
+                                            <span className="rounded-md bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600">
+                                                Active
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <CardDescription className="mt-1">
+                                        {activeBranch
+                                            ? `Branch code: ${activeBranch.code || 'No code'}`
+                                            : 'Choose a branch to display and manage products.'}
+                                    </CardDescription>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowBranchPicker(true)}
+                                className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition hover:bg-muted"
+                            >
+                                <Building2 className="size-4" />
+                                {activeBranch ? 'Change Branch' : 'Select Branch'}
+                            </button>
+                        </div>
+                    </CardHeader>
+                </Card>
+
                 <div className="grid gap-4 md:grid-cols-4">
                     <SummaryCard title="Total Products" value={summary.total} variant="default" />
                     <SummaryCard title="Active Products" value={summary.active} variant="success" />
@@ -397,18 +521,22 @@ export default function ProductsIndex({ products, categories, filters }: Product
                                                         <Boxes className="size-5 text-muted-foreground" />
                                                     </div>
 
-                                                    <h3 className="font-medium">No products found</h3>
+                                                    <h3 className="font-medium">
+                                                        {selectedBranch ? 'No products found' : 'Select a branch first'}
+                                                    </h3>
 
                                                     <p className="mt-1 text-sm text-muted-foreground">
-                                                        Create your first product to start managing POS inventory.
+                                                        {selectedBranch
+                                                            ? 'Create your first product for this branch.'
+                                                            : 'Choose a branch to display and manage products.'}
                                                     </p>
 
                                                     <button
-                                                        onClick={openCreateModal}
+                                                        onClick={selectedBranch ? openCreateModal : () => setShowBranchPicker(true)}
                                                         className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
                                                     >
                                                         <Plus className="size-4" />
-                                                        Add Product
+                                                        {selectedBranch ? 'Add Product' : 'Select Branch'}
                                                     </button>
                                                 </div>
                                             </td>
@@ -445,15 +573,82 @@ export default function ProductsIndex({ products, categories, filters }: Product
                     </CardContent>
                 </Card>
 
+                {showBranchPicker && (
+                    <Modal>
+                        <CardHeader className="flex flex-row items-center justify-between border-b p-5">
+                            <div>
+                                <CardTitle className="text-lg">Choose Branch</CardTitle>
+                                <CardDescription>Select which branch products you want to manage.</CardDescription>
+                            </div>
+
+                            {selectedBranch && (
+                                <button onClick={() => setShowBranchPicker(false)} className="rounded-md p-2 hover:bg-muted">
+                                    <X className="size-4" />
+                                </button>
+                            )}
+                        </CardHeader>
+
+                        <div className="grid max-h-[70vh] gap-4 overflow-y-auto p-5 md:grid-cols-2">
+                            {branches.map((branch) => (
+                                <button
+                                    type="button"
+                                    key={branch.id}
+                                    onClick={() => selectBranch(branch.id)}
+                                    className={`group overflow-hidden rounded-xl border text-left transition hover:border-primary/60 hover:bg-muted/40 ${
+                                        String(selectedBranch) === String(branch.id)
+                                            ? 'border-primary bg-primary/5'
+                                            : 'border-sidebar-border/70 dark:border-sidebar-border'
+                                    }`}
+                                >
+                                    <div className="flex items-start justify-between p-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex size-11 items-center justify-center rounded-full border bg-background">
+                                                <Store className="size-5 text-muted-foreground" />
+                                            </div>
+
+                                            <div>
+                                                <div className="font-semibold">{branch.name}</div>
+                                                <div className="text-xs uppercase text-muted-foreground">
+                                                    {branch.code || 'NO CODE'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <MoreHorizontal className="size-4 text-muted-foreground" />
+                                    </div>
+
+                                    <div className="flex gap-2 border-t px-4 py-3">
+                                        {branch.is_main && (
+                                            <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
+                                                Main
+                                            </span>
+                                        )}
+
+                                        <span className="rounded-full bg-green-500 px-2.5 py-1 text-xs font-medium text-white">
+                                            Active
+                                        </span>
+                                    </div>
+
+                                    <div className="border-t px-4 py-4 text-sm text-muted-foreground">
+                                        Click this branch to display and manage its products.
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </Modal>
+                )}
+
                 {isOpen && (
                     <Modal>
                         <CardHeader className="flex flex-row items-center justify-between border-b p-5">
                             <div>
-                                <CardTitle className="text-lg">
-                                    {editingProduct ? 'Edit Product' : 'Add Product'}
-                                </CardTitle>
+                                <CardTitle className="text-lg">{editingProduct ? 'Edit Product' : 'Add Product'}</CardTitle>
                                 <CardDescription>
-                                    {editingProduct ? 'Update product details.' : 'Create new POS inventory item.'}
+                                    {activeBranch
+                                        ? `Branch: ${activeBranch.name}`
+                                        : editingProduct
+                                          ? 'Update product details.'
+                                          : 'Create new POS inventory item.'}
                                 </CardDescription>
                             </div>
 
@@ -463,6 +658,12 @@ export default function ProductsIndex({ products, categories, filters }: Product
                         </CardHeader>
 
                         <form onSubmit={submit} className="max-h-[75vh] space-y-5 overflow-y-auto p-5">
+                            <input type="hidden" value={form.data.branch_id} />
+
+                            <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
+                                This product will be saved under <b>{activeBranch?.name ?? 'selected branch'}</b>.
+                            </div>
+
                             <div className="grid gap-4 md:grid-cols-2">
                                 <Field label="Product Name" error={form.errors.name}>
                                     <input
@@ -616,7 +817,7 @@ export default function ProductsIndex({ products, categories, filters }: Product
                                 </button>
 
                                 <button
-                                    disabled={form.processing}
+                                    disabled={form.processing || !selectedBranch}
                                     className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
                                 >
                                     {editingProduct ? 'Update Product' : 'Create Product'}

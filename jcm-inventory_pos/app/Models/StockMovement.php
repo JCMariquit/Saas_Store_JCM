@@ -10,6 +10,7 @@ class StockMovement extends Model
 
     protected $fillable = [
         'tenant_id',
+        'branch_id',
         'product_id',
         'product_stock_batch_id',
         'movement_type',
@@ -33,6 +34,11 @@ class StockMovement extends Model
         'quantity_after' => 'decimal:2',
         'movement_date' => 'datetime',
     ];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     public function product()
     {

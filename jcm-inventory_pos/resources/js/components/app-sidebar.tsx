@@ -88,16 +88,18 @@ const clientGroupedItems: SidebarGroup[] = [
     {
         title: 'Sales',
         icon: Receipt,
+        badge: 'DEV',
         items: [
             { title: 'Sold Items', url: '/client/sales/sold-items', icon: Package2, badge: 'DEV' },
-            { title: 'Returns', url: '/client/sales/returns', icon: RotateCcw, badge: 'SOON' },
-            { title: 'Discounts', url: '/client/sales/discounts', icon: Tags, badge: 'SOON' },
-            { title: 'Cash Drawer', url: '/client/sales/cash-drawer', icon: WalletCards, badge: 'SOON' },
+            { title: 'Returns', url: '/client/sales/returns', icon: RotateCcw, badge: 'DEV' },
+            { title: 'Discounts', url: '/client/sales/discounts', icon: Tags, badge: 'DEV' },
+            { title: 'Cash Drawer', url: '/client/sales/cash-drawer', icon: WalletCards, badge: 'DEV' },
         ],
     },
     {
         title: 'Reports',
         icon: BarChart3,
+        badge: 'SOON',
         items: [
             { title: 'Sales Reports', url: '/client/reports/sales', icon: BarChart3, badge: 'SOON' },
             { title: 'Inventory Reports', url: '/client/reports/inventory', icon: WalletCards, badge: 'SOON' },

@@ -8,8 +8,11 @@ class SaleItem extends Model
 {
     protected $connection = 'pos';
 
+    protected $table = 'sale_items';
+
     protected $fillable = [
         'tenant_id',
+        'branch_id',
         'sale_id',
         'product_id',
         'product_name',
@@ -22,6 +25,10 @@ class SaleItem extends Model
     ];
 
     protected $casts = [
+        'tenant_id' => 'integer',
+        'branch_id' => 'integer',
+        'sale_id' => 'integer',
+        'product_id' => 'integer',
         'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
         'unit_cost' => 'decimal:2',
@@ -31,11 +38,11 @@ class SaleItem extends Model
 
     public function sale()
     {
-        return $this->belongsTo(Sale::class);
+        return $this->belongsTo(Sale::class, 'sale_id');
     }
 
     public function product()
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class, 'product_id');
     }
 }

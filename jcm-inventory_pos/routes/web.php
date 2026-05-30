@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Owner\BranchController;
+use App\Http\Controllers\Owner\CashDrawerController;
 use App\Http\Controllers\Owner\CategoryController;
 use App\Http\Controllers\Owner\PosTerminalController;
 use App\Http\Controllers\Owner\ProductController;
@@ -48,11 +49,18 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/sales/transactions', [TransactionsController::class, 'index'])->name('sales.transactions.index');
         Route::get('/sales/sold-items', [SoldItemsController::class, 'index'])->name('sales.sold-items.index');
+
         Route::get('/sales/returns', [ReturnsController::class, 'index'])->name('sales.returns.index');
         Route::get('/sales/returns/search-sale', [ReturnsController::class, 'searchSale'])->name('sales.returns.search-sale');
         Route::post('/sales/returns', [ReturnsController::class, 'store'])->name('sales.returns.store');
+
         Route::get('/sales/discounts', function () { return Inertia::render('owner/sales/discounts/index'); })->name('sales.discounts.index');
-        Route::get('/sales/cash-drawer', function () { return Inertia::render('owner/sales/cash-drawer/index'); })->name('sales.cash-drawer.index');
+
+        Route::get('/sales/cash-drawer', [CashDrawerController::class, 'index'])->name('sales.cash-drawer.index');
+        Route::post('/sales/cash-drawer/open', [CashDrawerController::class, 'open'])->name('sales.cash-drawer.open');
+        Route::post('/sales/cash-drawer/cash-in', [CashDrawerController::class, 'cashIn'])->name('sales.cash-drawer.cash-in');
+        Route::post('/sales/cash-drawer/cash-out', [CashDrawerController::class, 'cashOut'])->name('sales.cash-drawer.cash-out');
+        Route::post('/sales/cash-drawer/close', [CashDrawerController::class, 'close'])->name('sales.cash-drawer.close');
 
         Route::get('/customers', function () { return Inertia::render('owner/customers/index'); })->name('customers.index');
         Route::get('/reports/sales', function () { return Inertia::render('owner/reports/sales/index'); })->name('reports.sales.index');

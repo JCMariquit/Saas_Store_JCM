@@ -56,7 +56,7 @@ type SidebarGroup = {
 
 const clientDirectItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/client/dashboard', icon: LayoutGrid, badge: 'DEV' },
-    { title: 'POS Terminal', url: '/client/pos/terminal', icon: ShoppingCart, badge: 'BETA' },
+    { title: 'POS Terminal', url: '/client/pos/terminal', icon: ShoppingCart, badge: 'DEV' },
     { title: 'Transactions', url: '/client/sales/transactions', icon: Receipt, badge: 'BETA' },
 ];
 
@@ -90,9 +90,9 @@ const clientGroupedItems: SidebarGroup[] = [
         icon: Receipt,
         badge: 'DEV',
         items: [
-            { title: 'Sold Items', url: '/client/sales/sold-items', icon: Package2, badge: 'DEV' },
-            { title: 'Returns', url: '/client/sales/returns', icon: RotateCcw, badge: 'DEV' },
-            { title: 'Discounts', url: '/client/sales/discounts', icon: Tags, badge: 'DEV' },
+            { title: 'Sold Items', url: '/client/sales/sold-items', icon: Package2, badge: 'BETA' },
+            { title: 'Returns', url: '/client/sales/returns', icon: RotateCcw, badge: 'BETA' },
+            { title: 'Discounts', url: '/client/sales/discounts', icon: Tags, badge: 'SOON' },
             { title: 'Cash Drawer', url: '/client/sales/cash-drawer', icon: WalletCards, badge: 'DEV' },
         ],
     },

@@ -33,6 +33,7 @@ class SoldItemsController extends Controller
             ->leftJoin('branches as b', 'b.id', '=', 'si.branch_id')
             ->leftJoin('payments as p', 'p.sale_id', '=', 's.id')
             ->where('si.tenant_id', $tenantId)
+            ->where('si.quantity', '>', 0)
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('si.product_name', 'like', "%{$search}%")

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 29, 2026 at 10:22 AM
+-- Generation Time: May 30, 2026 at 05:26 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -345,40 +345,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('DxSzUnpGJYPq25qV3ne463XidTkiEzHCfFssgdQP', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiNWV1RlpZeVJaaVQ2NUs0MzZBc251ajBBNUhQM1pUVzZtS2haZ0t6SSI7czozOiJ1cmwiO2E6MDp7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Nzk6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9jbGllbnQvaW52ZW50b3J5L3N0b2Nrcz9icmFuY2hfaWQ9MTEmY2F0ZWdvcnlfaWQ9JnNlYXJjaD0iO3M6NToicm91dGUiO3M6Mjk6ImNsaWVudC5pbnZlbnRvcnkuc3RvY2tzLmluZGV4Ijt9fQ==', 1780042945);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `staff`
---
-
-CREATE TABLE `staff` (
-  `id` bigint(20) UNSIGNED NOT NULL,
-  `tenant_id` bigint(20) UNSIGNED NOT NULL,
-  `branch_id` bigint(20) UNSIGNED NOT NULL,
-  `original_user_id` bigint(20) UNSIGNED DEFAULT NULL,
-  `name` varchar(255) NOT NULL,
-  `email` varchar(255) DEFAULT NULL,
-  `phone` varchar(50) DEFAULT NULL,
-  `username` varchar(150) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `role` enum('manager','cashier','inventory_staff') NOT NULL DEFAULT 'cashier',
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `last_login_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `staff`
---
-
-INSERT INTO `staff` (`id`, `tenant_id`, `branch_id`, `original_user_id`, `name`, `email`, `phone`, `username`, `password`, `role`, `is_active`, `last_login_at`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 1, 2, 'cashier', 'cashier@gmail.com', NULL, 'cashier@gmail.com', '$2y$12$ZEOBWD0I/XP.g5WFLoZ14OP9s1d96zvlmXjU1SLoKoPtk42DGHb4K', 'cashier', 1, NULL, '2026-04-14 08:44:29', '2026-05-27 17:19:51', NULL),
-(2, 1, 3, NULL, '123', '123@gmail.com', NULL, '123@gmail.com', '$2y$12$h3Lck5GR7E1fJgQIhkqIFONym5IyqB8UnOm6/djLYdb2XCWGnPbau', 'cashier', 1, NULL, '2026-05-27 22:23:33', '2026-05-27 23:29:32', '2026-05-27 23:29:32'),
-(3, 1, 11, NULL, '123', 'junecharlesmariquit553@gmail.com', NULL, 'junecharlesmariquit553@gmail.com', '$2y$12$kQNoUxa3K7EdZTjfJVlB..7WID6eeAtIoQfaTW.74eyJyAILa6S/O', 'cashier', 1, NULL, '2026-05-27 23:29:25', '2026-05-27 23:29:25', NULL);
+('l0uzbhkiWeQSoIssJTeFl9aopTIyYUdfgeEVvc1C', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiYkFQT1JsNnFQUDJzWkZsVVNFVWhBdlRqUUx5SlVtVVNYUGZiTEtaViI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo0MjoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2NsaWVudC9zYWxlcy9yZXR1cm5zIjtzOjU6InJvdXRlIjtzOjI2OiJjbGllbnQuc2FsZXMucmV0dXJucy5pbmRleCI7fX0=', 1780111502),
+('vdYnfDmg9ADrzPGu7PiCeujNdbzF8tG275b541JO', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiSHNuT0JzZlFXV0ZtQ2xBWmtBYmZva2paQ1lsMGdkNnhIcU53MmFTMCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1780107435);
 
 -- --------------------------------------------------------
 
@@ -582,19 +550,6 @@ ALTER TABLE `sessions`
   ADD KEY `sessions_last_activity_index` (`last_activity`);
 
 --
--- Indexes for table `staff`
---
-ALTER TABLE `staff`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `staff_tenant_username_unique` (`tenant_id`,`username`),
-  ADD UNIQUE KEY `staff_original_user_id_unique` (`original_user_id`),
-  ADD UNIQUE KEY `staff_tenant_email_unique` (`tenant_id`,`email`),
-  ADD KEY `staff_tenant_id_index` (`tenant_id`),
-  ADD KEY `staff_branch_id_index` (`branch_id`),
-  ADD KEY `staff_role_index` (`role`),
-  ADD KEY `staff_is_active_index` (`is_active`);
-
---
 -- Indexes for table `stock_movements`
 --
 ALTER TABLE `stock_movements`
@@ -659,12 +614,6 @@ ALTER TABLE `sales`
 --
 ALTER TABLE `sale_items`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
-
---
--- AUTO_INCREMENT for table `staff`
---
-ALTER TABLE `staff`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `stock_movements`

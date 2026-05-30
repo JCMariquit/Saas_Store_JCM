@@ -22,8 +22,8 @@ import {
 } from 'lucide-react';
 import { Fragment, type ReactNode, useEffect, useMemo, useState } from 'react';
 
-const POS_TERMINAL_URL = '/shared/pos/terminal';
-const POS_CHECKOUT_URL = '/shared/pos/checkout';
+const POS_TERMINAL_URL = '/client/pos/terminal';
+const POS_CHECKOUT_URL = '/client/pos/checkout';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'POS Terminal', href: POS_TERMINAL_URL }];
 

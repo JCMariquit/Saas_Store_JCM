@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Shared;
+namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
@@ -65,7 +65,7 @@ class PosTerminalController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        return Inertia::render('shared/terminal/index', [
+        return Inertia::render('owner/terminal/index', [
             'products' => $products,
             'categories' => $categories,
             'filters' => [

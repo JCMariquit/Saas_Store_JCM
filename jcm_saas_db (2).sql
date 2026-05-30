@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 29, 2026 at 10:22 AM
+-- Generation Time: May 30, 2026 at 05:26 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -597,8 +597,9 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `two_factor_secret`, `two_factor_recovery_codes`, `two_factor_confirmed_at`, `remember_token`, `created_at`, `updated_at`, `role`, `client_id`, `branch_id`, `system_used`, `created_by`, `is_active`) VALUES
-(1, 'June Charles Mariquit', 'junecharlesmariquit553@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, 'PdonkKogJjsg4QQ3K7WplZCqGhNmrENVwsb49qTgGzUVS1OKpryBkGWHtyaC', '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'client', NULL, NULL, 'pos', NULL, 1),
-(7, 'admin', 'admin@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, 'AKzQuJt0QVa7Gfsmsdgbl7sZzNkzjrD04AxBAX7SjbmjrBx0ZVXnNHNNyqCn', '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'admin', NULL, NULL, NULL, NULL, 1);
+(1, 'June Charles Mariquit', 'junecharlesmariquit553@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, 'GH1W9kIyhh0NYGf5Nlas5LfS0nT0EdDhmMjL47wAouRiPTAz9bRqFqX9aqrB', '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'client', NULL, NULL, 'pos', NULL, 1),
+(7, 'admin', 'admin@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, 'AKzQuJt0QVa7Gfsmsdgbl7sZzNkzjrD04AxBAX7SjbmjrBx0ZVXnNHNNyqCn', '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'admin', NULL, NULL, NULL, NULL, 1),
+(12, 'cashier', 'cashier@gmail.com', NULL, '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-05-29 18:52:57', '2026-05-29 18:52:57', 'cashier', 1, 1, 'pos', 1, 1);
 
 --
 -- Indexes for dumped tables
@@ -924,7 +925,7 @@ ALTER TABLE `transactions`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- Constraints for dumped tables

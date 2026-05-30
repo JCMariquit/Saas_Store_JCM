@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Shared;
+namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;

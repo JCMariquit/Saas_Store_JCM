@@ -56,13 +56,13 @@ type SidebarGroup = {
 
 const clientDirectItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/client/dashboard', icon: LayoutGrid, badge: 'DEV' },
-    { title: 'POS Terminal', url: '/shared/pos/terminal', icon: ShoppingCart, badge: 'BETA' },
+    { title: 'POS Terminal', url: '/client/pos/terminal', icon: ShoppingCart, badge: 'BETA' },
     { title: 'Transactions', url: '/client/sales/transactions', icon: Receipt, badge: 'BETA' },
 ];
 
 const cashierDirectItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/cashier/dashboard', icon: LayoutGrid },
-    { title: 'POS Terminal', url: '/shared/pos/terminal', icon: ShoppingCart, },
+    { title: 'POS Terminal', url: '#', icon: ShoppingCart, },
 ];
 const clientGroupedItems: SidebarGroup[] = [
     {
@@ -89,8 +89,10 @@ const clientGroupedItems: SidebarGroup[] = [
         title: 'Sales',
         icon: Receipt,
         items: [
+            { title: 'Sold Items', url: '/client/sales/sold-items', icon: Package2, badge: 'DEV' },
             { title: 'Returns', url: '/client/sales/returns', icon: RotateCcw, badge: 'SOON' },
-            { title: 'Customers', url: '/client/customers', icon: Users, badge: 'BETA' },
+            { title: 'Discounts', url: '/client/sales/discounts', icon: Tags, badge: 'SOON' },
+            { title: 'Cash Drawer', url: '/client/sales/cash-drawer', icon: WalletCards, badge: 'SOON' },
         ],
     },
     {

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 30, 2026 at 05:26 AM
+-- Generation Time: May 30, 2026 at 08:34 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -71,6 +71,54 @@ CREATE TABLE `cache_locks` (
   `owner` varchar(255) NOT NULL,
   `expiration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `cash_drawers`
+--
+
+CREATE TABLE `cash_drawers` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tenant_id` bigint(20) UNSIGNED NOT NULL,
+  `branch_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `opened_by` bigint(20) UNSIGNED NOT NULL,
+  `closed_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `opening_balance` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `expected_balance` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `actual_balance` decimal(12,2) DEFAULT NULL,
+  `variance_amount` decimal(12,2) DEFAULT 0.00,
+  `total_cash_sales` decimal(12,2) DEFAULT 0.00,
+  `total_refunds` decimal(12,2) DEFAULT 0.00,
+  `total_cash_in` decimal(12,2) DEFAULT 0.00,
+  `total_cash_out` decimal(12,2) DEFAULT 0.00,
+  `status` enum('open','closed') NOT NULL DEFAULT 'open',
+  `opened_at` timestamp NULL DEFAULT NULL,
+  `closed_at` timestamp NULL DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `cash_drawer_transactions`
+--
+
+CREATE TABLE `cash_drawer_transactions` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tenant_id` bigint(20) UNSIGNED NOT NULL,
+  `cash_drawer_id` bigint(20) UNSIGNED NOT NULL,
+  `type` enum('opening','cash_sale','refund','cash_in','cash_out','closing_adjustment') NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `reference_type` varchar(50) DEFAULT NULL,
+  `reference_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `remarks` text DEFAULT NULL,
+  `created_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -188,7 +236,7 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `tenant_id`, `branch_id`, `category_id`, `name`, `slug`, `sku`, `barcode`, `description`, `image_path`, `unit`, `cost_price`, `selling_price`, `wholesale_price`, `compare_at_price`, `quantity`, `reorder_level`, `max_stock_level`, `is_taxable`, `tax_rate`, `allow_discount`, `discount_type`, `discount_value`, `product_type`, `stock_tracking`, `low_stock_alert`, `status`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 1, 1, 'Safe Guard', 'safe-guard', '123', '123123', NULL, NULL, 'pcs', 25.00, 30.00, NULL, NULL, 0.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-20 19:05:30', '2026-05-21 19:52:06', NULL),
+(1, 1, 1, 1, 'Safe Guard', 'safe-guard', '123', '123123', NULL, NULL, 'pcs', 25.00, 30.00, NULL, NULL, 6.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-20 19:05:30', '2026-05-29 22:15:11', NULL),
 (2, 1, 1, 1, 'Dove', 'dove', NULL, NULL, NULL, NULL, 'pcs', 15.00, 25.00, NULL, NULL, 0.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-20 23:42:27', '2026-05-21 19:52:06', NULL),
 (3, 1, 1, 1, 'SafeGuard', 'safeguard', NULL, NULL, NULL, NULL, 'pcs', 45.00, 55.00, NULL, NULL, 70.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-24 17:04:06', '2026-05-26 21:39:27', NULL),
 (7, 1, 11, 3, '13', '13', NULL, NULL, '123', NULL, 'pcs', 123.00, 123.00, NULL, NULL, 123.00, 13.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-29 00:09:38', '2026-05-29 00:09:38', NULL),
@@ -231,6 +279,38 @@ INSERT INTO `product_stock_batches` (`id`, `tenant_id`, `branch_id`, `product_id
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `return_items`
+--
+
+CREATE TABLE `return_items` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tenant_id` bigint(20) UNSIGNED NOT NULL,
+  `branch_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `sale_id` bigint(20) UNSIGNED NOT NULL,
+  `sale_item_id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `return_no` varchar(100) NOT NULL,
+  `quantity` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `unit_price` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `line_total` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `reason` varchar(255) DEFAULT NULL,
+  `status` enum('completed','cancelled') DEFAULT 'completed',
+  `returned_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `returned_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `return_items`
+--
+
+INSERT INTO `return_items` (`id`, `tenant_id`, `branch_id`, `sale_id`, `sale_item_id`, `product_id`, `return_no`, `quantity`, `unit_price`, `line_total`, `reason`, `status`, `returned_by`, `returned_at`, `created_at`, `updated_at`) VALUES
+(5, 1, 1, 1, 1, 1, 'RET-20260530-00001', 2.00, 30.00, 60.00, NULL, 'completed', 1, '2026-05-29 22:15:11', '2026-05-29 22:15:11', '2026-05-29 22:15:11');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `sales`
 --
 
@@ -259,7 +339,7 @@ CREATE TABLE `sales` (
 --
 
 INSERT INTO `sales` (`id`, `tenant_id`, `branch_id`, `sale_no`, `cashier_user_id`, `subtotal`, `discount_total`, `tax_total`, `grand_total`, `amount_paid`, `change_amount`, `payment_status`, `status`, `remarks`, `sold_at`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 'SALE-20260522-00001', 1, 175.00, 0.00, 0.00, 175.00, 1000.00, 825.00, 'paid', 'completed', NULL, '2026-05-21 19:20:37', '2026-05-21 19:20:37', '2026-05-21 19:20:37'),
+(1, 1, 1, 'SALE-20260522-00001', 1, 115.00, 0.00, 0.00, 115.00, 940.00, 825.00, 'paid', 'completed', NULL, '2026-05-21 19:20:37', '2026-05-21 19:20:37', '2026-05-29 22:15:11'),
 (2, 1, 1, 'SALE-20260522-00002', 1, 30.00, 0.00, 0.00, 30.00, 50.00, 20.00, 'paid', 'completed', NULL, '2026-05-21 19:26:34', '2026-05-21 19:26:34', '2026-05-21 19:26:34'),
 (3, 1, 1, 'SALE-20260522-00003', 1, 345.00, 0.00, 0.00, 345.00, 1000.00, 655.00, 'paid', 'completed', NULL, '2026-05-21 19:52:06', '2026-05-21 19:52:06', '2026-05-21 19:52:06'),
 (4, 1, 1, 'SALE-20260525-00001', 1, 110.00, 0.00, 0.00, 110.00, 500.00, 390.00, 'paid', 'completed', NULL, '2026-05-24 17:05:05', '2026-05-24 17:05:05', '2026-05-24 17:05:05'),
@@ -305,7 +385,7 @@ CREATE TABLE `sale_items` (
 --
 
 INSERT INTO `sale_items` (`id`, `tenant_id`, `branch_id`, `sale_id`, `product_id`, `product_name`, `sku`, `quantity`, `unit_price`, `unit_cost`, `discount_amount`, `line_total`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 1, 1, 'Safe Guard', '123', 5.00, 30.00, 25.00, 0.00, 150.00, '2026-05-21 19:20:37', '2026-05-21 19:20:37'),
+(1, 1, 1, 1, 1, 'Safe Guard', '123', 3.00, 30.00, 25.00, 0.00, 90.00, '2026-05-21 19:20:37', '2026-05-29 22:15:11'),
 (2, 1, 1, 1, 2, 'Dove', NULL, 1.00, 25.00, 15.00, 0.00, 25.00, '2026-05-21 19:20:37', '2026-05-21 19:20:37'),
 (3, 1, 1, 2, 1, 'Safe Guard', '123', 1.00, 30.00, 25.00, 0.00, 30.00, '2026-05-21 19:26:34', '2026-05-21 19:26:34'),
 (4, 1, 1, 3, 1, 'Safe Guard', '123', 4.00, 30.00, 25.00, 0.00, 120.00, '2026-05-21 19:52:06', '2026-05-21 19:52:06'),
@@ -345,8 +425,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('l0uzbhkiWeQSoIssJTeFl9aopTIyYUdfgeEVvc1C', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiYkFQT1JsNnFQUDJzWkZsVVNFVWhBdlRqUUx5SlVtVVNYUGZiTEtaViI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo0MjoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2NsaWVudC9zYWxlcy9yZXR1cm5zIjtzOjU6InJvdXRlIjtzOjI2OiJjbGllbnQuc2FsZXMucmV0dXJucy5pbmRleCI7fX0=', 1780111502),
-('vdYnfDmg9ADrzPGu7PiCeujNdbzF8tG275b541JO', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YToyOntzOjY6Il90b2tlbiI7czo0MDoiSHNuT0JzZlFXV0ZtQ2xBWmtBYmZva2paQ1lsMGdkNnhIcU53MmFTMCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1780107435);
+('l0uzbhkiWeQSoIssJTeFl9aopTIyYUdfgeEVvc1C', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiYkFQT1JsNnFQUDJzWkZsVVNFVWhBdlRqUUx5SlVtVVNYUGZiTEtaViI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo0NjoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2NsaWVudC9zYWxlcy9jYXNoLWRyYXdlciI7czo1OiJyb3V0ZSI7czozMDoiY2xpZW50LnNhbGVzLmNhc2gtZHJhd2VyLmluZGV4Ijt9fQ==', 1780122791);
 
 -- --------------------------------------------------------
 
@@ -403,7 +482,8 @@ INSERT INTO `stock_movements` (`id`, `tenant_id`, `branch_id`, `product_id`, `pr
 (21, 1, 1, 3, NULL, 'sale', 1.00, 45.00, 45.00, 74.00, 73.00, NULL, NULL, 'POS sale: SALE-20260527-00003', '2026-05-27 03:53:35', 2, '2026-05-26 19:53:35', '2026-05-26 19:53:35'),
 (22, 1, 1, 3, NULL, 'sale', 3.00, 45.00, 135.00, 73.00, 70.00, NULL, NULL, 'POS sale: SALE-20260527-00004', '2026-05-27 05:39:27', 2, '2026-05-26 21:39:27', '2026-05-26 21:39:27'),
 (23, 1, 11, 7, 5, 'initial_stock', 123.00, 123.00, 15129.00, 0.00, 123.00, NULL, NULL, 'Initial stock on product creation', '2026-05-29 08:09:38', 1, '2026-05-29 00:09:38', '2026-05-29 00:09:38'),
-(24, 1, 11, 8, 6, 'initial_stock', 22.00, 12.00, 264.00, 0.00, 22.00, NULL, NULL, 'Initial stock on product creation', '2026-05-29 08:17:54', 1, '2026-05-29 00:17:54', '2026-05-29 00:17:54');
+(24, 1, 11, 8, 6, 'initial_stock', 22.00, 12.00, 264.00, 0.00, 22.00, NULL, NULL, 'Initial stock on product creation', '2026-05-29 08:17:54', 1, '2026-05-29 00:17:54', '2026-05-29 00:17:54'),
+(25, 1, 1, 1, NULL, 'return_in', 2.00, 25.00, 50.00, 4.00, 6.00, NULL, NULL, 'POS return: SALE-20260522-00001', '2026-05-30 06:15:11', 1, '2026-05-29 22:15:11', '2026-05-29 22:15:11');
 
 -- --------------------------------------------------------
 
@@ -474,6 +554,23 @@ ALTER TABLE `cache_locks`
   ADD PRIMARY KEY (`key`);
 
 --
+-- Indexes for table `cash_drawers`
+--
+ALTER TABLE `cash_drawers`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_tenant` (`tenant_id`),
+  ADD KEY `idx_branch` (`branch_id`),
+  ADD KEY `idx_status` (`status`);
+
+--
+-- Indexes for table `cash_drawer_transactions`
+--
+ALTER TABLE `cash_drawer_transactions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_tenant` (`tenant_id`),
+  ADD KEY `idx_cash_drawer` (`cash_drawer_id`);
+
+--
 -- Indexes for table `categories`
 --
 ALTER TABLE `categories`
@@ -518,6 +615,18 @@ ALTER TABLE `product_stock_batches`
   ADD KEY `idx_stock_batches_received_date` (`received_date`),
   ADD KEY `idx_stock_batches_expiry_date` (`expiry_date`),
   ADD KEY `product_stock_batches_branch_id_index` (`branch_id`);
+
+--
+-- Indexes for table `return_items`
+--
+ALTER TABLE `return_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_tenant` (`tenant_id`),
+  ADD KEY `idx_branch` (`branch_id`),
+  ADD KEY `idx_sale` (`sale_id`),
+  ADD KEY `idx_sale_item` (`sale_item_id`),
+  ADD KEY `idx_product` (`product_id`),
+  ADD KEY `idx_return_no` (`return_no`);
 
 --
 -- Indexes for table `sales`
@@ -580,6 +689,18 @@ ALTER TABLE `branches`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
+-- AUTO_INCREMENT for table `cash_drawers`
+--
+ALTER TABLE `cash_drawers`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `cash_drawer_transactions`
+--
+ALTER TABLE `cash_drawer_transactions`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
@@ -604,6 +725,12 @@ ALTER TABLE `product_stock_batches`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
+-- AUTO_INCREMENT for table `return_items`
+--
+ALTER TABLE `return_items`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
 -- AUTO_INCREMENT for table `sales`
 --
 ALTER TABLE `sales`
@@ -619,7 +746,7 @@ ALTER TABLE `sale_items`
 -- AUTO_INCREMENT for table `stock_movements`
 --
 ALTER TABLE `stock_movements`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT for table `store_profiles`

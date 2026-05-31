@@ -27,22 +27,27 @@ class StockMovement extends Model
     ];
 
     protected $casts = [
+        'tenant_id' => 'integer',
+        'branch_id' => 'integer',
+        'product_id' => 'integer',
+        'product_stock_batch_id' => 'integer',
         'quantity' => 'decimal:2',
         'unit_cost' => 'decimal:2',
         'total_cost' => 'decimal:2',
         'quantity_before' => 'decimal:2',
         'quantity_after' => 'decimal:2',
         'movement_date' => 'datetime',
+        'created_by' => 'integer',
     ];
 
     public function branch()
     {
-        return $this->belongsTo(Branch::class);
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 
     public function product()
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class, 'product_id');
     }
 
     public function batch()

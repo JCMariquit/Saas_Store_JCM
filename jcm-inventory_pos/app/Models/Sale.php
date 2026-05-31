@@ -10,6 +10,7 @@ class Sale extends Model
 
     protected $fillable = [
         'tenant_id',
+        'branch_id',
         'sale_no',
         'cashier_user_id',
         'subtotal',
@@ -25,6 +26,9 @@ class Sale extends Model
     ];
 
     protected $casts = [
+        'tenant_id' => 'integer',
+        'branch_id' => 'integer',
+        'cashier_user_id' => 'integer',
         'subtotal' => 'decimal:2',
         'discount_total' => 'decimal:2',
         'tax_total' => 'decimal:2',
@@ -34,13 +38,18 @@ class Sale extends Model
         'sold_at' => 'datetime',
     ];
 
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
     public function items()
     {
-        return $this->hasMany(SaleItem::class);
+        return $this->hasMany(SaleItem::class, 'sale_id');
     }
 
     public function payments()
     {
-        return $this->hasMany(Payment::class);
+        return $this->hasMany(Payment::class, 'sale_id');
     }
 }

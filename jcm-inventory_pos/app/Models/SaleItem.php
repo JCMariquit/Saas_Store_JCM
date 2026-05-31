@@ -36,6 +36,11 @@ class SaleItem extends Model
         'line_total' => 'decimal:2',
     ];
 
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
     public function sale()
     {
         return $this->belongsTo(Sale::class, 'sale_id');

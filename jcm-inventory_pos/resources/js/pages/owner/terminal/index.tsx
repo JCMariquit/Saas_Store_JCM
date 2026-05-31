@@ -5,6 +5,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import {
     Banknote,
     Barcode,
+    Building2,
     CheckCircle2,
     ChevronDown,
     CreditCard,
@@ -16,6 +17,7 @@ import {
     RotateCcw,
     Search,
     ShoppingCart,
+    Store,
     Trash2,
     Wallet,
     X,
@@ -30,6 +32,13 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'POS Terminal', href: POS_TERMIN
 type Category = {
     id: number;
     name: string;
+};
+
+type Branch = {
+    id: number;
+    name: string;
+    code?: string | null;
+    is_main?: boolean;
 };
 
 type Product = {
@@ -58,17 +67,19 @@ type PageProps = {
         total: number;
     };
     categories: Category[];
+    branches?: Branch[];
+    selected_branch_id?: number | string | null;
     filters: {
         search?: string | null;
         category_id?: string | null;
         stock_status?: string | null;
+        branch_id?: string | number | null;
     };
     cashier?: {
         id: number;
         name: string;
     };
 };
-
 
 type CartItem = {
     product_id: number;
@@ -90,10 +101,22 @@ type LastSale = {
     remarks?: string | null;
     date: string;
     cashierName: string;
+    branchName?: string | null;
 };
 
-export default function PosTerminalIndex({ products, categories, filters, cashier }: PageProps) {
+export default function PosTerminalIndex({
+    products,
+    categories,
+    branches = [],
+    selected_branch_id,
+    filters,
+    cashier,
+}: PageProps) {
     const cashierName = cashier?.name ?? 'Cashier';
+    const initialBranchId = String(filters?.branch_id ?? selected_branch_id ?? '');
+
+    const [selectedBranch, setSelectedBranch] = useState(initialBranchId);
+    const [showBranchPicker, setShowBranchPicker] = useState(!initialBranchId && branches.length > 0);
     const [search, setSearch] = useState(filters?.search ?? '');
     const [categoryFilter, setCategoryFilter] = useState(filters?.category_id ?? '');
     const [stockStatus, setStockStatus] = useState(filters?.stock_status ?? '');
@@ -101,6 +124,10 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
     const [openProductId, setOpenProductId] = useState<number | null>(null);
     const [receiptModalOpen, setReceiptModalOpen] = useState(false);
     const [lastSale, setLastSale] = useState<LastSale | null>(null);
+
+    const activeBranch = useMemo(() => {
+        return branches.find((branch) => String(branch.id) === String(selectedBranch)) ?? null;
+    }, [branches, selectedBranch]);
 
     const checkoutForm = useForm({
         payment_method: 'cash',
@@ -110,23 +137,30 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
     });
 
     useEffect(() => {
+        if (!selectedBranch) return;
+
         const timeout = setTimeout(() => {
             router.get(
                 POS_TERMINAL_URL,
-                { search, category_id: categoryFilter, stock_status: stockStatus },
+                {
+                    branch_id: selectedBranch,
+                    search,
+                    category_id: categoryFilter,
+                    stock_status: stockStatus,
+                },
                 { preserveState: true, preserveScroll: true, replace: true },
             );
         }, 350);
 
         return () => clearTimeout(timeout);
-    }, [search, categoryFilter, stockStatus]);
+    }, [selectedBranch, search, categoryFilter, stockStatus]);
 
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.price * item.quantity, 0), [cart]);
     const cartCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
 
     const amountPaid = Number(checkoutForm.data.amount_paid || 0);
     const changeAmount = amountPaid - subtotal;
-    const canCheckout = cart.length > 0 && amountPaid >= subtotal && !checkoutForm.processing;
+    const canCheckout = selectedBranch && cart.length > 0 && amountPaid >= subtotal && !checkoutForm.processing;
 
     const money = (value: number | string) =>
         `₱${Number(value ?? 0).toLocaleString(undefined, {
@@ -134,14 +168,55 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
             maximumFractionDigits: 2,
         })}`;
 
+    const clearCart = () => {
+        setCart([]);
+        checkoutForm.setData({
+            payment_method: 'cash',
+            amount_paid: '',
+            reference_no: '',
+            remarks: '',
+        });
+    };
+
+    const selectBranch = (branchId: number) => {
+        const id = String(branchId);
+
+        setSelectedBranch(id);
+        setShowBranchPicker(false);
+        setOpenProductId(null);
+        clearCart();
+
+        router.get(
+            POS_TERMINAL_URL,
+            {
+                branch_id: id,
+                search,
+                category_id: categoryFilter,
+                stock_status: stockStatus,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
+    };
+
     const resetFilters = () => {
         setSearch('');
         setCategoryFilter('');
         setStockStatus('');
-        router.get(POS_TERMINAL_URL, {}, { preserveState: true, preserveScroll: true, replace: true });
+        setOpenProductId(null);
+
+        router.get(POS_TERMINAL_URL, { branch_id: selectedBranch }, { preserveState: true, preserveScroll: true, replace: true });
     };
 
     const addToCart = (product: Product) => {
+        if (!selectedBranch) {
+            alert('Please select a branch first.');
+            return;
+        }
+
         const stock = Number(product.quantity ?? 0);
 
         if (product.stock_tracking === 'tracked' && stock <= 0) {
@@ -158,9 +233,7 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                     return current;
                 }
 
-                return current.map((item) =>
-                    item.product_id === product.id ? { ...item, quantity: item.quantity + 1 } : item,
-                );
+                return current.map((item) => (item.product_id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
             }
 
             return [
@@ -195,24 +268,12 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
 
     const decrementQty = (productId: number) => {
         setCart((current) =>
-            current
-                .map((item) => (item.product_id === productId ? { ...item, quantity: item.quantity - 1 } : item))
-                .filter((item) => item.quantity > 0),
+            current.map((item) => (item.product_id === productId ? { ...item, quantity: item.quantity - 1 } : item)).filter((item) => item.quantity > 0),
         );
     };
 
     const removeItem = (productId: number) => {
         setCart((current) => current.filter((item) => item.product_id !== productId));
-    };
-
-    const clearCart = () => {
-        setCart([]);
-        checkoutForm.setData({
-            payment_method: 'cash',
-            amount_paid: '',
-            reference_no: '',
-            remarks: '',
-        });
     };
 
     const quickCash = (amount: number) => {
@@ -230,6 +291,11 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
     };
 
     const checkout = () => {
+        if (!selectedBranch) {
+            alert('Please select a branch first.');
+            return;
+        }
+
         if (cart.length === 0) {
             alert('Cart is empty.');
             return;
@@ -243,6 +309,7 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
         router.post(
             POS_CHECKOUT_URL,
             {
+                branch_id: selectedBranch,
                 items: cart.map((item) => ({
                     product_id: item.product_id,
                     quantity: item.quantity,
@@ -265,13 +332,14 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                         remarks: checkoutForm.data.remarks,
                         date: new Date().toLocaleString(),
                         cashierName,
+                        branchName: activeBranch?.name ?? null,
                     });
 
                     setReceiptModalOpen(true);
                 },
                 onError: (errors) => {
                     console.log(errors);
-                    alert('Checkout failed. Check stock/payment.');
+                    alert('Checkout failed. Check stock/payment/cash drawer.');
                 },
             },
         );
@@ -330,8 +398,53 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                 }
             `}</style>
 
-            <div className="grid h-[calc(100vh-5rem)] min-h-0 gap-4 overflow-hidden p-4 xl:grid-cols-[minmax(0,1fr)_430px]">
-                <div className="flex min-w-0 flex-col gap-4 overflow-hidden">
+           <div className="grid h-[calc(100vh-5rem)] min-h-0 gap-4 overflow-hidden p-4 xl:grid-cols-[minmax(0,1fr)_430px]">
+                <div className="pos-scrollbar flex min-w-0 flex-col gap-4 overflow-y-auto pr-1">
+                    <Card className="shrink-0 overflow-hidden">
+                        <CardContent className="p-5">
+                            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                <div className="flex min-w-0 items-center gap-4">
+                                    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border bg-muted/30">
+                                        <Store className="size-5 text-muted-foreground" />
+                                    </div>
+
+                                    <div className="min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h2 className="truncate text-lg font-bold">
+                                                {activeBranch ? activeBranch.name : 'No Branch Selected'}
+                                            </h2>
+
+                                            {activeBranch?.is_main && (
+                                                <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                                                    Main
+                                                </span>
+                                            )}
+
+                                            {activeBranch && (
+                                                <span className="rounded-md bg-green-500/10 px-2 py-0.5 text-xs font-semibold text-green-600">
+                                                    Active
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <p className="mt-1 text-sm text-muted-foreground">
+                                            Branch code: {activeBranch?.code || 'N/A'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBranchPicker(true)}
+                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border bg-background px-4 text-sm font-semibold transition hover:bg-muted"
+                                >
+                                    <Building2 className="size-4" />
+                                    Change Branch
+                                </button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     <Card tone="topline" variant="default" className="shrink-0 overflow-hidden">
                         <CardHeader className="border-b p-0">
                             <div className="flex flex-col gap-4 p-5">
@@ -349,10 +462,12 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                                         </CardDescription>
                                     </div>
 
-                                    <div className="flex h-10 items-center gap-2 rounded-lg border bg-muted/30 px-3 text-sm">
-                                        <Package className="size-4 text-muted-foreground" />
-                                        <span className="font-semibold">{products.total}</span>
-                                        <span className="text-muted-foreground">items available</span>
+                                    <div className="flex h-10 items-center overflow-hidden rounded-lg border bg-muted/30 text-sm">
+                                        <div className="flex h-full items-center gap-2 px-3">
+                                            <Package className="size-4 text-muted-foreground" />
+                                            <span className="font-semibold">{products.total}</span>
+                                            <span className="text-muted-foreground">items available</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -393,7 +508,7 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                         </CardHeader>
                     </Card>
 
-                    <Card className="min-h-0 flex-1 overflow-hidden">
+                    <Card className="shrink-0 overflow-hidden">
                         <CardHeader className="border-b p-0">
                             <div className="flex flex-col gap-3 p-4">
                                 <CardTitle className="flex items-center gap-2 text-base">
@@ -424,10 +539,10 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                             </div>
                         </CardHeader>
 
-                        <CardContent className="min-h-0 overflow-hidden p-0">
-                            <div className="pos-scrollbar h-full overflow-auto">
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="sticky top-0 z-10 bg-muted/60 text-left backdrop-blur">
+                                    <thead className="bg-muted/60 text-left">
                                         <tr>
                                             <th className="w-12 px-4 py-3"></th>
                                             <th className="px-4 py-3 font-medium">Product</th>
@@ -443,8 +558,7 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                                             products.data.map((product) => {
                                                 const stock = Number(product.quantity ?? 0);
                                                 const isOut = product.stock_tracking === 'tracked' && stock <= 0;
-                                                const isLow =
-                                                    product.stock_tracking === 'tracked' && stock > 0 && stock <= 5;
+                                                const isLow = product.stock_tracking === 'tracked' && stock > 0 && stock <= 5;
                                                 const inCart = cart.find((item) => item.product_id === product.id);
                                                 const isOpen = openProductId === product.id;
 
@@ -454,16 +568,10 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                                                             <td className="px-4 py-3">
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() =>
-                                                                        setOpenProductId(isOpen ? null : product.id)
-                                                                    }
+                                                                    onClick={() => setOpenProductId(isOpen ? null : product.id)}
                                                                     className="inline-flex size-8 items-center justify-center rounded-lg border bg-background transition hover:bg-muted"
                                                                 >
-                                                                    <ChevronDown
-                                                                        className={`size-4 transition-transform ${
-                                                                            isOpen ? 'rotate-180' : ''
-                                                                        }`}
-                                                                    />
+                                                                    <ChevronDown className={`size-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                                                                 </button>
                                                             </td>
 
@@ -481,9 +589,7 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                                                                 </span>
                                                             </td>
 
-                                                            <td className="px-4 py-3 text-right font-bold">
-                                                                {money(product.selling_price)}
-                                                            </td>
+                                                            <td className="px-4 py-3 text-right font-bold">{money(product.selling_price)}</td>
 
                                                             <td className="px-4 py-3 text-center">
                                                                 <span
@@ -491,8 +597,8 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                                                                         isOut
                                                                             ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
                                                                             : isLow
-                                                                              ? 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
-                                                                              : 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
+                                                                            ? 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
+                                                                            : 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
                                                                     }`}
                                                                 >
                                                                     {product.stock_tracking === 'tracked' ? stock : '∞'}
@@ -501,7 +607,7 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
 
                                                             <td className="px-4 py-3 text-right">
                                                                 <button
-                                                                    disabled={isOut}
+                                                                    disabled={isOut || !selectedBranch}
                                                                     onClick={() => addToCart(product)}
                                                                     className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                                                                 >
@@ -518,17 +624,8 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                                                                     <div className="grid gap-3 rounded-xl border bg-background p-4 md:grid-cols-4">
                                                                         <Info label="Product Name" value={product.name} />
                                                                         <Info label="SKU" value={product.sku || 'N/A'} />
-                                                                        <Info
-                                                                            label="Barcode"
-                                                                            value={product.barcode || 'N/A'}
-                                                                        />
-                                                                        <Info
-                                                                            label="Stock Tracking"
-                                                                            value={product.stock_tracking.replace(
-                                                                                '_',
-                                                                                ' ',
-                                                                            )}
-                                                                        />
+                                                                        <Info label="Barcode" value={product.barcode || 'N/A'} />
+                                                                        <Info label="Stock Tracking" value={product.stock_tracking.replace('_', ' ')} />
                                                                     </div>
                                                                 </td>
                                                             </tr>
@@ -540,10 +637,24 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                                             <tr>
                                                 <td colSpan={6} className="px-4 py-16 text-center">
                                                     <Package className="mx-auto mb-3 size-10 text-muted-foreground" />
-                                                    <h3 className="font-semibold">No active products found</h3>
+                                                    <h3 className="font-semibold">
+                                                        {selectedBranch ? 'No active products found' : 'Select a branch first'}
+                                                    </h3>
                                                     <p className="mt-1 text-sm text-muted-foreground">
-                                                        Try changing your search or category filter.
+                                                        {selectedBranch
+                                                            ? 'Try changing your search or category filter.'
+                                                            : 'Choose a branch to display available products.'}
                                                     </p>
+
+                                                    {!selectedBranch && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowBranchPicker(true)}
+                                                            className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                                                        >
+                                                            Select Branch
+                                                        </button>
+                                                    )}
                                                 </td>
                                             </tr>
                                         )}
@@ -553,14 +664,12 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                         </CardContent>
                     </Card>
 
-                    <div className="flex shrink-0 flex-wrap gap-1">
+                    <div className="flex shrink-0 flex-wrap gap-1 pb-2">
                         {products.links.map((link, index) => (
                             <button
                                 key={index}
                                 disabled={!link.url}
-                                onClick={() =>
-                                    link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })
-                                }
+                                onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
                                 className={`rounded-md border px-3 py-1.5 text-sm ${
                                     link.active
                                         ? 'bg-primary text-primary-foreground'
@@ -584,6 +693,13 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                                 {cartCount} item{cartCount === 1 ? '' : 's'}
                             </span>
                         </CardTitle>
+
+                        <div className="mt-2 rounded-lg border bg-muted/25 px-3 py-2 text-xs text-muted-foreground">
+                            Branch:{' '}
+                            <span className="font-semibold text-foreground">
+                                {activeBranch ? activeBranch.name : 'No branch selected'}
+                            </span>
+                        </div>
                     </CardHeader>
 
                     <CardContent className="pos-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
@@ -594,9 +710,7 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0">
                                                 <div className="truncate font-medium">{item.name}</div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {money(item.price)} each
-                                                </div>
+                                                <div className="text-xs text-muted-foreground">{money(item.price)} each</div>
                                             </div>
 
                                             <button
@@ -609,21 +723,13 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
 
                                         <div className="mt-3 flex items-center justify-between">
                                             <div className="flex items-center overflow-hidden rounded-md border">
-                                                <button
-                                                    onClick={() => decrementQty(item.product_id)}
-                                                    className="flex size-8 items-center justify-center hover:bg-muted"
-                                                >
+                                                <button onClick={() => decrementQty(item.product_id)} className="flex size-8 items-center justify-center hover:bg-muted">
                                                     <Minus className="size-4" />
                                                 </button>
 
-                                                <div className="w-11 text-center text-sm font-semibold">
-                                                    {item.quantity}
-                                                </div>
+                                                <div className="w-11 text-center text-sm font-semibold">{item.quantity}</div>
 
-                                                <button
-                                                    onClick={() => incrementQty(item.product_id)}
-                                                    className="flex size-8 items-center justify-center hover:bg-muted"
-                                                >
+                                                <button onClick={() => incrementQty(item.product_id)} className="flex size-8 items-center justify-center hover:bg-muted">
                                                     <Plus className="size-4" />
                                                 </button>
                                             </div>
@@ -655,30 +761,10 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                             <div>
                                 <label className="mb-1 block text-sm font-medium">Payment Method</label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <PaymentButton
-                                        active={checkoutForm.data.payment_method === 'cash'}
-                                        icon={<Banknote className="size-4" />}
-                                        label="Cash"
-                                        onClick={() => checkoutForm.setData('payment_method', 'cash')}
-                                    />
-                                    <PaymentButton
-                                        active={checkoutForm.data.payment_method === 'gcash'}
-                                        icon={<Wallet className="size-4" />}
-                                        label="GCash"
-                                        onClick={() => checkoutForm.setData('payment_method', 'gcash')}
-                                    />
-                                    <PaymentButton
-                                        active={checkoutForm.data.payment_method === 'card'}
-                                        icon={<CreditCard className="size-4" />}
-                                        label="Card"
-                                        onClick={() => checkoutForm.setData('payment_method', 'card')}
-                                    />
-                                    <PaymentButton
-                                        active={checkoutForm.data.payment_method === 'bank_transfer'}
-                                        icon={<Wallet className="size-4" />}
-                                        label="Bank"
-                                        onClick={() => checkoutForm.setData('payment_method', 'bank_transfer')}
-                                    />
+                                    <PaymentButton active={checkoutForm.data.payment_method === 'cash'} icon={<Banknote className="size-4" />} label="Cash" onClick={() => checkoutForm.setData('payment_method', 'cash')} />
+                                    <PaymentButton active={checkoutForm.data.payment_method === 'gcash'} icon={<Wallet className="size-4" />} label="GCash" onClick={() => checkoutForm.setData('payment_method', 'gcash')} />
+                                    <PaymentButton active={checkoutForm.data.payment_method === 'card'} icon={<CreditCard className="size-4" />} label="Card" onClick={() => checkoutForm.setData('payment_method', 'card')} />
+                                    <PaymentButton active={checkoutForm.data.payment_method === 'bank_transfer'} icon={<Wallet className="size-4" />} label="Bank" onClick={() => checkoutForm.setData('payment_method', 'bank_transfer')} />
                                 </div>
                             </div>
 
@@ -739,11 +825,7 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
-                            <button
-                                type="button"
-                                onClick={clearCart}
-                                className="rounded-md border px-4 py-2.5 text-sm font-medium hover:bg-muted"
-                            >
+                            <button type="button" onClick={clearCart} className="rounded-md border px-4 py-2.5 text-sm font-medium hover:bg-muted">
                                 Clear
                             </button>
 
@@ -760,6 +842,85 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                 </Card>
             </div>
 
+            {showBranchPicker && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="w-full max-w-3xl overflow-hidden rounded-2xl border bg-background shadow-2xl">
+                        <div className="flex items-start justify-between gap-4 border-b p-5">
+                            <div>
+                                <h2 className="text-lg font-bold">Choose Branch</h2>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Select which branch inventory and cash drawer this POS terminal will use.
+                                </p>
+                            </div>
+
+                            {selectedBranch && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowBranchPicker(false)}
+                                    className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                >
+                                    <X className="size-5" />
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="grid max-h-[70vh] gap-4 overflow-y-auto p-5 md:grid-cols-2">
+                            {branches.length > 0 ? (
+                                branches.map((branch) => (
+                                    <button
+                                        type="button"
+                                        key={branch.id}
+                                        onClick={() => selectBranch(branch.id)}
+                                        className={`overflow-hidden rounded-xl border text-left transition hover:border-primary/60 hover:bg-muted/40 ${
+                                            String(selectedBranch) === String(branch.id)
+                                                ? 'border-primary bg-primary/5'
+                                                : 'border-sidebar-border/70 dark:border-sidebar-border'
+                                        }`}
+                                    >
+                                        <div className="flex items-start gap-3 p-4">
+                                            <div className="flex size-11 items-center justify-center rounded-full border bg-background">
+                                                <Store className="size-5 text-muted-foreground" />
+                                            </div>
+
+                                            <div className="min-w-0">
+                                                <div className="truncate font-semibold">{branch.name}</div>
+                                                <div className="mt-1 text-xs uppercase text-muted-foreground">
+                                                    {branch.code || 'NO CODE'}
+                                                </div>
+
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    {branch.is_main && (
+                                                        <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
+                                                            Main
+                                                        </span>
+                                                    )}
+
+                                                    <span className="rounded-full bg-green-500 px-2.5 py-1 text-xs font-medium text-white">
+                                                        Active
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t px-4 py-3 text-sm text-muted-foreground">
+                                            Click this branch to load its products.
+                                        </div>
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="col-span-full rounded-xl border border-dashed p-10 text-center">
+                                    <Store className="mx-auto mb-3 size-10 text-muted-foreground" />
+                                    <h3 className="font-semibold">No active branches found</h3>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        Create or activate a branch first.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {receiptModalOpen && lastSale && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                     <div className="w-full max-w-lg overflow-hidden rounded-2xl border bg-background shadow-2xl">
@@ -772,8 +933,7 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                                 <div>
                                     <h2 className="text-lg font-bold">Sale completed successfully</h2>
                                     <p className="mt-1 text-sm text-muted-foreground">
-                                        Processed by {lastSale.cashierName}. Choose whether to print the receipt or
-                                        start a new sale.
+                                        Processed by {lastSale.cashierName}. Choose whether to print the receipt or start a new sale.
                                     </p>
                                 </div>
                             </div>
@@ -793,6 +953,7 @@ export default function PosTerminalIndex({ products, categories, filters, cashie
                                     <div className="text-sm font-bold tracking-wide">JCM WEB SOLUTION</div>
                                     <div className="mt-1 text-[10px]">POS RECEIPT</div>
                                     <div className="text-[10px]">Marinduque, Philippines</div>
+                                    {lastSale.branchName && <div className="mt-1 text-[10px] font-bold">{lastSale.branchName}</div>}
                                 </div>
 
                                 <div className="my-3 border-t border-dashed border-black"></div>

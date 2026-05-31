@@ -27,16 +27,15 @@ import AppLogo from './app-logo';
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
-type UserRole = 'client' | 'cashier';
+type UserRole = 'client' | 'cashier' | 'staff';
 
-type SidebarBadge = 'DEV' | 'NEW' | 'BETA' | 'SOON';
+type SidebarBadge = 'LIVE' | 'CORE' | 'OWNER' | 'STAFF' | 'DEV' | 'NEW' | 'BETA' | 'SOON';
 
 type SidebarItem = {
     title: string;
@@ -56,14 +55,15 @@ type SidebarGroup = {
 
 const clientDirectItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/client/dashboard', icon: LayoutGrid, badge: 'DEV' },
-    { title: 'POS Terminal', url: '/client/pos/terminal', icon: ShoppingCart, badge: 'DEV' },
+    { title: 'POS Terminal', url: '/client/pos/terminal', icon: ShoppingCart, badge: 'BETA' },
     { title: 'Transactions', url: '/client/sales/transactions', icon: Receipt, badge: 'BETA' },
 ];
 
-const cashierDirectItems: SidebarItem[] = [
-    { title: 'Dashboard', url: '/cashier/dashboard', icon: LayoutGrid },
-    { title: 'POS Terminal', url: '#', icon: ShoppingCart, },
+const staffDirectItems: SidebarItem[] = [
+    { title: 'Dashboard', url: '/cashier/dashboard', icon: LayoutGrid, badge: 'DEV' },
+    { title: 'POS Terminal', url: '/client/pos/terminal', icon: ShoppingCart, badge: 'DEV' },
 ];
+
 const clientGroupedItems: SidebarGroup[] = [
     {
         title: 'Management',
@@ -88,7 +88,7 @@ const clientGroupedItems: SidebarGroup[] = [
     {
         title: 'Sales',
         icon: Receipt,
-        badge: 'DEV',
+        badge: 'BETA',
         items: [
             { title: 'Sold Items', url: '/client/sales/sold-items', icon: Package2, badge: 'BETA' },
             { title: 'Returns', url: '/client/sales/returns', icon: RotateCcw, badge: 'BETA' },
@@ -117,13 +117,12 @@ const clientGroupedItems: SidebarGroup[] = [
     },
 ];
 
-const cashierGroupedItems: SidebarGroup[] = [
+const staffGroupedItems: SidebarGroup[] = [
     {
         title: 'Sales',
         icon: Receipt,
-        items: [
-            { title: 'Transactions', url: '/staff/transactions', icon: Receipt, badge: 'NEW' },
-        ],
+        badge: 'LIVE',
+        items: [{ title: 'Transactions', url: '/staff/transactions', icon: Receipt, badge: 'LIVE' }],
     },
     {
         title: 'System',
@@ -149,6 +148,10 @@ function MenuBadge({ badge }: { badge?: SidebarBadge }) {
     if (!badge) return null;
 
     const styles: Record<SidebarBadge, string> = {
+        LIVE: 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/15',
+        CORE: 'bg-blue-500/10 text-blue-600 ring-blue-500/15',
+        OWNER: 'bg-amber-500/10 text-amber-600 ring-amber-500/15',
+        STAFF: 'bg-cyan-500/10 text-cyan-600 ring-cyan-500/15',
         DEV: 'bg-sky-500/10 text-sky-600 ring-sky-500/15',
         NEW: 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/15',
         BETA: 'bg-violet-500/10 text-violet-600 ring-violet-500/15',
@@ -170,13 +173,7 @@ function MenuBadge({ badge }: { badge?: SidebarBadge }) {
     );
 }
 
-function BillingLockModal({
-    open,
-    onClose,
-}: {
-    open: boolean;
-    onClose: () => void;
-}) {
+function BillingLockModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     if (!open) return null;
 
     return (
@@ -194,26 +191,18 @@ function BillingLockModal({
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    >
+                    <button type="button" onClick={onClose} className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
                         <X className="size-4" />
                     </button>
                 </div>
 
                 <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                    To use this feature, please settle your monthly bill. Adding, editing,
-                    stock adjustments, and POS terminal actions are available only for active subscriptions.
+                    To use this feature, please settle your monthly bill. Adding, editing, stock adjustments, and POS terminal actions
+                    are available only for active subscriptions.
                 </p>
 
                 <div className="mt-5 flex justify-end gap-2">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
-                    >
+                    <button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
                         Close
                     </button>
 
@@ -230,15 +219,7 @@ function BillingLockModal({
     );
 }
 
-function DirectItem({
-    item,
-    isPaid,
-    onLocked,
-}: {
-    item: SidebarItem;
-    isPaid: boolean;
-    onLocked: () => void;
-}) {
+function DirectItem({ item, isPaid, onLocked }: { item: SidebarItem; isPaid: boolean; onLocked: () => void }) {
     const { url } = usePage();
     const Icon = item.icon;
     const locked = item.paidOnly && !isPaid;
@@ -257,9 +238,7 @@ function DirectItem({
                 <Icon className="size-[16px]" />
             </span>
 
-            <span className="truncate transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
-                {item.title}
-            </span>
+            <span className="truncate transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">{item.title}</span>
 
             <span className="ml-auto group-data-[collapsible=icon]/sidebar:hidden">
                 {locked ? <Lock className="size-3.5 text-amber-500" /> : <MenuBadge badge={item.badge} />}
@@ -278,9 +257,7 @@ function DirectItem({
                     locked
                         ? 'cursor-pointer text-sidebar-foreground/45 hover:bg-amber-500/10 hover:text-sidebar-foreground'
                         : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground',
-                    active
-                        ? 'bg-background text-sidebar-foreground shadow-[0_1px_8px_rgba(0,0,0,0.05)] ring-1 ring-border/60'
-                        : '',
+                    active ? 'bg-background text-sidebar-foreground shadow-[0_1px_8px_rgba(0,0,0,0.05)] ring-1 ring-border/60' : '',
                     'group-data-[collapsible=icon]/sidebar:size-10 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:px-0',
                 ].join(' ')}
             >
@@ -289,11 +266,7 @@ function DirectItem({
                         {innerContent}
                     </div>
                 ) : (
-                    <Link
-                        href={item.url}
-                        prefetch
-                        className="flex w-full items-center gap-3 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:gap-0"
-                    >
+                    <Link href={item.url} prefetch className="flex w-full items-center gap-3 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:gap-0">
                         {innerContent}
                     </Link>
                 )}
@@ -302,15 +275,7 @@ function DirectItem({
     );
 }
 
-function SidebarDropdown({
-    group,
-    isPaid,
-    onLocked,
-}: {
-    group: SidebarGroup;
-    isPaid: boolean;
-    onLocked: () => void;
-}) {
+function SidebarDropdown({ group, isPaid, onLocked }: { group: SidebarGroup; isPaid: boolean; onLocked: () => void }) {
     const { url } = usePage();
     const GroupIcon = group.icon;
 
@@ -318,9 +283,7 @@ function SidebarDropdown({
     const [open, setOpen] = React.useState(hasActiveItem);
 
     React.useEffect(() => {
-        if (hasActiveItem) {
-            setOpen(true);
-        }
+        if (hasActiveItem) setOpen(true);
     }, [hasActiveItem]);
 
     return (
@@ -347,9 +310,7 @@ function SidebarDropdown({
                     <GroupIcon className="size-[16px]" />
                 </span>
 
-                <span className="truncate transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
-                    {group.title}
-                </span>
+                <span className="truncate transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">{group.title}</span>
 
                 <span className="group-data-[collapsible=icon]/sidebar:hidden">
                     <MenuBadge badge={group.badge} />
@@ -421,22 +382,11 @@ function SidebarDropdown({
                                 prefetch
                                 className={[
                                     'group flex h-9 items-center gap-2 rounded-[9px] px-3 text-[13px] font-medium transition-all',
-                                    active
-                                        ? 'bg-primary/10 text-primary'
-                                        : 'text-sidebar-foreground/55 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
+                                    active ? 'bg-primary/10 text-primary' : 'text-sidebar-foreground/55 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
                                 ].join(' ')}
                             >
-                                <Icon
-                                    className={[
-                                        'size-[14px]',
-                                        active
-                                            ? 'text-primary'
-                                            : 'text-sidebar-foreground/35 group-hover:text-sidebar-foreground/65',
-                                    ].join(' ')}
-                                />
-
+                                <Icon className={['size-[14px]', active ? 'text-primary' : 'text-sidebar-foreground/35 group-hover:text-sidebar-foreground/65'].join(' ')} />
                                 <span className="truncate">{item.title}</span>
-
                                 <MenuBadge badge={item.badge} />
                             </Link>
                         );
@@ -458,25 +408,47 @@ function AppSidebar() {
         };
     }>();
 
-    const role = page.props.auth?.user?.role ?? 'cashier';
+    const role = page.props.auth?.user?.role ?? 'staff';
+    const isOwner = role === 'client';
 
-    const directItems = role === 'client' ? clientDirectItems : cashierDirectItems;
-    const groupedItems = role === 'client' ? clientGroupedItems : cashierGroupedItems;
+    const directItems = isOwner ? clientDirectItems : staffDirectItems;
+    const groupedItems = isOwner ? clientGroupedItems : staffGroupedItems;
 
     const isPaid = true;
 
     return (
         <>
-            <BillingLockModal
-                open={billingModalOpen}
-                onClose={() => setBillingModalOpen(false)}
-            />
+            <style>{`
+                .pos-scrollbar {
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(120, 120, 120, 0.25) transparent;
+                }
 
-            <Sidebar
-                collapsible="icon"
-                variant="sidebar"
-                className="h-screen border-0 bg-sidebar"
-            >
+                .pos-scrollbar::-webkit-scrollbar {
+                    width: 10px;
+                    height: 10px;
+                }
+
+                .pos-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+
+                .pos-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(140, 140, 140, 0.18);
+                    border-radius: 999px;
+                    border: 2px solid transparent;
+                    background-clip: padding-box;
+                }
+
+                .pos-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(160, 160, 160, 0.35);
+                    background-clip: padding-box;
+                }
+            `}</style>
+
+            <BillingLockModal open={billingModalOpen} onClose={() => setBillingModalOpen(false)} />
+
+            <Sidebar collapsible="icon" variant="sidebar" className="h-screen border-0 bg-sidebar">
                 <SidebarHeader className="px-4 pb-5 pt-6 group-data-[collapsible=icon]/sidebar:px-2">
                     <SidebarMenu>
                         <SidebarMenuItem>
@@ -485,19 +457,13 @@ function AppSidebar() {
                                 asChild
                                 className="h-auto rounded-[16px] p-2 hover:bg-sidebar-accent/60 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:p-0"
                             >
-                                <Link
-                                    href="/dashboard"
-                                    prefetch
-                                    className="flex min-w-0 items-center gap-3 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:gap-0"
-                                >
+                                <Link href="/dashboard" prefetch className="flex min-w-0 items-center gap-3 group-data-[collapsible=icon]/sidebar:justify-center group-data-[collapsible=icon]/sidebar:gap-0">
                                     <AppLogo />
 
                                     <div className="min-w-0 leading-tight transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
-                                        <span className="block truncate text-sm font-bold text-sidebar-foreground">
-                                            JCM POS
-                                        </span>
+                                        <span className="block truncate text-sm font-bold text-sidebar-foreground">JCM POS</span>
                                         <span className="mt-0.5 block truncate text-[11px] font-medium text-sidebar-foreground/45">
-                                            {role === 'client' ? 'Store Owner Portal' : 'Cashier Portal'}
+                                            {isOwner ? 'Store Owner Portal' : 'Staff Portal'}
                                         </span>
                                     </div>
                                 </Link>
@@ -506,54 +472,33 @@ function AppSidebar() {
                     </SidebarMenu>
                 </SidebarHeader>
 
-                <SidebarContent className="gap-5 px-0 group-data-[collapsible=icon]/sidebar:gap-5">
+                <SidebarContent className="pos-scrollbar gap-5 overflow-y-auto px-0 group-data-[collapsible=icon]/sidebar:gap-5">
                     <div className="space-y-2">
                         <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35 transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
-                            {role === 'client' ? 'Owner' : 'Cashier'}
+                            {isOwner ? 'Owner' : 'Staff'}
                         </p>
 
                         <SidebarMenu className="space-y-0.5 px-3 group-data-[collapsible=icon]/sidebar:px-2">
                             {directItems.map((item) => (
-                                <DirectItem
-                                    key={item.title}
-                                    item={item}
-                                    isPaid={isPaid}
-                                    onLocked={() => setBillingModalOpen(true)}
-                                />
+                                <DirectItem key={item.title} item={item} isPaid={isPaid} onLocked={() => setBillingModalOpen(true)} />
                             ))}
                         </SidebarMenu>
                     </div>
 
                     {groupedItems.length > 0 && (
-                        <div className="space-y-2">
+                        <div className="space-y-2 pb-4">
                             <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35 transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
-                                {role === 'client' ? 'Management' : 'Tools'}
+                                {isOwner ? 'Management' : 'Tools'}
                             </p>
 
                             <div className="space-y-1 px-3 group-data-[collapsible=icon]/sidebar:px-2">
                                 {groupedItems.map((group) => (
-                                    <SidebarDropdown
-                                        key={group.title}
-                                        group={group}
-                                        isPaid={isPaid}
-                                        onLocked={() => setBillingModalOpen(true)}
-                                    />
+                                    <SidebarDropdown key={group.title} group={group} isPaid={isPaid} onLocked={() => setBillingModalOpen(true)} />
                                 ))}
                             </div>
                         </div>
                     )}
                 </SidebarContent>
-
-                <SidebarFooter className="mt-auto px-4 pb-2 transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
-                    <div className="rounded-[16px] border border-border/60 bg-background/70 px-4 py-3 shadow-sm">
-                        <p className="text-[11px] font-semibold text-sidebar-foreground/70">
-                            by JCM
-                        </p>
-                        <p className="mt-0.5 text-[10px] text-sidebar-foreground/40">
-                            {role === 'client' ? 'POS owner build' : 'POS cashier build'}
-                        </p>
-                    </div>
-                </SidebarFooter>
             </Sidebar>
         </>
     );

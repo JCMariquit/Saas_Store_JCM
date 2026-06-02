@@ -14,9 +14,12 @@ class CashDrawerTransaction extends Model
         'tenant_id',
         'cash_drawer_id',
         'type',
+        'cash_out_source',
         'amount',
         'reference_type',
         'reference_id',
+        'withdrawn_at',
+        'withdrawn_by',
         'remarks',
         'created_by',
     ];
@@ -26,6 +29,8 @@ class CashDrawerTransaction extends Model
         'cash_drawer_id' => 'integer',
         'amount' => 'decimal:2',
         'reference_id' => 'integer',
+        'withdrawn_at' => 'datetime',
+        'withdrawn_by' => 'integer',
         'created_by' => 'integer',
     ];
 

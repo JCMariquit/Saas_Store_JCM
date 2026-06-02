@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\CashDrawer;
 use App\Models\CashDrawerTransaction;
 use App\Models\Category;
+use App\Models\Discount;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Sale;
@@ -99,10 +100,41 @@ class PosTerminalController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $discounts = Discount::query()
+            ->where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->where(function ($query) use ($branchId) {
+                $query->whereNull('branch_id')
+                    ->orWhere('branch_id', $branchId);
+            })
+            ->where(function ($query) {
+                $query->whereNull('starts_at')
+                    ->orWhere('starts_at', '<=', now());
+            })
+            ->where(function ($query) {
+                $query->whereNull('ends_at')
+                    ->orWhere('ends_at', '>=', now());
+            })
+            ->orderByRaw('branch_id IS NULL DESC')
+            ->orderBy('name')
+            ->get([
+                'id',
+                'branch_id',
+                'name',
+                'code',
+                'type',
+                'value',
+                'min_purchase',
+                'max_discount',
+                'starts_at',
+                'ends_at',
+            ]);
+
         return Inertia::render('owner/terminal/index', [
             'products' => $products,
             'categories' => $categories,
             'branches' => $branches,
+            'discounts' => $discounts,
             'selected_branch_id' => $branchId,
             'filters' => [
                 'search' => $request->search,
@@ -131,6 +163,7 @@ class PosTerminalController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer'],
             'items.*.quantity' => ['required', 'numeric', 'min:0.01'],
+            'discount_id' => ['nullable', 'integer'],
             'payment_method' => ['required', 'in:cash,gcash,card,bank_transfer'],
             'amount_paid' => ['required', 'numeric', 'min:0'],
             'reference_no' => ['nullable', 'string', 'max:150'],
@@ -183,7 +216,52 @@ class PosTerminalController extends Controller
             }
 
             $subtotal = round($subtotal, 2);
-            $grandTotal = $subtotal;
+
+            $discount = null;
+            $discountTotal = 0;
+
+            if (!empty($validated['discount_id'])) {
+                $discount = Discount::query()
+                    ->where('tenant_id', $tenantId)
+                    ->where('id', $validated['discount_id'])
+                    ->where('is_active', true)
+                    ->where(function ($query) use ($branchId) {
+                        $query->whereNull('branch_id')
+                            ->orWhere('branch_id', $branchId);
+                    })
+                    ->where(function ($query) {
+                        $query->whereNull('starts_at')
+                            ->orWhere('starts_at', '<=', now());
+                    })
+                    ->where(function ($query) {
+                        $query->whereNull('ends_at')
+                            ->orWhere('ends_at', '>=', now());
+                    })
+                    ->first();
+
+                if (!$discount) {
+                    abort(422, 'Selected discount is not valid or inactive.');
+                }
+
+                if ($subtotal < (float) $discount->min_purchase) {
+                    abort(422, 'Subtotal does not meet the minimum purchase for this discount.');
+                }
+
+                if ($discount->type === 'percent') {
+                    $discountTotal = round($subtotal * ((float) $discount->value / 100), 2);
+
+                    if ($discount->max_discount !== null) {
+                        $discountTotal = min($discountTotal, round((float) $discount->max_discount, 2));
+                    }
+                } else {
+                    $discountTotal = round((float) $discount->value, 2);
+                }
+
+                $discountTotal = min($discountTotal, $subtotal);
+            }
+
+            $taxTotal = 0;
+            $grandTotal = round($subtotal - $discountTotal + $taxTotal, 2);
             $amountPaid = round((float) $validated['amount_paid'], 2);
 
             if ($amountPaid < $grandTotal) {
@@ -195,9 +273,16 @@ class PosTerminalController extends Controller
                 'branch_id' => $branchId,
                 'sale_no' => $this->generateSaleNo($branchId),
                 'cashier_user_id' => Auth::id(),
+
+                'discount_id' => $discount?->id,
+                'discount_name' => $discount?->name,
+                'discount_code' => $discount?->code,
+                'discount_type' => $discount?->type,
+                'discount_value' => $discount?->value,
+
                 'subtotal' => $subtotal,
-                'discount_total' => 0,
-                'tax_total' => 0,
+                'discount_total' => $discountTotal,
+                'tax_total' => $taxTotal,
                 'grand_total' => $grandTotal,
                 'amount_paid' => $amountPaid,
                 'change_amount' => round($amountPaid - $grandTotal, 2),
@@ -211,6 +296,12 @@ class PosTerminalController extends Controller
                 $product = $item['product'];
                 $before = (float) $product->quantity;
 
+                $itemDiscount = 0;
+
+                if ($subtotal > 0 && $discountTotal > 0) {
+                    $itemDiscount = round(($item['line_total'] / $subtotal) * $discountTotal, 2);
+                }
+
                 SaleItem::create([
                     'tenant_id' => $tenantId,
                     'branch_id' => $branchId,
@@ -221,7 +312,7 @@ class PosTerminalController extends Controller
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
                     'unit_cost' => $item['unit_cost'],
-                    'discount_amount' => 0,
+                    'discount_amount' => $itemDiscount,
                     'line_total' => $item['line_total'],
                 ]);
 
@@ -270,7 +361,23 @@ class PosTerminalController extends Controller
                     ->first();
 
                 if (!$cashDrawer) {
-                    abort(422, 'No open cash drawer found for this branch.');
+                    $cashDrawer = CashDrawer::create([
+                        'tenant_id' => $tenantId,
+                        'branch_id' => $branchId,
+                        'opened_by' => Auth::id(),
+                        'opening_balance' => 0,
+                        'expected_balance' => 0,
+                        'actual_balance' => null,
+                        'variance_amount' => null,
+                        'total_cash_sales' => 0,
+                        'total_refunds' => 0,
+                        'total_cash_in' => 0,
+                        'total_cash_out' => 0,
+                        'status' => 'open',
+                        'opened_at' => now(),
+                        'closed_at' => null,
+                        'notes' => 'DEV AUTO OPEN FROM POS CHECKOUT',
+                    ]);
                 }
 
                 CashDrawerTransaction::create([
@@ -297,6 +404,8 @@ class PosTerminalController extends Controller
             'success' => 'Sale completed successfully.',
             'sale_id' => $sale->id,
             'sale_no' => $sale->sale_no,
+            'discount_total' => $sale->discount_total,
+            'grand_total' => $sale->grand_total,
         ]);
     }
 

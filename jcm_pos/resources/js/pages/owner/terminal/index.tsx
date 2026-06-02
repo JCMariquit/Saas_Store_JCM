@@ -18,6 +18,7 @@ import {
     Search,
     ShoppingCart,
     Store,
+    Tag,
     Trash2,
     Wallet,
     X,
@@ -39,6 +40,17 @@ type Branch = {
     name: string;
     code?: string | null;
     is_main?: boolean;
+};
+
+type Discount = {
+    id: number;
+    branch_id?: number | null;
+    name: string;
+    code?: string | null;
+    type: 'percent' | 'fixed';
+    value: string | number;
+    min_purchase: string | number;
+    max_discount?: string | number | null;
 };
 
 type Product = {
@@ -68,6 +80,7 @@ type PageProps = {
     };
     categories: Category[];
     branches?: Branch[];
+    discounts?: Discount[];
     selected_branch_id?: number | string | null;
     filters: {
         search?: string | null;
@@ -94,6 +107,9 @@ type CartItem = {
 type LastSale = {
     items: CartItem[];
     subtotal: number;
+    discountTotal: number;
+    grandTotal: number;
+    discountName?: string | null;
     amountPaid: number;
     change: number;
     paymentMethod: string;
@@ -108,6 +124,7 @@ export default function PosTerminalIndex({
     products,
     categories,
     branches = [],
+    discounts = [],
     selected_branch_id,
     filters,
     cashier,
@@ -130,6 +147,7 @@ export default function PosTerminalIndex({
     }, [branches, selectedBranch]);
 
     const checkoutForm = useForm({
+        discount_id: '',
         payment_method: 'cash',
         amount_paid: '',
         reference_no: '',
@@ -158,9 +176,36 @@ export default function PosTerminalIndex({
     const subtotal = useMemo(() => cart.reduce((total, item) => total + item.price * item.quantity, 0), [cart]);
     const cartCount = useMemo(() => cart.reduce((total, item) => total + item.quantity, 0), [cart]);
 
+    const selectedDiscount = useMemo(() => {
+        return discounts.find((discount) => String(discount.id) === String(checkoutForm.data.discount_id)) ?? null;
+    }, [discounts, checkoutForm.data.discount_id]);
+
+    const discountTotal = useMemo(() => {
+        if (!selectedDiscount || subtotal <= 0) return 0;
+
+        const minPurchase = Number(selectedDiscount.min_purchase ?? 0);
+
+        if (subtotal < minPurchase) return 0;
+
+        let computed = 0;
+
+        if (selectedDiscount.type === 'percent') {
+            computed = subtotal * (Number(selectedDiscount.value ?? 0) / 100);
+
+            if (selectedDiscount.max_discount !== null && selectedDiscount.max_discount !== undefined) {
+                computed = Math.min(computed, Number(selectedDiscount.max_discount ?? 0));
+            }
+        } else {
+            computed = Number(selectedDiscount.value ?? 0);
+        }
+
+        return Math.min(Number(computed.toFixed(2)), subtotal);
+    }, [selectedDiscount, subtotal]);
+
+    const grandTotal = Math.max(Number((subtotal - discountTotal).toFixed(2)), 0);
     const amountPaid = Number(checkoutForm.data.amount_paid || 0);
-    const changeAmount = amountPaid - subtotal;
-    const canCheckout = selectedBranch && cart.length > 0 && amountPaid >= subtotal && !checkoutForm.processing;
+    const changeAmount = amountPaid - grandTotal;
+    const canCheckout = selectedBranch && cart.length > 0 && amountPaid >= grandTotal && !checkoutForm.processing;
 
     const money = (value: number | string) =>
         `₱${Number(value ?? 0).toLocaleString(undefined, {
@@ -171,6 +216,7 @@ export default function PosTerminalIndex({
     const clearCart = () => {
         setCart([]);
         checkoutForm.setData({
+            discount_id: '',
             payment_method: 'cash',
             amount_paid: '',
             reference_no: '',
@@ -301,7 +347,7 @@ export default function PosTerminalIndex({
             return;
         }
 
-        if (amountPaid < subtotal) {
+        if (amountPaid < grandTotal) {
             alert('Amount paid is less than total.');
             return;
         }
@@ -314,6 +360,7 @@ export default function PosTerminalIndex({
                     product_id: item.product_id,
                     quantity: item.quantity,
                 })),
+                discount_id: checkoutForm.data.discount_id || null,
                 payment_method: checkoutForm.data.payment_method,
                 amount_paid: checkoutForm.data.amount_paid,
                 reference_no: checkoutForm.data.reference_no,
@@ -325,6 +372,9 @@ export default function PosTerminalIndex({
                     setLastSale({
                         items: cart,
                         subtotal,
+                        discountTotal,
+                        grandTotal,
+                        discountName: selectedDiscount?.name ?? null,
                         amountPaid,
                         change: Math.max(changeAmount, 0),
                         paymentMethod: checkoutForm.data.payment_method,
@@ -339,7 +389,7 @@ export default function PosTerminalIndex({
                 },
                 onError: (errors) => {
                     console.log(errors);
-                    alert('Checkout failed. Check stock/payment/cash drawer.');
+                    alert('Checkout failed. Check stock/payment/cash drawer/discount.');
                 },
             },
         );
@@ -398,7 +448,7 @@ export default function PosTerminalIndex({
                 }
             `}</style>
 
-           <div className="grid h-[calc(100vh-5rem)] min-h-0 gap-4 overflow-hidden p-4 xl:grid-cols-[minmax(0,1fr)_430px]">
+            <div className="grid h-[calc(100vh-5rem)] min-h-0 gap-4 overflow-hidden p-4 xl:grid-cols-[minmax(0,1fr)_430px]">
                 <div className="pos-scrollbar flex min-w-0 flex-col gap-4 overflow-y-auto pr-1">
                     <Card className="shrink-0 overflow-hidden">
                         <CardContent className="p-5">
@@ -597,8 +647,8 @@ export default function PosTerminalIndex({
                                                                         isOut
                                                                             ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
                                                                             : isLow
-                                                                            ? 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
-                                                                            : 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
+                                                                              ? 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300'
+                                                                              : 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
                                                                     }`}
                                                                 >
                                                                     {product.stock_tracking === 'tracked' ? stock : '∞'}
@@ -748,16 +798,47 @@ export default function PosTerminalIndex({
 
                         <div className="space-y-2 border-t pt-4">
                             <SummaryLine label="Subtotal" value={money(subtotal)} />
-                            <SummaryLine label="Discount" value={money(0)} muted />
+                            <SummaryLine
+                                label={selectedDiscount ? `Discount (${selectedDiscount.name})` : 'Discount'}
+                                value={`-${money(discountTotal)}`}
+                                muted={!selectedDiscount}
+                            />
                             <SummaryLine label="Tax" value={money(0)} muted />
 
                             <div className="flex justify-between border-t pt-3 text-xl font-bold">
                                 <span>Total</span>
-                                <span>{money(subtotal)}</span>
+                                <span>{money(grandTotal)}</span>
                             </div>
                         </div>
 
                         <div className="space-y-3 border-t pt-4">
+                            <div>
+                                <label className="mb-1 flex items-center gap-2 text-sm font-medium">
+                                    <Tag className="size-4" />
+                                    Discount
+                                </label>
+                                <select
+                                    value={checkoutForm.data.discount_id}
+                                    onChange={(e) => checkoutForm.setData('discount_id', e.target.value)}
+                                    className="h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                >
+                                    <option value="">No Discount</option>
+                                    {discounts.map((discount) => (
+                                        <option key={discount.id} value={String(discount.id)}>
+                                            {discount.name}
+                                            {discount.code ? ` (${discount.code})` : ''} —{' '}
+                                            {discount.type === 'percent' ? `${Number(discount.value)}%` : money(discount.value)}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {selectedDiscount && Number(selectedDiscount.min_purchase ?? 0) > subtotal && (
+                                    <p className="mt-1 text-xs text-amber-600">
+                                        Minimum purchase required: {money(selectedDiscount.min_purchase)}
+                                    </p>
+                                )}
+                            </div>
+
                             <div>
                                 <label className="mb-1 block text-sm font-medium">Payment Method</label>
                                 <div className="grid grid-cols-2 gap-2">
@@ -781,7 +862,7 @@ export default function PosTerminalIndex({
                             </div>
 
                             <div className="grid grid-cols-4 gap-2">
-                                {[subtotal, 100, 500, 1000].map((amount) => (
+                                {[grandTotal, 100, 500, 1000].map((amount) => (
                                     <button
                                         key={amount}
                                         type="button"
@@ -1011,11 +1092,17 @@ export default function PosTerminalIndex({
                                     </div>
                                     <div className="flex justify-between">
                                         <span>DISCOUNT</span>
-                                        <span>{money(0)}</span>
+                                        <span>-{money(lastSale.discountTotal)}</span>
                                     </div>
+                                    {lastSale.discountName && (
+                                        <div className="flex justify-between text-[10px]">
+                                            <span>DISC NAME</span>
+                                            <span>{lastSale.discountName}</span>
+                                        </div>
+                                    )}
                                     <div className="mt-2 flex justify-between text-sm font-bold">
                                         <span>AMT</span>
-                                        <span>{money(lastSale.subtotal)}</span>
+                                        <span>{money(lastSale.grandTotal)}</span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span>PAID</span>

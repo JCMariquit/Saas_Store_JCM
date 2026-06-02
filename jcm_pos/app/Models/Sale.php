@@ -13,6 +13,13 @@ class Sale extends Model
         'branch_id',
         'sale_no',
         'cashier_user_id',
+
+        'discount_id',
+        'discount_name',
+        'discount_code',
+        'discount_type',
+        'discount_value',
+
         'subtotal',
         'discount_total',
         'tax_total',
@@ -29,6 +36,10 @@ class Sale extends Model
         'tenant_id' => 'integer',
         'branch_id' => 'integer',
         'cashier_user_id' => 'integer',
+
+        'discount_id' => 'integer',
+        'discount_value' => 'decimal:2',
+
         'subtotal' => 'decimal:2',
         'discount_total' => 'decimal:2',
         'tax_total' => 'decimal:2',
@@ -41,6 +52,11 @@ class Sale extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
+    public function discount()
+    {
+        return $this->belongsTo(Discount::class, 'discount_id');
     }
 
     public function items()

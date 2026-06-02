@@ -92,8 +92,8 @@ const clientGroupedItems: SidebarGroup[] = [
         items: [
             { title: 'Sold Items', url: '/client/sales/sold-items', icon: Package2, badge: 'BETA' },
             { title: 'Returns', url: '/client/sales/returns', icon: RotateCcw, badge: 'BETA' },
-            { title: 'Discounts', url: '/client/sales/discounts', icon: Tags, badge: 'SOON' },
-            { title: 'Cash Drawer', url: '/client/sales/cash-drawer', icon: WalletCards, badge: 'DEV' },
+            { title: 'Discounts', url: '/client/sales/discounts', icon: Tags, badge: 'BETA' },
+            { title: 'Cash Drawer', url: '/client/sales/cash-drawer', icon: WalletCards, badge: 'BETA' },
         ],
     },
     {

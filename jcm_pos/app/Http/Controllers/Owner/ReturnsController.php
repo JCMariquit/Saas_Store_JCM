@@ -33,20 +33,26 @@ class ReturnsController extends Controller
         $returns = ReturnItem::query()
             ->from('return_items as ri')
             ->join('sales as s', 's.id', '=', 'ri.sale_id')
+            ->leftJoin('sale_items as si', 'si.id', '=', 'ri.sale_item_id')
+            ->leftJoin('products as p', 'p.id', '=', 'ri.product_id')
             ->leftJoin('branches as b', 'b.id', '=', 'ri.branch_id')
             ->where('ri.tenant_id', $tenantId)
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('ri.return_no', 'like', "%{$search}%")
                         ->orWhere('s.sale_no', 'like', "%{$search}%")
-                        ->orWhere('ri.product_name', 'like', "%{$search}%")
-                        ->orWhere('ri.sku', 'like', "%{$search}%");
+                        ->orWhere('si.product_name', 'like', "%{$search}%")
+                        ->orWhere('si.sku', 'like', "%{$search}%")
+                        ->orWhere('p.name', 'like', "%{$search}%")
+                        ->orWhere('p.sku', 'like', "%{$search}%");
                 });
             })
             ->when($branchId, fn ($query) => $query->where('ri.branch_id', $branchId))
             ->select([
                 'ri.*',
                 's.sale_no',
+                DB::raw('COALESCE(si.product_name, p.name) as product_name'),
+                DB::raw('COALESCE(si.sku, p.sku) as sku'),
                 'b.name as branch_name',
                 'b.code as branch_code',
             ])
@@ -108,8 +114,6 @@ class ReturnsController extends Controller
                 'sale_id' => $sale->id,
                 'sale_item_id' => $saleItem->id,
                 'product_id' => $saleItem->product_id,
-                'product_name' => $saleItem->product_name,
-                'sku' => $saleItem->sku,
                 'return_no' => $this->generateReturnNo($tenantId),
                 'quantity' => $returnQty,
                 'unit_price' => $unitPrice,
@@ -130,13 +134,15 @@ class ReturnsController extends Controller
 
             $newSubtotal = max(0, round((float) $sale->subtotal - $returnAmount, 2));
             $newGrandTotal = max(0, round((float) $sale->grand_total - $returnAmount, 2));
-            $newAmountPaid = max(0, round((float) $sale->amount_paid - $returnAmount, 2));
+
+            $amountPaid = (float) $sale->amount_paid;
+            $newChangeAmount = max(0, round($amountPaid - $newGrandTotal, 2));
 
             $sale->update([
                 'subtotal' => $newSubtotal,
                 'grand_total' => $newGrandTotal,
-                'amount_paid' => $newAmountPaid,
-                'change_amount' => max(0, round($newAmountPaid - $newGrandTotal, 2)),
+                'amount_paid' => $amountPaid,
+                'change_amount' => $newChangeAmount,
                 'status' => 'completed',
             ]);
 

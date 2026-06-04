@@ -97,12 +97,12 @@ const clientGroupedItems: SidebarGroup[] = [
         ],
     },
     {
-        title: 'Reports',
+        title: 'Reports', 
         icon: BarChart3,
-        badge: 'SOON',
+        badge: 'DEV',
         items: [
-            { title: 'Sales Reports', url: '/client/reports/sales', icon: BarChart3, badge: 'SOON' },
-            { title: 'Inventory Reports', url: '/client/reports/inventory', icon: WalletCards, badge: 'SOON' },
+            { title: 'Sales Reports', url: '/client/reports/sales', icon: BarChart3, badge: 'DEV' },
+            { title: 'Inventory Reports', url: '/client/reports/inventory', icon: WalletCards, badge: 'DEV' },
         ],
     },
     {

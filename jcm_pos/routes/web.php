@@ -7,6 +7,7 @@ use App\Http\Controllers\Owner\DiscountsController;
 use App\Http\Controllers\Owner\PosTerminalController;
 use App\Http\Controllers\Owner\ProductController;
 use App\Http\Controllers\Owner\ReturnsController;
+use App\Http\Controllers\Owner\SalesReportController;
 use App\Http\Controllers\Owner\SoldItemsController;
 use App\Http\Controllers\Owner\StaffController;
 use App\Http\Controllers\Owner\StocksController;
@@ -75,9 +76,7 @@ Route::middleware(['auth'])->group(function () {
             return Inertia::render('owner/customers/index');
         })->name('customers.index');
 
-        Route::get('/reports/sales', function () {
-            return Inertia::render('owner/reports/sales/index');
-        })->name('reports.sales.index');
+        Route::get('/reports/sales', [SalesReportController::class, 'index'])->name('reports.sales.index');
 
         Route::get('/reports/inventory', function () {
             return Inertia::render('owner/reports/inventory/index');

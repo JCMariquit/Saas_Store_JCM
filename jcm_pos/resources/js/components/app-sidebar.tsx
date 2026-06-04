@@ -99,20 +99,10 @@ const clientGroupedItems: SidebarGroup[] = [
     {
         title: 'Reports',
         icon: BarChart3,
-        badge: 'DEV',
+        badge: 'TEST',
         items: [
-            { title: 'Sales Reports', url: '/client/reports/sales', icon: BarChart3, badge: 'DEV' },
-            { title: 'Inventory Reports', url: '/client/reports/inventory', icon: WalletCards, badge: 'DEV' },
-        ],
-    },
-    {
-        title: 'Account',
-        icon: Settings,
-        items: [
-            { title: 'Billing', url: '/client/billing', icon: WalletCards },
-            { title: 'Settings', url: '/settings/profile', icon: Settings },
-            { title: 'Help', url: '#', icon: CircleHelp },
-            { title: 'Logout', url: '#', icon: LogOut },
+            { title: 'Sales Reports', url: '/client/reports/sales', icon: BarChart3, badge: 'TEST' },
+            { title: 'Inventory Reports', url: '/client/reports/inventory', icon: WalletCards, badge: 'TEST' },
         ],
     },
 ];

@@ -43,7 +43,7 @@ export function NavUser() {
                     </DropdownMenuTrigger>
 
                     <DropdownMenuContent
-                        className="min-w-56 rounded-lg"
+                        className="min-w-64 rounded-2xl border bg-background p-2 shadow-xl"
                         align="end"
                         side={
                             isMobile

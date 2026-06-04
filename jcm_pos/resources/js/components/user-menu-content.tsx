@@ -1,39 +1,78 @@
-import { DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { UserInfo } from '@/components/user-info';
-import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
-import { type User } from '@/types';
-import { Link } from '@inertiajs/react';
-import { LogOut, Settings } from 'lucide-react';
+import {
+    CircleHelp,
+    LogOut,
+    Settings,
+    User,
+    WalletCards,
+} from 'lucide-react';
+import { router } from '@inertiajs/react';
 
-interface UserMenuContentProps {
-    user: User;
-}
+import {
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+
+type UserMenuContentProps = {
+    user?: {
+        name?: string | null;
+        email?: string | null;
+    } | null;
+};
 
 export function UserMenuContent({ user }: UserMenuContentProps) {
-    const cleanup = useMobileNavigation();
-
     return (
         <>
-            <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <UserInfo user={user} showEmail={true} />
+            <div className="px-3 py-2">
+                <div className="flex items-center gap-3">
+                    <div className="flex size-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                        <User className="size-4" />
+                    </div>
+
+                    <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-foreground">
+                            {user?.name ?? 'User'}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                            {user?.email ?? 'No email available'}
+                        </p>
+                    </div>
                 </div>
-            </DropdownMenuLabel>
+            </div>
+
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-                <DropdownMenuItem asChild>
-                    <Link className="block w-full" href={route('profile.edit')} as="button" prefetch onClick={cleanup}>
-                        <Settings className="mr-2" />
-                        Settings
-                    </Link>
-                </DropdownMenuItem>
-            </DropdownMenuGroup>
+
+            <DropdownMenuItem
+                onClick={() => router.visit('/client/billing')}
+                className="h-10 cursor-pointer rounded-xl"
+            >
+                <WalletCards className="mr-2 size-4" />
+                Billing
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+                onClick={() => router.visit('/settings/profile')}
+                className="h-10 cursor-pointer rounded-xl"
+            >
+                <Settings className="mr-2 size-4" />
+                Settings
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+                onClick={() => {}}
+                className="h-10 cursor-pointer rounded-xl"
+            >
+                <CircleHelp className="mr-2 size-4" />
+                Help
+            </DropdownMenuItem>
+
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-                <Link className="block w-full" method="post" href={route('logout')} as="button" onClick={cleanup}>
-                    <LogOut className="mr-2" />
-                    Log out
-                </Link>
+
+            <DropdownMenuItem
+                onClick={() => router.post('/logout')}
+                className="h-10 cursor-pointer rounded-xl text-red-500 focus:text-red-500"
+            >
+                <LogOut className="mr-2 size-4" />
+                Logout
             </DropdownMenuItem>
         </>
     );

@@ -35,15 +35,17 @@ function buildSmoothPath(points: { x: number; y: number }[]) {
 
 export default function MountainTrendChart({
     series,
-    height = 300,
+    height = 360,
     formatter = (value) => value.toLocaleString(),
 }: Props) {
-    const width = 900;
-    const padding = 42;
-
     const labels = series[0]?.data.map((item) => item.label) ?? [];
+
+    const width = Math.max((labels.length || 1) * 90, 520);
+    const padding = 44;
+
     const allValues = series.flatMap((item) => item.data.map((point) => Number(point.value || 0)));
     const maxValue = Math.max(...allValues, 1);
+
     const chartHeight = height - padding * 2;
     const chartWidth = width - padding * 2;
 
@@ -56,14 +58,20 @@ export default function MountainTrendChart({
     }
 
     return (
-        <div className="overflow-x-auto rounded-lg border bg-muted/20 p-3">
-            <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+        <div className="w-full rounded-lg border bg-muted/20 p-3">
+            <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
                 {[0, 25, 50, 75, 100].map((tick) => {
                     const y = padding + chartHeight - (tick / 100) * chartHeight;
 
                     return (
                         <g key={tick}>
-                            <line x1={padding} x2={width - padding} y1={y} y2={y} stroke="rgba(148,163,184,0.25)" />
+                            <line
+                                x1={padding}
+                                x2={width - padding}
+                                y1={y}
+                                y2={y}
+                                stroke="rgba(148,163,184,0.25)"
+                            />
                             <text x={12} y={y + 4} className="fill-muted-foreground text-[10px]">
                                 {formatter((maxValue * tick) / 100)}
                             </text>
@@ -78,7 +86,12 @@ export default function MountainTrendChart({
                         const x = padding + (index / Math.max(item.data.length - 1, 1)) * chartWidth;
                         const y = padding + chartHeight - (Number(point.value || 0) / maxValue) * chartHeight;
 
-                        return { x, y, value: point.value, label: point.label };
+                        return {
+                            x,
+                            y,
+                            value: point.value,
+                            label: point.label,
+                        };
                     });
 
                     const linePath = buildSmoothPath(points);
@@ -90,13 +103,19 @@ export default function MountainTrendChart({
                             <path d={linePath} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" />
 
                             {points.map((point) => (
-                                <g key={`${item.label}-${point.label}`}>
-                                    <circle cx={point.x} cy={point.y} r="4" fill="white" stroke={color} strokeWidth="2">
-                                        <title>
-                                            {item.label} • {point.label}: {formatter(point.value)}
-                                        </title>
-                                    </circle>
-                                </g>
+                                <circle
+                                    key={`${item.label}-${point.label}`}
+                                    cx={point.x}
+                                    cy={point.y}
+                                    r="4"
+                                    fill="white"
+                                    stroke={color}
+                                    strokeWidth="2"
+                                >
+                                    <title>
+                                        {item.label} • {point.label}: {formatter(point.value)}
+                                    </title>
+                                </circle>
                             ))}
                         </g>
                     );
@@ -106,7 +125,13 @@ export default function MountainTrendChart({
                     const x = padding + (index / Math.max(labels.length - 1, 1)) * chartWidth;
 
                     return (
-                        <text key={label} x={x} y={height - 14} textAnchor="middle" className="fill-muted-foreground text-[10px]">
+                        <text
+                            key={label}
+                            x={x}
+                            y={height - 14}
+                            textAnchor="middle"
+                            className="fill-muted-foreground text-[10px]"
+                        >
                             {label}
                         </text>
                     );

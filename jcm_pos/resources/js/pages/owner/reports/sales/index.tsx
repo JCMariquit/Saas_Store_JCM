@@ -2,27 +2,18 @@ import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import {
-    Activity,
     BarChart3,
     CalendarDays,
-    Flame,
-    Layers3,
     Package,
     Percent,
     Receipt,
-    Radar,
+    RefreshCcw,
     TrendingUp,
     Wallet,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import ChartCard from '@/components/charts/chart-card';
-import HeatMap from '@/components/charts/heat-map';
-import MixedBarLineChart from '@/components/charts/mixed-bar-line-chart';
 import MountainTrendChart from '@/components/charts/mountain-trend-chart';
-import NestedDonutChart from '@/components/charts/nested-donut-chart';
-import RadarChart from '@/components/charts/radar-chart';
-import StackedBarChart from '@/components/charts/stacked-bar-chart';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Reports', href: '/client/reports/sales' },
@@ -87,211 +78,51 @@ function formatNumber(value: number) {
     return new Intl.NumberFormat('en-PH').format(Number(value || 0));
 }
 
-const dummyNestedDonut = [
-    {
-        label: 'Sales Status',
-        segments: [
-            { label: 'Completed', value: 72, color: '#16a34a' },
-            { label: 'Returned', value: 11, color: '#dc2626' },
-            { label: 'Voided', value: 4, color: '#f59e0b' },
-        ],
-    },
-    {
-        label: 'Payment Type',
-        segments: [
-            { label: 'Cash', value: 48, color: '#2563eb' },
-            { label: 'GCash', value: 22, color: '#0891b2' },
-            { label: 'Card', value: 13, color: '#7c3aed' },
-            { label: 'Split', value: 4, color: '#ea580c' },
-        ],
-    },
-    {
-        label: 'Branch Mix',
-        segments: [
-            { label: 'Main', value: 55, color: '#0f766e' },
-            { label: 'Branch 2', value: 21, color: '#65a30d' },
-            { label: 'Branch 3', value: 11, color: '#db2777' },
-        ],
-    },
-];
+function percent(value: number, total: number) {
+    if (total <= 0) return '0%';
+    return `${((value / total) * 100).toFixed(1)}%`;
+}
 
-const dummyVerticalStacked = [
-    {
-        label: 'Mon',
-        segments: [
-            { label: 'Cash', value: 4200, color: '#2563eb' },
-            { label: 'GCash', value: 2300, color: '#0891b2' },
-            { label: 'Card', value: 900, color: '#7c3aed' },
-        ],
-    },
-    {
-        label: 'Tue',
-        segments: [
-            { label: 'Cash', value: 5100, color: '#2563eb' },
-            { label: 'GCash', value: 1800, color: '#0891b2' },
-            { label: 'Card', value: 1200, color: '#7c3aed' },
-        ],
-    },
-    {
-        label: 'Wed',
-        segments: [
-            { label: 'Cash', value: 3900, color: '#2563eb' },
-            { label: 'GCash', value: 2800, color: '#0891b2' },
-            { label: 'Card', value: 1500, color: '#7c3aed' },
-        ],
-    },
-    {
-        label: 'Thu',
-        segments: [
-            { label: 'Cash', value: 6200, color: '#2563eb' },
-            { label: 'GCash', value: 2100, color: '#0891b2' },
-            { label: 'Card', value: 1700, color: '#7c3aed' },
-        ],
-    },
-    {
-        label: 'Fri',
-        segments: [
-            { label: 'Cash', value: 7300, color: '#2563eb' },
-            { label: 'GCash', value: 3100, color: '#0891b2' },
-            { label: 'Card', value: 2200, color: '#7c3aed' },
-        ],
-    },
-];
-
-const dummyHorizontalStacked = [
-    {
-        label: 'Beverages',
-        segments: [
-            { label: 'Revenue', value: 18500, color: '#16a34a' },
-            { label: 'Discounts', value: 1200, color: '#f59e0b' },
-            { label: 'Returns', value: 800, color: '#dc2626' },
-        ],
-    },
-    {
-        label: 'Snacks',
-        segments: [
-            { label: 'Revenue', value: 14200, color: '#16a34a' },
-            { label: 'Discounts', value: 900, color: '#f59e0b' },
-            { label: 'Returns', value: 500, color: '#dc2626' },
-        ],
-    },
-    {
-        label: 'Household',
-        segments: [
-            { label: 'Revenue', value: 9800, color: '#16a34a' },
-            { label: 'Discounts', value: 700, color: '#f59e0b' },
-            { label: 'Returns', value: 300, color: '#dc2626' },
-        ],
-    },
-];
-
-const dummyMountainTrend = [
-    {
-        label: 'Gross Sales',
-        color: '#2563eb',
-        data: [
-            { label: 'Jan', value: 25000 },
-            { label: 'Feb', value: 33000 },
-            { label: 'Mar', value: 29000 },
-            { label: 'Apr', value: 41000 },
-            { label: 'May', value: 52000 },
-            { label: 'Jun', value: 47000 },
-        ],
-    },
-    {
-        label: 'Net Sales',
-        color: '#16a34a',
-        data: [
-            { label: 'Jan', value: 22000 },
-            { label: 'Feb', value: 30100 },
-            { label: 'Mar', value: 26000 },
-            { label: 'Apr', value: 37400 },
-            { label: 'May', value: 48900 },
-            { label: 'Jun', value: 43100 },
-        ],
-    },
-];
-
-const dummyRadar = [
-    {
-        label: 'Current Month',
-        color: '#2563eb',
-        data: [
-            { label: 'Revenue', value: 88 },
-            { label: 'Profit', value: 74 },
-            { label: 'Items', value: 92 },
-            { label: 'Discount', value: 43 },
-            { label: 'Returns', value: 28 },
-            { label: 'Cashflow', value: 81 },
-        ],
-    },
-    {
-        label: 'Previous Month',
-        color: '#16a34a',
-        data: [
-            { label: 'Revenue', value: 75 },
-            { label: 'Profit', value: 68 },
-            { label: 'Items', value: 79 },
-            { label: 'Discount', value: 38 },
-            { label: 'Returns', value: 33 },
-            { label: 'Cashflow', value: 70 },
-        ],
-    },
-];
-
-const dummyMixedBarLine = [
-    { label: 'Jan', barValue: 25000, lineValue: 21000 },
-    { label: 'Feb', barValue: 33000, lineValue: 28500 },
-    { label: 'Mar', barValue: 29000, lineValue: 24400 },
-    { label: 'Apr', barValue: 41000, lineValue: 35900 },
-    { label: 'May', barValue: 52000, lineValue: 46800 },
-    { label: 'Jun', barValue: 47000, lineValue: 42100 },
-];
-
-const dummyHeatMap = [
-    { label: '01', value: 1200 },
-    { label: '02', value: 3200 },
-    { label: '03', value: 0 },
-    { label: '04', value: 5400 },
-    { label: '05', value: 2100 },
-    { label: '06', value: 4300 },
-    { label: '07', value: 7000 },
-    { label: '08', value: 2500 },
-    { label: '09', value: 1900 },
-    { label: '10', value: 8500 },
-    { label: '11', value: 6400 },
-    { label: '12', value: 3300 },
-    { label: '13', value: 1100 },
-    { label: '14', value: 7800 },
-    { label: '15', value: 9200 },
-    { label: '16', value: 4200 },
-    { label: '17', value: 0 },
-    { label: '18', value: 3100 },
-    { label: '19', value: 5900 },
-    { label: '20', value: 7200 },
-    { label: '21', value: 2800 },
-];
 
 export default function SalesReportIndex({
     filters,
     summary,
+    daily_sales,
     top_products,
     recent_sales,
 }: Props) {
     const [dateFrom, setDateFrom] = useState(filters.date_from);
     const [dateTo, setDateTo] = useState(filters.date_to);
 
+    const netSales = Number(summary.gross_sales || 0) - Number(summary.total_discount || 0);
+    const discountRate = percent(Number(summary.total_discount || 0), Number(summary.gross_sales || 0));
+    const totalProductSales = top_products.reduce((sum, product) => sum + Number(product.total_sales || 0), 0);
+    const bestProduct = top_products[0];
+
+    const paidSales = recent_sales.filter((sale) => String(sale.payment_status).toLowerCase() === 'paid').length;
+    const partialSales = recent_sales.filter((sale) => String(sale.payment_status).toLowerCase() === 'partial').length;
+    const unpaidSales = recent_sales.filter((sale) => String(sale.payment_status).toLowerCase() === 'unpaid').length;
+
+    const trendSeries = useMemo(() => {
+        return [
+            {
+                label: 'Gross Sales',
+                color: '#10b981',
+                data: daily_sales.map((item) => ({
+                    label: item.date,
+                    value: Number(item.total_sales || 0),
+                })),
+            },
+        ];
+    }, [daily_sales]);
+
+    const maxTopProductSales = Math.max(...top_products.map((item) => Number(item.total_sales || 0)), 1);
+
     function applyFilters() {
         router.get(
             '/client/reports/sales',
-            {
-                date_from: dateFrom,
-                date_to: dateTo,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-            },
+            { date_from: dateFrom, date_to: dateTo },
+            { preserveState: true, preserveScroll: true },
         );
     }
 
@@ -299,211 +130,349 @@ export default function SalesReportIndex({
         router.get('/client/reports/sales');
     }
 
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Sales Reports" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="rounded-xl border bg-card p-5 shadow-sm">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="flex items-center gap-2">
-                            <div className="rounded-lg bg-primary/10 p-2">
-                                <BarChart3 className="size-5 text-primary" />
-                            </div>
-
-                            <div>
-                                <h1 className="text-xl font-semibold">Sales Reports</h1>
-                                <p className="text-sm text-muted-foreground">
-                                    Analytics UI module test using reusable chart components.
-                                </p>
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                <div className="rounded-2xl border bg-card p-5 shadow-sm">
+                    <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                        <div>
+                            <div className="flex items-center gap-3">
+                                <div className="rounded-xl bg-emerald-500/10 p-3">
+                                    <BarChart3 className="size-5 text-emerald-500" />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-semibold tracking-tight">Sales Reports</h1>
+                                    <p className="text-sm text-muted-foreground">
+                                        Revenue and transaction overview for {filters.date_from} to {filters.date_to}.
+                                    </p>
+                                </div>
                             </div>
                         </div>
+                        <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                                <DateInput label="From" value={dateFrom} onChange={setDateFrom} />
+                                <DateInput label="To" value={dateTo} onChange={setDateTo} />
 
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                            <div>
-                                <label className="text-xs font-medium text-muted-foreground">From</label>
-                                <input
-                                    type="date"
-                                    value={dateFrom}
-                                    onChange={(event) => setDateFrom(event.target.value)}
-                                    className="mt-1 h-10 rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary"
-                                />
+                                <button
+                                    type="button"
+                                    onClick={applyFilters}
+                                    className="h-10 rounded-lg bg-emerald-500 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-600"
+                                >
+                                    Apply
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={resetFilters}
+                                    className="inline-flex h-10 items-center gap-2 rounded-lg border bg-background px-4 text-sm font-medium hover:bg-muted"
+                                >
+                                    <RefreshCcw className="size-4" />
+                                    Reset
+                                </button>
                             </div>
-
-                            <div>
-                                <label className="text-xs font-medium text-muted-foreground">To</label>
-                                <input
-                                    type="date"
-                                    value={dateTo}
-                                    onChange={(event) => setDateTo(event.target.value)}
-                                    className="mt-1 h-10 rounded-lg border bg-background px-3 text-sm outline-none focus:border-primary"
-                                />
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={applyFilters}
-                                className="h-10 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
-                            >
-                                Apply
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={resetFilters}
-                                className="h-10 rounded-lg border px-4 text-sm font-medium"
-                            >
-                                Reset
-                            </button>
                         </div>
                     </div>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                    <SummaryCard title="Gross Sales" value={money(summary.gross_sales)} icon={Wallet} />
-                    <SummaryCard title="Transactions" value={formatNumber(summary.total_transactions)} icon={Receipt} />
-                    <SummaryCard title="Items Sold" value={formatNumber(summary.total_items_sold)} icon={Package} />
-                    <SummaryCard title="Discounts" value={money(summary.total_discount)} icon={Percent} />
-                    <SummaryCard title="Average Sale" value={money(summary.average_sale)} icon={TrendingUp} />
+                    <MetricCard title="Gross Sales" value={money(summary.gross_sales)} helper="Before discounts" icon={Wallet} />
+                    <MetricCard title="Net Sales" value={money(netSales)} helper="After discounts" icon={TrendingUp} />
+                    <MetricCard title="Transactions" value={formatNumber(summary.total_transactions)} helper="Completed sales" icon={Receipt} />
+                    <MetricCard title="Items Sold" value={formatNumber(summary.total_items_sold)} helper="Total quantity" icon={Package} />
+                    <MetricCard title="Discount Rate" value={discountRate} helper={money(summary.total_discount)} icon={Percent} />
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-2">
-                    <ChartCard title="Nested Sales Breakdown" description="Reusable nested donut chart. Supports 2 to 5 rings." icon={Layers3}>
-                        <NestedDonutChart rings={dummyNestedDonut} centerTitle="Sales Mix" formatter={formatNumber} />
-                    </ChartCard>
+                <div className="grid gap-4 xl:grid-cols-12">
+                    <Panel
+                        title="Sales Movement"
+                        description="Daily gross sales trend for the selected period."
+                        icon={TrendingUp}
+                        className="xl:col-span-8"
+                    >
+                        <MountainTrendChart series={trendSeries} height={300} formatter={money} />
+                    </Panel>
 
-                    <ChartCard title="Mountain Sales Trend" description="Smooth mountain-style trend chart for monthly movement." icon={TrendingUp}>
-                        <MountainTrendChart series={dummyMountainTrend} formatter={money} />
-                    </ChartCard>
+                    <Panel
+                        title="Period Summary"
+                        description="Quick read of the selected sales period."
+                        icon={CalendarDays}
+                        className="xl:col-span-4"
+                    >
+                        <div className="grid gap-3">
+                            <SummaryRow label="Net Sales" value={money(netSales)} />
+                            <SummaryRow label="Gross Sales" value={money(summary.gross_sales)} />
+                            <SummaryRow label="Discounts" value={money(summary.total_discount)} />
+                            <SummaryRow label="Average Sale" value={money(summary.average_sale)} />
+                            <SummaryRow label="Best Product" value={bestProduct ? bestProduct.product_name : '-'} />
+
+                            <div className="mt-2 grid grid-cols-3 gap-2">
+                                <StatusBox label="Paid" value={paidSales} tone="success" />
+                                <StatusBox label="Partial" value={partialSales} tone="warning" />
+                                <StatusBox label="Unpaid" value={unpaidSales} tone="danger" />
+                            </div>
+                        </div>
+                    </Panel>
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-2">
-                    <ChartCard title="Daily Payment Mix" description="Vertical stacked bar chart." icon={BarChart3}>
-                        <StackedBarChart data={dummyVerticalStacked} orientation="vertical" formatter={money} />
-                    </ChartCard>
-
-                    <ChartCard title="Category Revenue Health" description="Horizontal stacked bar chart." icon={CalendarDays}>
-                        <StackedBarChart data={dummyHorizontalStacked} orientation="horizontal" formatter={money} />
-                    </ChartCard>
-                </div>
-
-                <div className="grid gap-4 xl:grid-cols-2">
-                    <ChartCard title="Sales Performance Radar" description="Radar chart for comparing multiple business metrics." icon={Radar}>
-                        <RadarChart series={dummyRadar} max={100} formatter={formatNumber} />
-                    </ChartCard>
-
-                    <ChartCard title="Gross vs Net Sales" description="Mixed bar and line chart for trend comparison." icon={Activity}>
-                        <MixedBarLineChart
-                            data={dummyMixedBarLine}
-                            barLabel="Gross Sales"
-                            lineLabel="Net Sales"
-                            formatter={money}
-                        />
-                    </ChartCard>
-                </div>
-
-                <div className="grid gap-4 xl:grid-cols-1">
-                    <ChartCard title="Daily Sales Heat Map" description="Heat map for daily activity intensity." icon={Flame}>
-                        <HeatMap data={dummyHeatMap} columns={7} formatter={money} />
-                    </ChartCard>
-                </div>
-
-                <div className="grid gap-4 xl:grid-cols-3">
-                    <ChartCard title="Top Products" description="Current backend data." icon={Package} className="xl:col-span-1">
+                <div className="grid gap-4 xl:grid-cols-12">
+                    <Panel
+                        title="Top Products"
+                        description="Ranked by total sales amount."
+                        icon={Package}
+                        className="xl:col-span-7"
+                    >
                         <div className="space-y-3">
                             {top_products.length === 0 ? (
-                                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                                    No product sales found.
-                                </div>
+                                <EmptyState text="No product sales found." />
                             ) : (
-                                top_products.map((product, index) => (
-                                    <div key={`${product.product_id ?? 'item'}-${index}`} className="rounded-lg border p-3">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div>
-                                                <div className="font-medium">{product.product_name}</div>
-                                                <div className="text-xs text-muted-foreground">
-                                                    {product.sku ?? 'No SKU'} • Qty {formatNumber(product.total_quantity)}
+                                top_products.slice(0, 8).map((product, index) => {
+                                    const width = (Number(product.total_sales || 0) / maxTopProductSales) * 100;
+                                    const share = percent(Number(product.total_sales || 0), totalProductSales);
+
+                                    return (
+                                        <div
+                                            key={`${product.product_id ?? 'product'}-${index}`}
+                                            className="rounded-xl border bg-background p-4 transition hover:bg-muted/40"
+                                        >
+                                            <div className="mb-3 flex items-start justify-between gap-4">
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-xs font-bold text-emerald-600">
+                                                            {index + 1}
+                                                        </span>
+                                                        <div className="truncate font-semibold">{product.product_name}</div>
+                                                    </div>
+
+                                                    <div className="mt-1 pl-9 text-xs text-muted-foreground">
+                                                        {product.sku ?? 'No SKU'} • Qty {formatNumber(product.total_quantity)} • {share}
+                                                    </div>
+                                                </div>
+
+                                                <div className="shrink-0 text-right">
+                                                    <div className="font-semibold">{money(product.total_sales)}</div>
+                                                    <div className="text-xs text-muted-foreground">sales</div>
                                                 </div>
                                             </div>
 
-                                            <div className="text-right text-sm font-semibold">
-                                                {money(product.total_sales)}
+                                            <div className="h-2 overflow-hidden rounded-full bg-muted">
+                                                <div
+                                                    className="h-full rounded-full bg-emerald-500"
+                                                    style={{ width: `${Math.max(width, 4)}%` }}
+                                                />
                                             </div>
                                         </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
-                    </ChartCard>
+                    </Panel>
 
-                    <ChartCard title="Recent Sales" description="Latest completed transactions in selected date range." icon={Receipt} className="xl:col-span-2">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b text-left text-muted-foreground">
-                                        <th className="py-3 pr-4 font-medium">Sale No.</th>
-                                        <th className="py-3 pr-4 font-medium">Branch</th>
-                                        <th className="py-3 pr-4 font-medium">Items</th>
-                                        <th className="py-3 pr-4 font-medium">Payment</th>
-                                        <th className="py-3 pr-4 font-medium">Date</th>
-                                        <th className="py-3 text-right font-medium">Total</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    {recent_sales.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                                                No recent sales found.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        recent_sales.map((sale) => (
-                                            <tr key={sale.id} className="border-b last:border-0">
-                                                <td className="py-3 pr-4 font-medium">{sale.sale_no}</td>
-                                                <td className="py-3 pr-4">{sale.branch_name}</td>
-                                                <td className="py-3 pr-4">{sale.items_count}</td>
-                                                <td className="py-3 pr-4">
-                                                    <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-600">
-                                                        {sale.payment_status}
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 pr-4 text-muted-foreground">{sale.sold_at}</td>
-                                                <td className="py-3 text-right font-semibold">{money(sale.grand_total)}</td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                    <Panel
+                        title="Sales Quality"
+                        description="Useful ratios and quick indicators."
+                        icon={Percent}
+                        className="xl:col-span-5"
+                    >
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <InsightBox label="Average Sale" value={money(summary.average_sale)} sub="Per transaction" />
+                            <InsightBox label="Discount Rate" value={discountRate} sub={money(summary.total_discount)} />
+                            <InsightBox label="Product Sales" value={money(totalProductSales)} sub="Subtotal of top products" />
+                            <InsightBox label="Items / Transaction" value={formatNumber(summary.total_transactions > 0 ? summary.total_items_sold / summary.total_transactions : 0)} sub="Average basket size" />
                         </div>
-                    </ChartCard>
+                    </Panel>
                 </div>
+
+                <Panel title="Recent Sales" description="Latest transactions inside the selected period." icon={Receipt}>
+                    <div className="overflow-x-auto rounded-xl border">
+                        <table className="w-full text-sm">
+                            <thead className="bg-muted/50">
+                                <tr className="border-b text-left text-muted-foreground">
+                                    <th className="px-4 py-3 font-medium">Sale No.</th>
+                                    <th className="px-4 py-3 font-medium">Branch</th>
+                                    <th className="px-4 py-3 font-medium">Items</th>
+                                    <th className="px-4 py-3 font-medium">Payment</th>
+                                    <th className="px-4 py-3 font-medium">Date</th>
+                                    <th className="px-4 py-3 text-right font-medium">Total</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {recent_sales.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                                            No recent sales found.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    recent_sales.map((sale) => (
+                                        <tr key={sale.id} className="border-b last:border-0 hover:bg-muted/30">
+                                            <td className="px-4 py-3 font-medium">{sale.sale_no}</td>
+                                            <td className="px-4 py-3">{sale.branch_name}</td>
+                                            <td className="px-4 py-3">{sale.items_count}</td>
+                                            <td className="px-4 py-3">
+                                                <PaymentBadge status={sale.payment_status} />
+                                            </td>
+                                            <td className="px-4 py-3 text-muted-foreground">{sale.sold_at}</td>
+                                            <td className="px-4 py-3 text-right font-semibold">{money(sale.grand_total)}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </Panel>
             </div>
         </AppLayout>
     );
 }
 
-function SummaryCard({
+function DateInput({
+    label,
+    value,
+    onChange,
+}: {
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+}) {
+    return (
+        <div>
+            <label className="text-xs font-medium text-muted-foreground">{label}</label>
+            <input
+                type="date"
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+                className="mt-1 h-10 rounded-lg border bg-background px-3 text-sm outline-none focus:border-emerald-500"
+            />
+        </div>
+    );
+}
+
+function MetricCard({
     title,
     value,
+    helper,
     icon: Icon,
 }: {
     title: string;
     value: string;
+    helper: string;
     icon: typeof Wallet;
 }) {
     return (
-        <div className="rounded-xl border bg-card p-5 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
+        <div className="rounded-2xl border bg-card p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
                 <div>
                     <p className="text-sm text-muted-foreground">{title}</p>
-                    <p className="mt-2 text-xl font-semibold">{value}</p>
+                    <p className="mt-2 text-2xl font-semibold tracking-tight">{value}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{helper}</p>
                 </div>
 
-                <div className="rounded-xl bg-primary/10 p-3">
-                    <Icon className="size-5 text-primary" />
+                <div className="rounded-xl bg-emerald-500/10 p-3">
+                    <Icon className="size-5 text-emerald-500" />
                 </div>
             </div>
+        </div>
+    );
+}
+
+function Panel({
+    title,
+    description,
+    icon: Icon,
+    className = '',
+    children,
+}: {
+    title: string;
+    description: string;
+    icon: typeof Wallet;
+    className?: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div className={`rounded-2xl border bg-card p-5 shadow-sm ${className}`}>
+            <div className="mb-4 flex items-start justify-between gap-4">
+                <div>
+                    <h2 className="font-semibold">{title}</h2>
+                    <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+                </div>
+
+                <div className="rounded-xl bg-emerald-500/10 p-3">
+                    <Icon className="size-5 text-emerald-500" />
+                </div>
+            </div>
+
+            {children}
+        </div>
+    );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="flex items-center justify-between gap-4 rounded-xl border bg-background px-4 py-3">
+            <span className="text-sm text-muted-foreground">{label}</span>
+            <span className="max-w-[170px] truncate text-right text-sm font-semibold">{value}</span>
+        </div>
+    );
+}
+
+function StatusBox({
+    label,
+    value,
+    tone,
+}: {
+    label: string;
+    value: number;
+    tone: 'success' | 'warning' | 'danger';
+}) {
+    const styles = {
+        success: 'bg-emerald-500/10 text-emerald-600',
+        warning: 'bg-amber-500/10 text-amber-600',
+        danger: 'bg-red-500/10 text-red-600',
+    };
+
+    return (
+        <div className={`rounded-xl p-3 text-center ${styles[tone]}`}>
+            <div className="text-lg font-bold">{formatNumber(value)}</div>
+            <div className="text-xs font-medium">{label}</div>
+        </div>
+    );
+}
+
+function InsightBox({ label, value, sub }: { label: string; value: string; sub: string }) {
+    return (
+        <div className="rounded-xl border bg-background p-4">
+            <p className="text-xs font-medium text-muted-foreground">{label}</p>
+            <p className="mt-1 truncate text-lg font-semibold">{value}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+        </div>
+    );
+}
+
+function PaymentBadge({ status }: { status: string }) {
+    const normalized = String(status || '').toLowerCase();
+
+    const style =
+        normalized === 'paid'
+            ? 'bg-emerald-500/10 text-emerald-600'
+            : normalized === 'partial'
+              ? 'bg-amber-500/10 text-amber-600'
+              : 'bg-red-500/10 text-red-600';
+
+    return (
+        <span className={`rounded-full px-2 py-1 text-xs font-medium ${style}`}>
+            {status || 'unknown'}
+        </span>
+    );
+}
+
+function EmptyState({ text }: { text: string }) {
+    return (
+        <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+            {text}
         </div>
     );
 }

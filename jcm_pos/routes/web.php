@@ -4,6 +4,7 @@ use App\Http\Controllers\Owner\BranchController;
 use App\Http\Controllers\Owner\CashDrawerController;
 use App\Http\Controllers\Owner\CategoryController;
 use App\Http\Controllers\Owner\DiscountsController;
+use App\Http\Controllers\Owner\InventoryReportController;
 use App\Http\Controllers\Owner\PosTerminalController;
 use App\Http\Controllers\Owner\ProductController;
 use App\Http\Controllers\Owner\ReturnsController;
@@ -72,25 +73,16 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/sales/cash-drawer/cash-out', [CashDrawerController::class, 'cashOut'])->name('sales.cash-drawer.cash-out');
         Route::post('/sales/cash-drawer/close', [CashDrawerController::class, 'close'])->name('sales.cash-drawer.close');
 
-        Route::get('/customers', function () {
-            return Inertia::render('owner/customers/index');
-        })->name('customers.index');
+        Route::get('/customers', function () {return Inertia::render('owner/customers/index');})->name('customers.index');
 
         Route::get('/reports/sales', [SalesReportController::class, 'index'])->name('reports.sales.index');
+        Route::get('/reports/inventory', [InventoryReportController::class, 'index'])->name('reports.inventory.index');
 
-        Route::get('/reports/inventory', function () {
-            return Inertia::render('owner/reports/inventory/index');
-        })->name('reports.inventory.index');
-
-        Route::get('/billing', function () {
-            return Inertia::render('owner/billing/index');
-        })->name('billing.index');
+        Route::get('/billing', function () {return Inertia::render('owner/billing/index');})->name('billing.index');
     });
 
     Route::middleware(['role:cashier'])->prefix('cashier')->name('cashier.')->group(function () {
-        Route::get('/dashboard', function () {
-            return Inertia::render('staff/dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', function () {return Inertia::render('staff/dashboard');})->name('dashboard');
     });
 });
 

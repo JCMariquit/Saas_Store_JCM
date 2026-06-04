@@ -35,7 +35,7 @@ import {
 
 type UserRole = 'client' | 'cashier' | 'staff';
 
-type SidebarBadge = 'LIVE' | 'CORE' | 'OWNER' | 'STAFF' | 'DEV' | 'NEW' | 'BETA' | 'SOON';
+type SidebarBadge = 'LIVE' | 'CORE' | 'OWNER' | 'STAFF' | 'DEV' | 'TEST' | 'NEW' | 'BETA' | 'SOON';
 
 type SidebarItem = {
     title: string;
@@ -55,8 +55,8 @@ type SidebarGroup = {
 
 const clientDirectItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/client/dashboard', icon: LayoutGrid, badge: 'DEV' },
-    { title: 'POS Terminal', url: '/client/pos/terminal', icon: ShoppingCart, badge: 'BETA' },
-    { title: 'Transactions', url: '/client/sales/transactions', icon: Receipt, badge: 'BETA' },
+    { title: 'POS Terminal', url: '/client/pos/terminal', icon: ShoppingCart, badge: 'TEST' },
+    { title: 'Transactions', url: '/client/sales/transactions', icon: Receipt, badge: 'TEST' },
 ];
 
 const staffDirectItems: SidebarItem[] = [
@@ -68,36 +68,36 @@ const clientGroupedItems: SidebarGroup[] = [
     {
         title: 'Management',
         icon: Users,
-        badge: 'BETA',
+        badge: 'TEST',
         items: [
-            { title: 'Staff', url: '/client/management/staff', icon: Users, badge: 'BETA' },
-            { title: 'Store Profile', url: '/client/management/store-profile', icon: Settings, badge: 'BETA' },
-            { title: 'Branches', url: '/client/management/branches', icon: HousePlus, badge: 'BETA' },
+            { title: 'Staff', url: '/client/management/staff', icon: Users, badge: 'TEST' },
+            { title: 'Store Profile', url: '/client/management/store-profile', icon: Settings, badge: 'TEST' },
+            { title: 'Branches', url: '/client/management/branches', icon: HousePlus, badge: 'TEST' },
         ],
     },
     {
         title: 'Inventory',
         icon: Boxes,
-        badge: 'BETA',
+        badge: 'TEST',
         items: [
-            { title: 'Products', url: '/client/inventory/products', icon: Package2, badge: 'BETA' },
-            { title: 'Categories', url: '/client/inventory/categories', icon: Tags, badge: 'BETA' },
-            { title: 'Stock Management', url: '/client/inventory/stocks', icon: Boxes, badge: 'BETA' },
+            { title: 'Products', url: '/client/inventory/products', icon: Package2, badge: 'TEST' },
+            { title: 'Categories', url: '/client/inventory/categories', icon: Tags, badge: 'TEST' },
+            { title: 'Stock Management', url: '/client/inventory/stocks', icon: Boxes, badge: 'TEST' },
         ],
     },
     {
         title: 'Sales',
         icon: Receipt,
-        badge: 'BETA',
+        badge: 'TEST',
         items: [
-            { title: 'Sold Items', url: '/client/sales/sold-items', icon: Package2, badge: 'BETA' },
-            { title: 'Returns', url: '/client/sales/returns', icon: RotateCcw, badge: 'BETA' },
-            { title: 'Discounts', url: '/client/sales/discounts', icon: Tags, badge: 'BETA' },
-            { title: 'Cash Drawer', url: '/client/sales/cash-drawer', icon: WalletCards, badge: 'BETA' },
+            { title: 'Sold Items', url: '/client/sales/sold-items', icon: Package2, badge: 'TEST' },
+            { title: 'Returns', url: '/client/sales/returns', icon: RotateCcw, badge: 'TEST' },
+            { title: 'Discounts', url: '/client/sales/discounts', icon: Tags, badge: 'TEST' },
+            { title: 'Cash Drawer', url: '/client/sales/cash-drawer', icon: WalletCards, badge: 'TEST' },
         ],
     },
     {
-        title: 'Reports', 
+        title: 'Reports',
         icon: BarChart3,
         badge: 'DEV',
         items: [
@@ -153,6 +153,7 @@ function MenuBadge({ badge }: { badge?: SidebarBadge }) {
         OWNER: 'bg-amber-500/10 text-amber-600 ring-amber-500/15',
         STAFF: 'bg-cyan-500/10 text-cyan-600 ring-cyan-500/15',
         DEV: 'bg-sky-500/10 text-sky-600 ring-sky-500/15',
+        TEST: 'bg-amber-500/10 text-amber-600 ring-amber-500/15',
         NEW: 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/15',
         BETA: 'bg-violet-500/10 text-violet-600 ring-violet-500/15',
         SOON: 'bg-slate-500/10 text-slate-500 ring-slate-500/15',

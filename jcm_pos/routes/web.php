@@ -21,6 +21,7 @@ use App\Http\Controllers\Staff\Cashier\CashierProductController;
 use App\Http\Controllers\Staff\Cashier\CashierReturnController;
 use App\Http\Controllers\Staff\Cashier\CashierTransactionController;
 use App\Http\Controllers\Staff\Manager\ManagerDashboardController;
+use App\Http\Controllers\Staff\Manager\ManagerPosController;
 use App\Http\Controllers\Staff\Manager\ManagerProductController;
 use App\Http\Controllers\Staff\Manager\ManagerTransactionController;
 use App\Http\Controllers\Staff\Staff\StaffDashboardController;
@@ -130,9 +131,7 @@ Route::middleware(['auth'])->group(function () {
                 ->group(function () {
                     Route::get('/dashboard', [ManagerDashboardController::class, 'index'])->name('dashboard');
 
-                    Route::get('/pos/monitor', function () {
-                        return Inertia::render('staff/manager/pos/monitor');
-                    })->name('pos.monitor.index');
+                    Route::get('/pos/monitor', [ManagerPosController::class, 'index'])->name('pos.monitor.index');
 
                     Route::get('/transactions', [ManagerTransactionController::class, 'index'])->name('transactions.index');
 

@@ -17,6 +17,7 @@ import {
     ShoppingCart,
     Sparkles,
     Tags,
+    UserCheck,
     Users,
     WalletCards,
     X,
@@ -33,7 +34,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 
-type UserRole = 'client' | 'cashier' | 'staff';
+type UserRole = 'client' | 'cashier' | 'manager' | 'staff';
 
 type SidebarBadge = 'LIVE' | 'CORE' | 'OWNER' | 'STAFF' | 'DEV' | 'TEST' | 'NEW' | 'BETA' | 'SOON';
 
@@ -41,7 +42,6 @@ type SidebarItem = {
     title: string;
     url: string;
     icon: React.ElementType;
-    active?: boolean;
     paidOnly?: boolean;
     badge?: SidebarBadge;
 };
@@ -53,15 +53,16 @@ type SidebarGroup = {
     items: SidebarItem[];
 };
 
+/*
+|--------------------------------------------------------------------------
+| Client / Owner
+|--------------------------------------------------------------------------
+*/
+
 const clientDirectItems: SidebarItem[] = [
-    { title: 'Dashboard', url: '/client/dashboard', icon: LayoutGrid, badge: 'DEV' },
+    { title: 'Dashboard', url: '/client/dashboard', icon: LayoutGrid, badge: 'TEST' },
     { title: 'POS Terminal', url: '/client/pos/terminal', icon: ShoppingCart, badge: 'TEST' },
     { title: 'Transactions', url: '/client/sales/transactions', icon: Receipt, badge: 'TEST' },
-];
-
-const staffDirectItems: SidebarItem[] = [
-    { title: 'Dashboard', url: '/cashier/dashboard', icon: LayoutGrid, badge: 'DEV' },
-    { title: 'POS Terminal', url: '/client/pos/terminal', icon: ShoppingCart, badge: 'DEV' },
 ];
 
 const clientGroupedItems: SidebarGroup[] = [
@@ -107,23 +108,168 @@ const clientGroupedItems: SidebarGroup[] = [
     },
 ];
 
-const staffGroupedItems: SidebarGroup[] = [
+/*
+|--------------------------------------------------------------------------
+| Cashier
+|--------------------------------------------------------------------------
+*/
+
+const cashierDirectItems: SidebarItem[] = [
+    { title: 'Dashboard', url: '/staff/cashier/dashboard', icon: LayoutGrid, badge: 'DEV' },
+    { title: 'Cashier POS', url: '/staff/cashier/pos/terminal', icon: ShoppingCart, badge: 'DEV' },
+];
+
+const cashierGroupedItems: SidebarGroup[] = [
     {
         title: 'Sales',
         icon: Receipt,
-        badge: 'LIVE',
-        items: [{ title: 'Transactions', url: '/staff/transactions', icon: Receipt, badge: 'LIVE' }],
+        badge: 'DEV',
+        items: [
+            { title: 'Transactions', url: '/staff/cashier/transactions', icon: Receipt, badge: 'DEV' },
+            { title: 'Returns', url: '/staff/cashier/returns', icon: RotateCcw, badge: 'DEV' },
+            { title: 'Cash Drawer', url: '/staff/cashier/cash-drawer', icon: WalletCards, badge: 'DEV' },
+        ],
+    },
+    {
+        title: 'Inventory',
+        icon: Boxes,
+        badge: 'DEV',
+        items: [
+            { title: 'Products', url: '/staff/cashier/products', icon: Package2, badge: 'DEV' },
+        ],
+    },
+];
+
+/*
+|--------------------------------------------------------------------------
+| Manager
+|--------------------------------------------------------------------------
+*/
+
+const managerDirectItems: SidebarItem[] = [
+    { title: 'Dashboard', url: '/staff/manager/dashboard', icon: LayoutGrid, badge: 'DEV' },
+    { title: 'POS Monitor', url: '/staff/manager/pos/monitor', icon: ShoppingCart, badge: 'DEV' },
+    { title: 'Transactions', url: '/staff/manager/transactions', icon: Receipt, badge: 'DEV' },
+];
+
+const managerGroupedItems: SidebarGroup[] = [
+    {
+        title: 'Inventory',
+        icon: Boxes,
+        badge: 'DEV',
+        items: [
+            { title: 'Products', url: '/staff/manager/products', icon: Package2, badge: 'DEV' },
+            { title: 'Categories', url: '/staff/manager/categories', icon: Tags, badge: 'DEV' },
+            { title: 'Stock Management', url: '/staff/manager/stocks', icon: Boxes, badge: 'DEV' },
+        ],
+    },
+    {
+        title: 'Sales',
+        icon: Receipt,
+        badge: 'DEV',
+        items: [
+            { title: 'Sold Items', url: '/staff/manager/sold-items', icon: Package2, badge: 'DEV' },
+            { title: 'Returns', url: '/staff/manager/returns', icon: RotateCcw, badge: 'DEV' },
+            { title: 'Cash Drawer', url: '/staff/manager/cash-drawer', icon: WalletCards, badge: 'DEV' },
+        ],
+    },
+    {
+        title: 'Staff Control',
+        icon: UserCheck,
+        badge: 'DEV',
+        items: [
+            { title: 'Cashiers', url: '/staff/manager/cashiers', icon: Users, badge: 'DEV' },
+            { title: 'Staff Activity', url: '/staff/manager/staff-activity', icon: UserCheck, badge: 'DEV' },
+        ],
+    },
+    {
+        title: 'Reports',
+        icon: BarChart3,
+        badge: 'DEV',
+        items: [
+            { title: 'Sales Reports', url: '/staff/manager/reports/sales', icon: BarChart3, badge: 'DEV' },
+            { title: 'Inventory Reports', url: '/staff/manager/reports/inventory', icon: Boxes, badge: 'DEV' },
+        ],
+    },
+];
+
+/*
+|--------------------------------------------------------------------------
+| General Staff
+|--------------------------------------------------------------------------
+*/
+
+const staffDirectItems: SidebarItem[] = [
+    { title: 'Dashboard', url: '/staff/staff/dashboard', icon: LayoutGrid, badge: 'DEV' },
+];
+
+const staffGroupedItems: SidebarGroup[] = [
+    {
+        title: 'Inventory',
+        icon: Boxes,
+        badge: 'DEV',
+        items: [
+            { title: 'Products', url: '/staff/staff/products', icon: Package2, badge: 'DEV' },
+            { title: 'Stock Audit', url: '/staff/staff/stock-audit', icon: Boxes, badge: 'DEV' },
+        ],
+    },
+    {
+        title: 'Reports',
+        icon: BarChart3,
+        badge: 'DEV',
+        items: [
+            { title: 'Audit Reports', url: '/staff/staff/reports/audit', icon: BarChart3, badge: 'DEV' },
+        ],
     },
     {
         title: 'System',
         icon: Settings,
         items: [
-            { title: 'Settings', url: '/settings/profile', icon: Settings },
             { title: 'Help', url: '#', icon: CircleHelp },
             { title: 'Logout', url: '#', icon: LogOut },
         ],
     },
 ];
+
+function getMenuByRole(role: UserRole) {
+    if (role === 'client') {
+        return {
+            directItems: clientDirectItems,
+            groupedItems: clientGroupedItems,
+            portalLabel: 'Store Owner Portal',
+            mainSectionLabel: 'Owner',
+            groupSectionLabel: 'Management',
+        };
+    }
+
+    if (role === 'cashier') {
+        return {
+            directItems: cashierDirectItems,
+            groupedItems: cashierGroupedItems,
+            portalLabel: 'Cashier Portal',
+            mainSectionLabel: 'Cashier',
+            groupSectionLabel: 'Cashier Tools',
+        };
+    }
+
+    if (role === 'manager') {
+        return {
+            directItems: managerDirectItems,
+            groupedItems: managerGroupedItems,
+            portalLabel: 'Manager Portal',
+            mainSectionLabel: 'Manager',
+            groupSectionLabel: 'Manager Tools',
+        };
+    }
+
+    return {
+        directItems: staffDirectItems,
+        groupedItems: staffGroupedItems,
+        portalLabel: 'Staff Portal',
+        mainSectionLabel: 'Staff',
+        groupSectionLabel: 'Staff Tools',
+    };
+}
 
 function isUrlActive(currentUrl: string, itemUrl: string) {
     if (itemUrl === '#') return false;
@@ -152,12 +298,7 @@ function MenuBadge({ badge }: { badge?: SidebarBadge }) {
     const Icon = badge === 'DEV' ? Code2 : Sparkles;
 
     return (
-        <span
-            className={[
-                'ml-auto inline-flex h-5 items-center gap-1 rounded-md px-1.5 text-[9px] font-bold tracking-wide ring-1',
-                styles[badge],
-            ].join(' ')}
-        >
+        <span className={['ml-auto inline-flex h-5 items-center gap-1 rounded-md px-1.5 text-[9px] font-bold tracking-wide ring-1', styles[badge]].join(' ')}>
             <Icon className="size-3" />
             {badge}
         </span>
@@ -188,8 +329,7 @@ function BillingLockModal({ open, onClose }: { open: boolean; onClose: () => voi
                 </div>
 
                 <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                    To use this feature, please settle your monthly bill. Adding, editing, stock adjustments, and POS terminal actions
-                    are available only for active subscriptions.
+                    To use this feature, please settle your monthly bill. Adding, editing, stock adjustments, and POS terminal actions are available only for active subscriptions.
                 </p>
 
                 <div className="mt-5 flex justify-end gap-2">
@@ -221,9 +361,7 @@ function DirectItem({ item, isPaid, onLocked }: { item: SidebarItem; isPaid: boo
             <span
                 className={[
                     'flex size-7 items-center justify-center rounded-[9px] transition-colors',
-                    active
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-sidebar-foreground/40 group-hover:bg-background/70 group-hover:text-sidebar-foreground/70',
+                    active ? 'bg-primary/10 text-primary' : 'text-sidebar-foreground/40 group-hover:bg-background/70 group-hover:text-sidebar-foreground/70',
                 ].join(' ')}
             >
                 <Icon className="size-[16px]" />
@@ -269,7 +407,6 @@ function DirectItem({ item, isPaid, onLocked }: { item: SidebarItem; isPaid: boo
 function SidebarDropdown({ group, isPaid, onLocked }: { group: SidebarGroup; isPaid: boolean; onLocked: () => void }) {
     const { url } = usePage();
     const GroupIcon = group.icon;
-
     const hasActiveItem = group.items.some((item) => isUrlActive(url, item.url));
     const [open, setOpen] = React.useState(hasActiveItem);
 
@@ -293,9 +430,7 @@ function SidebarDropdown({ group, isPaid, onLocked }: { group: SidebarGroup; isP
                 <span
                     className={[
                         'flex size-7 items-center justify-center rounded-[9px] transition-colors',
-                        hasActiveItem
-                            ? 'bg-primary/10 text-primary'
-                            : 'text-sidebar-foreground/40 group-hover:bg-background/70 group-hover:text-sidebar-foreground/70',
+                        hasActiveItem ? 'bg-primary/10 text-primary' : 'text-sidebar-foreground/40 group-hover:bg-background/70 group-hover:text-sidebar-foreground/70',
                     ].join(' ')}
                 >
                     <GroupIcon className="size-[16px]" />
@@ -400,11 +535,7 @@ function AppSidebar() {
     }>();
 
     const role = page.props.auth?.user?.role ?? 'staff';
-    const isOwner = role === 'client';
-
-    const directItems = isOwner ? clientDirectItems : staffDirectItems;
-    const groupedItems = isOwner ? clientGroupedItems : staffGroupedItems;
-
+    const menu = getMenuByRole(role);
     const isPaid = true;
 
     return (
@@ -454,7 +585,7 @@ function AppSidebar() {
                                     <div className="min-w-0 leading-tight transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
                                         <span className="block truncate text-sm font-bold text-sidebar-foreground">JCM POS</span>
                                         <span className="mt-0.5 block truncate text-[11px] font-medium text-sidebar-foreground/45">
-                                            {isOwner ? 'Store Owner Portal' : 'Staff Portal'}
+                                            {menu.portalLabel}
                                         </span>
                                     </div>
                                 </Link>
@@ -464,31 +595,33 @@ function AppSidebar() {
                 </SidebarHeader>
 
                 <SidebarContent className="pos-scrollbar gap-5 overflow-y-auto px-0 group-data-[collapsible=icon]/sidebar:gap-5">
-                    <div className="space-y-2">
-                        <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35 transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
-                            {isOwner ? 'Owner' : 'Staff'}
-                        </p>
+                    {menu.directItems.length > 0 && (
+                        <div className="space-y-2">
+                            <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35 transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
+                                {menu.mainSectionLabel}
+                            </p>
 
-                        <SidebarMenu className="space-y-0.5 px-3 group-data-[collapsible=icon]/sidebar:px-2">
-                            {directItems.map((item) => (
-                                <DirectItem key={item.title} item={item} isPaid={isPaid} onLocked={() => setBillingModalOpen(true)} />
-                            ))}
-                        </SidebarMenu>
-                    </div>
+                            <SidebarMenu className="space-y-0.5 px-3 group-data-[collapsible=icon]/sidebar:px-2">
+                                {menu.directItems.map((item) => (
+                                    <DirectItem key={item.title} item={item} isPaid={isPaid} onLocked={() => setBillingModalOpen(true)} />
+                                ))}
+                            </SidebarMenu>
+                        </div>
+                    )}
 
-                    {groupedItems.length > 0 && (
+                    {menu.groupedItems.length > 0 && (
                         <div className="space-y-2 pb-4">
                             <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35 transition-all duration-200 group-data-[collapsible=icon]/sidebar:hidden">
-                                {isOwner ? 'Management' : 'Tools'}
+                                {menu.groupSectionLabel}
                             </p>
 
                             <div className="space-y-1 px-3 group-data-[collapsible=icon]/sidebar:px-2">
-                                {groupedItems.map((group) => (
+                                {menu.groupedItems.map((group) => (
                                     <SidebarDropdown key={group.title} group={group} isPaid={isPaid} onLocked={() => setBillingModalOpen(true)} />
                                 ))}
                             </div>
                         </div>
-                    )}
+                    )} 
                 </SidebarContent>
             </Sidebar>
         </>

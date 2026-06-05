@@ -20,10 +20,16 @@ use App\Http\Controllers\Staff\Cashier\CashierPosController;
 use App\Http\Controllers\Staff\Cashier\CashierProductController;
 use App\Http\Controllers\Staff\Cashier\CashierReturnController;
 use App\Http\Controllers\Staff\Cashier\CashierTransactionController;
+use App\Http\Controllers\Staff\Manager\ManagerCashDrawerController;
+use App\Http\Controllers\Staff\Manager\ManagerCategoryController;
 use App\Http\Controllers\Staff\Manager\ManagerDashboardController;
 use App\Http\Controllers\Staff\Manager\ManagerPosController;
 use App\Http\Controllers\Staff\Manager\ManagerProductController;
+use App\Http\Controllers\Staff\Manager\ManagerReturnController;
+use App\Http\Controllers\Staff\Manager\ManagerSoldItemsController;
+use App\Http\Controllers\Staff\Manager\ManagerStockController;
 use App\Http\Controllers\Staff\Manager\ManagerTransactionController;
+use App\Http\Controllers\Staff\Manager\ManagerCashierController;
 use App\Http\Controllers\Staff\Staff\StaffDashboardController;
 use App\Http\Controllers\Staff\Staff\StaffProductController;
 use Illuminate\Support\Facades\Route;
@@ -136,30 +142,27 @@ Route::middleware(['auth'])->group(function () {
                     Route::get('/transactions', [ManagerTransactionController::class, 'index'])->name('transactions.index');
 
                     Route::get('/products', [ManagerProductController::class, 'index'])->name('products.index');
+                    Route::post('/products', [ManagerProductController::class, 'store'])->name('products.store');
 
-                    Route::get('/categories', function () {
-                        return Inertia::render('staff/manager/categories/index');
-                    })->name('categories.index');
+                    Route::resource('/categories', ManagerCategoryController::class)
+                        ->except(['create', 'show', 'edit'])
+                        ->names('categories');
 
-                    Route::get('/stocks', function () {
-                        return Inertia::render('staff/manager/stocks/index');
-                    })->name('stocks.index');
+                    Route::get('/stocks', [ManagerStockController::class, 'index'])->name('stocks.index');
+                    Route::post('/stocks/adjust', [ManagerStockController::class, 'adjust'])->name('stocks.adjust');
 
-                    Route::get('/sold-items', function () {
-                        return Inertia::render('staff/manager/sold-items/index');
-                    })->name('sold-items.index');
+                    Route::get('/sold-items', [ManagerSoldItemsController::class, 'index'])->name('sold-items.index');
 
-                    Route::get('/returns', function () {
-                        return Inertia::render('staff/manager/returns/index');
-                    })->name('returns.index');
+                    Route::get('/returns', [ManagerReturnController::class, 'index'])->name('returns.index');
 
-                    Route::get('/cash-drawer', function () {
-                        return Inertia::render('staff/manager/cash-drawer/index');
-                    })->name('cash-drawer.index');
+                    Route::get('/cash-drawer', [ManagerCashDrawerController::class, 'index'])->name('cash-drawer.index');
+                    Route::post('/cash-drawer/open', [ManagerCashDrawerController::class, 'open'])->name('cash-drawer.open');
+                    Route::post('/cash-drawer/cash-in', [ManagerCashDrawerController::class, 'cashIn'])->name('cash-drawer.cash-in');
+                    Route::post('/cash-drawer/cash-out', [ManagerCashDrawerController::class, 'cashOut'])->name('cash-drawer.cash-out');
+                    Route::post('/cash-drawer/close', [ManagerCashDrawerController::class, 'close'])->name('cash-drawer.close');
 
-                    Route::get('/cashiers', function () {
-                        return Inertia::render('staff/manager/cashiers/index');
-                    })->name('cashiers.index');
+                    Route::patch('/cashiers/{cashier}/toggle-status', [ManagerCashierController::class, 'toggleStatus'])->name('cashiers.toggle-status');
+                    Route::resource('/cashiers', ManagerCashierController::class)->except(['create', 'show', 'edit'])->names('cashiers');
 
                     Route::get('/staff-activity', function () {
                         return Inertia::render('staff/manager/staff-activity/index');

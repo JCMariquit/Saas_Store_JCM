@@ -1,15 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import {
     AlertCircle,
     Banknote,
-    Building2,
     CircleDollarSign,
     DoorClosed,
     DoorOpen,
-    MoreHorizontal,
     MinusCircle,
     PlusCircle,
     ReceiptText,
@@ -17,28 +15,29 @@ import {
     Wallet,
     X,
 } from 'lucide-react';
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useState } from 'react';
 
-const CASH_DRAWER_URL = '/client/sales/cash-drawer';
+const CASH_DRAWER_URL = '/staff/manager/cash-drawer';
+const OPEN_URL = '/staff/manager/cash-drawer/open';
+const CASH_IN_URL = '/staff/manager/cash-drawer/cash-in';
+const CASH_OUT_URL = '/staff/manager/cash-drawer/cash-out';
+const CLOSE_URL = '/staff/manager/cash-drawer/close';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Cash Drawer',
-        href: CASH_DRAWER_URL,
-    },
+    { title: 'Manager', href: '/staff/manager/dashboard' },
+    { title: 'Cash Drawer', href: CASH_DRAWER_URL },
 ];
 
 type Branch = {
     id: number;
     name: string;
     code?: string | null;
-    is_main: boolean;
+    is_main?: boolean;
     is_active?: boolean;
 };
 
 type CashDrawer = {
     id: number;
-    branch_id?: number | null;
     opening_balance: string | number;
     expected_balance: string | number;
     actual_balance?: string | number | null;
@@ -60,78 +59,44 @@ type DrawerTransaction = {
     amount: string | number;
     remarks?: string | null;
     withdrawn_at?: string | null;
-    created_at: string;
+    created_at?: string | null;
 };
 
-type Paginated<T> = {
-    data: T[];
-    from: number | null;
-    to: number | null;
-    total: number;
-    links: {
-        url: string | null;
-        label: string;
-        active: boolean;
-    }[];
+type Props = {
+    branch?: Branch;
+    drawer?: CashDrawer | null;
+    transactions?: DrawerTransaction[];
+    drawerHistory?: CashDrawer[];
 };
 
-type PageProps = {
-    branches: Branch[];
-    selectedBranchId?: number | string | null;
-    activeDrawer?: CashDrawer | null;
-    transactions: Paginated<DrawerTransaction>;
-    availableChangeFund?: number;
-    availableCashSales?: number;
-    filters?: {
-        branch_id?: number | string | null;
-    };
-};
+export default function ManagerCashDrawerIndex({
+    branch,
+    drawer = null,
+    transactions = [],
+}: Props) {
+    const [modal, setModal] = useState<'open' | 'cash_in' | 'cash_out' | 'close' | null>(null);
 
-export default function CashDrawerIndex({
-    branches = [],
-    selectedBranchId = null,
-    activeDrawer = null,
-    transactions,
-    availableChangeFund = 0,
-    availableCashSales = 0,
-    filters,
-}: PageProps) {
-    const initialBranchId = String(filters?.branch_id ?? selectedBranchId ?? branches[0]?.id ?? '');
-
-    const [modal, setModal] = useState<'open' | 'cash_in' | 'cash_out' | 'close' | 'branch_picker' | null>(null);
-    const [selectedBranch, setSelectedBranch] = useState(initialBranchId);
-
-    const activeBranch = useMemo(() => {
-        return branches.find((branch) => String(branch.id) === String(selectedBranch)) ?? null;
-    }, [branches, selectedBranch]);
-
-    const currentBalance = Number(activeDrawer?.expected_balance ?? 0);
-    const isDrawerEmpty = !activeDrawer || currentBalance <= 0;
+    const currentBalance = Number(drawer?.expected_balance ?? 0);
+    const isDrawerEmpty = !drawer || currentBalance <= 0;
 
     const openForm = useForm({
-        branch_id: selectedBranch,
         opening_balance: '',
         notes: '',
     });
 
     const movementForm = useForm({
-        branch_id: selectedBranch,
         amount: '',
         cash_out_source: 'change_fund',
         remarks: '',
     });
 
     const closeForm = useForm({
-        branch_id: selectedBranch,
-        actual_balance: '',
+        actual_balance: drawer ? String(drawer.expected_balance ?? '') : '',
         notes: '',
     });
 
-    useEffect(() => {
-        openForm.setData('branch_id', selectedBranch);
-        movementForm.setData('branch_id', selectedBranch);
-        closeForm.setData('branch_id', selectedBranch);
-    }, [selectedBranch]);
+    const availableChangeFund = Number(drawer?.opening_balance ?? 0) + Number(drawer?.total_cash_in ?? 0) - Number(drawer?.total_cash_out ?? 0);
+    const availableCashSales = Number(drawer?.total_cash_sales ?? 0) - Number(drawer?.total_refunds ?? 0);
 
     const money = (value: string | number | null | undefined) =>
         new Intl.NumberFormat('en-PH', {
@@ -167,31 +132,11 @@ export default function CashDrawerIndex({
         return labels[item.type] ?? item.type.replaceAll('_', ' ').toUpperCase();
     };
 
-    const selectBranch = (branchId: number) => {
-        const id = String(branchId);
-
-        setSelectedBranch(id);
-        setModal(null);
-
-        router.get(
-            CASH_DRAWER_URL,
-            { branch_id: id },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    };
-
     const closeModal = () => {
         setModal(null);
         openForm.reset();
         movementForm.reset();
         closeForm.reset();
-        openForm.setData('branch_id', selectedBranch);
-        movementForm.setData('branch_id', selectedBranch);
-        closeForm.setData('branch_id', selectedBranch);
         openForm.clearErrors();
         movementForm.clearErrors();
         closeForm.clearErrors();
@@ -200,9 +145,7 @@ export default function CashDrawerIndex({
     const submitOpen = (e: FormEvent) => {
         e.preventDefault();
 
-        openForm.setData('branch_id', selectedBranch);
-
-        openForm.post(`${CASH_DRAWER_URL}/open`, {
+        openForm.post(OPEN_URL, {
             preserveScroll: true,
             onSuccess: closeModal,
         });
@@ -211,11 +154,9 @@ export default function CashDrawerIndex({
     const submitMovement = (e: FormEvent) => {
         e.preventDefault();
 
-        const endpoint = modal === 'cash_in' ? 'cash-in' : 'cash-out';
+        const endpoint = modal === 'cash_in' ? CASH_IN_URL : CASH_OUT_URL;
 
-        movementForm.setData('branch_id', selectedBranch);
-
-        movementForm.post(`${CASH_DRAWER_URL}/${endpoint}`, {
+        movementForm.post(endpoint, {
             preserveScroll: true,
             onSuccess: closeModal,
         });
@@ -224,17 +165,34 @@ export default function CashDrawerIndex({
     const submitClose = (e: FormEvent) => {
         e.preventDefault();
 
-        closeForm.setData('branch_id', selectedBranch);
-
-        closeForm.post(`${CASH_DRAWER_URL}/close`, {
+        closeForm.post(CLOSE_URL, {
             preserveScroll: true,
             onSuccess: closeModal,
         });
     };
 
+    if (!branch) {
+        return (
+            <AppLayout breadcrumbs={breadcrumbs}>
+                <Head title="Manager Cash Drawer" />
+
+                <div className="p-4">
+                    <Card tone="topline" variant="danger">
+                        <CardHeader>
+                            <CardTitle>No Branch Found</CardTitle>
+                            <CardDescription>
+                                Cash drawer cannot load because branch data was not provided.
+                            </CardDescription>
+                        </CardHeader>
+                    </Card>
+                </div>
+            </AppLayout>
+        );
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Cash Drawer" />
+            <Head title="Manager Cash Drawer" />
 
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
                 <Card tone="topline" variant="default" className="overflow-hidden shadow-sm">
@@ -247,17 +205,15 @@ export default function CashDrawerIndex({
 
                                 <div>
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <CardTitle className="text-xl">
-                                            {activeBranch ? `${activeBranch.name} Cash Drawer` : 'Select Branch'}
-                                        </CardTitle>
+                                        <CardTitle className="text-xl">{branch.name} Cash Drawer</CardTitle>
 
-                                        {activeBranch?.is_main && (
+                                        {branch.is_main && (
                                             <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                                                 Main
                                             </span>
                                         )}
 
-                                        {activeDrawer ? (
+                                        {drawer ? (
                                             <span className="rounded-md bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600">
                                                 Open
                                             </span>
@@ -269,21 +225,10 @@ export default function CashDrawerIndex({
                                     </div>
 
                                     <p className="mt-1 text-sm text-muted-foreground">
-                                        {activeBranch
-                                            ? `Branch code: ${activeBranch.code || 'No code'}`
-                                            : 'Choose a branch to manage its cash drawer.'}
+                                        Branch code: {branch.code || 'No code'} · Uses your assigned branch only.
                                     </p>
                                 </div>
                             </div>
-
-                            <button
-                                type="button"
-                                onClick={() => setModal('branch_picker')}
-                                className="inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition hover:bg-muted"
-                            >
-                                <Building2 className="size-4" />
-                                {activeBranch ? 'Change Branch' : 'Select Branch'}
-                            </button>
                         </div>
                     </CardHeader>
                 </Card>
@@ -297,11 +242,10 @@ export default function CashDrawerIndex({
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                        {!activeDrawer && (
+                        {!drawer && (
                             <button
                                 onClick={() => setModal('open')}
-                                disabled={!selectedBranch}
-                                className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"
                             >
                                 <DoorOpen className="size-4" />
                                 Open Drawer
@@ -310,7 +254,7 @@ export default function CashDrawerIndex({
 
                         <button
                             onClick={() => setModal('cash_in')}
-                            disabled={!selectedBranch}
+                            disabled={!drawer}
                             className="inline-flex items-center justify-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <PlusCircle className="size-4" />
@@ -319,19 +263,19 @@ export default function CashDrawerIndex({
 
                         <button
                             onClick={() => setModal('cash_out')}
-                            disabled={isDrawerEmpty || !selectedBranch}
-                            className={[
-                                'inline-flex items-center justify-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted',
-                                isDrawerEmpty || !selectedBranch ? 'cursor-not-allowed opacity-50' : '',
-                            ].join(' ')}
+                            disabled={isDrawerEmpty}
+                            className="inline-flex items-center justify-center gap-2 rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             <MinusCircle className="size-4" />
                             Cash Out
                         </button>
 
-                        {activeDrawer && (
+                        {drawer && (
                             <button
-                                onClick={() => setModal('close')}
+                                onClick={() => {
+                                    closeForm.setData('actual_balance', String(drawer.expected_balance ?? ''));
+                                    setModal('close');
+                                }}
                                 className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
                             >
                                 <DoorClosed className="size-4" />
@@ -341,7 +285,7 @@ export default function CashDrawerIndex({
                     </div>
                 </div>
 
-                {activeDrawer && isDrawerEmpty && (
+                {drawer && isDrawerEmpty && (
                     <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
                         <AlertCircle className="mt-0.5 size-4 shrink-0" />
                         <div>
@@ -354,10 +298,10 @@ export default function CashDrawerIndex({
                 )}
 
                 <div className="grid gap-4 md:grid-cols-4">
-                    <SummaryCard title="Current Balance" value={money(activeDrawer?.expected_balance)} icon={<Wallet className="size-5" />} />
+                    <SummaryCard title="Current Balance" value={money(drawer?.expected_balance)} icon={<Wallet className="size-5" />} />
                     <SummaryCard title="Available Pang Barya" value={money(availableChangeFund)} icon={<Banknote className="size-5" />} variant="neutral" />
                     <SummaryCard title="Available Cash Sales" value={money(availableCashSales)} icon={<CircleDollarSign className="size-5" />} variant="success" />
-                    <SummaryCard title="Total Cash Out" value={money(activeDrawer?.total_cash_out)} icon={<MinusCircle className="size-5" />} variant="warning" />
+                    <SummaryCard title="Total Cash Out" value={money(drawer?.total_cash_out)} icon={<MinusCircle className="size-5" />} variant="warning" />
                 </div>
 
                 <Card tone="topline" variant="default" className="overflow-hidden shadow-sm">
@@ -366,8 +310,8 @@ export default function CashDrawerIndex({
                             <div>
                                 <CardTitle className="text-xl">Current Drawer</CardTitle>
                                 <CardDescription className="mt-1">
-                                    {activeDrawer
-                                        ? `Current drawer balance is ${money(activeDrawer.expected_balance)}.`
+                                    {drawer
+                                        ? `Current drawer balance is ${money(drawer.expected_balance)}.`
                                         : 'No active cash drawer for this branch. Open one to start tracking cash.'}
                                 </CardDescription>
                             </div>
@@ -375,19 +319,19 @@ export default function CashDrawerIndex({
                             <span
                                 className={[
                                     'w-fit rounded-full px-3 py-1 text-xs font-medium',
-                                    activeDrawer
+                                    drawer
                                         ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
                                         : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
                                 ].join(' ')}
                             >
-                                {activeDrawer ? 'Open' : 'Closed'}
+                                {drawer ? 'Open' : 'Closed'}
                             </span>
                         </div>
                     </CardHeader>
 
                     <CardContent className="grid gap-4 p-5 md:grid-cols-4">
-                        <InfoBox label="Branch" value={activeBranch?.name ?? '—'} />
-                        <InfoBox label="Opened At" value={formatDate(activeDrawer?.opened_at)} />
+                        <InfoBox label="Branch" value={branch.name} />
+                        <InfoBox label="Opened At" value={formatDate(drawer?.opened_at)} />
                         <InfoBox label="Available Pang Barya" value={money(availableChangeFund)} />
                         <InfoBox label="Available Sales" value={money(availableCashSales)} />
                     </CardContent>
@@ -414,8 +358,8 @@ export default function CashDrawerIndex({
                                 </thead>
 
                                 <tbody>
-                                    {(transactions?.data ?? []).length > 0 ? (
-                                        transactions.data.map((item) => (
+                                    {transactions.length > 0 ? (
+                                        transactions.map((item) => (
                                             <tr key={item.id} className="border-t border-sidebar-border/70 hover:bg-muted/30 dark:border-sidebar-border">
                                                 <td className="px-4 py-3">
                                                     <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
@@ -445,53 +389,13 @@ export default function CashDrawerIndex({
                                 </tbody>
                             </table>
                         </div>
-
-                        <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                            <div className="text-sm text-muted-foreground">
-                                Showing <b>{transactions?.from ?? 0}</b> to <b>{transactions?.to ?? 0}</b> of <b>{transactions?.total ?? 0}</b> movements
-                            </div>
-
-                            <div className="flex flex-wrap gap-2">
-                                {(transactions?.links ?? []).map((link, index) => (
-                                    <button
-                                        key={index}
-                                        disabled={!link.url}
-                                        onClick={() => link.url && router.visit(link.url, { preserveScroll: true })}
-                                        className={[
-                                            'min-w-9 rounded-md border px-3 py-2 text-xs',
-                                            link.active ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
-                                            !link.url ? 'cursor-not-allowed opacity-50' : '',
-                                        ].join(' ')}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
                     </CardContent>
                 </Card>
 
                 {modal === 'open' && (
                     <Modal title="Open Cash Drawer" onClose={closeModal}>
                         <form onSubmit={submitOpen} className="space-y-4 p-5">
-                            <Field label="Branch" error={openForm.errors.branch_id}>
-                                <select
-                                    value={openForm.data.branch_id}
-                                    onChange={(e) => {
-                                        openForm.setData('branch_id', e.target.value);
-                                        setSelectedBranch(e.target.value);
-                                    }}
-                                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                                >
-                                    <option value="">Select branch</option>
-                                    {branches.map((branch) => (
-                                        <option key={branch.id} value={String(branch.id)}>
-                                            {branch.name}
-                                            {branch.code ? ` (${branch.code})` : ''}
-                                            {branch.is_main ? ' — Main' : ''}
-                                        </option>
-                                    ))}
-                                </select>
-                            </Field>
+                            <InfoBox label="Assigned Branch" value={branch.name} />
 
                             <Field label="Opening Pang Barya / Change Fund" error={openForm.errors.opening_balance}>
                                 <input
@@ -524,7 +428,7 @@ export default function CashDrawerIndex({
                     <Modal title={modal === 'cash_in' ? 'Add Cash / Pang Barya' : 'Cash Out / Withdraw'} onClose={closeModal}>
                         <form onSubmit={submitMovement} className="space-y-4 p-5">
                             <div className="grid gap-3 md:grid-cols-3">
-                                <InfoBox label="Current Balance" value={money(activeDrawer?.expected_balance)} />
+                                <InfoBox label="Current Balance" value={money(drawer?.expected_balance)} />
                                 <InfoBox label="Pang Barya" value={money(availableChangeFund)} />
                                 <InfoBox label="Cash Sales" value={money(availableCashSales)} />
                             </div>
@@ -584,7 +488,7 @@ export default function CashDrawerIndex({
                     <Modal title="Close Cash Drawer" onClose={closeModal}>
                         <form onSubmit={submitClose} className="space-y-4 p-5">
                             <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
-                                Expected Cash: <b>{money(activeDrawer?.expected_balance)}</b>
+                                Expected Cash: <b>{money(drawer?.expected_balance)}</b>
                             </div>
 
                             <Field label="Actual Cash Count" error={closeForm.errors.actual_balance}>
@@ -611,15 +515,6 @@ export default function CashDrawerIndex({
                             <ModalActions onClose={closeModal} disabled={closeForm.processing} submitText="Close Drawer" />
                         </form>
                     </Modal>
-                )}
-
-                {modal === 'branch_picker' && (
-                    <BranchPickerModal
-                        branches={branches}
-                        selectedBranch={selectedBranch}
-                        onSelect={selectBranch}
-                        onClose={() => setModal(null)}
-                    />
                 )}
             </div>
         </AppLayout>
@@ -685,101 +580,14 @@ function Modal({ title, children, onClose }: { title: string; children: ReactNod
     );
 }
 
-function BranchPickerModal({
-    branches,
-    selectedBranch,
-    onSelect,
-    onClose,
-}: {
-    branches: Branch[];
-    selectedBranch: string;
-    onSelect: (branchId: number) => void;
-    onClose: () => void;
-}) {
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <Card className="max-h-[90vh] w-full max-w-3xl overflow-hidden shadow-xl">
-                <CardHeader className="flex flex-row items-center justify-between border-b p-5">
-                    <div>
-                        <CardTitle className="text-lg">Choose Branch</CardTitle>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Select which branch cash drawer you want to manage.
-                        </p>
-                    </div>
-
-                    <button onClick={onClose} className="rounded-md p-2 hover:bg-muted">
-                        <X className="size-4" />
-                    </button>
-                </CardHeader>
-
-                <div className="grid max-h-[70vh] gap-4 overflow-y-auto p-5 md:grid-cols-2">
-                    {branches.map((branch) => (
-                        <button
-                            type="button"
-                            key={branch.id}
-                            onClick={() => onSelect(branch.id)}
-                            className={[
-                                'group overflow-hidden rounded-xl border text-left transition hover:border-primary/60 hover:bg-muted/40',
-                                String(selectedBranch) === String(branch.id)
-                                    ? 'border-primary bg-primary/5'
-                                    : 'border-sidebar-border/70 dark:border-sidebar-border',
-                            ].join(' ')}
-                        >
-                            <div className="flex items-start justify-between p-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex size-11 items-center justify-center rounded-full border bg-background">
-                                        <Store className="size-5 text-muted-foreground" />
-                                    </div>
-
-                                    <div>
-                                        <div className="font-semibold">{branch.name}</div>
-                                        <div className="text-xs uppercase text-muted-foreground">
-                                            {branch.code || 'NO CODE'}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <MoreHorizontal className="size-4 text-muted-foreground" />
-                            </div>
-
-                            <div className="flex gap-2 border-t px-4 py-3">
-                                {branch.is_main && (
-                                    <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
-                                        Main
-                                    </span>
-                                )}
-
-                                <span className="rounded-full bg-green-500 px-2.5 py-1 text-xs font-medium text-white">
-                                    Active
-                                </span>
-                            </div>
-
-                            <div className="border-t px-4 py-4 text-sm text-muted-foreground">
-                                Click this branch to view and manage its cash drawer.
-                            </div>
-                        </button>
-                    ))}
-                </div>
-            </Card>
-        </div>
-    );
-}
-
 function ModalActions({ onClose, disabled, submitText }: { onClose: () => void; disabled: boolean; submitText: string }) {
     return (
         <div className="flex justify-end gap-2 border-t pt-5">
-            <button
-                type="button"
-                onClick={onClose}
-                className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted"
-            >
+            <button type="button" onClick={onClose} className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted">
                 Cancel
             </button>
 
-            <button
-                disabled={disabled}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-            >
+            <button disabled={disabled} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
                 {submitText}
             </button>
         </div>

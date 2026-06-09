@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Staff\Manager;
 
 use App\Http\Controllers\Controller;
+use App\Support\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -27,6 +28,17 @@ class ManagerPosController extends Controller
 
         abort_if(!$branch, 403, 'Invalid or inactive branch assignment.');
 
+        ActivityLogger::log(
+            module: 'pos_monitor',
+            action: 'viewed',
+            description: 'Viewed POS monitor.',
+            properties: [
+                'branch_id' => $branchId,
+            ],
+            tenantId: $tenantId,
+            branchId: $branchId
+        );
+
         return Inertia::render('staff/manager/pos/monitor', [
             'branch' => $branch,
 
@@ -39,7 +51,6 @@ class ManagerPosController extends Controller
             'products' => $this->getProductPreview($tenantId, $branchId),
             'recent_transactions' => $this->getRecentTransactions($tenantId, $branchId),
 
-            // extra data ready for improved UI later
             'alerts' => $this->getAlerts($tenantId, $branchId),
             'sales_trend' => $this->getTodayHourlySales($tenantId, $branchId),
         ]);

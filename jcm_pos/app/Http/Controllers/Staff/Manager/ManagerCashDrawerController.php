@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\CashDrawer;
 use App\Models\CashDrawerTransaction;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -45,10 +46,7 @@ class ManagerCashDrawerController extends Controller
             ->where('cash_out_source', 'change_fund')
             ->sum('amount');
 
-        return max(
-            ((float) $drawer->opening_balance + (float) $drawer->total_cash_in) - (float) $withdrawn,
-            0
-        );
+        return max(((float) $drawer->opening_balance + (float) $drawer->total_cash_in) - (float) $withdrawn, 0);
     }
 
     private function availableCashSales(CashDrawer $drawer): float
@@ -60,10 +58,7 @@ class ManagerCashDrawerController extends Controller
             ->where('cash_out_source', 'cash_sales')
             ->sum('amount');
 
-        return max(
-            ((float) $drawer->total_cash_sales - (float) $drawer->total_refunds) - (float) $withdrawn,
-            0
-        );
+        return max(((float) $drawer->total_cash_sales - (float) $drawer->total_refunds) - (float) $withdrawn, 0);
     }
 
     public function index()
@@ -110,11 +105,7 @@ class ManagerCashDrawerController extends Controller
         $tenantId = (int) $branch->tenant_id;
         $branchId = (int) $branch->id;
 
-        abort_if(
-            $this->openDrawer($tenantId, $branchId),
-            422,
-            'There is already an open cash drawer for this branch.'
-        );
+        abort_if($this->openDrawer($tenantId, $branchId), 422, 'There is already an open cash drawer for this branch.');
 
         $validated = $request->validate([
             'opening_balance' => ['required', 'numeric', 'min:0'],
@@ -141,7 +132,7 @@ class ManagerCashDrawerController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]);
 
-            CashDrawerTransaction::create([
+            $transaction = CashDrawerTransaction::create([
                 'tenant_id' => $tenantId,
                 'cash_drawer_id' => $drawer->id,
                 'type' => 'opening',
@@ -149,6 +140,21 @@ class ManagerCashDrawerController extends Controller
                 'remarks' => 'Opening cash drawer balance',
                 'created_by' => auth()->id(),
             ]);
+
+            ActivityLogger::log(
+                module: 'cash_drawer',
+                action: 'opened',
+                description: 'Opened cash drawer with ₱' . number_format($openingBalance, 2) . '.',
+                subject: $drawer,
+                properties: [
+                    'drawer_id' => $drawer->id,
+                    'transaction_id' => $transaction->id,
+                    'amount' => $openingBalance,
+                    'notes' => $validated['notes'] ?? null,
+                ],
+                tenantId: $tenantId,
+                branchId: $branchId
+            );
         });
 
         return back()->with('success', 'Cash drawer opened successfully.');
@@ -170,7 +176,7 @@ class ManagerCashDrawerController extends Controller
             'remarks' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        DB::connection('pos')->transaction(function () use ($drawer, $validated, $tenantId) {
+        DB::connection('pos')->transaction(function () use ($drawer, $validated, $tenantId, $branchId) {
             $amount = (float) $validated['amount'];
 
             $drawer->update([
@@ -178,7 +184,9 @@ class ManagerCashDrawerController extends Controller
                 'expected_balance' => (float) $drawer->expected_balance + $amount,
             ]);
 
-            CashDrawerTransaction::create([
+            $drawer->refresh();
+
+            $transaction = CashDrawerTransaction::create([
                 'tenant_id' => $tenantId,
                 'cash_drawer_id' => $drawer->id,
                 'type' => 'cash_in',
@@ -186,6 +194,22 @@ class ManagerCashDrawerController extends Controller
                 'remarks' => $validated['remarks'] ?: 'Cash in',
                 'created_by' => auth()->id(),
             ]);
+
+            ActivityLogger::log(
+                module: 'cash_drawer',
+                action: 'cash_in',
+                description: 'Cash in ₱' . number_format($amount, 2) . '.',
+                subject: $drawer,
+                properties: [
+                    'drawer_id' => $drawer->id,
+                    'transaction_id' => $transaction->id,
+                    'amount' => $amount,
+                    'expected_balance' => (float) $drawer->expected_balance,
+                    'remarks' => $validated['remarks'] ?: null,
+                ],
+                tenantId: $tenantId,
+                branchId: $branchId
+            );
         });
 
         return back()->with('success', 'Cash in recorded successfully.');
@@ -208,7 +232,7 @@ class ManagerCashDrawerController extends Controller
             'remarks' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        DB::connection('pos')->transaction(function () use ($drawer, $validated, $tenantId) {
+        DB::connection('pos')->transaction(function () use ($drawer, $validated, $tenantId, $branchId) {
             $amount = (float) $validated['amount'];
             $source = $validated['cash_out_source'];
             $expectedBalance = (float) $drawer->expected_balance;
@@ -217,24 +241,17 @@ class ManagerCashDrawerController extends Controller
                 ? $this->availableCashSales($drawer)
                 : $this->availableChangeFund($drawer);
 
-            abort_if(
-                $amount > $availableFromSource,
-                422,
-                'Cash out amount cannot exceed available ' . str_replace('_', ' ', $source) . '.'
-            );
-
-            abort_if(
-                $amount > $expectedBalance,
-                422,
-                'Cash out amount cannot exceed expected drawer balance.'
-            );
+            abort_if($amount > $availableFromSource, 422, 'Cash out amount cannot exceed available ' . str_replace('_', ' ', $source) . '.');
+            abort_if($amount > $expectedBalance, 422, 'Cash out amount cannot exceed expected drawer balance.');
 
             $drawer->update([
                 'total_cash_out' => (float) $drawer->total_cash_out + $amount,
                 'expected_balance' => $expectedBalance - $amount,
             ]);
 
-            CashDrawerTransaction::create([
+            $drawer->refresh();
+
+            $transaction = CashDrawerTransaction::create([
                 'tenant_id' => $tenantId,
                 'cash_drawer_id' => $drawer->id,
                 'type' => 'cash_out',
@@ -245,6 +262,23 @@ class ManagerCashDrawerController extends Controller
                 'withdrawn_at' => now(),
                 'withdrawn_by' => auth()->id(),
             ]);
+
+            ActivityLogger::log(
+                module: 'cash_drawer',
+                action: 'cash_out',
+                description: 'Cash out ₱' . number_format($amount, 2) . ' from ' . str_replace('_', ' ', $source) . '.',
+                subject: $drawer,
+                properties: [
+                    'drawer_id' => $drawer->id,
+                    'transaction_id' => $transaction->id,
+                    'amount' => $amount,
+                    'source' => $source,
+                    'expected_balance' => (float) $drawer->expected_balance,
+                    'remarks' => $validated['remarks'] ?: null,
+                ],
+                tenantId: $tenantId,
+                branchId: $branchId
+            );
         });
 
         return back()->with('success', 'Cash out recorded successfully.');
@@ -266,7 +300,7 @@ class ManagerCashDrawerController extends Controller
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        DB::connection('pos')->transaction(function () use ($drawer, $validated, $tenantId) {
+        DB::connection('pos')->transaction(function () use ($drawer, $validated, $tenantId, $branchId) {
             $actualBalance = (float) $validated['actual_balance'];
             $expectedBalance = (float) $drawer->expected_balance;
             $variance = $actualBalance - $expectedBalance;
@@ -280,7 +314,9 @@ class ManagerCashDrawerController extends Controller
                 'notes' => $validated['notes'] ?? $drawer->notes,
             ]);
 
-            CashDrawerTransaction::create([
+            $drawer->refresh();
+
+            $transaction = CashDrawerTransaction::create([
                 'tenant_id' => $tenantId,
                 'cash_drawer_id' => $drawer->id,
                 'type' => 'closing_adjustment',
@@ -288,6 +324,23 @@ class ManagerCashDrawerController extends Controller
                 'remarks' => 'Drawer closed. Variance: ' . number_format($variance, 2),
                 'created_by' => auth()->id(),
             ]);
+
+            ActivityLogger::log(
+                module: 'cash_drawer',
+                action: 'closed',
+                description: 'Closed cash drawer. Variance ₱' . number_format($variance, 2) . '.',
+                subject: $drawer,
+                properties: [
+                    'drawer_id' => $drawer->id,
+                    'transaction_id' => $transaction->id,
+                    'expected_balance' => $expectedBalance,
+                    'actual_balance' => $actualBalance,
+                    'variance_amount' => $variance,
+                    'notes' => $validated['notes'] ?? null,
+                ],
+                tenantId: $tenantId,
+                branchId: $branchId
+            );
         });
 
         return back()->with('success', 'Cash drawer closed successfully.');

@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Product;
 use App\Models\ProductStockBatch;
 use App\Models\StockMovement;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -19,6 +20,7 @@ class ManagerStockController extends Controller
         $user = auth()->user();
 
         abort_if(!$user->branch_id, 403, 'No branch assigned to this manager.');
+        abort_if(!$user->client_id, 403, 'No client assigned to this manager.');
 
         return Branch::query()
             ->where('id', $user->branch_id)
@@ -32,10 +34,25 @@ class ManagerStockController extends Controller
         $branch = $this->managerBranch();
         $filters = $this->filters($request);
 
+        $tenantId = (int) $branch->tenant_id;
+        $branchId = (int) $branch->id;
+
+        ActivityLogger::log(
+            module: 'stocks',
+            action: 'viewed',
+            description: 'Viewed stock management.',
+            properties: [
+                'search' => $filters['search'] ?: null,
+                'stock_status' => $filters['stock_status'] ?: null,
+            ],
+            tenantId: $tenantId,
+            branchId: $branchId
+        );
+
         $products = Product::query()
             ->with(['category:id,name'])
-            ->where('tenant_id', $branch->tenant_id)
-            ->where('branch_id', $branch->id)
+            ->where('tenant_id', $tenantId)
+            ->where('branch_id', $branchId)
             ->where('stock_tracking', 'tracked')
             ->when($filters['search'], function ($query, $search) {
                 $query->where(function ($subQuery) use ($search) {
@@ -58,8 +75,8 @@ class ManagerStockController extends Controller
 
         $movements = StockMovement::query()
             ->with(['product:id,name,sku,barcode'])
-            ->where('tenant_id', $branch->tenant_id)
-            ->where('branch_id', $branch->id)
+            ->where('tenant_id', $tenantId)
+            ->where('branch_id', $branchId)
             ->latest('movement_date')
             ->limit(10)
             ->get();
@@ -76,15 +93,12 @@ class ManagerStockController extends Controller
     {
         $branch = $this->managerBranch();
 
-        $validated = $request->validate($this->adjustRules(
-            (int) $branch->tenant_id,
-            (int) $branch->id
-        ));
+        $tenantId = (int) $branch->tenant_id;
+        $branchId = (int) $branch->id;
 
-        DB::connection('pos')->transaction(function () use ($validated, $branch) {
-            $tenantId = (int) $branch->tenant_id;
-            $branchId = (int) $branch->id;
+        $validated = $request->validate($this->adjustRules($tenantId, $branchId));
 
+        DB::connection('pos')->transaction(function () use ($validated, $tenantId, $branchId) {
             $product = Product::query()
                 ->where('tenant_id', $tenantId)
                 ->where('branch_id', $branchId)
@@ -114,7 +128,7 @@ class ManagerStockController extends Controller
                 'cost_price' => $validated['movement_type'] === 'stock_in' ? $unitCost : $product->cost_price,
             ]);
 
-            StockMovement::create([
+            $movement = StockMovement::create([
                 'tenant_id' => $tenantId,
                 'branch_id' => $branchId,
                 'product_id' => $product->id,
@@ -129,6 +143,24 @@ class ManagerStockController extends Controller
                 'movement_date' => now(),
                 'created_by' => auth()->id(),
             ]);
+
+            ActivityLogger::log(
+                module: 'stocks',
+                action: $validated['movement_type'],
+                description: 'Recorded ' . str_replace('_', ' ', $validated['movement_type']) . ' for "' . $product->name . '".',
+                subject: $movement,
+                properties: [
+                    'stock_movement_id' => $movement->id,
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'movement_type' => $validated['movement_type'],
+                    'quantity' => $quantity,
+                    'quantity_after' => $quantityAfter,
+                    'batch_id' => $batchId,
+                ],
+                tenantId: $tenantId,
+                branchId: $branchId
+            );
         });
 
         return back()->with('success', 'Stock updated successfully.');

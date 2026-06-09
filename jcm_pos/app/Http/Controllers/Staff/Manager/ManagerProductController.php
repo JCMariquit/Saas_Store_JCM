@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductStockBatch;
 use App\Models\StockMovement;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -21,6 +22,7 @@ class ManagerProductController extends Controller
         $user = auth()->user();
 
         abort_if(!$user->branch_id, 403, 'No branch assigned to this manager.');
+        abort_if(!$user->client_id, 403, 'No client assigned to this manager.');
 
         return Branch::query()
             ->where('id', $user->branch_id)
@@ -70,15 +72,12 @@ class ManagerProductController extends Controller
     {
         $branch = $this->managerBranch();
 
-        $validated = $request->validate($this->rules(
-            (int) $branch->tenant_id,
-            (int) $branch->id
-        ));
+        $tenantId = (int) $branch->tenant_id;
+        $branchId = (int) $branch->id;
 
-        DB::connection('pos')->transaction(function () use ($validated, $branch) {
-            $tenantId = (int) $branch->tenant_id;
-            $branchId = (int) $branch->id;
+        $validated = $request->validate($this->rules($tenantId, $branchId));
 
+        DB::connection('pos')->transaction(function () use ($validated, $tenantId, $branchId) {
             $initialQuantity = (float) ($validated['quantity'] ?? 0);
             $costPrice = (float) ($validated['cost_price'] ?? 0);
             $stockTracking = $validated['stock_tracking'];
@@ -97,16 +96,42 @@ class ManagerProductController extends Controller
                 'low_stock_alert' => $validated['low_stock_alert'] ?? true,
             ]);
 
+            $batch = null;
+
             if ($stockTracking === 'tracked' && $initialQuantity > 0) {
-                $this->createInitialStock($product, $validated, $tenantId, $branchId, $initialQuantity, $costPrice);
+                $batch = $this->createInitialStock($product, $validated, $tenantId, $branchId, $initialQuantity, $costPrice);
             }
+
+            ActivityLogger::log(
+                module: 'products',
+                action: 'created',
+                description: 'Created product "' . $product->name . '".',
+                subject: $product,
+                properties: [
+                    'product_id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'status' => $product->status,
+                    'stock_tracking' => $product->stock_tracking,
+                    'quantity' => (float) $product->quantity,
+                    'batch_id' => $batch?->id,
+                ],
+                tenantId: $tenantId,
+                branchId: $branchId
+            );
         });
 
         return back()->with('success', 'Product created successfully.');
     }
 
-    private function createInitialStock(Product $product, array $validated, int $tenantId, int $branchId, float $quantity, float $costPrice): void
-    {
+    private function createInitialStock(
+        Product $product,
+        array $validated,
+        int $tenantId,
+        int $branchId,
+        float $quantity,
+        float $costPrice
+    ): ?ProductStockBatch {
         $batch = ProductStockBatch::create([
             'tenant_id' => $tenantId,
             'branch_id' => $branchId,
@@ -136,6 +161,8 @@ class ManagerProductController extends Controller
             'movement_date' => now(),
             'created_by' => auth()->id(),
         ]);
+
+        return $batch;
     }
 
     private function filters(Request $request): array

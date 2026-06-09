@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Staff\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Category;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -17,6 +18,7 @@ class ManagerCategoryController extends Controller
         $user = auth()->user();
 
         abort_if(!$user->branch_id, 403, 'No branch assigned to this manager.');
+        abort_if(!$user->client_id, 403, 'No client assigned to this manager.');
 
         return Branch::query()
             ->where('id', $user->branch_id)
@@ -57,18 +59,32 @@ class ManagerCategoryController extends Controller
     {
         $branch = $this->managerBranch();
 
-        $validated = $request->validate($this->rules(
-            (int) $branch->tenant_id,
-            (int) $branch->id
-        ));
+        $tenantId = (int) $branch->tenant_id;
+        $branchId = (int) $branch->id;
 
-        Category::create([
+        $validated = $request->validate($this->rules($tenantId, $branchId));
+
+        $category = Category::create([
             ...$validated,
-            'tenant_id' => $branch->tenant_id,
-            'branch_id' => $branch->id,
+            'tenant_id' => $tenantId,
+            'branch_id' => $branchId,
             'slug' => Str::slug($validated['name']),
             'sort_order' => $validated['sort_order'] ?? 0,
         ]);
+
+        ActivityLogger::log(
+            module: 'categories',
+            action: 'created',
+            description: 'Created category "' . $category->name . '".',
+            subject: $category,
+            properties: [
+                'category_id' => $category->id,
+                'name' => $category->name,
+                'status' => $category->status,
+            ],
+            tenantId: $tenantId,
+            branchId: $branchId
+        );
 
         return back()->with('success', 'Category created successfully.');
     }
@@ -79,9 +95,12 @@ class ManagerCategoryController extends Controller
 
         $this->authorizeCategory($category, $branch);
 
+        $tenantId = (int) $branch->tenant_id;
+        $branchId = (int) $branch->id;
+
         $validated = $request->validate($this->rules(
-            (int) $branch->tenant_id,
-            (int) $branch->id,
+            $tenantId,
+            $branchId,
             (int) $category->id
         ));
 
@@ -91,6 +110,22 @@ class ManagerCategoryController extends Controller
             'sort_order' => $validated['sort_order'] ?? 0,
         ]);
 
+        $category->refresh();
+
+        ActivityLogger::log(
+            module: 'categories',
+            action: 'updated',
+            description: 'Updated category "' . $category->name . '".',
+            subject: $category,
+            properties: [
+                'category_id' => $category->id,
+                'name' => $category->name,
+                'status' => $category->status,
+            ],
+            tenantId: $tenantId,
+            branchId: $branchId
+        );
+
         return back()->with('success', 'Category updated successfully.');
     }
 
@@ -99,6 +134,27 @@ class ManagerCategoryController extends Controller
         $branch = $this->managerBranch();
 
         $this->authorizeCategory($category, $branch);
+
+        $tenantId = (int) $branch->tenant_id;
+        $branchId = (int) $branch->id;
+
+        $categoryId = $category->id;
+        $categoryName = $category->name;
+        $categoryStatus = $category->status;
+
+        ActivityLogger::log(
+            module: 'categories',
+            action: 'deleted',
+            description: 'Deleted category "' . $categoryName . '".',
+            subject: $category,
+            properties: [
+                'category_id' => $categoryId,
+                'name' => $categoryName,
+                'status' => $categoryStatus,
+            ],
+            tenantId: $tenantId,
+            branchId: $branchId
+        );
 
         $category->delete();
 

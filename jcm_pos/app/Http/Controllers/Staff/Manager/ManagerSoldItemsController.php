@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Staff\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -15,6 +16,7 @@ class ManagerSoldItemsController extends Controller
         $user = auth()->user();
 
         abort_if(!$user->branch_id, 403, 'No branch assigned to this manager.');
+        abort_if(!$user->client_id, 403, 'No client assigned to this manager.');
 
         return Branch::query()
             ->where('id', $user->branch_id)
@@ -30,6 +32,20 @@ class ManagerSoldItemsController extends Controller
 
         $tenantId = (int) $branch->tenant_id;
         $branchId = (int) $branch->id;
+
+        ActivityLogger::log(
+            module: 'sold_items',
+            action: 'viewed',
+            description: 'Viewed sold items list.',
+            properties: [
+                'search' => $filters['search'] ?: null,
+                'status' => $filters['status'] ?: null,
+                'date_from' => $filters['date_from'] ?: null,
+                'date_to' => $filters['date_to'] ?: null,
+            ],
+            tenantId: $tenantId,
+            branchId: $branchId
+        );
 
         return Inertia::render('staff/manager/sold-items/index', [
             'soldItems' => $this->getSoldItems(
@@ -108,7 +124,7 @@ class ManagerSoldItemsController extends Controller
             'gross_profit' => (float) ($summary->gross_profit ?? 0),
         ];
     }
- 
+
     private function getSoldItems($query)
     {
         return $query

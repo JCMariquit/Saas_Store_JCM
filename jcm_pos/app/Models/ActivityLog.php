@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ActivityLog extends Model
 {
-    protected $connection = 'saas';
+    protected $connection = 'pos';
 
     protected $table = 'activity_logs';
 

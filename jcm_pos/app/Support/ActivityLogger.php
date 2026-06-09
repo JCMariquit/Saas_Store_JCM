@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\ActivityLog;
+use App\Models\SaasSubscription;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
@@ -21,23 +22,25 @@ class ActivityLogger
     ): ?ActivityLog {
         $user = Auth::user();
 
-        $resolvedUserId = $userId ?: ($user?->id);
-        $resolvedRole = $role ?: ($user?->role);
+        if (!$user) {
+            return null;
+        }
 
         $resolvedTenantId = $tenantId ?: (int) (
-            $user?->client_id
-            ?: $user?->created_by
-            ?: $user?->id
-            ?: 0
+            $user->client_id
+            ?: $user->created_by
+            ?: $user->id
         );
 
-        $resolvedBranchId = $branchId ?: ($user?->branch_id);
+        if (!self::isEnabled($resolvedTenantId)) {
+            return null;
+        }
 
         return ActivityLog::create([
-            'tenant_id' => $resolvedTenantId ?: null,
-            'branch_id' => $resolvedBranchId ?: null,
-            'user_id' => $resolvedUserId,
-            'role' => $resolvedRole,
+            'tenant_id' => $resolvedTenantId,
+            'branch_id' => $branchId ?: $user->branch_id,
+            'user_id' => $userId ?: $user->id,
+            'role' => $role ?: $user->role,
 
             'module' => $module,
             'action' => $action,
@@ -46,10 +49,28 @@ class ActivityLogger
             'subject_type' => $subject ? get_class($subject) : null,
             'subject_id' => $subject?->getKey(),
 
-            'properties' => $properties ?: null,
+            'properties' => !empty($properties) ? $properties : null,
 
             'ip_address' => request()?->ip(),
             'user_agent' => request()?->userAgent(),
         ]);
+    }
+
+    private static function isEnabled(int $tenantId): bool
+    {
+        $subscription = SaasSubscription::query()
+            ->with('plan')
+            ->where('user_id', $tenantId)
+            ->where('status', 'active')
+            ->whereDate('start_date', '<=', now())
+            ->whereDate('end_date', '>=', now())
+            ->latest('id')
+            ->first();
+
+        if (!$subscription || !$subscription->plan) {
+            return false;
+        }
+
+        return (bool) $subscription->plan->has_activity_logs;
     }
 }

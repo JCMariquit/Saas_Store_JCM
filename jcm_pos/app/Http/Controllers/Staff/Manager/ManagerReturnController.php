@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Staff\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Support\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -31,6 +32,20 @@ class ManagerReturnController extends Controller
 
         $tenantId = (int) $branch->tenant_id;
         $branchId = (int) $branch->id;
+
+        ActivityLogger::log(
+            module: 'returns',
+            action: 'viewed',
+            description: 'Viewed returns list.',
+            properties: [
+                'search' => $filters['search'] ?: null,
+                'status' => $filters['status'] ?: null,
+                'date_from' => $filters['date_from'] ?: null,
+                'date_to' => $filters['date_to'] ?: null,
+            ],
+            tenantId: $tenantId,
+            branchId: $branchId
+        );
 
         return Inertia::render('staff/manager/returns/index', [
             'returns' => $this->getReturns(

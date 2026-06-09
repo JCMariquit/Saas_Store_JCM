@@ -41,11 +41,24 @@ class ManagerStaffController extends Controller
         $tenantId = (int) $branch->tenant_id;
         $branchId = (int) $branch->id;
 
+        $search = trim((string) $request->input('search', ''));
+
+        ActivityLogger::log(
+            module: 'employee',
+            action: 'viewed',
+            description: 'Viewed employee list.',
+            properties: [
+                'search' => $search ?: null,
+            ],
+            tenantId: $tenantId,
+            branchId: $branchId
+        );
+
         $staff = User::query()
             ->where('created_by', $tenantId)
             ->where('branch_id', $branchId)
             ->whereIn('role', ['cashier', 'staff'])
-            ->when($request->search, function ($query, $search) {
+            ->when($search, function ($query, $search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery
                         ->where('name', 'like', "%{$search}%")
@@ -70,7 +83,7 @@ class ManagerStaffController extends Controller
             'staff' => $staff,
             'branch' => $branch,
             'filters' => [
-                'search' => $request->search,
+                'search' => $search,
             ],
         ]);
     }
@@ -108,14 +121,13 @@ class ManagerStaffController extends Controller
         ActivityLogger::log(
             module: 'employee',
             action: 'created',
-            description: "Created employee {$createdStaff->name} as {$createdStaff->role}.",
+            description: 'Created employee "' . $createdStaff->name . '".',
             subject: $createdStaff,
             properties: [
                 'employee_id' => $createdStaff->id,
-                'employee_name' => $createdStaff->name,
-                'employee_email' => $createdStaff->email,
-                'employee_role' => $createdStaff->role,
-                'is_active' => $createdStaff->is_active,
+                'name' => $createdStaff->name,
+                'role' => $createdStaff->role,
+                'is_active' => (bool) $createdStaff->is_active,
             ],
             tenantId: $tenantId,
             branchId: $branchId
@@ -126,14 +138,10 @@ class ManagerStaffController extends Controller
 
     public function update(Request $request, User $staff)
     {
-        $this->authorizeStaff($staff);
+        $branch = $this->authorizeStaff($staff);
 
-        $oldData = [
-            'name' => $staff->name,
-            'email' => $staff->email,
-            'role' => $staff->role,
-            'is_active' => (bool) $staff->is_active,
-        ];
+        $tenantId = (int) $branch->tenant_id;
+        $branchId = (int) $branch->id;
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:180'],
@@ -167,19 +175,17 @@ class ManagerStaffController extends Controller
         ActivityLogger::log(
             module: 'employee',
             action: 'updated',
-            description: "Updated employee {$staff->name}.",
+            description: 'Updated employee "' . $staff->name . '".',
             subject: $staff,
             properties: [
                 'employee_id' => $staff->id,
-                'old' => $oldData,
-                'new' => [
-                    'name' => $staff->name,
-                    'email' => $staff->email,
-                    'role' => $staff->role,
-                    'is_active' => (bool) $staff->is_active,
-                ],
+                'name' => $staff->name,
+                'role' => $staff->role,
+                'is_active' => (bool) $staff->is_active,
                 'password_changed' => $passwordChanged,
-            ]
+            ],
+            tenantId: $tenantId,
+            branchId: $branchId
         );
 
         return back()->with('success', 'Staff updated successfully.');
@@ -187,20 +193,29 @@ class ManagerStaffController extends Controller
 
     public function destroy(User $staff)
     {
-        $this->authorizeStaff($staff);
+        $branch = $this->authorizeStaff($staff);
+
+        $tenantId = (int) $branch->tenant_id;
+        $branchId = (int) $branch->id;
+
+        $staffId = $staff->id;
+        $staffName = $staff->name;
+        $staffRole = $staff->role;
+        $isActive = (bool) $staff->is_active;
 
         ActivityLogger::log(
             module: 'employee',
             action: 'deleted',
-            description: "Deleted employee {$staff->name}.",
+            description: 'Deleted employee "' . $staffName . '".',
             subject: $staff,
             properties: [
-                'employee_id' => $staff->id,
-                'employee_name' => $staff->name,
-                'employee_email' => $staff->email,
-                'employee_role' => $staff->role,
-                'is_active' => (bool) $staff->is_active,
-            ]
+                'employee_id' => $staffId,
+                'name' => $staffName,
+                'role' => $staffRole,
+                'is_active' => $isActive,
+            ],
+            tenantId: $tenantId,
+            branchId: $branchId
         );
 
         $staff->delete();
@@ -210,10 +225,12 @@ class ManagerStaffController extends Controller
 
     public function toggleStatus(User $staff)
     {
-        $this->authorizeStaff($staff);
+        $branch = $this->authorizeStaff($staff);
 
-        $oldStatus = (bool) $staff->is_active;
-        $newStatus = !$oldStatus;
+        $tenantId = (int) $branch->tenant_id;
+        $branchId = (int) $branch->id;
+
+        $newStatus = !(bool) $staff->is_active;
 
         $staff->update([
             'is_active' => $newStatus,
@@ -224,27 +241,29 @@ class ManagerStaffController extends Controller
         ActivityLogger::log(
             module: 'employee',
             action: $newStatus ? 'activated' : 'deactivated',
-            description: ($newStatus ? 'Activated' : 'Deactivated') . " employee {$staff->name}.",
+            description: ($newStatus ? 'Activated' : 'Deactivated') . ' employee "' . $staff->name . '".',
             subject: $staff,
             properties: [
                 'employee_id' => $staff->id,
-                'employee_name' => $staff->name,
-                'employee_email' => $staff->email,
-                'employee_role' => $staff->role,
-                'old_status' => $oldStatus,
-                'new_status' => $newStatus,
-            ]
+                'name' => $staff->name,
+                'role' => $staff->role,
+                'is_active' => (bool) $staff->is_active,
+            ],
+            tenantId: $tenantId,
+            branchId: $branchId
         );
 
         return back()->with('success', 'Staff status updated successfully.');
     }
 
-    private function authorizeStaff(User $staff): void
+    private function authorizeStaff(User $staff): Branch
     {
         $branch = $this->managerBranch();
 
         abort_if((int) $staff->created_by !== (int) $branch->tenant_id, 403);
         abort_if((int) $staff->branch_id !== (int) $branch->id, 403);
         abort_if(!in_array($staff->role, ['cashier', 'staff'], true), 403);
+
+        return $branch;
     }
 }

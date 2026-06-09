@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 05, 2026 at 03:57 AM
+-- Generation Time: Jun 09, 2026 at 09:49 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -285,10 +285,25 @@ CREATE TABLE `plans` (
   `price` decimal(10,2) NOT NULL,
   `duration_days` int(11) NOT NULL,
   `description` text DEFAULT NULL,
+  `has_role_based_access` tinyint(1) NOT NULL DEFAULT 0,
+  `has_multi_branch` tinyint(1) NOT NULL DEFAULT 0,
+  `has_activity_logs` tinyint(1) NOT NULL DEFAULT 0,
+  `activity_log_retention_days` int(11) DEFAULT NULL,
+  `max_branches` int(11) DEFAULT NULL,
+  `max_staff` int(11) DEFAULT NULL,
   `status` enum('active','inactive') DEFAULT 'active',
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `plans`
+--
+
+INSERT INTO `plans` (`id`, `product_id`, `plan_name`, `price`, `duration_days`, `description`, `has_role_based_access`, `has_multi_branch`, `has_activity_logs`, `activity_log_retention_days`, `max_branches`, `max_staff`, `status`, `created_at`, `updated_at`) VALUES
+(9, 10, 'Basic POS', 499.00, 30, 'Single owner POS with inventory and sales management.', 0, 0, 0, NULL, 1, 1, 'active', '2026-06-09 07:03:22', '2026-06-09 07:03:22'),
+(10, 10, 'Business POS', 1299.00, 30, 'POS with cashier, staff, and manager role-based access.', 1, 0, 0, NULL, 1, 10, 'active', '2026-06-09 07:03:22', '2026-06-09 07:03:22'),
+(11, 10, 'Enterprise POS', 1999.00, 30, 'Multi branch POS with employee activity logs and audit trail.', 1, 1, 1, 365, NULL, NULL, 'active', '2026-06-09 07:03:22', '2026-06-09 07:03:22');
 
 -- --------------------------------------------------------
 
@@ -314,8 +329,7 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `product_code`, `name`, `description`, `thumbnail`, `price`, `pricing_type`, `status`, `created_at`, `updated_at`) VALUES
-(7, 'PRD-RA06RM', 'Hotel and Resort Booking System', 'Hotel & Resort Boking system is a system where client can book a room in a hotel or a resort anywhere around the globe.', NULL, NULL, 'plan', 'active', '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
-(9, 'PRD-XZU4MP', 'Test 1', 'Short Description test', 'products/TjE8oUncoTAfihiRL5svYCru2pvFxd9KFGqvCJC2.png', NULL, 'plan', 'active', '2026-05-07 22:33:51', '2026-05-07 22:33:51');
+(10, 'JCM-POS-001', 'JCM POS', 'Cloud-based Point of Sale and Inventory Management System for retail businesses.', NULL, 0.00, 'plan', 'active', '2026-06-09 07:02:14', '2026-06-09 07:02:14');
 
 -- --------------------------------------------------------
 
@@ -334,16 +348,6 @@ CREATE TABLE `product_features` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `product_features`
---
-
-INSERT INTO `product_features` (`id`, `product_id`, `feature_title`, `feature_description`, `icon`, `sort_order`, `created_at`, `updated_at`) VALUES
-(4, 7, 'f1', NULL, NULL, 0, '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
-(5, 7, 'f2', NULL, NULL, 1, '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
-(6, 9, 'f1', NULL, NULL, 0, '2026-05-07 22:33:51', '2026-05-07 22:33:51'),
-(7, 9, 'f2', NULL, NULL, 1, '2026-05-07 22:33:51', '2026-05-07 22:33:51');
-
 -- --------------------------------------------------------
 
 --
@@ -360,16 +364,6 @@ CREATE TABLE `product_images` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `product_images`
---
-
-INSERT INTO `product_images` (`id`, `product_id`, `image_path`, `alt_text`, `sort_order`, `created_at`, `updated_at`) VALUES
-(5, 7, 'products/LeGF2UCI6Wbtq3Y4tCITYHsvb2WHenvWHFgclG2z.png', 'Hotel and Resort Booking System image 1', 0, '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
-(6, 7, 'products/a0JBQ5GxBCdGR3suZ77bBP63sWCjhEDhByMTYwLs.png', 'Hotel and Resort Booking System image 2', 1, '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
-(7, 9, 'products/TjE8oUncoTAfihiRL5svYCru2pvFxd9KFGqvCJC2.png', 'Test 1 image 1', 0, '2026-05-07 22:33:51', '2026-05-07 22:33:51'),
-(8, 9, 'products/vhlrdragFgw8t9XT0NzB5KMiMEnfGJSV2ClPJqXW.png', 'Test 1 image 2', 1, '2026-05-07 22:33:51', '2026-05-07 22:33:51');
-
 -- --------------------------------------------------------
 
 --
@@ -385,14 +379,6 @@ CREATE TABLE `product_overview` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `product_overview`
---
-
-INSERT INTO `product_overview` (`id`, `product_id`, `title`, `content`, `sort_order`, `created_at`, `updated_at`) VALUES
-(2, 7, 'Hotel and Resolrt Booking System', 'Hotel and Resolrt Booking System', 0, '2026-05-04 18:11:04', '2026-05-04 18:11:04'),
-(3, 9, 'test', 'Short DescriptionShort DescriptionShort Description', 0, '2026-05-07 22:33:51', '2026-05-07 22:33:51');
 
 -- --------------------------------------------------------
 
@@ -540,6 +526,13 @@ CREATE TABLE `subscriptions` (
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `subscriptions`
+--
+
+INSERT INTO `subscriptions` (`id`, `user_id`, `product_id`, `order_id`, `plan_id`, `subscription_code`, `subscription_type`, `status`, `start_date`, `end_date`, `duration_days`, `amount`, `notes`, `created_at`, `updated_at`) VALUES
+(18, 1, 10, NULL, 11, 'SUB-1780991250', 'monthly', 'active', '2026-06-09', '2026-07-09', 30, 499.00, 'Basic POS subscription for testing', '2026-06-09 07:47:30', '2026-06-09 07:48:04');
+
 -- --------------------------------------------------------
 
 --
@@ -597,13 +590,13 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `two_factor_secret`, `two_factor_recovery_codes`, `two_factor_confirmed_at`, `remember_token`, `created_at`, `updated_at`, `role`, `client_id`, `branch_id`, `system_used`, `created_by`, `is_active`) VALUES
-(1, 'June Charles Mariquit', 'junecharlesmariquit553@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, 'XxjiOwoKqUM4KNwWqlJQ2nJlkpfn3flpt2qMw84fi4lllCthUHS7SqBI9ktm', '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'client', NULL, NULL, 'pos', NULL, 1),
+(1, 'June Charles Mariquit', 'junecharlesmariquit553@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, 'S5qmaDthz3BrzkHtkZVfrotYOO2nmv8FaAqEA4NhgDyMzlLc6clecuQ44DSR', '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'client', NULL, NULL, 'pos', NULL, 1),
 (7, 'admin', 'admin@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, 'AKzQuJt0QVa7Gfsmsdgbl7sZzNkzjrD04AxBAX7SjbmjrBx0ZVXnNHNNyqCn', '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'admin', NULL, NULL, NULL, NULL, 1),
 (12, 'cashier', 'cashier1@gmail.com', NULL, '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-05-29 18:52:57', '2026-05-29 18:52:57', 'cashier', 1, 1, 'pos', 1, 1),
 (13, 'Store Manager 1', 'manager1@pos.com', '2026-06-05 01:41:18', '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-06-05 01:41:18', '2026-06-05 01:41:18', 'manager', 1, 1, 'pos', 1, 1),
 (14, 'Store Manager 2', 'manager2@pos.com', '2026-06-05 01:41:18', '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-06-05 01:41:18', '2026-06-05 01:41:18', 'manager', 1, 1, 'pos', 1, 1),
 (15, 'Store Staff 1', 'staff1@pos.com', '2026-06-05 01:41:18', '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-06-05 01:41:18', '2026-06-05 01:41:18', 'staff', 1, 1, 'pos', 1, 1),
-(16, 'Store Staff 2', 'staff2@pos.com', '2026-06-05 01:41:18', '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-06-05 01:41:18', '2026-06-05 01:41:18', 'staff', 1, 1, 'pos', 1, 1),
+(16, 'Store Staff 2', 'staff2@pos.com', '2026-06-05 01:41:18', '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-06-05 01:41:18', '2026-06-08 19:38:03', 'staff', 1, 1, 'pos', 1, 1),
 (17, 'Cashier 2', 'cashier2@pos.com', '2026-06-05 01:43:20', '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NULL, NULL, NULL, NULL, '2026-06-05 01:43:20', '2026-06-05 01:43:20', 'cashier', 1, 1, 'pos', 1, 1);
 
 --
@@ -864,13 +857,13 @@ ALTER TABLE `payment_methods`
 -- AUTO_INCREMENT for table `plans`
 --
 ALTER TABLE `plans`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `product_features`
@@ -918,7 +911,7 @@ ALTER TABLE `service_overview`
 -- AUTO_INCREMENT for table `subscriptions`
 --
 ALTER TABLE `subscriptions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `transactions`

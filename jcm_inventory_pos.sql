@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 05, 2026 at 03:57 AM
+-- Generation Time: Jun 09, 2026 at 09:49 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,44 @@ SET time_zone = "+00:00";
 --
 -- Database: `jcm_inventory_pos`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `activity_logs`
+--
+
+CREATE TABLE `activity_logs` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tenant_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `branch_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `role` varchar(50) DEFAULT NULL,
+  `module` varchar(100) NOT NULL,
+  `action` varchar(100) NOT NULL,
+  `description` text NOT NULL,
+  `subject_type` varchar(255) DEFAULT NULL,
+  `subject_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `properties` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`properties`)),
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `activity_logs`
+--
+
+INSERT INTO `activity_logs` (`id`, `tenant_id`, `branch_id`, `user_id`, `role`, `module`, `action`, `description`, `subject_type`, `subject_id`, `properties`, `ip_address`, `user_agent`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 13, 'manager', 'cash_drawer', 'cash_out', 'Recorded cash out ₱100.00 from change fund.', 'App\\Models\\CashDrawer', 5, '{\"drawer_id\":5,\"transaction_id\":23,\"branch_id\":1,\"amount\":100,\"source\":\"change_fund\",\"available_from_source_before\":5000,\"old_total_cash_out\":25,\"new_total_cash_out\":125,\"old_expected_balance\":5300,\"new_expected_balance\":5200,\"remarks\":\"Cash out\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-08 22:29:56', '2026-06-08 22:29:56'),
+(2, 1, 1, 13, 'manager', 'categories', 'created', 'Created category \"Snaks\".', 'App\\Models\\Category', 4, '{\"category_id\":4,\"branch_id\":1,\"name\":\"Snaks\",\"slug\":\"snaks\",\"description\":null,\"status\":\"active\",\"sort_order\":0}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-08 22:31:40', '2026-06-08 22:31:40'),
+(3, 1, 1, 13, 'manager', 'cash_drawer', 'cash_out', 'Cash out ₱100.00 from cash sales.', 'App\\Models\\CashDrawer', 5, '{\"drawer_id\":5,\"transaction_id\":24,\"amount\":100,\"source\":\"cash_sales\",\"expected_balance\":5100,\"remarks\":null}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-08 22:42:40', '2026-06-08 22:42:40'),
+(4, 1, 1, 13, 'manager', 'pos_monitor', 'viewed', 'Viewed POS monitor.', NULL, NULL, '{\"branch_id\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-08 23:36:10', '2026-06-08 23:36:10'),
+(5, 1, 1, 13, 'manager', 'manager_dashboard', 'viewed', 'Viewed manager dashboard.', NULL, NULL, NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-08 23:36:30', '2026-06-08 23:36:30'),
+(6, 1, 1, 13, 'manager', 'pos_monitor', 'viewed', 'Viewed POS monitor.', NULL, NULL, '{\"branch_id\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-08 23:36:30', '2026-06-08 23:36:30'),
+(7, 1, 1, 13, 'manager', 'pos_monitor', 'viewed', 'Viewed POS monitor.', NULL, NULL, '{\"branch_id\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-08 23:48:07', '2026-06-08 23:48:07'),
+(8, 1, 1, 13, 'manager', 'manager_dashboard', 'viewed', 'Viewed manager dashboard.', NULL, NULL, NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', '2026-06-08 23:48:08', '2026-06-08 23:48:08');
 
 -- --------------------------------------------------------
 
@@ -65,8 +103,10 @@ CREATE TABLE `cache` (
 --
 
 INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('manager1@gmail.com|127.0.0.1', 'i:1;', 1780624128),
-('manager1@gmail.com|127.0.0.1:timer', 'i:1780624128;', 1780624128);
+('cashier@gmail.com|127.0.0.1', 'i:2;', 1780642125),
+('cashier@gmail.com|127.0.0.1:timer', 'i:1780642125;', 1780642125),
+('manager1@gmail.com|127.0.0.1', 'i:1;', 1780641722),
+('manager1@gmail.com|127.0.0.1:timer', 'i:1780641722;', 1780641722);
 
 -- --------------------------------------------------------
 
@@ -113,8 +153,7 @@ CREATE TABLE `cash_drawers` (
 --
 
 INSERT INTO `cash_drawers` (`id`, `tenant_id`, `branch_id`, `opened_by`, `closed_by`, `opening_balance`, `expected_balance`, `actual_balance`, `variance_amount`, `total_cash_sales`, `total_refunds`, `total_cash_in`, `total_cash_out`, `status`, `opened_at`, `closed_at`, `notes`, `created_at`, `updated_at`) VALUES
-(3, 1, 1, 1, NULL, 0.00, 2446.00, NULL, NULL, 506.00, 0.00, 2000.00, 60.00, 'open', '2026-06-01 22:10:14', NULL, 'DEV AUTO OPEN DRAWER', '2026-06-01 22:10:14', '2026-06-03 17:47:16'),
-(4, 1, 11, 1, NULL, 0.00, 500.00, NULL, NULL, 0.00, 0.00, 500.00, 0.00, 'open', '2026-06-01 22:32:11', NULL, 'DEV AUTO OPEN DRAWER', '2026-06-01 22:32:11', '2026-06-01 22:32:11');
+(5, 1, 1, 13, NULL, 5000.00, 5100.00, NULL, 0.00, 325.00, 0.00, 0.00, 225.00, 'open', '2026-06-04 22:47:24', NULL, NULL, '2026-06-04 22:47:24', '2026-06-08 22:42:40');
 
 -- --------------------------------------------------------
 
@@ -156,7 +195,16 @@ INSERT INTO `cash_drawer_transactions` (`id`, `tenant_id`, `cash_drawer_id`, `ty
 (10, 1, 3, 'cash_out', 'cash_sales', 60.00, NULL, NULL, NULL, NULL, 'Cash out from sales', 1, '2026-06-01 22:17:02', '2026-06-01 22:17:02'),
 (11, 1, 4, 'cash_in', NULL, 500.00, NULL, NULL, NULL, NULL, 'Add cash / pang-barya', 1, '2026-06-01 22:32:11', '2026-06-01 22:32:11'),
 (12, 1, 3, 'cash_sale', NULL, 96.00, 'sale', 26, NULL, NULL, 'POS cash sale: SALE-20260602-00003', 1, '2026-06-01 23:06:43', '2026-06-01 23:06:43'),
-(13, 1, 3, 'cash_sale', NULL, 350.00, 'sale', 27, NULL, NULL, 'POS cash sale: SALE-20260604-00001', 1, '2026-06-03 17:47:16', '2026-06-03 17:47:16');
+(13, 1, 3, 'cash_sale', NULL, 350.00, 'sale', 27, NULL, NULL, 'POS cash sale: SALE-20260604-00001', 1, '2026-06-03 17:47:16', '2026-06-03 17:47:16'),
+(14, 1, 3, 'cash_out', 'cash_sales', 506.00, NULL, NULL, '2026-06-04 22:41:50', 13, 'Cash out', 13, '2026-06-04 22:41:50', '2026-06-04 22:41:50'),
+(15, 1, 3, 'cash_out', 'cash_sales', 506.00, NULL, NULL, '2026-06-04 22:42:07', 13, 'Cash out', 13, '2026-06-04 22:42:07', '2026-06-04 22:42:07'),
+(16, 1, 5, 'opening', NULL, 5000.00, NULL, NULL, NULL, NULL, 'Opening cash drawer balance', 13, '2026-06-04 22:47:24', '2026-06-04 22:47:24'),
+(17, 1, 5, 'cash_sale', NULL, 215.00, 'sale', 28, NULL, NULL, 'POS cash sale: SALE-20260605-00001', 1, '2026-06-04 22:48:39', '2026-06-04 22:48:39'),
+(18, 1, 5, 'cash_sale', NULL, 55.00, 'sale', 29, NULL, NULL, 'POS cash sale: SALE-20260605-00002', 1, '2026-06-04 22:48:43', '2026-06-04 22:48:43'),
+(19, 1, 5, 'cash_sale', NULL, 55.00, 'sale', 30, NULL, NULL, 'POS cash sale: SALE-20260605-00003', 1, '2026-06-04 22:48:47', '2026-06-04 22:48:47'),
+(20, 1, 5, 'cash_out', 'cash_sales', 25.00, NULL, NULL, '2026-06-04 22:49:24', 13, 'Cash out', 13, '2026-06-04 22:49:24', '2026-06-04 22:49:24'),
+(23, 1, 5, 'cash_out', 'change_fund', 100.00, NULL, NULL, '2026-06-08 22:29:56', 13, 'Cash out', 13, '2026-06-08 22:29:56', '2026-06-08 22:29:56'),
+(24, 1, 5, 'cash_out', 'cash_sales', 100.00, NULL, NULL, '2026-06-08 22:42:40', 13, 'Cash out', 13, '2026-06-08 22:42:40', '2026-06-08 22:42:40');
 
 -- --------------------------------------------------------
 
@@ -186,7 +234,9 @@ CREATE TABLE `categories` (
 INSERT INTO `categories` (`id`, `tenant_id`, `branch_id`, `parent_id`, `name`, `slug`, `description`, `sort_order`, `status`, `created_at`, `updated_at`, `deleted_at`) VALUES
 (1, 1, 1, NULL, 'Soap', 'soap', 'Bath Soap, Cloth Soap', 0, 'active', '2026-05-20 18:54:10', '2026-05-21 00:32:30', NULL),
 (2, 1, 11, NULL, '123', '123', '123', 0, 'active', '2026-05-29 00:02:49', '2026-05-29 00:02:49', NULL),
-(3, 1, 11, NULL, '13', '13', '123', 0, 'active', '2026-05-29 00:02:56', '2026-05-29 00:02:56', NULL);
+(3, 1, 11, NULL, '13', '13', '123', 0, 'active', '2026-05-29 00:02:56', '2026-05-29 00:02:56', NULL),
+(4, 1, 1, NULL, 'Snaks', 'snaks', NULL, 0, 'active', '2026-06-08 22:31:40', '2026-06-08 22:31:40', NULL),
+(5, 1, 1, NULL, 'Ditergent', 'ditergent', NULL, 0, 'active', '2026-06-08 23:39:43', '2026-06-08 23:39:43', NULL);
 
 -- --------------------------------------------------------
 
@@ -264,7 +314,10 @@ INSERT INTO `payments` (`id`, `tenant_id`, `branch_id`, `sale_id`, `method`, `am
 (23, 1, 1, 23, 'cash', 1000.00, NULL, NULL, '2026-06-01 22:00:37', '2026-06-01 22:00:37'),
 (25, 1, 1, 25, 'cash', 1000.00, NULL, NULL, '2026-06-01 22:16:38', '2026-06-01 22:16:38'),
 (26, 1, 1, 26, 'cash', 500.00, NULL, NULL, '2026-06-01 23:06:43', '2026-06-01 23:06:43'),
-(27, 1, 1, 27, 'cash', 1000.00, NULL, NULL, '2026-06-03 17:47:16', '2026-06-03 17:47:16');
+(27, 1, 1, 27, 'cash', 1000.00, NULL, NULL, '2026-06-03 17:47:16', '2026-06-03 17:47:16'),
+(28, 1, 1, 28, 'cash', 500.00, NULL, NULL, '2026-06-04 22:48:39', '2026-06-04 22:48:39'),
+(29, 1, 1, 29, 'cash', 500.00, NULL, NULL, '2026-06-04 22:48:43', '2026-06-04 22:48:43'),
+(30, 1, 1, 30, 'cash', 1000.00, NULL, NULL, '2026-06-04 22:48:47', '2026-06-04 22:48:47');
 
 -- --------------------------------------------------------
 
@@ -311,11 +364,11 @@ CREATE TABLE `products` (
 
 INSERT INTO `products` (`id`, `tenant_id`, `branch_id`, `category_id`, `name`, `slug`, `sku`, `barcode`, `description`, `image_path`, `unit`, `cost_price`, `selling_price`, `wholesale_price`, `compare_at_price`, `quantity`, `reorder_level`, `max_stock_level`, `is_taxable`, `tax_rate`, `allow_discount`, `discount_type`, `discount_value`, `product_type`, `stock_tracking`, `low_stock_alert`, `status`, `created_at`, `updated_at`, `deleted_at`) VALUES
 (1, 1, 1, 1, 'Safe Guard', 'safe-guard', '123', '123123', NULL, NULL, 'pcs', 25.00, 30.00, NULL, NULL, 0.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-20 19:05:30', '2026-06-03 17:47:16', NULL),
-(2, 1, 1, 1, 'Dove', 'dove', NULL, NULL, NULL, NULL, 'pcs', 15.00, 25.00, NULL, NULL, 0.00, 50.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-20 23:42:27', '2026-06-03 17:46:28', NULL),
-(3, 1, 1, 1, 'SafeGuard', 'safeguard', NULL, NULL, NULL, NULL, 'pcs', 45.00, 55.00, NULL, NULL, 68.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-24 17:04:06', '2026-06-03 17:47:16', NULL),
+(2, 1, 1, 1, 'Dove', 'dove', NULL, NULL, NULL, NULL, 'pcs', 15.00, 25.00, NULL, NULL, 95.00, 50.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-20 23:42:27', '2026-06-04 22:48:47', NULL),
+(3, 1, 1, 1, 'SafeGuard', 'safeguard', NULL, NULL, NULL, NULL, 'pcs', 45.00, 55.00, NULL, NULL, 66.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-24 17:04:06', '2026-06-04 22:48:39', NULL),
 (7, 1, 11, 3, '13', '13', NULL, NULL, '123', NULL, 'pcs', 123.00, 123.00, NULL, NULL, 123.00, 13.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-29 00:09:38', '2026-05-29 00:09:38', NULL),
 (8, 1, 11, 2, 'sf', 'sf', NULL, NULL, NULL, NULL, 'pcs', 12.00, 50.00, NULL, NULL, 22.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-05-29 00:17:54', '2026-05-29 00:18:02', NULL),
-(9, 1, 1, 1, 'Dove', 'dove', NULL, NULL, NULL, NULL, 'pcs', 15.00, 30.00, NULL, NULL, 94.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-06-03 17:46:53', '2026-06-03 17:47:16', NULL);
+(9, 1, 1, 1, 'Dove', 'dove', NULL, NULL, NULL, NULL, 'pcs', 15.00, 30.00, NULL, NULL, 91.00, 0.00, NULL, 0, 0.00, 1, NULL, 0.00, 'standard', 'tracked', 1, 'active', '2026-06-03 17:46:53', '2026-06-04 22:48:47', NULL);
 
 -- --------------------------------------------------------
 
@@ -350,7 +403,8 @@ INSERT INTO `product_stock_batches` (`id`, `tenant_id`, `branch_id`, `product_id
 (3, 1, 1, 3, 'BATCH-20260525010406-3', 100.00, 100.00, 45.00, 55.00, '2026-05-25', NULL, 'Initial stock', '2026-05-24 17:04:06', '2026-05-24 17:04:06'),
 (5, 1, 11, 7, 'BATCH-20260529080938-7', 123.00, 123.00, 123.00, 123.00, '2026-05-29', NULL, 'Initial stock', '2026-05-29 00:09:38', '2026-05-29 00:09:38'),
 (6, 1, 11, 8, 'BATCH-20260529081754-8', 22.00, 22.00, 12.00, 50.00, '2026-05-29', NULL, 'Initial stock', '2026-05-29 00:17:54', '2026-05-29 00:17:54'),
-(7, 1, 1, 9, 'BATCH-20260604014653-9', 100.00, 100.00, 15.00, 30.00, '2026-06-04', NULL, 'Initial stock', '2026-06-03 17:46:53', '2026-06-03 17:46:53');
+(7, 1, 1, 9, 'BATCH-20260604014653-9', 100.00, 100.00, 15.00, 30.00, '2026-06-04', NULL, 'Initial stock', '2026-06-03 17:46:53', '2026-06-03 17:46:53'),
+(8, 1, 1, 2, 'BATCH-20260605060957-2', 100.00, 100.00, 15.00, 25.00, '2026-06-05', NULL, 'Stock in by manager', '2026-06-04 22:09:57', '2026-06-04 22:09:57');
 
 -- --------------------------------------------------------
 
@@ -446,7 +500,10 @@ INSERT INTO `sales` (`id`, `tenant_id`, `branch_id`, `sale_no`, `cashier_user_id
 (23, 1, 1, 'SALE-20260602-00001', 1, NULL, NULL, NULL, NULL, NULL, 60.00, 0.00, 0.00, 60.00, 1000.00, 940.00, 'paid', 'completed', NULL, '2026-06-01 22:00:37', '2026-06-01 22:00:37', '2026-06-01 22:00:37'),
 (25, 1, 1, 'SALE-20260602-00002', 1, NULL, NULL, NULL, NULL, NULL, 60.00, 0.00, 0.00, 60.00, 1000.00, 940.00, 'paid', 'completed', NULL, '2026-06-01 22:16:38', '2026-06-01 22:16:38', '2026-06-01 22:16:38'),
 (26, 1, 1, 'SALE-20260602-00003', 1, 1, 'Senior citezen', 'SENIOR@)', 'percent', 20.00, 120.00, 24.00, 0.00, 96.00, 500.00, 404.00, 'paid', 'completed', NULL, '2026-06-01 23:06:43', '2026-06-01 23:06:43', '2026-06-01 23:06:43'),
-(27, 1, 1, 'SALE-20260604-00001', 1, NULL, NULL, NULL, NULL, NULL, 350.00, 0.00, 0.00, 350.00, 1000.00, 650.00, 'paid', 'completed', NULL, '2026-06-03 17:47:16', '2026-06-03 17:47:16', '2026-06-03 17:47:16');
+(27, 1, 1, 'SALE-20260604-00001', 1, NULL, NULL, NULL, NULL, NULL, 350.00, 0.00, 0.00, 350.00, 1000.00, 650.00, 'paid', 'completed', NULL, '2026-06-03 17:47:16', '2026-06-03 17:47:16', '2026-06-03 17:47:16'),
+(28, 1, 1, 'SALE-20260605-00001', 1, NULL, NULL, NULL, NULL, NULL, 215.00, 0.00, 0.00, 215.00, 500.00, 285.00, 'paid', 'completed', NULL, '2026-06-04 22:48:39', '2026-06-04 22:48:39', '2026-06-04 22:48:39'),
+(29, 1, 1, 'SALE-20260605-00002', 1, NULL, NULL, NULL, NULL, NULL, 55.00, 0.00, 0.00, 55.00, 500.00, 445.00, 'paid', 'completed', NULL, '2026-06-04 22:48:43', '2026-06-04 22:48:43', '2026-06-04 22:48:43'),
+(30, 1, 1, 'SALE-20260605-00003', 1, NULL, NULL, NULL, NULL, NULL, 55.00, 0.00, 0.00, 55.00, 1000.00, 945.00, 'paid', 'completed', NULL, '2026-06-04 22:48:47', '2026-06-04 22:48:47', '2026-06-04 22:48:47');
 
 -- --------------------------------------------------------
 
@@ -500,7 +557,14 @@ INSERT INTO `sale_items` (`id`, `tenant_id`, `branch_id`, `sale_id`, `product_id
 (29, 1, 1, 26, 1, 'Safe Guard', '123', 4.00, 30.00, 25.00, 24.00, 120.00, '2026-06-01 23:06:43', '2026-06-01 23:06:43'),
 (30, 1, 1, 27, 9, 'Dove', NULL, 6.00, 30.00, 15.00, 0.00, 180.00, '2026-06-03 17:47:16', '2026-06-03 17:47:16'),
 (31, 1, 1, 27, 3, 'SafeGuard', NULL, 2.00, 55.00, 45.00, 0.00, 110.00, '2026-06-03 17:47:16', '2026-06-03 17:47:16'),
-(32, 1, 1, 27, 1, 'Safe Guard', '123', 2.00, 30.00, 25.00, 0.00, 60.00, '2026-06-03 17:47:16', '2026-06-03 17:47:16');
+(32, 1, 1, 27, 1, 'Safe Guard', '123', 2.00, 30.00, 25.00, 0.00, 60.00, '2026-06-03 17:47:16', '2026-06-03 17:47:16'),
+(33, 1, 1, 28, 2, 'Dove', NULL, 3.00, 25.00, 15.00, 0.00, 75.00, '2026-06-04 22:48:39', '2026-06-04 22:48:39'),
+(34, 1, 1, 28, 9, 'Dove', NULL, 1.00, 30.00, 15.00, 0.00, 30.00, '2026-06-04 22:48:39', '2026-06-04 22:48:39'),
+(35, 1, 1, 28, 3, 'SafeGuard', NULL, 2.00, 55.00, 45.00, 0.00, 110.00, '2026-06-04 22:48:39', '2026-06-04 22:48:39'),
+(36, 1, 1, 29, 2, 'Dove', NULL, 1.00, 25.00, 15.00, 0.00, 25.00, '2026-06-04 22:48:43', '2026-06-04 22:48:43'),
+(37, 1, 1, 29, 9, 'Dove', NULL, 1.00, 30.00, 15.00, 0.00, 30.00, '2026-06-04 22:48:43', '2026-06-04 22:48:43'),
+(38, 1, 1, 30, 2, 'Dove', NULL, 1.00, 25.00, 15.00, 0.00, 25.00, '2026-06-04 22:48:47', '2026-06-04 22:48:47'),
+(39, 1, 1, 30, 9, 'Dove', NULL, 1.00, 30.00, 15.00, 0.00, 30.00, '2026-06-04 22:48:47', '2026-06-04 22:48:47');
 
 -- --------------------------------------------------------
 
@@ -522,9 +586,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('8loJtvQEObzf7WlqCqTSDERFJ15Zoj4VzS8rGbRL', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiUDEzdWJDSU1BVDJOaTBxcWZtSmxadll1N0h4SW9qU1d1eHQ4ejJNcCI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czo0MToiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2NsaWVudC9wb3MvdGVybWluYWwiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1780620062),
-('NzPLySKXpsE2H7yCLEBjSmVOv3kXG56W7QdxaSYP', 13, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiYTFLUmJxaXlyWFZhSnZuQlpOM1FiQXBBU1Nqd2RuYW91U2dxTUJNMSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTM7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDU6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9zdGFmZi9tYW5hZ2VyL2Rhc2hib2FyZCI7czo1OiJyb3V0ZSI7czoyMzoic3RhZmYubWFuYWdlci5kYXNoYm9hcmQiO319', 1780624580),
-('u2sKuNsg88wGvfKIiek0q7zwEy4sb2imQRcTfyad', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiZ3NEb2RWZGlMQ2NGNzcwcDR4ZEh5d2NRSXJaVU9vaGs1dG1EblZiTiI7czozOiJ1cmwiO2E6MTp7czo4OiJpbnRlbmRlZCI7czozODoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2NsaWVudC9kYXNoYm9hcmQiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1780620064);
+('uKM16ZhReikoFTGT125srwnVqetinZscwPbM4uW3', 13, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiUm9XUnZkNnB1bjAyUGFtdW9DbzBCTTh6SE5TaU5Ha3lCYkg2UHJiWCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTM7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9zdGFmZi9tYW5hZ2VyL3RyYW5zYWN0aW9ucyI7czo1OiJyb3V0ZSI7czozMjoic3RhZmYubWFuYWdlci50cmFuc2FjdGlvbnMuaW5kZXgiO319', 1780991290);
 
 -- --------------------------------------------------------
 
@@ -598,7 +660,15 @@ INSERT INTO `stock_movements` (`id`, `tenant_id`, `branch_id`, `product_id`, `pr
 (42, 1, 1, 9, 7, 'initial_stock', 100.00, 15.00, 1500.00, 0.00, 100.00, NULL, NULL, 'Initial stock on product creation', '2026-06-04 01:46:53', 1, '2026-06-03 17:46:53', '2026-06-03 17:46:53'),
 (43, 1, 1, 9, NULL, 'sale', 6.00, 15.00, 90.00, 100.00, 94.00, 'App\\Models\\Sale', 27, 'POS sale: SALE-20260604-00001', '2026-06-04 01:47:16', 1, '2026-06-03 17:47:16', '2026-06-03 17:47:16'),
 (44, 1, 1, 3, NULL, 'sale', 2.00, 45.00, 90.00, 70.00, 68.00, 'App\\Models\\Sale', 27, 'POS sale: SALE-20260604-00001', '2026-06-04 01:47:16', 1, '2026-06-03 17:47:16', '2026-06-03 17:47:16'),
-(45, 1, 1, 1, NULL, 'sale', 2.00, 25.00, 50.00, 2.00, 0.00, 'App\\Models\\Sale', 27, 'POS sale: SALE-20260604-00001', '2026-06-04 01:47:16', 1, '2026-06-03 17:47:16', '2026-06-03 17:47:16');
+(45, 1, 1, 1, NULL, 'sale', 2.00, 25.00, 50.00, 2.00, 0.00, 'App\\Models\\Sale', 27, 'POS sale: SALE-20260604-00001', '2026-06-04 01:47:16', 1, '2026-06-03 17:47:16', '2026-06-03 17:47:16'),
+(46, 1, 1, 2, 8, 'stock_in', 100.00, 15.00, 1500.00, 0.00, 100.00, NULL, NULL, NULL, '2026-06-05 06:09:57', 13, '2026-06-04 22:09:57', '2026-06-04 22:09:57'),
+(47, 1, 1, 2, NULL, 'sale', 3.00, 15.00, 45.00, 100.00, 97.00, 'App\\Models\\Sale', 28, 'POS sale: SALE-20260605-00001', '2026-06-05 06:48:39', 1, '2026-06-04 22:48:39', '2026-06-04 22:48:39'),
+(48, 1, 1, 9, NULL, 'sale', 1.00, 15.00, 15.00, 94.00, 93.00, 'App\\Models\\Sale', 28, 'POS sale: SALE-20260605-00001', '2026-06-05 06:48:39', 1, '2026-06-04 22:48:39', '2026-06-04 22:48:39'),
+(49, 1, 1, 3, NULL, 'sale', 2.00, 45.00, 90.00, 68.00, 66.00, 'App\\Models\\Sale', 28, 'POS sale: SALE-20260605-00001', '2026-06-05 06:48:39', 1, '2026-06-04 22:48:39', '2026-06-04 22:48:39'),
+(50, 1, 1, 2, NULL, 'sale', 1.00, 15.00, 15.00, 97.00, 96.00, 'App\\Models\\Sale', 29, 'POS sale: SALE-20260605-00002', '2026-06-05 06:48:43', 1, '2026-06-04 22:48:43', '2026-06-04 22:48:43'),
+(51, 1, 1, 9, NULL, 'sale', 1.00, 15.00, 15.00, 93.00, 92.00, 'App\\Models\\Sale', 29, 'POS sale: SALE-20260605-00002', '2026-06-05 06:48:43', 1, '2026-06-04 22:48:43', '2026-06-04 22:48:43'),
+(52, 1, 1, 2, NULL, 'sale', 1.00, 15.00, 15.00, 96.00, 95.00, 'App\\Models\\Sale', 30, 'POS sale: SALE-20260605-00003', '2026-06-05 06:48:47', 1, '2026-06-04 22:48:47', '2026-06-04 22:48:47'),
+(53, 1, 1, 9, NULL, 'sale', 1.00, 15.00, 15.00, 92.00, 91.00, 'App\\Models\\Sale', 30, 'POS sale: SALE-20260605-00003', '2026-06-05 06:48:47', 1, '2026-06-04 22:48:47', '2026-06-04 22:48:47');
 
 -- --------------------------------------------------------
 
@@ -645,6 +715,17 @@ INSERT INTO `store_profiles` (`id`, `client_id`, `branch_id`, `store_name`, `bus
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `activity_logs`
+--
+ALTER TABLE `activity_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `activity_logs_tenant_branch_index` (`tenant_id`,`branch_id`),
+  ADD KEY `activity_logs_user_index` (`user_id`),
+  ADD KEY `activity_logs_module_action_index` (`module`,`action`),
+  ADD KEY `activity_logs_subject_index` (`subject_type`,`subject_id`),
+  ADD KEY `activity_logs_created_at_index` (`created_at`);
 
 --
 -- Indexes for table `branches`
@@ -808,6 +889,12 @@ ALTER TABLE `store_profiles`
 --
 
 --
+-- AUTO_INCREMENT for table `activity_logs`
+--
+ALTER TABLE `activity_logs`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
@@ -817,19 +904,19 @@ ALTER TABLE `branches`
 -- AUTO_INCREMENT for table `cash_drawers`
 --
 ALTER TABLE `cash_drawers`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `cash_drawer_transactions`
 --
 ALTER TABLE `cash_drawer_transactions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `discounts`
@@ -841,7 +928,7 @@ ALTER TABLE `discounts`
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -853,7 +940,7 @@ ALTER TABLE `products`
 -- AUTO_INCREMENT for table `product_stock_batches`
 --
 ALTER TABLE `product_stock_batches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `return_items`
@@ -865,19 +952,19 @@ ALTER TABLE `return_items`
 -- AUTO_INCREMENT for table `sales`
 --
 ALTER TABLE `sales`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `sale_items`
 --
 ALTER TABLE `sale_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT for table `stock_movements`
 --
 ALTER TABLE `stock_movements`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
 
 --
 -- AUTO_INCREMENT for table `store_profiles`

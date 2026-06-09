@@ -12,12 +12,13 @@ class ManagerSoldItemsController extends Controller
 {
     private function managerBranch(): Branch
     {
-        $branchId = auth()->user()->branch_id;
+        $user = auth()->user();
 
-        abort_if(!$branchId, 403, 'No branch assigned to this manager.');
+        abort_if(!$user->branch_id, 403, 'No branch assigned to this manager.');
 
         return Branch::query()
-            ->where('id', $branchId)
+            ->where('id', $user->branch_id)
+            ->where('tenant_id', $user->client_id)
             ->where('is_active', true)
             ->firstOrFail(['id', 'tenant_id', 'name', 'code', 'is_main', 'is_active']);
     }
@@ -25,28 +26,71 @@ class ManagerSoldItemsController extends Controller
     public function index(Request $request)
     {
         $branch = $this->managerBranch();
+        $filters = $this->filters($request);
+
         $tenantId = (int) $branch->tenant_id;
         $branchId = (int) $branch->id;
 
-        $baseQuery = DB::connection('pos')
-            ->table('sale_items as sale_items')
-            ->join('sales as sales', 'sales.id', '=', 'sale_items.sale_id')
+        return Inertia::render('staff/manager/sold-items/index', [
+            'soldItems' => $this->getSoldItems(
+                $this->baseQuery($tenantId, $branchId, $filters)
+            ),
+            'branch' => $branch,
+            'summary' => $this->getSummary(
+                $this->baseQuery($tenantId, $branchId, $filters)
+            ),
+            'filters' => $filters,
+        ]);
+    }
+
+    private function filters(Request $request): array
+    {
+        return [
+            'search' => trim((string) $request->input('search', '')),
+            'status' => $request->input('status'),
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
+        ];
+    }
+
+    private function baseQuery(int $tenantId, int $branchId, array $filters)
+    {
+        $query = DB::connection('pos')
+            ->table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
             ->where('sale_items.tenant_id', $tenantId)
             ->where('sale_items.branch_id', $branchId)
             ->where('sales.tenant_id', $tenantId)
-            ->where('sales.branch_id', $branchId)
-            ->when($request->search, function ($query, $search) {
-                $query->where(function ($subQuery) use ($search) {
-                    $subQuery->where('sale_items.product_name', 'like', "%{$search}%")
-                        ->orWhere('sale_items.sku', 'like', "%{$search}%")
-                        ->orWhere('sales.sale_no', 'like', "%{$search}%");
-                });
-            })
-            ->when($request->status, fn ($query, $status) => $query->where('sales.status', $status))
-            ->when($request->date_from, fn ($query, $date) => $query->whereDate('sales.sold_at', '>=', $date))
-            ->when($request->date_to, fn ($query, $date) => $query->whereDate('sales.sold_at', '<=', $date));
+            ->where('sales.branch_id', $branchId);
 
-        $summary = (clone $baseQuery)
+        if ($filters['search'] !== '') {
+            $search = $filters['search'];
+
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('sale_items.product_name', 'like', "%{$search}%")
+                    ->orWhere('sale_items.sku', 'like', "%{$search}%")
+                    ->orWhere('sales.sale_no', 'like', "%{$search}%");
+            });
+        }
+
+        if ($filters['status']) {
+            $query->where('sales.status', $filters['status']);
+        }
+
+        if ($filters['date_from']) {
+            $query->whereDate('sales.sold_at', '>=', $filters['date_from']);
+        }
+
+        if ($filters['date_to']) {
+            $query->whereDate('sales.sold_at', '<=', $filters['date_to']);
+        }
+
+        return $query;
+    }
+
+    private function getSummary($query): array
+    {
+        $summary = $query
             ->selectRaw('
                 COUNT(sale_items.id) as total_items,
                 COALESCE(SUM(sale_items.quantity), 0) as total_quantity,
@@ -56,7 +100,18 @@ class ManagerSoldItemsController extends Controller
             ')
             ->first();
 
-        $soldItems = $baseQuery
+        return [
+            'total_items' => (int) ($summary->total_items ?? 0),
+            'total_quantity' => (float) ($summary->total_quantity ?? 0),
+            'total_sales' => (float) ($summary->total_sales ?? 0),
+            'total_cost' => (float) ($summary->total_cost ?? 0),
+            'gross_profit' => (float) ($summary->gross_profit ?? 0),
+        ];
+    }
+ 
+    private function getSoldItems($query)
+    {
+        return $query
             ->select([
                 'sale_items.id',
                 'sale_items.sale_id',
@@ -77,23 +132,5 @@ class ManagerSoldItemsController extends Controller
             ->orderByDesc('sale_items.id')
             ->paginate(10)
             ->withQueryString();
-
-        return Inertia::render('staff/manager/sold-items/index', [
-            'soldItems' => $soldItems,
-            'branch' => $branch,
-            'summary' => [
-                'total_items' => (int) ($summary->total_items ?? 0),
-                'total_quantity' => (float) ($summary->total_quantity ?? 0),
-                'total_sales' => (float) ($summary->total_sales ?? 0),
-                'total_cost' => (float) ($summary->total_cost ?? 0),
-                'gross_profit' => (float) ($summary->gross_profit ?? 0),
-            ],
-            'filters' => [
-                'search' => $request->search,
-                'status' => $request->status,
-                'date_from' => $request->date_from,
-                'date_to' => $request->date_to,
-            ],
-        ]);
     }
 }

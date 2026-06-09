@@ -1,9 +1,20 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Head, router } from '@inertiajs/react';
+import {
+    Boxes,
+    ChevronDown,
+    ChevronRight,
+    PackageCheck,
+    Receipt,
+    RotateCcw,
+    Search,
+    Store,
+    TrendingUp,
+    Wallet,
+} from 'lucide-react';
+import { Fragment, useState } from 'react';
+
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/react';
-import { Boxes, PackageCheck, Receipt, RotateCcw, Search, Store, TrendingUp, Wallet } from 'lucide-react';
-import { useState } from 'react';
 
 const SOLD_ITEMS_URL = '/staff/manager/sold-items';
 
@@ -32,8 +43,8 @@ type SoldItem = {
     discount_amount: number | string;
     line_total: number | string;
     sale_no: string;
-    status: 'completed' | 'voided' | 'refunded';
-    payment_status: 'paid' | 'partial' | 'unpaid';
+    status: 'completed' | 'voided' | 'refunded' | string;
+    payment_status: 'paid' | 'partial' | 'unpaid' | string;
     sold_at?: string | null;
 };
 
@@ -67,58 +78,100 @@ type Props = {
     };
 };
 
+function money(value?: string | number | null) {
+    const amount = Number(value ?? 0);
+
+    return new Intl.NumberFormat('en-PH', {
+        style: 'currency',
+        currency: 'PHP',
+        minimumFractionDigits: 2,
+    }).format(Number.isNaN(amount) ? 0 : amount);
+}
+
+function numberValue(value?: string | number | null) {
+    const amount = Number(value ?? 0);
+    return Number.isNaN(amount) ? 0 : amount;
+}
+
+function shortDateTime(value?: string | null) {
+    if (!value) return '—';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat('en-PH', {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+    }).format(date);
+}
+
+function cleanLabel(label: string) {
+    return label.replace('&laquo;', '‹').replace('&raquo;', '›');
+}
+
+function statusClass(status?: string | null) {
+    if (status === 'completed' || status === 'paid') return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400';
+    if (status === 'partial') return 'bg-amber-500/10 text-amber-700 dark:text-amber-400';
+    if (status === 'voided' || status === 'refunded' || status === 'unpaid') return 'bg-red-500/10 text-red-700 dark:text-red-400';
+
+    return 'bg-muted text-muted-foreground';
+}
+
+function SummaryCard({
+    title,
+    value,
+    description,
+    icon: Icon,
+    variant = 'default',
+}: {
+    title: string;
+    value: string | number;
+    description: string;
+    icon: React.ElementType;
+    variant?: 'default' | 'success' | 'warning' | 'danger';
+}) {
+    const variantClass = {
+        default: 'bg-primary/10 text-primary',
+        success: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+        warning: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+        danger: 'bg-red-500/10 text-red-700 dark:text-red-400',
+    }[variant];
+
+    return (
+        <div className="rounded-xl border border-sidebar-border/70 bg-card p-5 shadow-sm dark:border-sidebar-border">
+            <div className="flex items-start justify-between gap-4">
+                <div>
+                    <p className="text-sm font-medium text-muted-foreground">{title}</p>
+                    <h3 className="mt-2 text-2xl font-bold tracking-tight">{value}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+                </div>
+
+                <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${variantClass}`}>
+                    <Icon className="size-5" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function ManagerSoldItemsIndex({ soldItems, branch, summary, filters }: Props) {
     const [search, setSearch] = useState(filters?.search ?? '');
     const [status, setStatus] = useState(filters?.status ?? '');
     const [dateFrom, setDateFrom] = useState(filters?.date_from ?? '');
     const [dateTo, setDateTo] = useState(filters?.date_to ?? '');
-
-    const money = (value: string | number | null | undefined) =>
-        `₱${Number(value ?? 0).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        })}`;
-
-    const formatDate = (value?: string | null) => {
-        if (!value) return '-';
-
-        return new Date(value).toLocaleString(undefined, {
-            year: 'numeric',
-            month: 'short',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    };
-
-    const statusBadge = (value: SoldItem['status']) => {
-        const classes = {
-            completed: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-            voided: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
-            refunded: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
-        };
-
-        return <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${classes[value]}`}>{value}</span>;
-    };
-
-    const paymentBadge = (value: SoldItem['payment_status']) => {
-        const classes = {
-            paid: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-            partial: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300',
-            unpaid: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
-        };
-
-        return <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${classes[value]}`}>{value}</span>;
-    };
+    const [openItemId, setOpenItemId] = useState<number | null>(null);
 
     const applyFilters = () => {
         router.get(
             SOLD_ITEMS_URL,
             {
-                search,
-                status,
-                date_from: dateFrom,
-                date_to: dateTo,
+                search: search || undefined,
+                status: status || undefined,
+                date_from: dateFrom || undefined,
+                date_to: dateTo || undefined,
             },
             {
                 preserveState: true,
@@ -133,6 +186,7 @@ export default function ManagerSoldItemsIndex({ soldItems, branch, summary, filt
         setStatus('');
         setDateFrom('');
         setDateTo('');
+        setOpenItemId(null);
 
         router.get(SOLD_ITEMS_URL, {}, { preserveState: true, preserveScroll: true, replace: true });
     };
@@ -141,180 +195,254 @@ export default function ManagerSoldItemsIndex({ soldItems, branch, summary, filt
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Manager Sold Items" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                <Card tone="topline" variant="default" className="overflow-hidden shadow-sm">
-                    <CardHeader className="p-5">
-                        <div className="flex items-center gap-4">
-                            <div className="flex size-11 items-center justify-center rounded-lg border bg-muted/40">
-                                <Store className="size-5 text-muted-foreground" />
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+                <div className="overflow-hidden rounded-xl border border-sidebar-border/70 bg-card shadow-sm dark:border-sidebar-border">
+                    <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex items-start gap-3">
+                            <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <Receipt className="size-5" />
                             </div>
 
                             <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <CardTitle className="text-xl">{branch.name}</CardTitle>
+                                <h1 className="text-xl font-semibold tracking-tight">Sold Items</h1>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Monitor item-level sales, cost, discounts, and gross profit for this branch.
+                                </p>
 
-                                    {branch.is_main && (
-                                        <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                                            Main
-                                        </span>
-                                    )}
-
-                                    <span className="rounded-md bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600">
-                                        Active
+                                <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                    <span className="inline-flex items-center gap-1 rounded-full border px-3 py-1">
+                                        <Store className="size-3" />
+                                        Branch: {branch.name}
                                     </span>
+                                    <span className="rounded-full border px-3 py-1">Code: {branch.code || 'No code'}</span>
+                                    {branch.is_main && <span className="rounded-full border px-3 py-1">Main Branch</span>}
                                 </div>
-
-                                <CardDescription className="mt-1">
-                                    Branch code: {branch.code || 'No code'} · Manager branch sold items only.
-                                </CardDescription>
                             </div>
                         </div>
-                    </CardHeader>
-                </Card>
 
-                <div className="grid gap-4 md:grid-cols-5">
-                    <SummaryCard title="Sold Item Rows" value={summary.total_items} icon={Receipt} variant="default" />
-                    <SummaryCard title="Total Quantity" value={Number(summary.total_quantity).toLocaleString()} icon={PackageCheck} variant="success" />
-                    <SummaryCard title="Total Sales" value={money(summary.total_sales)} icon={Wallet} variant="success" />
-                    <SummaryCard title="Total Cost" value={money(summary.total_cost)} icon={Boxes} variant="neutral" />
-                    <SummaryCard title="Gross Profit" value={money(summary.gross_profit)} icon={TrendingUp} variant="warning" />
+                        <div className="rounded-xl border bg-muted/30 px-4 py-3">
+                            <p className="text-xs text-muted-foreground">Current Result</p>
+                            <p className="mt-1 text-sm font-semibold">
+                                Showing {soldItems.from ?? 0} to {soldItems.to ?? 0} of {soldItems.total} sold item rows
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
-                <Card tone="topline" variant="default" className="overflow-hidden shadow-sm">
-                    <CardHeader className="border-b p-5">
-                        <div>
-                            <CardTitle className="text-xl">Sold Items</CardTitle>
-                            <CardDescription className="mt-1">
-                                View products sold from your assigned branch.
-                            </CardDescription>
+                <div className="grid auto-rows-min gap-4 md:grid-cols-2 xl:grid-cols-5">
+                    <SummaryCard title="Sold Rows" value={summary.total_items} description="Filtered sold item rows." icon={Receipt} />
+                    <SummaryCard title="Quantity Sold" value={Number(summary.total_quantity).toLocaleString()} description="Total item quantity sold." icon={PackageCheck} variant="success" />
+                    <SummaryCard title="Total Sales" value={money(summary.total_sales)} description="Total line sales amount." icon={Wallet} variant="success" />
+                    <SummaryCard title="Total Cost" value={money(summary.total_cost)} description="Estimated item cost." icon={Boxes} />
+                    <SummaryCard
+                        title="Gross Profit"
+                        value={money(summary.gross_profit)}
+                        description="Sales minus item cost."
+                        icon={TrendingUp}
+                        variant={summary.gross_profit >= 0 ? 'warning' : 'danger'}
+                    />
+                </div>
+
+                <div className="rounded-xl border border-sidebar-border/70 bg-card p-4 shadow-sm dark:border-sidebar-border">
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+                        <div className="relative xl:col-span-2">
+                            <label className="mb-1 block text-xs font-medium text-muted-foreground">Search</label>
+                            <Search className="absolute left-3 top-[34px] size-4 text-muted-foreground" />
+                            <input
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') applyFilters();
+                                }}
+                                placeholder="Search sale no, product, SKU..."
+                                className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                            />
                         </div>
-                    </CardHeader>
 
-                    <CardContent className="p-5">
-                        <div className="mb-4 grid gap-3 md:grid-cols-6">
-                            <div className="relative md:col-span-2">
-                                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                                <input
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-                                    placeholder="Search sale no, product, SKU..."
-                                    className="h-10 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                                />
-                            </div>
-
+                        <div>
+                            <label className="mb-1 block text-xs font-medium text-muted-foreground">Sale Status</label>
                             <select
                                 value={status}
-                                onChange={(e) => setStatus(e.target.value)}
-                                className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                onChange={(event) => setStatus(event.target.value)}
+                                className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                             >
                                 <option value="">All Status</option>
                                 <option value="completed">Completed</option>
                                 <option value="voided">Voided</option>
                                 <option value="refunded">Refunded</option>
                             </select>
+                        </div>
 
+                        <div>
+                            <label className="mb-1 block text-xs font-medium text-muted-foreground">Date From</label>
                             <input
                                 type="date"
                                 value={dateFrom}
-                                onChange={(e) => setDateFrom(e.target.value)}
-                                className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                onChange={(event) => setDateFrom(event.target.value)}
+                                className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                             />
+                        </div>
 
+                        <div>
+                            <label className="mb-1 block text-xs font-medium text-muted-foreground">Date To</label>
                             <input
                                 type="date"
                                 value={dateTo}
-                                onChange={(e) => setDateTo(e.target.value)}
-                                className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                onChange={(event) => setDateTo(event.target.value)}
+                                className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                             />
-
-                            <div className="flex gap-2">
-                                <button
-                                    type="button"
-                                    onClick={applyFilters}
-                                    className="inline-flex h-10 flex-1 items-center justify-center rounded-md border border-input px-3 text-sm hover:bg-muted"
-                                >
-                                    Filter
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={resetFilters}
-                                    className="inline-flex h-10 items-center justify-center rounded-md border border-input px-3 text-sm hover:bg-muted"
-                                >
-                                    <RotateCcw className="size-4" />
-                                </button>
-                            </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
-                            <table className="w-full text-sm">
-                                <thead className="bg-muted/50 text-left">
+                        <div className="flex items-end gap-2">
+                            <button
+                                type="button"
+                                onClick={applyFilters}
+                                className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                            >
+                                <Search className="size-4" />
+                                Apply
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={resetFilters}
+                                className="inline-flex h-10 items-center justify-center rounded-lg border px-3 text-sm font-medium hover:bg-muted"
+                                title="Reset filters"
+                            >
+                                <RotateCcw className="size-4" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="overflow-hidden rounded-xl border border-sidebar-border/70 bg-card shadow-sm dark:border-sidebar-border">
+                    <div className="flex flex-col gap-2 border-b p-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h2 className="font-semibold">Sold Item Records</h2>
+                            <p className="text-sm text-muted-foreground">Click a row to view full item sale details.</p>
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                                <tr>
+                                    <th className="w-10 px-4 py-3"></th>
+                                    <th className="px-4 py-3 text-left font-medium">Sale</th>
+                                    <th className="px-4 py-3 text-left font-medium">Product</th>
+                                    <th className="px-4 py-3 text-right font-medium">Qty</th>
+                                    <th className="px-4 py-3 text-right font-medium">Unit Price</th>
+                                    <th className="px-4 py-3 text-right font-medium">Line Total</th>
+                                    <th className="px-4 py-3 text-left font-medium">Payment</th>
+                                    <th className="px-4 py-3 text-left font-medium">Status</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {soldItems.data.length > 0 ? (
+                                    soldItems.data.map((item) => {
+                                        const isOpen = openItemId === item.id;
+                                        const quantity = numberValue(item.quantity);
+                                        const unitCost = numberValue(item.unit_cost);
+                                        const lineTotal = numberValue(item.line_total);
+                                        const totalCost = quantity * unitCost;
+                                        const grossProfit = lineTotal - totalCost;
+
+                                        return (
+                                            <Fragment key={item.id}>
+                                                <tr
+                                                    onClick={() => setOpenItemId(isOpen ? null : item.id)}
+                                                    className="cursor-pointer border-t transition hover:bg-muted/40"
+                                                >
+                                                    <td className="px-4 py-3">
+                                                        {isOpen ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground" />}
+                                                    </td>
+
+                                                    <td className="px-4 py-3">
+                                                        <div className="font-medium">{item.sale_no}</div>
+                                                        <div className="text-xs text-muted-foreground">Sale ID: #{item.sale_id}</div>
+                                                        <div className="text-xs text-muted-foreground">{shortDateTime(item.sold_at)}</div>
+                                                    </td>
+
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+                                                                <Boxes className="size-4 text-muted-foreground" />
+                                                            </div>
+
+                                                            <div>
+                                                                <div className="font-medium">{item.product_name}</div>
+                                                                <div className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="px-4 py-3 text-right">{quantity}</td>
+                                                    <td className="px-4 py-3 text-right">{money(item.unit_price)}</td>
+                                                    <td className="px-4 py-3 text-right font-semibold">{money(item.line_total)}</td>
+
+                                                    <td className="px-4 py-3">
+                                                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${statusClass(item.payment_status)}`}>
+                                                            {item.payment_status}
+                                                        </span>
+                                                    </td>
+
+                                                    <td className="px-4 py-3">
+                                                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${statusClass(item.status)}`}>
+                                                            {item.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+
+                                                {isOpen && (
+                                                    <tr className="border-t bg-muted/20">
+                                                        <td colSpan={8} className="px-4 py-4">
+                                                            <div className="space-y-4 rounded-xl border bg-card p-4">
+                                                                <div className="grid gap-3 md:grid-cols-4">
+                                                                    <Detail label="Sold Item ID" value={`#${item.id}`} />
+                                                                    <Detail label="Sale No." value={item.sale_no} />
+                                                                    <Detail label="Sale ID" value={`#${item.sale_id}`} />
+                                                                    <Detail label="Product ID" value={`#${item.product_id}`} />
+                                                                    <Detail label="Product" value={item.product_name} />
+                                                                    <Detail label="SKU" value={item.sku || 'N/A'} />
+                                                                    <Detail label="Quantity" value={quantity} />
+                                                                    <Detail label="Unit Price" value={money(item.unit_price)} />
+                                                                    <Detail label="Unit Cost" value={money(item.unit_cost)} />
+                                                                    <Detail label="Discount" value={money(item.discount_amount)} />
+                                                                    <Detail label="Line Total" value={money(item.line_total)} />
+                                                                    <Detail label="Total Cost" value={money(totalCost)} />
+                                                                    <Detail label="Gross Profit" value={money(grossProfit)} />
+                                                                    <Detail label="Payment Status" value={item.payment_status} />
+                                                                    <Detail label="Sale Status" value={item.status} />
+                                                                    <Detail label="Sold At" value={shortDateTime(item.sold_at)} />
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </Fragment>
+                                        );
+                                    })
+                                ) : (
                                     <tr>
-                                        <th className="px-4 py-3 font-medium">Sale</th>
-                                        <th className="px-4 py-3 font-medium">Product</th>
-                                        <th className="px-4 py-3 text-right font-medium">Qty</th>
-                                        <th className="px-4 py-3 text-right font-medium">Unit Price</th>
-                                        <th className="px-4 py-3 text-right font-medium">Discount</th>
-                                        <th className="px-4 py-3 text-right font-medium">Line Total</th>
-                                        <th className="px-4 py-3 font-medium">Payment</th>
-                                        <th className="px-4 py-3 font-medium">Status</th>
-                                        <th className="px-4 py-3 font-medium">Sold At</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    {soldItems.data.length > 0 ? (
-                                        soldItems.data.map((item) => (
-                                            <tr key={item.id} className="border-t border-sidebar-border/70 dark:border-sidebar-border">
-                                                <td className="px-4 py-3">
-                                                    <div className="font-medium">{item.sale_no}</div>
-                                                    <div className="text-xs text-muted-foreground">Sale ID: {item.sale_id}</div>
-                                                </td>
-
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex size-10 items-center justify-center rounded-md bg-muted">
-                                                            <Boxes className="size-4 text-muted-foreground" />
-                                                        </div>
-
-                                                        <div>
-                                                            <div className="font-medium">{item.product_name}</div>
-                                                            <div className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-
-                                                <td className="px-4 py-3 text-right">{Number(item.quantity ?? 0)}</td>
-                                                <td className="px-4 py-3 text-right">{money(item.unit_price)}</td>
-                                                <td className="px-4 py-3 text-right text-muted-foreground">{money(item.discount_amount)}</td>
-                                                <td className="px-4 py-3 text-right font-medium">{money(item.line_total)}</td>
-                                                <td className="px-4 py-3">{paymentBadge(item.payment_status)}</td>
-                                                <td className="px-4 py-3">{statusBadge(item.status)}</td>
-                                                <td className="px-4 py-3 text-muted-foreground">{formatDate(item.sold_at)}</td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={9} className="px-4 py-14 text-center">
-                                                <div className="mx-auto flex max-w-sm flex-col items-center">
-                                                    <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted">
-                                                        <Receipt className="size-5 text-muted-foreground" />
-                                                    </div>
-
-                                                    <h3 className="font-medium">No sold items found</h3>
-                                                    <p className="mt-1 text-sm text-muted-foreground">
-                                                        Sold products from this branch will appear here.
-                                                    </p>
+                                        <td colSpan={8} className="px-4 py-14">
+                                            <div className="mx-auto flex max-w-sm flex-col items-center text-center">
+                                                <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted">
+                                                    <Receipt className="size-5 text-muted-foreground" />
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
 
-                        <div className="mt-4 flex flex-col gap-3 text-sm md:flex-row md:items-center md:justify-between">
+                                                <h3 className="font-medium">No sold items found</h3>
+                                                <p className="mt-1 text-sm text-muted-foreground">Sold products from this branch will appear here.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {soldItems.links.length > 0 && (
+                        <div className="flex flex-col gap-3 border-t p-4 text-sm md:flex-row md:items-center md:justify-between">
                             <div className="text-muted-foreground">
                                 Showing {soldItems.from ?? 0} to {soldItems.to ?? 0} of {soldItems.total} results
                             </div>
@@ -322,47 +450,35 @@ export default function ManagerSoldItemsIndex({ soldItems, branch, summary, filt
                             <div className="flex flex-wrap gap-1">
                                 {soldItems.links.map((link, index) => (
                                     <button
-                                        key={index}
+                                        key={`${link.label}-${index}`}
+                                        type="button"
                                         disabled={!link.url}
-                                        onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
-                                        className={`rounded-md border px-3 py-1.5 text-sm ${
-                                            link.active
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50'
-                                        }`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
+                                        onClick={() => {
+                                            if (link.url) router.visit(link.url, { preserveState: true, preserveScroll: true });
+                                        }}
+                                        className={[
+                                            'h-9 rounded-lg border px-3 text-sm font-medium transition',
+                                            link.active ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+                                            !link.url ? 'cursor-not-allowed opacity-50' : '',
+                                        ].join(' ')}
+                                    >
+                                        {cleanLabel(link.label)}
+                                    </button>
                                 ))}
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    )}
+                </div>
             </div>
         </AppLayout>
     );
 }
 
-function SummaryCard({
-    title,
-    value,
-    icon: Icon,
-    variant = 'default',
-}: {
-    title: string;
-    value: string | number;
-    icon: React.ElementType;
-    variant?: 'default' | 'success' | 'neutral' | 'warning' | 'danger';
-}) {
+function Detail({ label, value }: { label: string; value: string | number }) {
     return (
-        <Card tone="topline" variant={variant} className="min-h-[120px] overflow-hidden shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between p-5 pb-2">
-                <CardDescription>{title}</CardDescription>
-                <Icon className="size-4 text-muted-foreground" />
-            </CardHeader>
-
-            <CardContent className="p-5 pt-0">
-                <CardTitle className="text-xl">{value}</CardTitle>
-            </CardContent>
-        </Card>
+        <div>
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="mt-1 font-medium capitalize">{value}</p>
+        </div>
     );
 }

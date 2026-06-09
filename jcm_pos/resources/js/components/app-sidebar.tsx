@@ -166,11 +166,11 @@ const managerGroupedItems: SidebarGroup[] = [
     {
         title: 'Sales',
         icon: Receipt,
-        badge: 'DEV',
+        badge: 'TEST',
         items: [
-            { title: 'Sold Items', url: '/staff/manager/sold-items', icon: Package2, badge: 'DEV' },
-            { title: 'Returns', url: '/staff/manager/returns', icon: RotateCcw, badge: 'DEV' },
-            { title: 'Cash Drawer', url: '/staff/manager/cash-drawer', icon: WalletCards, badge: 'DEV' },
+            { title: 'Sold Items', url: '/staff/manager/sold-items', icon: Package2, badge: 'TEST' },
+            { title: 'Returns', url: '/staff/manager/returns', icon: RotateCcw, badge: 'TEST' },
+            { title: 'Cash Drawer', url: '/staff/manager/cash-drawer', icon: WalletCards, badge: 'TEST' },
         ],
     },
     {

@@ -14,12 +14,14 @@ class ManagerCashDrawerController extends Controller
 {
     private function managerBranch(): Branch
     {
-        $branchId = auth()->user()->branch_id;
+        $user = auth()->user();
 
-        abort_if(!$branchId, 403, 'No branch assigned to this manager.');
+        abort_if(!$user->branch_id, 403, 'No branch assigned to this manager.');
+        abort_if(!$user->client_id, 403, 'No client assigned to this manager.');
 
         return Branch::query()
-            ->where('id', $branchId)
+            ->where('id', $user->branch_id)
+            ->where('tenant_id', $user->client_id)
             ->where('is_active', true)
             ->firstOrFail(['id', 'tenant_id', 'name', 'code', 'is_main', 'is_active']);
     }
@@ -37,6 +39,7 @@ class ManagerCashDrawerController extends Controller
     private function availableChangeFund(CashDrawer $drawer): float
     {
         $withdrawn = CashDrawerTransaction::query()
+            ->where('tenant_id', $drawer->tenant_id)
             ->where('cash_drawer_id', $drawer->id)
             ->where('type', 'cash_out')
             ->where('cash_out_source', 'change_fund')
@@ -51,6 +54,7 @@ class ManagerCashDrawerController extends Controller
     private function availableCashSales(CashDrawer $drawer): float
     {
         $withdrawn = CashDrawerTransaction::query()
+            ->where('tenant_id', $drawer->tenant_id)
             ->where('cash_drawer_id', $drawer->id)
             ->where('type', 'cash_out')
             ->where('cash_out_source', 'cash_sales')
@@ -65,14 +69,19 @@ class ManagerCashDrawerController extends Controller
     public function index()
     {
         $branch = $this->managerBranch();
+
         $tenantId = (int) $branch->tenant_id;
         $branchId = (int) $branch->id;
 
         $drawer = $this->openDrawer($tenantId, $branchId);
 
         $transactions = CashDrawerTransaction::query()
-            ->when($drawer, fn ($query) => $query->where('cash_drawer_id', $drawer->id))
             ->where('tenant_id', $tenantId)
+            ->when(
+                $drawer,
+                fn ($query) => $query->where('cash_drawer_id', $drawer->id),
+                fn ($query) => $query->whereRaw('1 = 0')
+            )
             ->latest()
             ->limit(25)
             ->get();
@@ -97,14 +106,19 @@ class ManagerCashDrawerController extends Controller
     public function open(Request $request)
     {
         $branch = $this->managerBranch();
+
         $tenantId = (int) $branch->tenant_id;
         $branchId = (int) $branch->id;
 
-        abort_if($this->openDrawer($tenantId, $branchId), 422, 'There is already an open cash drawer for this branch.');
+        abort_if(
+            $this->openDrawer($tenantId, $branchId),
+            422,
+            'There is already an open cash drawer for this branch.'
+        );
 
         $validated = $request->validate([
             'opening_balance' => ['required', 'numeric', 'min:0'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         DB::connection('pos')->transaction(function () use ($validated, $tenantId, $branchId) {
@@ -143,15 +157,17 @@ class ManagerCashDrawerController extends Controller
     public function cashIn(Request $request)
     {
         $branch = $this->managerBranch();
+
         $tenantId = (int) $branch->tenant_id;
         $branchId = (int) $branch->id;
 
         $drawer = $this->openDrawer($tenantId, $branchId);
+
         abort_if(!$drawer, 422, 'No open cash drawer for this branch.');
 
         $validated = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'remarks' => ['nullable', 'string'],
+            'remarks' => ['nullable', 'string', 'max:1000'],
         ]);
 
         DB::connection('pos')->transaction(function () use ($drawer, $validated, $tenantId) {
@@ -167,7 +183,7 @@ class ManagerCashDrawerController extends Controller
                 'cash_drawer_id' => $drawer->id,
                 'type' => 'cash_in',
                 'amount' => $amount,
-                'remarks' => $validated['remarks'] ?? 'Cash in',
+                'remarks' => $validated['remarks'] ?: 'Cash in',
                 'created_by' => auth()->id(),
             ]);
         });
@@ -178,16 +194,18 @@ class ManagerCashDrawerController extends Controller
     public function cashOut(Request $request)
     {
         $branch = $this->managerBranch();
+
         $tenantId = (int) $branch->tenant_id;
         $branchId = (int) $branch->id;
 
         $drawer = $this->openDrawer($tenantId, $branchId);
+
         abort_if(!$drawer, 422, 'No open cash drawer for this branch.');
 
         $validated = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01'],
             'cash_out_source' => ['required', 'in:change_fund,cash_sales'],
-            'remarks' => ['nullable', 'string'],
+            'remarks' => ['nullable', 'string', 'max:1000'],
         ]);
 
         DB::connection('pos')->transaction(function () use ($drawer, $validated, $tenantId) {
@@ -199,8 +217,17 @@ class ManagerCashDrawerController extends Controller
                 ? $this->availableCashSales($drawer)
                 : $this->availableChangeFund($drawer);
 
-            abort_if($amount > $availableFromSource, 422, 'Cash out amount cannot exceed available ' . str_replace('_', ' ', $source) . '.');
-            abort_if($amount > $expectedBalance, 422, 'Cash out amount cannot exceed expected drawer balance.');
+            abort_if(
+                $amount > $availableFromSource,
+                422,
+                'Cash out amount cannot exceed available ' . str_replace('_', ' ', $source) . '.'
+            );
+
+            abort_if(
+                $amount > $expectedBalance,
+                422,
+                'Cash out amount cannot exceed expected drawer balance.'
+            );
 
             $drawer->update([
                 'total_cash_out' => (float) $drawer->total_cash_out + $amount,
@@ -213,7 +240,7 @@ class ManagerCashDrawerController extends Controller
                 'type' => 'cash_out',
                 'cash_out_source' => $source,
                 'amount' => $amount,
-                'remarks' => $validated['remarks'] ?? 'Cash out',
+                'remarks' => $validated['remarks'] ?: 'Cash out',
                 'created_by' => auth()->id(),
                 'withdrawn_at' => now(),
                 'withdrawn_by' => auth()->id(),
@@ -226,15 +253,17 @@ class ManagerCashDrawerController extends Controller
     public function close(Request $request)
     {
         $branch = $this->managerBranch();
+
         $tenantId = (int) $branch->tenant_id;
         $branchId = (int) $branch->id;
 
         $drawer = $this->openDrawer($tenantId, $branchId);
+
         abort_if(!$drawer, 422, 'No open cash drawer for this branch.');
 
         $validated = $request->validate([
             'actual_balance' => ['required', 'numeric', 'min:0'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         DB::connection('pos')->transaction(function () use ($drawer, $validated, $tenantId) {

@@ -12,12 +12,14 @@ class ManagerReturnController extends Controller
 {
     private function managerBranch(): Branch
     {
-        $branchId = auth()->user()->branch_id;
+        $user = auth()->user();
 
-        abort_if(!$branchId, 403, 'No branch assigned to this manager.');
+        abort_if(!$user->branch_id, 403, 'No branch assigned to this manager.');
+        abort_if(!$user->client_id, 403, 'No client assigned to this manager.');
 
         return Branch::query()
-            ->where('id', $branchId)
+            ->where('id', $user->branch_id)
+            ->where('tenant_id', $user->client_id)
             ->where('is_active', true)
             ->firstOrFail(['id', 'tenant_id', 'name', 'code', 'is_main', 'is_active']);
     }
@@ -25,40 +27,106 @@ class ManagerReturnController extends Controller
     public function index(Request $request)
     {
         $branch = $this->managerBranch();
+        $filters = $this->filters($request);
+
         $tenantId = (int) $branch->tenant_id;
         $branchId = (int) $branch->id;
 
-        $baseQuery = DB::connection('pos')
-            ->table('return_items as returns')
-            ->leftJoin('sales', 'sales.id', '=', 'returns.sale_id')
-            ->leftJoin('sale_items', 'sale_items.id', '=', 'returns.sale_item_id')
-            ->leftJoin('products', 'products.id', '=', 'returns.product_id')
-            ->where('returns.tenant_id', $tenantId)
-            ->where('returns.branch_id', $branchId)
-            ->when($request->search, function ($query, $search) {
-                $query->where(function ($subQuery) use ($search) {
-                    $subQuery->where('returns.return_no', 'like', "%{$search}%")
-                        ->orWhere('sales.sale_no', 'like', "%{$search}%")
-                        ->orWhere('sale_items.product_name', 'like', "%{$search}%")
-                        ->orWhere('products.name', 'like', "%{$search}%")
-                        ->orWhere('sale_items.sku', 'like', "%{$search}%");
-                });
-            })
-            ->when($request->status, fn ($query, $status) => $query->where('returns.status', $status))
-            ->when($request->date_from, fn ($query, $date) => $query->whereDate('returns.returned_at', '>=', $date))
-            ->when($request->date_to, fn ($query, $date) => $query->whereDate('returns.returned_at', '<=', $date));
+        return Inertia::render('staff/manager/returns/index', [
+            'returns' => $this->getReturns(
+                $this->baseQuery($tenantId, $branchId, $filters)
+            ),
+            'branch' => $branch,
+            'summary' => $this->getSummary(
+                $this->baseQuery($tenantId, $branchId, $filters)
+            ),
+            'filters' => $filters,
+        ]);
+    }
 
-        $summary = (clone $baseQuery)
+    private function filters(Request $request): array
+    {
+        return [
+            'search' => trim((string) $request->input('search', '')),
+            'status' => $request->input('status'),
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
+        ];
+    }
+
+    private function baseQuery(int $tenantId, int $branchId, array $filters)
+    {
+        $query = DB::connection('pos')
+            ->table('return_items as returns')
+            ->leftJoin('sales', function ($join) use ($tenantId, $branchId) {
+                $join->on('sales.id', '=', 'returns.sale_id')
+                    ->where('sales.tenant_id', $tenantId)
+                    ->where('sales.branch_id', $branchId);
+            })
+            ->leftJoin('sale_items', function ($join) use ($tenantId, $branchId) {
+                $join->on('sale_items.id', '=', 'returns.sale_item_id')
+                    ->where('sale_items.tenant_id', $tenantId)
+                    ->where('sale_items.branch_id', $branchId);
+            })
+            ->leftJoin('products', function ($join) use ($tenantId, $branchId) {
+                $join->on('products.id', '=', 'returns.product_id')
+                    ->where('products.tenant_id', $tenantId)
+                    ->where('products.branch_id', $branchId);
+            })
+            ->where('returns.tenant_id', $tenantId)
+            ->where('returns.branch_id', $branchId);
+
+        if ($filters['search'] !== '') {
+            $search = $filters['search'];
+
+            $query->where(function ($subQuery) use ($search) {
+                $subQuery->where('returns.return_no', 'like', "%{$search}%")
+                    ->orWhere('sales.sale_no', 'like', "%{$search}%")
+                    ->orWhere('sale_items.product_name', 'like', "%{$search}%")
+                    ->orWhere('sale_items.sku', 'like', "%{$search}%")
+                    ->orWhere('products.name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($filters['status']) {
+            $query->where('returns.status', $filters['status']);
+        }
+
+        if ($filters['date_from']) {
+            $query->whereDate('returns.returned_at', '>=', $filters['date_from']);
+        }
+
+        if ($filters['date_to']) {
+            $query->whereDate('returns.returned_at', '<=', $filters['date_to']);
+        }
+
+        return $query;
+    }
+
+    private function getSummary($query): array
+    {
+        $summary = $query
             ->selectRaw('
                 COUNT(returns.id) as total_returns,
                 COALESCE(SUM(returns.quantity), 0) as total_quantity,
                 COALESCE(SUM(returns.line_total), 0) as total_refund,
-                SUM(CASE WHEN returns.status = "completed" THEN 1 ELSE 0 END) as completed_returns,
-                SUM(CASE WHEN returns.status = "cancelled" THEN 1 ELSE 0 END) as cancelled_returns
+                COALESCE(SUM(CASE WHEN returns.status = "completed" THEN 1 ELSE 0 END), 0) as completed_returns,
+                COALESCE(SUM(CASE WHEN returns.status = "cancelled" THEN 1 ELSE 0 END), 0) as cancelled_returns
             ')
             ->first();
 
-        $returns = $baseQuery
+        return [
+            'total_returns' => (int) ($summary->total_returns ?? 0),
+            'total_quantity' => (float) ($summary->total_quantity ?? 0),
+            'total_refund' => (float) ($summary->total_refund ?? 0),
+            'completed_returns' => (int) ($summary->completed_returns ?? 0),
+            'cancelled_returns' => (int) ($summary->cancelled_returns ?? 0),
+        ];
+    }
+
+    private function getReturns($query)
+    {
+        return $query
             ->select([
                 'returns.id',
                 'returns.sale_id',
@@ -82,23 +150,5 @@ class ManagerReturnController extends Controller
             ->orderByDesc('returns.id')
             ->paginate(10)
             ->withQueryString();
-
-        return Inertia::render('staff/manager/returns/index', [
-            'returns' => $returns,
-            'branch' => $branch,
-            'summary' => [
-                'total_returns' => (int) ($summary->total_returns ?? 0),
-                'total_quantity' => (float) ($summary->total_quantity ?? 0),
-                'total_refund' => (float) ($summary->total_refund ?? 0),
-                'completed_returns' => (int) ($summary->completed_returns ?? 0),
-                'cancelled_returns' => (int) ($summary->cancelled_returns ?? 0),
-            ],
-            'filters' => [
-                'search' => $request->search,
-                'status' => $request->status,
-                'date_from' => $request->date_from,
-                'date_to' => $request->date_to,
-            ],
-        ]);
     }
 }

@@ -178,7 +178,7 @@ const managerGroupedItems: SidebarGroup[] = [
         icon: UserCheck,
         badge: 'DEV',
         items: [
-            { title: 'Cashiers', url: '/staff/manager/cashiers', icon: Users, badge: 'DEV' },
+            { title: 'Employee', url: '/staff/manager/employee', icon: Users, badge: 'TEST' },
             { title: 'Staff Activity', url: '/staff/manager/staff-activity', icon: UserCheck, badge: 'DEV' },
         ],
     },

@@ -29,7 +29,7 @@ use App\Http\Controllers\Staff\Manager\ManagerReturnController;
 use App\Http\Controllers\Staff\Manager\ManagerSoldItemsController;
 use App\Http\Controllers\Staff\Manager\ManagerStockController;
 use App\Http\Controllers\Staff\Manager\ManagerTransactionController;
-use App\Http\Controllers\Staff\Manager\ManagerCashierController;
+use App\Http\Controllers\Staff\Manager\ManagerStaffController;
 use App\Http\Controllers\Staff\Staff\StaffDashboardController;
 use App\Http\Controllers\Staff\Staff\StaffProductController;
 use Illuminate\Support\Facades\Route;
@@ -161,8 +161,8 @@ Route::middleware(['auth'])->group(function () {
                     Route::post('/cash-drawer/cash-out', [ManagerCashDrawerController::class, 'cashOut'])->name('cash-drawer.cash-out');
                     Route::post('/cash-drawer/close', [ManagerCashDrawerController::class, 'close'])->name('cash-drawer.close');
 
-                    Route::patch('/cashiers/{cashier}/toggle-status', [ManagerCashierController::class, 'toggleStatus'])->name('cashiers.toggle-status');
-                    Route::resource('/cashiers', ManagerCashierController::class)->except(['create', 'show', 'edit'])->names('cashiers');
+                    Route::patch('/employee/{staff}/toggle-status', [ManagerStaffController::class, 'toggleStatus'])->name('employee.toggle-status');
+                    Route::resource('/employee', ManagerStaffController::class)->parameters(['employee' => 'staff'])->except(['create', 'show', 'edit'])->names('employee');
 
                     Route::get('/staff-activity', function () {
                         return Inertia::render('staff/manager/staff-activity/index');

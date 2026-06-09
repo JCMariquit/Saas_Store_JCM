@@ -1,9 +1,24 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Head, router, useForm } from '@inertiajs/react';
+import {
+    CheckCircle2,
+    ChevronDown,
+    ChevronRight,
+    FolderTree,
+    Pencil,
+    Plus,
+    RotateCcw,
+    Search,
+    Store,
+    Tags,
+    Trash2,
+    X,
+    XCircle,
+} from 'lucide-react';
+import { FormEvent, Fragment, ReactNode, useMemo, useState } from 'react';
+
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
-import { FormEvent, ReactNode, useMemo, useState } from 'react';
-import { FolderTree, Pencil, Plus, RotateCcw, Search, Store, Tags, Trash2, X } from 'lucide-react';
 
 const CATEGORIES_URL = '/staff/manager/categories';
 
@@ -56,11 +71,65 @@ type Props = {
     };
 };
 
+function cleanLabel(label: string) {
+    return label.replace('&laquo;', '‹').replace('&raquo;', '›');
+}
+
+function numberValue(value?: number | string | null) {
+    const amount = Number(value ?? 0);
+
+    return Number.isNaN(amount) ? 0 : amount;
+}
+
+function statusClass(status?: string | null) {
+    if (status === 'active') return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400';
+    if (status === 'inactive') return 'bg-red-500/10 text-red-700 dark:text-red-400';
+
+    return 'bg-muted text-muted-foreground';
+}
+
+function SummaryCard({
+    title,
+    value,
+    description,
+    icon: Icon,
+    variant = 'default',
+}: {
+    title: string;
+    value: number | string;
+    description: string;
+    icon: React.ElementType;
+    variant?: 'default' | 'success' | 'danger';
+}) {
+    const variantClass = {
+        default: 'bg-primary/10 text-primary',
+        success: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+        danger: 'bg-red-500/10 text-red-700 dark:text-red-400',
+    }[variant];
+
+    return (
+        <div className="rounded-xl border border-sidebar-border/70 bg-card p-5 shadow-sm dark:border-sidebar-border">
+            <div className="flex items-start justify-between gap-4">
+                <div>
+                    <p className="text-sm font-medium text-muted-foreground">{title}</p>
+                    <h3 className="mt-2 text-2xl font-bold tracking-tight">{value}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+                </div>
+
+                <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${variantClass}`}>
+                    <Icon className="size-5" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function ManagerCategoriesIndex({ categories, branch, filters }: Props) {
     const [search, setSearch] = useState(filters?.search ?? '');
     const [statusFilter, setStatusFilter] = useState(filters?.status ?? '');
     const [isOpen, setIsOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+    const [openCategoryId, setOpenCategoryId] = useState<number | null>(null);
 
     const form = useForm({
         name: '',
@@ -73,25 +142,22 @@ export default function ManagerCategoriesIndex({ categories, branch, filters }: 
         const total = categories.total ?? 0;
         const active = categories.data.filter((category) => category.status === 'active').length;
         const inactive = categories.data.filter((category) => category.status === 'inactive').length;
+        const sortedFirst = [...categories.data].sort((a, b) => numberValue(a.sort_order) - numberValue(b.sort_order))[0];
 
-        return { total, active, inactive };
-    }, [categories]);
-
-    const statusBadge = (status: Category['status']) => {
-        const classes = {
-            active: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-            inactive: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+        return {
+            total,
+            active,
+            inactive,
+            topCategory: sortedFirst?.name ?? '—',
         };
-
-        return <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${classes[status]}`}>{status}</span>;
-    };
+    }, [categories]);
 
     const applyFilters = () => {
         router.get(
             CATEGORIES_URL,
             {
-                search,
-                status: statusFilter,
+                search: search || undefined,
+                status: statusFilter || undefined,
             },
             {
                 preserveState: true,
@@ -104,6 +170,7 @@ export default function ManagerCategoriesIndex({ categories, branch, filters }: 
     const resetFilters = () => {
         setSearch('');
         setStatusFilter('');
+        setOpenCategoryId(null);
 
         router.get(CATEGORIES_URL, {}, { preserveState: true, preserveScroll: true, replace: true });
     };
@@ -145,8 +212,8 @@ export default function ManagerCategoriesIndex({ categories, branch, filters }: 
         form.clearErrors();
     };
 
-    const submit = (e: FormEvent) => {
-        e.preventDefault();
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
 
         if (editingCategory) {
             form.put(`${CATEGORIES_URL}/${editingCategory.id}`, {
@@ -175,193 +242,244 @@ export default function ManagerCategoriesIndex({ categories, branch, filters }: 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Manager Categories" />
 
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                <Card tone="topline" variant="default" className="overflow-hidden shadow-sm">
-                    <CardHeader className="p-5">
-                        <div className="flex items-center gap-4">
-                            <div className="flex size-11 items-center justify-center rounded-lg border bg-muted/40">
-                                <Store className="size-5 text-muted-foreground" />
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+                <div className="overflow-hidden rounded-xl border border-sidebar-border/70 bg-card shadow-sm dark:border-sidebar-border">
+                    <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex items-start gap-3">
+                            <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <Tags className="size-5" />
                             </div>
 
                             <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <CardTitle className="text-xl">{branch.name}</CardTitle>
+                                <h1 className="text-xl font-semibold tracking-tight">Categories</h1>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Manage product category groups for your assigned branch.
+                                </p>
 
-                                    {branch.is_main && (
-                                        <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                                            Main
-                                        </span>
-                                    )}
-
-                                    <span className="rounded-md bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600">
-                                        Active
+                                <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                    <span className="inline-flex items-center gap-1 rounded-full border px-3 py-1">
+                                        <Store className="size-3" />
+                                        Branch: {branch.name}
                                     </span>
+
+                                    <span className="rounded-full border px-3 py-1">Code: {branch.code || 'No code'}</span>
+                                    {branch.is_main && <span className="rounded-full border px-3 py-1">Main Branch</span>}
                                 </div>
-
-                                <CardDescription className="mt-1">
-                                    Branch code: {branch.code || 'No code'} · Manager branch categories only.
-                                </CardDescription>
                             </div>
-                        </div>
-                    </CardHeader>
-                </Card>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                    <SummaryCard title="Total Categories" value={summary.total} variant="default" />
-                    <SummaryCard title="Active Categories" value={summary.active} variant="success" />
-                    <SummaryCard title="Inactive Categories" value={summary.inactive} variant="neutral" />
-                </div>
-
-                <Card tone="topline" variant="default" className="overflow-hidden shadow-sm">
-                    <CardHeader className="flex flex-col gap-4 border-b p-5 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <CardTitle className="text-xl">Categories</CardTitle>
-                            <CardDescription className="mt-1">
-                                Manage product categories for your assigned branch.
-                            </CardDescription>
                         </div>
 
                         <button
                             type="button"
                             onClick={openCreateModal}
-                            className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:opacity-90"
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
                         >
                             <Plus className="size-4" />
                             Add Category
                         </button>
-                    </CardHeader>
+                    </div>
+                </div>
 
-                    <CardContent className="p-5">
-                        <div className="mb-4 grid gap-3 md:grid-cols-4">
-                            <div className="relative md:col-span-2">
-                                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                                <input
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    onKeyDown={(e) => e.key === 'Enter' && applyFilters()}
-                                    placeholder="Search category name, slug, description..."
-                                    className="h-10 w-full rounded-md border border-input bg-background pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                                />
-                            </div>
+                <div className="grid auto-rows-min gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <SummaryCard title="Total Categories" value={summary.total} description="All categories under this branch." icon={FolderTree} />
+                    <SummaryCard title="Active" value={summary.active} description="Active categories on current page." icon={CheckCircle2} variant="success" />
+                    <SummaryCard title="Inactive" value={summary.inactive} description="Inactive categories on current page." icon={XCircle} variant={summary.inactive > 0 ? 'danger' : 'default'} />
+                    <SummaryCard title="Top Sort" value={summary.topCategory} description="First category by sort order." icon={Tags} />
+                </div>
 
+                <div className="rounded-xl border border-sidebar-border/70 bg-card p-4 shadow-sm dark:border-sidebar-border">
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                        <div className="relative xl:col-span-2">
+                            <label className="mb-1 block text-xs font-medium text-muted-foreground">Search</label>
+                            <Search className="absolute left-3 top-[34px] size-4 text-muted-foreground" />
+                            <input
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') applyFilters();
+                                }}
+                                placeholder="Search name, slug, description..."
+                                className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="mb-1 block text-xs font-medium text-muted-foreground">Status</label>
                             <select
                                 value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                onChange={(event) => setStatusFilter(event.target.value)}
+                                className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                             >
                                 <option value="">All Status</option>
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
                             </select>
-
-                            <div className="flex gap-2">
-                                <button
-                                    type="button"
-                                    onClick={applyFilters}
-                                    className="inline-flex h-10 flex-1 items-center justify-center rounded-md border border-input px-3 text-sm hover:bg-muted"
-                                >
-                                    Filter
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={resetFilters}
-                                    className="inline-flex h-10 items-center justify-center rounded-md border border-input px-3 text-sm hover:bg-muted"
-                                    title="Reset filters"
-                                >
-                                    <RotateCcw className="size-4" />
-                                </button>
-                            </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
-                            <table className="w-full text-sm">
-                                <thead className="bg-muted/50 text-left">
-                                    <tr>
-                                        <th className="px-4 py-3 font-medium">Category</th>
-                                        <th className="px-4 py-3 font-medium">Slug</th>
-                                        <th className="px-4 py-3 font-medium">Sort Order</th>
-                                        <th className="px-4 py-3 font-medium">Status</th>
-                                        <th className="px-4 py-3 text-right font-medium">Actions</th>
-                                    </tr>
-                                </thead>
+                        <div className="flex items-end gap-2">
+                            <button
+                                type="button"
+                                onClick={applyFilters}
+                                className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                            >
+                                <Search className="size-4" />
+                                Apply
+                            </button>
 
-                                <tbody>
-                                    {categories.data.length > 0 ? (
-                                        categories.data.map((category) => (
-                                            <tr key={category.id} className="border-t border-sidebar-border/70 dark:border-sidebar-border">
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex size-10 items-center justify-center rounded-md bg-muted">
-                                                            <Tags className="size-4 text-muted-foreground" />
-                                                        </div>
+                            <button
+                                type="button"
+                                onClick={resetFilters}
+                                className="inline-flex h-10 items-center justify-center rounded-lg border px-3 text-sm font-medium hover:bg-muted"
+                                title="Reset filters"
+                            >
+                                <RotateCcw className="size-4" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-                                                        <div>
-                                                            <div className="font-medium">{category.name}</div>
-                                                            <div className="mt-1 max-w-md truncate text-xs text-muted-foreground">
-                                                                {category.description || 'No description'}
+                <div className="overflow-hidden rounded-xl border border-sidebar-border/70 bg-card shadow-sm dark:border-sidebar-border">
+                    <div className="flex flex-col gap-2 border-b p-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h2 className="font-semibold">Category Records</h2>
+                            <p className="text-sm text-muted-foreground">
+                                Showing {categories.from ?? 0} to {categories.to ?? 0} of {categories.total} categories.
+                            </p>
+                        </div>
+
+                        <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs text-muted-foreground">
+                            <FolderTree className="size-3" />
+                            Branch category list
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                                <tr>
+                                    <th className="w-10 px-4 py-3"></th>
+                                    <th className="px-4 py-3 text-left font-medium">Category</th>
+                                    <th className="px-4 py-3 text-left font-medium">Slug</th>
+                                    <th className="px-4 py-3 text-left font-medium">Sort</th>
+                                    <th className="px-4 py-3 text-left font-medium">Status</th>
+                                    <th className="px-4 py-3 text-right font-medium">Actions</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {categories.data.length > 0 ? (
+                                    categories.data.map((category) => {
+                                        const isOpen = openCategoryId === category.id;
+
+                                        return (
+                                            <Fragment key={category.id}>
+                                                <tr
+                                                    onClick={() => setOpenCategoryId(isOpen ? null : category.id)}
+                                                    className="cursor-pointer border-t transition hover:bg-muted/40"
+                                                >
+                                                    <td className="px-4 py-3">
+                                                        {isOpen ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground" />}
+                                                    </td>
+
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+                                                                <Tags className="size-4 text-muted-foreground" />
+                                                            </div>
+
+                                                            <div>
+                                                                <div className="font-medium">{category.name}</div>
+                                                                <div className="mt-1 max-w-md truncate text-xs text-muted-foreground">
+                                                                    {category.description || 'No description'}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </td>
+                                                    </td>
 
-                                                <td className="px-4 py-3 text-muted-foreground">{category.slug ?? '-'}</td>
-                                                <td className="px-4 py-3 text-muted-foreground">{category.sort_order ?? 0}</td>
-                                                <td className="px-4 py-3">{statusBadge(category.status)}</td>
+                                                    <td className="px-4 py-3 text-muted-foreground">{category.slug ?? '—'}</td>
+                                                    <td className="px-4 py-3 text-muted-foreground">{category.sort_order ?? 0}</td>
 
-                                                <td className="px-4 py-3">
-                                                    <div className="flex justify-end gap-2">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openEditModal(category)}
-                                                            className="inline-flex size-8 items-center justify-center rounded-md border border-input hover:bg-muted"
-                                                            title="Edit"
-                                                        >
-                                                            <Pencil className="size-4" />
-                                                        </button>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize ${statusClass(category.status)}`}>
+                                                            {category.status}
+                                                        </span>
+                                                    </td>
 
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => deleteCategory(category)}
-                                                            className="inline-flex size-8 items-center justify-center rounded-md border border-input text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                                                            title="Delete"
-                                                        >
-                                                            <Trash2 className="size-4" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={5} className="px-4 py-14 text-center">
-                                                <div className="mx-auto flex max-w-sm flex-col items-center">
-                                                    <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted">
-                                                        <FolderTree className="size-5 text-muted-foreground" />
-                                                    </div>
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex justify-end gap-2" onClick={(event) => event.stopPropagation()}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openEditModal(category)}
+                                                                className="inline-flex size-8 items-center justify-center rounded-lg border hover:bg-muted"
+                                                                title="Edit"
+                                                            >
+                                                                <Pencil className="size-4" />
+                                                            </button>
 
-                                                    <h3 className="font-medium">No categories found</h3>
-                                                    <p className="mt-1 text-sm text-muted-foreground">
-                                                        Create your first category for this branch.
-                                                    </p>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => deleteCategory(category)}
+                                                                className="inline-flex size-8 items-center justify-center rounded-lg border text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                                title="Delete"
+                                                            >
+                                                                <Trash2 className="size-4" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={openCreateModal}
-                                                        className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
-                                                    >
-                                                        <Plus className="size-4" />
-                                                        Add Category
-                                                    </button>
+                                                {isOpen && (
+                                                    <tr className="border-t bg-muted/20">
+                                                        <td colSpan={6} className="px-4 py-4">
+                                                            <div className="space-y-4 rounded-xl border bg-card p-4">
+                                                                <div className="grid gap-3 md:grid-cols-4">
+                                                                    <Detail label="Category ID" value={`#${category.id}`} />
+                                                                    <Detail label="Name" value={category.name} />
+                                                                    <Detail label="Slug" value={category.slug || '—'} />
+                                                                    <Detail label="Sort Order" value={category.sort_order ?? 0} />
+                                                                    <Detail label="Status" value={category.status} />
+                                                                    <Detail label="Branch" value={branch.name} />
+                                                                </div>
+
+                                                                <div className="rounded-xl border bg-muted/30 p-3">
+                                                                    <p className="text-xs text-muted-foreground">Description</p>
+                                                                    <p className="mt-1 text-sm">{category.description || 'No description provided.'}</p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </Fragment>
+                                        );
+                                    })
+                                ) : (
+                                    <tr>
+                                        <td colSpan={6} className="px-4 py-14">
+                                            <div className="mx-auto flex max-w-sm flex-col items-center text-center">
+                                                <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted">
+                                                    <FolderTree className="size-5 text-muted-foreground" />
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
 
-                        <div className="mt-4 flex flex-col gap-3 text-sm md:flex-row md:items-center md:justify-between">
+                                                <h3 className="font-medium">No categories found</h3>
+                                                <p className="mt-1 text-sm text-muted-foreground">Create your first category or adjust your filters.</p>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={openCreateModal}
+                                                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                                                >
+                                                    <Plus className="size-4" />
+                                                    Add Category
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {categories.links.length > 0 && (
+                        <div className="flex flex-col gap-3 border-t p-4 text-sm md:flex-row md:items-center md:justify-between">
                             <div className="text-muted-foreground">
                                 Showing {categories.from ?? 0} to {categories.to ?? 0} of {categories.total} results
                             </div>
@@ -369,21 +487,25 @@ export default function ManagerCategoriesIndex({ categories, branch, filters }: 
                             <div className="flex flex-wrap gap-1">
                                 {categories.links.map((link, index) => (
                                     <button
-                                        key={index}
+                                        key={`${link.label}-${index}`}
+                                        type="button"
                                         disabled={!link.url}
-                                        onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
-                                        className={`rounded-md border px-3 py-1.5 text-sm ${
-                                            link.active
-                                                ? 'bg-primary text-primary-foreground'
-                                                : 'hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50'
-                                        }`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
+                                        onClick={() => {
+                                            if (link.url) router.visit(link.url, { preserveState: true, preserveScroll: true });
+                                        }}
+                                        className={[
+                                            'h-9 rounded-lg border px-3 text-sm font-medium transition',
+                                            link.active ? 'bg-primary text-primary-foreground' : 'hover:bg-muted',
+                                            !link.url ? 'cursor-not-allowed opacity-50' : '',
+                                        ].join(' ')}
+                                    >
+                                        {cleanLabel(link.label)}
+                                    </button>
                                 ))}
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    )}
+                </div>
 
                 {isOpen && (
                     <Modal>
@@ -399,68 +521,58 @@ export default function ManagerCategoriesIndex({ categories, branch, filters }: 
                         </CardHeader>
 
                         <form onSubmit={submit} className="max-h-[75vh] space-y-5 overflow-y-auto p-5">
-                            <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
-                                This category will be saved under <b>{branch.name}</b>.
-                            </div>
+                            <Section title="Category Information" description="Basic category details used to group branch products.">
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <Field label="Category Name" error={form.errors.name}>
+                                        <input
+                                            value={form.data.name}
+                                            onChange={(event) => form.setData('name', event.target.value)}
+                                            className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        />
+                                    </Field>
 
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <Field label="Category Name" error={form.errors.name}>
-                                    <input
-                                        value={form.data.name}
-                                        onChange={(e) => form.setData('name', e.target.value)}
-                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                                    <Field label="Status" error={form.errors.status}>
+                                        <select
+                                            value={form.data.status}
+                                            onChange={(event) => form.setData('status', event.target.value)}
+                                            className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        >
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+                                    </Field>
+
+                                    <Field label="Sort Order" error={form.errors.sort_order}>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={form.data.sort_order}
+                                            onChange={(event) => form.setData('sort_order', event.target.value)}
+                                            className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                                        />
+                                    </Field>
+                                </div>
+
+                                <Field label="Description" error={form.errors.description}>
+                                    <textarea
+                                        rows={4}
+                                        value={form.data.description}
+                                        onChange={(event) => form.setData('description', event.target.value)}
+                                        className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
                                     />
                                 </Field>
-
-                                <Field label="Status" error={form.errors.status}>
-                                    <select
-                                        value={form.data.status}
-                                        onChange={(e) => form.setData('status', e.target.value)}
-                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                                    >
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
-                                </Field>
-
-                                <Field label="Sort Order" error={form.errors.sort_order}>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        value={form.data.sort_order}
-                                        onChange={(e) => form.setData('sort_order', e.target.value)}
-                                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-                                    />
-                                </Field>
-                            </div>
-
-                            <Field label="Description" error={form.errors.description}>
-                                <textarea
-                                    rows={4}
-                                    value={form.data.description}
-                                    onChange={(e) => form.setData('description', e.target.value)}
-                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                                />
-                            </Field>
+                            </Section>
 
                             <div className="flex justify-end gap-2 border-t pt-5">
-                                <button
-                                    type="button"
-                                    onClick={closeModal}
-                                    className="rounded-md border border-input px-4 py-2 text-sm font-medium hover:bg-muted"
-                                >
+                                <button type="button" onClick={closeModal} className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted">
                                     Cancel
                                 </button>
 
                                 <button
                                     disabled={form.processing}
-                                    className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                                 >
-                                    {form.processing
-                                        ? 'Saving...'
-                                        : editingCategory
-                                          ? 'Update Category'
-                                          : 'Create Category'}
+                                    {form.processing ? 'Saving...' : editingCategory ? 'Update Category' : 'Create Category'}
                                 </button>
                             </div>
                         </form>
@@ -471,24 +583,25 @@ export default function ManagerCategoriesIndex({ categories, branch, filters }: 
     );
 }
 
-function SummaryCard({
-    title,
-    value,
-    variant = 'default',
-}: {
-    title: string;
-    value: number;
-    variant?: 'default' | 'success' | 'neutral' | 'warning' | 'danger';
-}) {
+function Detail({ label, value }: { label: string; value: string | number }) {
     return (
-        <Card tone="topline" variant={variant} className="min-h-[120px] overflow-hidden shadow-sm">
-            <CardHeader className="p-5 pb-2">
-                <CardDescription>{title}</CardDescription>
-            </CardHeader>
-            <CardContent className="p-5 pt-0">
-                <CardTitle>{value}</CardTitle>
-            </CardContent>
-        </Card>
+        <div>
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="mt-1 font-medium capitalize">{value}</p>
+        </div>
+    );
+}
+
+function Section({ title, description, children }: { title: string; description: string; children: ReactNode }) {
+    return (
+        <div className="space-y-4 rounded-xl border p-4">
+            <div>
+                <h3 className="font-semibold">{title}</h3>
+                <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+            </div>
+
+            {children}
+        </div>
     );
 }
 

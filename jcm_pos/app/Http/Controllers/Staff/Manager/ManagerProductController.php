@@ -18,12 +18,13 @@ class ManagerProductController extends Controller
 {
     private function managerBranch(): Branch
     {
-        $branchId = auth()->user()->branch_id;
+        $user = auth()->user();
 
-        abort_if(!$branchId, 403, 'No branch assigned to this manager.');
+        abort_if(!$user->branch_id, 403, 'No branch assigned to this manager.');
 
         return Branch::query()
-            ->where('id', $branchId)
+            ->where('id', $user->branch_id)
+            ->where('tenant_id', $user->client_id)
             ->where('is_active', true)
             ->firstOrFail(['id', 'tenant_id', 'name', 'code', 'is_main', 'is_active']);
     }
@@ -31,29 +32,28 @@ class ManagerProductController extends Controller
     public function index(Request $request)
     {
         $branch = $this->managerBranch();
-        $tenantId = (int) $branch->tenant_id;
-        $branchId = (int) $branch->id;
+        $filters = $this->filters($request);
 
         $categories = Category::query()
-            ->where('tenant_id', $tenantId)
-            ->where('branch_id', $branchId)
+            ->where('tenant_id', $branch->tenant_id)
+            ->where('branch_id', $branch->id)
             ->where('status', 'active')
             ->orderBy('name')
             ->get(['id', 'name']);
 
         $products = Product::query()
             ->with(['category:id,name', 'branch:id,name,code'])
-            ->where('tenant_id', $tenantId)
-            ->where('branch_id', $branchId)
-            ->when($request->search, function ($query, $search) {
+            ->where('tenant_id', $branch->tenant_id)
+            ->where('branch_id', $branch->id)
+            ->when($filters['search'], function ($query, $search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('name', 'like', "%{$search}%")
                         ->orWhere('sku', 'like', "%{$search}%")
                         ->orWhere('barcode', 'like', "%{$search}%");
                 });
             })
-            ->when($request->category_id, fn ($query, $categoryId) => $query->where('category_id', $categoryId))
-            ->when($request->status, fn ($query, $status) => $query->where('status', $status))
+            ->when($filters['category_id'], fn ($query, $categoryId) => $query->where('category_id', $categoryId))
+            ->when($filters['status'], fn ($query, $status) => $query->where('status', $status))
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -62,25 +62,26 @@ class ManagerProductController extends Controller
             'products' => $products,
             'branch' => $branch,
             'categories' => $categories,
-            'filters' => [
-                'search' => $request->search,
-                'category_id' => $request->category_id,
-                'status' => $request->status,
-            ],
+            'filters' => $filters,
         ]);
     }
 
     public function store(Request $request)
     {
         $branch = $this->managerBranch();
-        $tenantId = (int) $branch->tenant_id;
-        $branchId = (int) $branch->id;
 
-        $validated = $request->validate($this->rules($tenantId, $branchId));
+        $validated = $request->validate($this->rules(
+            (int) $branch->tenant_id,
+            (int) $branch->id
+        ));
 
-        DB::connection('pos')->transaction(function () use ($validated, $tenantId, $branchId) {
+        DB::connection('pos')->transaction(function () use ($validated, $branch) {
+            $tenantId = (int) $branch->tenant_id;
+            $branchId = (int) $branch->id;
+
             $initialQuantity = (float) ($validated['quantity'] ?? 0);
             $costPrice = (float) ($validated['cost_price'] ?? 0);
+            $stockTracking = $validated['stock_tracking'];
 
             $product = Product::create([
                 ...$validated,
@@ -89,47 +90,61 @@ class ManagerProductController extends Controller
                 'slug' => Str::slug($validated['name']),
                 'unit' => $validated['unit'] ?? 'pcs',
                 'cost_price' => $costPrice,
-                'quantity' => $initialQuantity,
+                'quantity' => $stockTracking === 'tracked' ? $initialQuantity : 0,
                 'reorder_level' => $validated['reorder_level'] ?? 0,
                 'is_taxable' => $validated['is_taxable'] ?? false,
                 'allow_discount' => $validated['allow_discount'] ?? true,
                 'low_stock_alert' => $validated['low_stock_alert'] ?? true,
             ]);
 
-            if ($initialQuantity > 0 && $validated['stock_tracking'] === 'tracked') {
-                $batch = ProductStockBatch::create([
-                    'tenant_id' => $tenantId,
-                    'branch_id' => $branchId,
-                    'product_id' => $product->id,
-                    'batch_no' => 'BATCH-' . now()->format('YmdHis') . '-' . $product->id,
-                    'quantity_received' => $initialQuantity,
-                    'quantity_remaining' => $initialQuantity,
-                    'unit_cost' => $costPrice,
-                    'selling_price' => $validated['selling_price'],
-                    'received_date' => $validated['received_date'] ?? now()->toDateString(),
-                    'expiry_date' => $validated['expiry_date'] ?? null,
-                    'remarks' => $validated['remarks'] ?? 'Initial stock by manager',
-                ]);
-
-                StockMovement::create([
-                    'tenant_id' => $tenantId,
-                    'branch_id' => $branchId,
-                    'product_id' => $product->id,
-                    'product_stock_batch_id' => $batch->id,
-                    'movement_type' => 'initial_stock',
-                    'quantity' => $initialQuantity,
-                    'unit_cost' => $costPrice,
-                    'total_cost' => $initialQuantity * $costPrice,
-                    'quantity_before' => 0,
-                    'quantity_after' => $initialQuantity,
-                    'remarks' => 'Initial stock on product creation by manager',
-                    'movement_date' => now(),
-                    'created_by' => auth()->id(),
-                ]);
+            if ($stockTracking === 'tracked' && $initialQuantity > 0) {
+                $this->createInitialStock($product, $validated, $tenantId, $branchId, $initialQuantity, $costPrice);
             }
         });
 
         return back()->with('success', 'Product created successfully.');
+    }
+
+    private function createInitialStock(Product $product, array $validated, int $tenantId, int $branchId, float $quantity, float $costPrice): void
+    {
+        $batch = ProductStockBatch::create([
+            'tenant_id' => $tenantId,
+            'branch_id' => $branchId,
+            'product_id' => $product->id,
+            'batch_no' => 'BATCH-' . now()->format('YmdHis') . '-' . $product->id,
+            'quantity_received' => $quantity,
+            'quantity_remaining' => $quantity,
+            'unit_cost' => $costPrice,
+            'selling_price' => $validated['selling_price'],
+            'received_date' => $validated['received_date'] ?? now()->toDateString(),
+            'expiry_date' => $validated['expiry_date'] ?? null,
+            'remarks' => $validated['remarks'] ?? 'Initial stock by manager',
+        ]);
+
+        StockMovement::create([
+            'tenant_id' => $tenantId,
+            'branch_id' => $branchId,
+            'product_id' => $product->id,
+            'product_stock_batch_id' => $batch->id,
+            'movement_type' => 'initial_stock',
+            'quantity' => $quantity,
+            'unit_cost' => $costPrice,
+            'total_cost' => $quantity * $costPrice,
+            'quantity_before' => 0,
+            'quantity_after' => $quantity,
+            'remarks' => 'Initial stock on product creation by manager',
+            'movement_date' => now(),
+            'created_by' => auth()->id(),
+        ]);
+    }
+
+    private function filters(Request $request): array
+    {
+        return [
+            'search' => trim((string) $request->input('search', '')),
+            'category_id' => $request->input('category_id'),
+            'status' => $request->input('status'),
+        ];
     }
 
     private function rules(int $tenantId, int $branchId): array
@@ -138,12 +153,11 @@ class ManagerProductController extends Controller
             'category_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('pos.categories', 'id')->where(
-                    fn ($query) => $query
-                        ->where('tenant_id', $tenantId)
-                        ->where('branch_id', $branchId)
-                ),
+                Rule::exists('pos.categories', 'id')->where(fn ($query) => $query
+                    ->where('tenant_id', $tenantId)
+                    ->where('branch_id', $branchId)),
             ],
+
             'name' => ['required', 'string', 'max:180'],
             'sku' => ['nullable', 'string', 'max:100'],
             'barcode' => ['nullable', 'string', 'max:120'],

@@ -36,7 +36,7 @@ import {
 
 type UserRole = 'client' | 'cashier' | 'manager' | 'staff';
 
-type SidebarBadge = 'LIVE' | 'CORE' | 'OWNER' | 'STAFF' | 'DEV' | 'TEST' | 'NEW' | 'BETA' | 'SOON';
+type SidebarBadge = 'LIVE' | 'CORE' | 'OWNER' | 'STAFF' | 'DEV' | 'TEST' | 'NEW' | 'BETA' | 'SOON' | 'DISABLED';
 
 type SidebarItem = {
     title: string;
@@ -147,7 +147,7 @@ const cashierGroupedItems: SidebarGroup[] = [
 */
 
 const managerDirectItems: SidebarItem[] = [
-    { title: 'Dashboard', url: '/staff/manager/dashboard', icon: LayoutGrid, badge: 'DEV' },
+    { title: 'Dashboard', url: '/staff/manager/dashboard', icon: LayoutGrid, badge: 'SOON' },
     { title: 'POS Monitor', url: '/staff/manager/pos/monitor', icon: ShoppingCart, badge: 'TEST' },
     { title: 'Transactions', url: '/staff/manager/transactions', icon: Receipt, badge: 'TEST' },
 ];
@@ -156,11 +156,11 @@ const managerGroupedItems: SidebarGroup[] = [
     {
         title: 'Inventory',
         icon: Boxes,
-        badge: 'DEV',
+        badge: 'TEST',
         items: [
-            { title: 'Products', url: '/staff/manager/products', icon: Package2, badge: 'DEV' },
-            { title: 'Categories', url: '/staff/manager/categories', icon: Tags, badge: 'DEV' },
-            { title: 'Stock Management', url: '/staff/manager/stocks', icon: Boxes, badge: 'DEV' },
+            { title: 'Products', url: '/staff/manager/products', icon: Package2, badge: 'TEST' },
+            { title: 'Categories', url: '/staff/manager/categories', icon: Tags, badge: 'TEST' },
+            { title: 'Stock Management', url: '/staff/manager/stocks', icon: Boxes, badge: 'TEST' },
         ],
     },
     {
@@ -281,7 +281,7 @@ function isUrlActive(currentUrl: string, itemUrl: string) {
 }
 
 function MenuBadge({ badge }: { badge?: SidebarBadge }) {
-    if (!badge) return null;
+    if (!badge || badge === 'DISABLED') return null;
 
     const styles: Record<SidebarBadge, string> = {
         LIVE: 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/15',
@@ -293,6 +293,7 @@ function MenuBadge({ badge }: { badge?: SidebarBadge }) {
         NEW: 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/15',
         BETA: 'bg-violet-500/10 text-violet-600 ring-violet-500/15',
         SOON: 'bg-slate-500/10 text-slate-500 ring-slate-500/15',
+        DISABLED: '',
     };
 
     const Icon = badge === 'DEV' ? Code2 : Sparkles;

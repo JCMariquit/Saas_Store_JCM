@@ -14,12 +14,13 @@ class ManagerCategoryController extends Controller
 {
     private function managerBranch(): Branch
     {
-        $branchId = auth()->user()->branch_id;
+        $user = auth()->user();
 
-        abort_if(!$branchId, 403, 'No branch assigned to this manager.');
+        abort_if(!$user->branch_id, 403, 'No branch assigned to this manager.');
 
         return Branch::query()
-            ->where('id', $branchId)
+            ->where('id', $user->branch_id)
+            ->where('tenant_id', $user->client_id)
             ->where('is_active', true)
             ->firstOrFail(['id', 'tenant_id', 'name', 'code', 'is_main', 'is_active']);
     }
@@ -27,20 +28,19 @@ class ManagerCategoryController extends Controller
     public function index(Request $request)
     {
         $branch = $this->managerBranch();
-        $tenantId = (int) $branch->tenant_id;
-        $branchId = (int) $branch->id;
+        $filters = $this->filters($request);
 
         $categories = Category::query()
-            ->where('tenant_id', $tenantId)
-            ->where('branch_id', $branchId)
-            ->when($request->search, function ($query, $search) {
+            ->where('tenant_id', $branch->tenant_id)
+            ->where('branch_id', $branch->id)
+            ->when($filters['search'], function ($query, $search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('name', 'like', "%{$search}%")
                         ->orWhere('slug', 'like', "%{$search}%")
                         ->orWhere('description', 'like', "%{$search}%");
                 });
             })
-            ->when($request->status, fn ($query, $status) => $query->where('status', $status))
+            ->when($filters['status'], fn ($query, $status) => $query->where('status', $status))
             ->orderBy('sort_order')
             ->orderBy('name')
             ->paginate(10)
@@ -49,25 +49,23 @@ class ManagerCategoryController extends Controller
         return Inertia::render('staff/manager/categories/index', [
             'categories' => $categories,
             'branch' => $branch,
-            'filters' => [
-                'search' => $request->search,
-                'status' => $request->status,
-            ],
+            'filters' => $filters,
         ]);
     }
 
     public function store(Request $request)
     {
         $branch = $this->managerBranch();
-        $tenantId = (int) $branch->tenant_id;
-        $branchId = (int) $branch->id;
 
-        $validated = $request->validate($this->rules($tenantId, $branchId));
+        $validated = $request->validate($this->rules(
+            (int) $branch->tenant_id,
+            (int) $branch->id
+        ));
 
         Category::create([
             ...$validated,
-            'tenant_id' => $tenantId,
-            'branch_id' => $branchId,
+            'tenant_id' => $branch->tenant_id,
+            'branch_id' => $branch->id,
             'slug' => Str::slug($validated['name']),
             'sort_order' => $validated['sort_order'] ?? 0,
         ]);
@@ -79,10 +77,13 @@ class ManagerCategoryController extends Controller
     {
         $branch = $this->managerBranch();
 
-        abort_if((int) $category->tenant_id !== (int) $branch->tenant_id, 403);
-        abort_if((int) $category->branch_id !== (int) $branch->id, 403);
+        $this->authorizeCategory($category, $branch);
 
-        $validated = $request->validate($this->rules((int) $branch->tenant_id, (int) $branch->id, $category->id));
+        $validated = $request->validate($this->rules(
+            (int) $branch->tenant_id,
+            (int) $branch->id,
+            (int) $category->id
+        ));
 
         $category->update([
             ...$validated,
@@ -97,12 +98,25 @@ class ManagerCategoryController extends Controller
     {
         $branch = $this->managerBranch();
 
-        abort_if((int) $category->tenant_id !== (int) $branch->tenant_id, 403);
-        abort_if((int) $category->branch_id !== (int) $branch->id, 403);
+        $this->authorizeCategory($category, $branch);
 
         $category->delete();
 
         return back()->with('success', 'Category deleted successfully.');
+    }
+
+    private function filters(Request $request): array
+    {
+        return [
+            'search' => trim((string) $request->input('search', '')),
+            'status' => $request->input('status'),
+        ];
+    }
+
+    private function authorizeCategory(Category $category, Branch $branch): void
+    {
+        abort_if((int) $category->tenant_id !== (int) $branch->tenant_id, 403);
+        abort_if((int) $category->branch_id !== (int) $branch->id, 403);
     }
 
     private function rules(int $tenantId, int $branchId, ?int $ignoreId = null): array

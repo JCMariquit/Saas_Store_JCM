@@ -30,6 +30,7 @@ use App\Http\Controllers\Staff\Manager\ManagerSoldItemsController;
 use App\Http\Controllers\Staff\Manager\ManagerStockController;
 use App\Http\Controllers\Staff\Manager\ManagerTransactionController;
 use App\Http\Controllers\Staff\Manager\ManagerStaffController;
+use App\Http\Controllers\Staff\Manager\ManagerStaffActivityController;
 use App\Http\Controllers\Staff\Staff\StaffDashboardController;
 use App\Http\Controllers\Staff\Staff\StaffProductController;
 use Illuminate\Support\Facades\Route;
@@ -164,9 +165,7 @@ Route::middleware(['auth'])->group(function () {
                     Route::patch('/employee/{staff}/toggle-status', [ManagerStaffController::class, 'toggleStatus'])->name('employee.toggle-status');
                     Route::resource('/employee', ManagerStaffController::class)->parameters(['employee' => 'staff'])->except(['create', 'show', 'edit'])->names('employee');
 
-                    Route::get('/staff-activity', function () {
-                        return Inertia::render('staff/manager/staff-activity/index');
-                    })->name('staff-activity.index');
+                    Route::get('/staff-activity', [ManagerStaffActivityController::class, 'index'])->name('staff-activity.index');
 
                     Route::get('/reports/sales', function () {
                         return Inertia::render('staff/manager/reports/sales/index');

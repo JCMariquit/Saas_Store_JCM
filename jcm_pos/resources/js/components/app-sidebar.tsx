@@ -36,7 +36,18 @@ import {
 
 type UserRole = 'client' | 'cashier' | 'manager' | 'staff';
 
-type SidebarBadge = 'LIVE' | 'CORE' | 'OWNER' | 'STAFF' | 'DEV' | 'TEST' | 'NEW' | 'BETA' | 'SOON' | 'DISABLED';
+type SidebarBadge =
+    | 'LIVE'
+    | 'CORE'
+    | 'OWNER'
+    | 'STAFF'
+    | 'DEV'
+    | 'TUNE'
+    | 'TEST'
+    | 'NEW'
+    | 'BETA'
+    | 'SOON'
+    | 'DISABLED';
 
 type SidebarItem = {
     title: string;
@@ -148,38 +159,38 @@ const cashierGroupedItems: SidebarGroup[] = [
 
 const managerDirectItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/staff/manager/dashboard', icon: LayoutGrid, badge: 'SOON' },
-    { title: 'POS Monitor', url: '/staff/manager/pos/monitor', icon: ShoppingCart, badge: 'TEST' },
-    { title: 'Transactions', url: '/staff/manager/transactions', icon: Receipt, badge: 'TEST' },
+    { title: 'POS Monitor', url: '/staff/manager/pos/monitor', icon: ShoppingCart, badge: 'TUNE' },
+    { title: 'Transactions', url: '/staff/manager/transactions', icon: Receipt, badge: 'TUNE' },
 ];
 
 const managerGroupedItems: SidebarGroup[] = [
     {
         title: 'Inventory',
         icon: Boxes,
-        badge: 'TEST',
+        badge: 'TUNE',
         items: [
-            { title: 'Products', url: '/staff/manager/products', icon: Package2, badge: 'TEST' },
-            { title: 'Categories', url: '/staff/manager/categories', icon: Tags, badge: 'TEST' },
-            { title: 'Stock Management', url: '/staff/manager/stocks', icon: Boxes, badge: 'TEST' },
+            { title: 'Products', url: '/staff/manager/products', icon: Package2, badge: 'TUNE' },
+            { title: 'Categories', url: '/staff/manager/categories', icon: Tags, badge: 'TUNE' },
+            { title: 'Stock Management', url: '/staff/manager/stocks', icon: Boxes, badge: 'TUNE' },
         ],
     },
     {
         title: 'Sales',
         icon: Receipt,
-        badge: 'TEST',
+        badge: 'TUNE',
         items: [
-            { title: 'Sold Items', url: '/staff/manager/sold-items', icon: Package2, badge: 'TEST' },
-            { title: 'Returns', url: '/staff/manager/returns', icon: RotateCcw, badge: 'TEST' },
-            { title: 'Cash Drawer', url: '/staff/manager/cash-drawer', icon: WalletCards, badge: 'TEST' },
+            { title: 'Sold Items', url: '/staff/manager/sold-items', icon: Package2, badge: 'TUNE' },
+            { title: 'Returns', url: '/staff/manager/returns', icon: RotateCcw, badge: 'TUNE' },
+            { title: 'Cash Drawer', url: '/staff/manager/cash-drawer', icon: WalletCards, badge: 'TUNE' },
         ],
     },
     {
         title: 'Staff Control',
         icon: UserCheck,
-        badge: 'DEV',
+        badge: 'TUNE',
         items: [
-            { title: 'Employee', url: '/staff/manager/employee', icon: Users, badge: 'TEST' },
-            { title: 'Staff Activity', url: '/staff/manager/staff-activity', icon: UserCheck, badge: 'DEV' },
+            { title: 'Employee', url: '/staff/manager/employee', icon: Users, badge: 'TUNE' },
+            { title: 'Staff Activity', url: '/staff/manager/staff-activity', icon: UserCheck, badge: 'TUNE' },
         ],
     },
     {
@@ -289,6 +300,7 @@ function MenuBadge({ badge }: { badge?: SidebarBadge }) {
         OWNER: 'bg-amber-500/10 text-amber-600 ring-amber-500/15',
         STAFF: 'bg-cyan-500/10 text-cyan-600 ring-cyan-500/15',
         DEV: 'bg-sky-500/10 text-sky-600 ring-sky-500/15',
+        TUNE: 'bg-orange-500/10 text-orange-600 ring-orange-500/15',
         TEST: 'bg-amber-500/10 text-amber-600 ring-amber-500/15',
         NEW: 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/15',
         BETA: 'bg-violet-500/10 text-violet-600 ring-violet-500/15',
@@ -296,7 +308,12 @@ function MenuBadge({ badge }: { badge?: SidebarBadge }) {
         DISABLED: '',
     };
 
-    const Icon = badge === 'DEV' ? Code2 : Sparkles;
+    const Icon =
+    badge === 'DEV'
+        ? Code2
+        : badge === 'TUNE'
+          ? Settings
+          : Sparkles;
 
     return (
         <span className={['ml-auto inline-flex h-5 items-center gap-1 rounded-md px-1.5 text-[9px] font-bold tracking-wide ring-1', styles[badge]].join(' ')}>

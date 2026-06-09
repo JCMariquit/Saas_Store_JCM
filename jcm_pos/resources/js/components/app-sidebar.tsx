@@ -185,11 +185,11 @@ const managerGroupedItems: SidebarGroup[] = [
         ],
     },
     {
-        title: 'Staff Control',
+        title: 'Employee',
         icon: UserCheck,
         badge: 'TUNE',
         items: [
-            { title: 'Employee', url: '/staff/manager/employee', icon: Users, badge: 'TUNE' },
+            { title: 'Employees', url: '/staff/manager/employee', icon: Users, badge: 'TUNE' },
             { title: 'Staff Activity', url: '/staff/manager/staff-activity', icon: UserCheck, badge: 'TUNE' },
         ],
     },

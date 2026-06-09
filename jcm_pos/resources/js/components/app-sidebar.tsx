@@ -148,8 +148,8 @@ const cashierGroupedItems: SidebarGroup[] = [
 
 const managerDirectItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/staff/manager/dashboard', icon: LayoutGrid, badge: 'DEV' },
-    { title: 'POS Monitor', url: '/staff/manager/pos/monitor', icon: ShoppingCart, badge: 'DEV' },
-    { title: 'Transactions', url: '/staff/manager/transactions', icon: Receipt, badge: 'DEV' },
+    { title: 'POS Monitor', url: '/staff/manager/pos/monitor', icon: ShoppingCart, badge: 'TEST' },
+    { title: 'Transactions', url: '/staff/manager/transactions', icon: Receipt, badge: 'TEST' },
 ];
 
 const managerGroupedItems: SidebarGroup[] = [

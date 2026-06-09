@@ -24,63 +24,120 @@ class ManagerTransactionController extends Controller
         $tenantId = $this->tenantId();
         $branchId = $this->branchId();
 
-        $branch = DB::table('branches')
+        $branch = $this->getBranch($tenantId, $branchId);
+
+        abort_if(!$branch, 403, 'Invalid or inactive branch assignment.');
+
+        $filters = $this->filters($request);
+
+        $transactions = $this->getTransactions($tenantId, $branchId, $filters);
+        $this->attachItems($transactions, $tenantId, $branchId);
+
+        return Inertia::render('staff/manager/transactions/index', [
+            'branch' => $branch,
+
+            'scope' => [
+                'tenant_id' => $tenantId,
+                'branch_id' => $branchId,
+            ],
+
+            'transactions' => $transactions,
+            'summary' => $this->getSummary($tenantId, $branchId, $filters),
+            'filters' => $filters,
+        ]);
+    }
+
+    private function getBranch(int $tenantId, int $branchId)
+    {
+        return DB::table('branches')
             ->where('id', $branchId)
             ->where('tenant_id', $tenantId)
             ->where('is_active', 1)
             ->whereNull('deleted_at')
-            ->select('id', 'tenant_id', 'name', 'code', 'is_main', 'is_active')
+            ->select(
+                'id',
+                'tenant_id',
+                'name',
+                'code',
+                'is_main',
+                'is_active'
+            )
             ->first();
+    }
 
-        abort_if(!$branch, 403, 'Invalid or inactive branch assignment.');
+    private function filters(Request $request): array
+    {
+        return [
+            'search' => trim((string) $request->input('search', '')),
+            'status' => $request->input('status'),
+            'payment_status' => $request->input('payment_status'),
+            'payment_method' => $request->input('payment_method'),
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
+        ];
+    }
 
-        $search = trim((string) $request->input('search', ''));
-        $status = $request->input('status');
-        $paymentStatus = $request->input('payment_status');
-        $paymentMethod = $request->input('payment_method');
-        $dateFrom = $request->input('date_from');
-        $dateTo = $request->input('date_to');
+    private function paymentSubquery(int $tenantId, int $branchId)
+    {
+        return DB::table('payments')
+            ->where('tenant_id', $tenantId)
+            ->where('branch_id', $branchId)
+            ->select(
+                'sale_id',
+                DB::raw('MAX(method) as payment_method'),
+                DB::raw('SUM(amount) as payment_amount'),
+                DB::raw('MAX(reference_no) as payment_reference_no')
+            )
+            ->groupBy('sale_id');
+    }
 
-        $baseQuery = DB::table('sales')
-            ->leftJoin('payments', function ($join) use ($tenantId, $branchId) {
-                $join->on('sales.id', '=', 'payments.sale_id')
-                    ->where('payments.tenant_id', $tenantId)
-                    ->where('payments.branch_id', $branchId);
+    private function baseQuery(int $tenantId, int $branchId, array $filters)
+    {
+        $paymentSubquery = $this->paymentSubquery($tenantId, $branchId);
+
+        $query = DB::table('sales')
+            ->leftJoinSub($paymentSubquery, 'payment_summary', function ($join) {
+                $join->on('sales.id', '=', 'payment_summary.sale_id');
             })
             ->where('sales.tenant_id', $tenantId)
             ->where('sales.branch_id', $branchId);
 
-        if ($search !== '') {
-            $baseQuery->where(function ($query) use ($search) {
+        if ($filters['search'] !== '') {
+            $search = $filters['search'];
+
+            $query->where(function ($query) use ($search) {
                 $query->where('sales.sale_no', 'like', "%{$search}%")
-                    ->orWhere('payments.reference_no', 'like', "%{$search}%")
-                    ->orWhere('sales.remarks', 'like', "%{$search}%");
+                    ->orWhere('sales.remarks', 'like', "%{$search}%")
+                    ->orWhere('payment_summary.payment_reference_no', 'like', "%{$search}%");
             });
         }
 
-        if ($status) {
-            $baseQuery->where('sales.status', $status);
+        if ($filters['status']) {
+            $query->where('sales.status', $filters['status']);
         }
 
-        if ($paymentStatus) {
-            $baseQuery->where('sales.payment_status', $paymentStatus);
+        if ($filters['payment_status']) {
+            $query->where('sales.payment_status', $filters['payment_status']);
         }
 
-        if ($paymentMethod) {
-            $baseQuery->where('payments.method', $paymentMethod);
+        if ($filters['payment_method']) {
+            $query->where('payment_summary.payment_method', $filters['payment_method']);
         }
 
-        if ($dateFrom) {
-            $baseQuery->whereDate('sales.sold_at', '>=', $dateFrom);
+        if ($filters['date_from']) {
+            $query->whereDate('sales.sold_at', '>=', $filters['date_from']);
         }
 
-        if ($dateTo) {
-            $baseQuery->whereDate('sales.sold_at', '<=', $dateTo);
+        if ($filters['date_to']) {
+            $query->whereDate('sales.sold_at', '<=', $filters['date_to']);
         }
 
-        $summaryQuery = clone $baseQuery;
+        return $query;
+    }
 
-        $transactions = $baseQuery
+    private function getTransactions(int $tenantId, int $branchId, array $filters)
+    {
+        return $this->baseQuery($tenantId, $branchId, $filters)
             ->select(
                 'sales.id',
                 'sales.sale_no',
@@ -96,15 +153,26 @@ class ManagerTransactionController extends Controller
                 'sales.remarks',
                 'sales.sold_at',
                 'sales.created_at',
-                'payments.method as payment_method',
-                'payments.amount as payment_amount',
-                'payments.reference_no as payment_reference_no'
+                'payment_summary.payment_method',
+                'payment_summary.payment_amount',
+                'payment_summary.payment_reference_no'
             )
             ->orderByDesc('sales.sold_at')
+            ->orderByDesc('sales.id')
             ->paginate(10)
             ->withQueryString();
+    }
 
-        $saleIds = collect($transactions->items())->pluck('id')->values();
+    private function attachItems($transactions, int $tenantId, int $branchId): void
+    {
+        $saleIds = collect($transactions->items())
+            ->pluck('id')
+            ->filter()
+            ->values();
+
+        if ($saleIds->isEmpty()) {
+            return;
+        }
 
         $itemsBySale = DB::table('sale_items')
             ->where('tenant_id', $tenantId)
@@ -126,62 +194,41 @@ class ManagerTransactionController extends Controller
             ->groupBy('sale_id');
 
         $transactions->getCollection()->transform(function ($transaction) use ($itemsBySale) {
-            $transaction->items = $itemsBySale->get($transaction->id, collect())->values();
+            $transaction->items = $itemsBySale
+                ->get($transaction->id, collect())
+                ->values();
 
             return $transaction;
         });
+    }
 
-        $summaryRows = $summaryQuery
+    private function getSummary(int $tenantId, int $branchId, array $filters): array
+    {
+        $summary = $this->baseQuery($tenantId, $branchId, $filters)
             ->select(
-                DB::raw('COUNT(DISTINCT sales.id) as total_transactions'),
+                DB::raw('COUNT(sales.id) as total_transactions'),
                 DB::raw('COALESCE(SUM(sales.grand_total), 0) as total_sales'),
                 DB::raw('COALESCE(SUM(sales.discount_total), 0) as total_discount'),
                 DB::raw('COALESCE(SUM(sales.tax_total), 0) as total_tax')
             )
             ->first();
 
-        $completedCount = DB::table('sales')
-            ->where('tenant_id', $tenantId)
-            ->where('branch_id', $branchId)
-            ->where('status', 'completed')
-            ->count();
+        $statusCounts = $this->baseQuery($tenantId, $branchId, $filters)
+            ->select(
+                'sales.status',
+                DB::raw('COUNT(sales.id) as total')
+            )
+            ->groupBy('sales.status')
+            ->pluck('total', 'sales.status');
 
-        $voidedCount = DB::table('sales')
-            ->where('tenant_id', $tenantId)
-            ->where('branch_id', $branchId)
-            ->where('status', 'voided')
-            ->count();
-
-        $refundedCount = DB::table('sales')
-            ->where('tenant_id', $tenantId)
-            ->where('branch_id', $branchId)
-            ->where('status', 'refunded')
-            ->count();
-
-        return Inertia::render('staff/manager/transactions/index', [
-            'branch' => $branch,
-            'scope' => [
-                'tenant_id' => $tenantId,
-                'branch_id' => $branchId,
-            ],
-            'transactions' => $transactions,
-            'summary' => [
-                'total_transactions' => (int) ($summaryRows->total_transactions ?? 0),
-                'total_sales' => (float) ($summaryRows->total_sales ?? 0),
-                'total_discount' => (float) ($summaryRows->total_discount ?? 0),
-                'total_tax' => (float) ($summaryRows->total_tax ?? 0),
-                'completed_count' => $completedCount,
-                'voided_count' => $voidedCount,
-                'refunded_count' => $refundedCount,
-            ],
-            'filters' => [
-                'search' => $search,
-                'status' => $status,
-                'payment_status' => $paymentStatus,
-                'payment_method' => $paymentMethod,
-                'date_from' => $dateFrom,
-                'date_to' => $dateTo,
-            ],
-        ]);
+        return [
+            'total_transactions' => (int) ($summary->total_transactions ?? 0),
+            'total_sales' => (float) ($summary->total_sales ?? 0),
+            'total_discount' => (float) ($summary->total_discount ?? 0),
+            'total_tax' => (float) ($summary->total_tax ?? 0),
+            'completed_count' => (int) ($statusCounts['completed'] ?? 0),
+            'voided_count' => (int) ($statusCounts['voided'] ?? 0),
+            'refunded_count' => (int) ($statusCounts['refunded'] ?? 0),
+        ];
     }
 }

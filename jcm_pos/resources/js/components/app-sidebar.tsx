@@ -71,50 +71,50 @@ type SidebarGroup = {
 */
 
 const clientDirectItems: SidebarItem[] = [
-    { title: 'Dashboard', url: '/client/dashboard', icon: LayoutGrid, badge: 'TEST' },
-    { title: 'POS Terminal', url: '/client/pos/terminal', icon: ShoppingCart, badge: 'TEST' },
-    { title: 'Transactions', url: '/client/sales/transactions', icon: Receipt, badge: 'TEST' },
+    { title: 'Dashboard', url: '/client/dashboard', icon: LayoutGrid, badge: 'TUNE' },
+    { title: 'POS Terminal', url: '/client/pos/terminal', icon: ShoppingCart, badge: 'TUNE' },
+    { title: 'Transactions', url: '/client/sales/transactions', icon: Receipt, badge: 'TUNE' },
 ];
 
 const clientGroupedItems: SidebarGroup[] = [
     {
         title: 'Management',
         icon: Users,
-        badge: 'TEST',
+        badge: 'TUNE',
         items: [
-            { title: 'Staff', url: '/client/management/staff', icon: Users, badge: 'TEST' },
-            { title: 'Store Profile', url: '/client/management/store-profile', icon: Settings, badge: 'TEST' },
-            { title: 'Branches', url: '/client/management/branches', icon: HousePlus, badge: 'TEST' },
+            { title: 'Staff', url: '/client/management/staff', icon: Users, badge: 'TUNE' },
+            { title: 'Store Profile', url: '/client/management/store-profile', icon: Settings, badge: 'TUNE' },
+            { title: 'Branches', url: '/client/management/branches', icon: HousePlus, badge: 'TUNE' },
         ],
     },
     {
         title: 'Inventory',
         icon: Boxes,
-        badge: 'TEST',
+        badge: 'TUNE',
         items: [
-            { title: 'Products', url: '/client/inventory/products', icon: Package2, badge: 'TEST' },
-            { title: 'Categories', url: '/client/inventory/categories', icon: Tags, badge: 'TEST' },
-            { title: 'Stock Management', url: '/client/inventory/stocks', icon: Boxes, badge: 'TEST' },
+            { title: 'Products', url: '/client/inventory/products', icon: Package2, badge: 'TUNE' },
+            { title: 'Categories', url: '/client/inventory/categories', icon: Tags, badge: 'TUNE' },
+            { title: 'Stock Management', url: '/client/inventory/stocks', icon: Boxes, badge: 'TUNE' },
         ],
     },
     {
         title: 'Sales',
         icon: Receipt,
-        badge: 'TEST',
+        badge: 'TUNE',
         items: [
-            { title: 'Sold Items', url: '/client/sales/sold-items', icon: Package2, badge: 'TEST' },
-            { title: 'Returns', url: '/client/sales/returns', icon: RotateCcw, badge: 'TEST' },
-            { title: 'Discounts', url: '/client/sales/discounts', icon: Tags, badge: 'TEST' },
-            { title: 'Cash Drawer', url: '/client/sales/cash-drawer', icon: WalletCards, badge: 'TEST' },
+            { title: 'Sold Items', url: '/client/sales/sold-items', icon: Package2, badge: 'TUNE' },
+            { title: 'Returns', url: '/client/sales/returns', icon: RotateCcw, badge: 'TUNE' },
+            { title: 'Discounts', url: '/client/sales/discounts', icon: Tags, badge: 'TUNE' },
+            { title: 'Cash Drawer', url: '/client/sales/cash-drawer', icon: WalletCards, badge: 'TUNE' },
         ],
     },
     {
         title: 'Reports',
         icon: BarChart3,
-        badge: 'TEST',
+        badge: 'TUNE',
         items: [
-            { title: 'Sales Reports', url: '/client/reports/sales', icon: BarChart3, badge: 'TEST' },
-            { title: 'Inventory Reports', url: '/client/reports/inventory', icon: WalletCards, badge: 'TEST' },
+            { title: 'Sales Reports', url: '/client/reports/sales', icon: BarChart3, badge: 'TUNE' },
+            { title: 'Inventory Reports', url: '/client/reports/inventory', icon: WalletCards, badge: 'TUNE' },
         ],
     },
 ];
@@ -196,10 +196,10 @@ const managerGroupedItems: SidebarGroup[] = [
     {
         title: 'Reports',
         icon: BarChart3,
-        badge: 'DEV',
+        badge: 'TUNE',
         items: [
-            { title: 'Sales Reports', url: '/staff/manager/reports/sales', icon: BarChart3, badge: 'DEV' },
-            { title: 'Inventory Reports', url: '/staff/manager/reports/inventory', icon: Boxes, badge: 'DEV' },
+            { title: 'Sales Reports', url: '/staff/manager/reports/sales', icon: BarChart3, badge: 'TUNE' },
+            { title: 'Inventory Reports', url: '/staff/manager/reports/inventory', icon: Boxes, badge: 'TUNE' },
         ],
     },
 ];

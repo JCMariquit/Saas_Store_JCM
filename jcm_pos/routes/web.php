@@ -20,6 +20,7 @@ use App\Http\Controllers\Staff\Cashier\CashierPosController;
 use App\Http\Controllers\Staff\Cashier\CashierProductController;
 use App\Http\Controllers\Staff\Cashier\CashierReturnController;
 use App\Http\Controllers\Staff\Cashier\CashierTransactionController;
+use App\Http\Controllers\Staff\Cashier\CashierCashDrawerController;
 use App\Http\Controllers\Staff\Manager\ManagerCashDrawerController;
 use App\Http\Controllers\Staff\Manager\ManagerCategoryController;
 use App\Http\Controllers\Staff\Manager\ManagerDashboardController;
@@ -135,7 +136,12 @@ Route::middleware(['auth'])->group(function () {
                     Route::get('/transactions', [CashierTransactionController::class, 'index'])->name('transactions.index');
                     Route::get('/returns', [CashierReturnController::class, 'index'])->name('returns.index');
                     Route::post('/returns', [CashierReturnController::class, 'store'])->name('returns.store');
-                    Route::get('/cash-drawer', function () {return Inertia::render('staff/cashier/cash-drawer/index');})->name('cash-drawer.index');
+                    Route::get('/returns/search-sale', [CashierReturnController::class, 'searchSale'])->name('returns.search-sale');
+                    Route::get('/cash-drawer', [CashierCashDrawerController::class, 'index'])->name('cash-drawer.index');
+                    Route::post('/cash-drawer/open', [CashierCashDrawerController::class, 'open'])->name('cash-drawer.open');
+                    Route::post('/cash-drawer/cash-in', [CashierCashDrawerController::class, 'cashIn'])->name('cash-drawer.cash-in');
+                    Route::post('/cash-drawer/cash-out', [CashierCashDrawerController::class, 'cashOut'])->name('cash-drawer.cash-out');
+                    Route::post('/cash-drawer/close', [CashierCashDrawerController::class, 'close'])->name('cash-drawer.close');
 
                     /* Cashier - Inventory Module */
                     Route::get('/products', [CashierProductController::class, 'index'])->name('products.index');

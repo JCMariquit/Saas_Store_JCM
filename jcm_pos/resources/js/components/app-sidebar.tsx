@@ -127,18 +127,18 @@ const clientGroupedItems: SidebarGroup[] = [
 
 const cashierDirectItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/staff/cashier/dashboard', icon: LayoutGrid, badge: 'DEV' },
-    { title: 'POS Terminal', url: '/staff/cashier/pos/terminal', icon: ShoppingCart, badge: 'DEV' },
+    { title: 'POS Terminal', url: '/staff/cashier/pos/terminal', icon: ShoppingCart, badge: 'TUNE' },
 ];
 
 const cashierGroupedItems: SidebarGroup[] = [
     {
         title: 'Sales',
         icon: Receipt,
-        badge: 'DEV',
+        badge: 'TUNE',
         items: [
-            { title: 'Transactions', url: '/staff/cashier/transactions', icon: Receipt, badge: 'DEV' },
-            { title: 'Returns', url: '/staff/cashier/returns', icon: RotateCcw, badge: 'DEV' },
-            { title: 'Cash Drawer', url: '/staff/cashier/cash-drawer', icon: WalletCards, badge: 'DEV' },
+            { title: 'Transactions', url: '/staff/cashier/transactions', icon: Receipt, badge: 'TUNE' },
+            { title: 'Returns', url: '/staff/cashier/returns', icon: RotateCcw, badge: 'TUNE' },
+            { title: 'Cash Drawer', url: '/staff/cashier/cash-drawer', icon: WalletCards, badge: 'TUNE' },
         ],
     },
     {

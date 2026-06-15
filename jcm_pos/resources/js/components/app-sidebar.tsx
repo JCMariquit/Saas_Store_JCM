@@ -144,9 +144,9 @@ const cashierGroupedItems: SidebarGroup[] = [
     {
         title: 'Inventory',
         icon: Boxes,
-        badge: 'DEV',
+        badge: 'TUNE',
         items: [
-            { title: 'Products', url: '/staff/cashier/products', icon: Package2, badge: 'DEV' },
+            { title: 'Products', url: '/staff/cashier/products', icon: Package2, badge: 'TUNE' },
         ],
     },
 ];

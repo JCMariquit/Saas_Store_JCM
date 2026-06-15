@@ -127,7 +127,7 @@ const clientGroupedItems: SidebarGroup[] = [
 
 const cashierDirectItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/staff/cashier/dashboard', icon: LayoutGrid, badge: 'DEV' },
-    { title: 'Cashier POS', url: '/staff/cashier/pos/terminal', icon: ShoppingCart, badge: 'DEV' },
+    { title: 'POS Terminal', url: '/staff/cashier/pos/terminal', icon: ShoppingCart, badge: 'DEV' },
 ];
 
 const cashierGroupedItems: SidebarGroup[] = [

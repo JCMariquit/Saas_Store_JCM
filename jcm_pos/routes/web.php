@@ -7,6 +7,7 @@ use App\Http\Controllers\Owner\DashboardController;
 use App\Http\Controllers\Owner\DiscountsController;
 use App\Http\Controllers\Owner\InventoryReportController;
 use App\Http\Controllers\Owner\PosTerminalController;
+use App\Http\Controllers\Owner\PosMonitorController;
 use App\Http\Controllers\Owner\ProductController;
 use App\Http\Controllers\Owner\ReturnsController;
 use App\Http\Controllers\Owner\SalesReportController;
@@ -70,6 +71,7 @@ Route::middleware(['auth'])->group(function () {
             /* Owner - POS Module */
             Route::get('/pos/terminal', [PosTerminalController::class, 'index'])->name('pos.terminal.index');
             Route::post('/pos/checkout', [PosTerminalController::class, 'checkout'])->name('pos.checkout');
+            Route::get('/pos/monitor', [PosMonitorController::class, 'index'])->name('pos.monitor.index');
 
             /* Owner - Management Module */
             Route::patch('/management/staff/{staff}/toggle-status', [StaffController::class, 'toggleStatus'])->name('management.staff.toggle-status');

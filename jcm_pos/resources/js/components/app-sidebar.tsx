@@ -73,6 +73,7 @@ type SidebarGroup = {
 const clientDirectItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/client/dashboard', icon: LayoutGrid, badge: 'TUNE' },
     { title: 'POS Terminal', url: '/client/pos/terminal', icon: ShoppingCart, badge: 'TUNE' },
+    { title: 'POS Monitoring', url: '/client/pos/monitor', icon: ShoppingCart, badge: 'TUNE' },
     { title: 'Transactions', url: '/client/sales/transactions', icon: Receipt, badge: 'TUNE' },
 ];
 

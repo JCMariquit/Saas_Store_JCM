@@ -35,6 +35,7 @@ use App\Http\Controllers\Staff\Manager\ManagerStaffActivityController;
 use App\Http\Controllers\Staff\Manager\ManagerStaffController;
 use App\Http\Controllers\Staff\Manager\ManagerStockController;
 use App\Http\Controllers\Staff\Manager\ManagerTransactionController;
+use App\Http\Controllers\Staff\Staff\StaffActivityController;
 use App\Http\Controllers\Staff\Staff\StaffDashboardController;
 use App\Http\Controllers\Staff\Staff\StaffProductController;
 use Illuminate\Support\Facades\Route;
@@ -198,17 +199,12 @@ Route::middleware(['auth'])->group(function () {
                     /* General Staff - Main Module */
                     Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
 
-                    /* General Staff - Inventory Module */
+                    /* General Staff - Product Module */
                     Route::get('/products', [StaffProductController::class, 'index'])->name('products.index');
+                    Route::post('/products', [StaffProductController::class, 'store'])->name('products.store');
 
-                    Route::get('/stock-audit', function () {
-                        return Inertia::render('staff/staff/stock-audit/index');
-                    })->name('stock-audit.index');
-
-                    /* General Staff - Reports Module */
-                    Route::get('/reports/audit', function () {
-                        return Inertia::render('staff/staff/reports/audit/index');
-                    })->name('reports.audit.index');
+                    /* General Staff - Activity Module */
+                    Route::get('/activity', [StaffActivityController::class, 'index'])->name('activity.index');
                 });
         });
 });

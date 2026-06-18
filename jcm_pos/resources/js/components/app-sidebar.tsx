@@ -9,8 +9,8 @@ import {
     HousePlus,
     LayoutGrid,
     Lock,
-    LogOut,
     Package2,
+    History,
     Receipt,
     RotateCcw,
     Settings,
@@ -213,32 +213,16 @@ const managerGroupedItems: SidebarGroup[] = [
 
 const staffDirectItems: SidebarItem[] = [
     { title: 'Dashboard', url: '/staff/staff/dashboard', icon: LayoutGrid, badge: 'DEV' },
+    { title: 'Products', url: '/staff/staff/products', icon: Package2, badge: 'DEV' },
+    { title: 'My Activity', url: '/staff/staff/activity', icon: History, badge: 'DEV' },
 ];
 
 const staffGroupedItems: SidebarGroup[] = [
-    {
-        title: 'Inventory',
-        icon: Boxes,
-        badge: 'DEV',
-        items: [
-            { title: 'Products', url: '/staff/staff/products', icon: Package2, badge: 'DEV' },
-            { title: 'Stock Audit', url: '/staff/staff/stock-audit', icon: Boxes, badge: 'DEV' },
-        ],
-    },
-    {
-        title: 'Reports',
-        icon: BarChart3,
-        badge: 'DEV',
-        items: [
-            { title: 'Audit Reports', url: '/staff/staff/reports/audit', icon: BarChart3, badge: 'DEV' },
-        ],
-    },
     {
         title: 'System',
         icon: Settings,
         items: [
             { title: 'Help', url: '#', icon: CircleHelp },
-            { title: 'Logout', url: '#', icon: LogOut },
         ],
     },
 ];

@@ -66,7 +66,7 @@ type SidebarGroup = {
 
 /*
 |--------------------------------------------------------------------------
-| Client / Owner
+| Client / Overview
 |--------------------------------------------------------------------------
 */
 
@@ -249,7 +249,7 @@ function getMenuByRole(role: UserRole) {
             directItems: clientDirectItems,
             groupedItems: clientGroupedItems,
             portalLabel: 'Store Owner Portal',
-            mainSectionLabel: 'Owner',
+            mainSectionLabel: 'OVERVIEW',
             groupSectionLabel: 'Management',
         };
     }

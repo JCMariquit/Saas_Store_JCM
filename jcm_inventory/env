@@ -1,0 +1,58 @@
+APP_NAME="JCM Inventory"
+APP_ENV=local
+APP_KEY=base64:tGrCb2biDZwtgGoWNY4PEAHMmDp1i06Ns2QBSJUOmhY=
+APP_DEBUG=true
+APP_TIMEZONE=Asia/Manila
+APP_URL=http://127.0.0.1:8000
+
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=en_US
+
+# ==================================================
+# MAIN DATABASE: Inventory data
+# ==================================================
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=jcm_inventory_db
+DB_USERNAME=root
+DB_PASSWORD=
+
+# ==================================================
+# SECOND DATABASE: JCM SaaS users/auth/subscriptions
+# ==================================================
+
+SAAS_DB_CONNECTION=mysql
+SAAS_DB_HOST=127.0.0.1
+SAAS_DB_PORT=3306
+SAAS_DB_DATABASE=jcm_saas_db
+SAAS_DB_USERNAME=root
+SAAS_DB_PASSWORD=
+
+# ==================================================
+# LOCAL DEVELOPMENT
+# ==================================================
+
+SESSION_DRIVER=file
+SESSION_LIFETIME=120
+
+CACHE_STORE=file
+QUEUE_CONNECTION=sync
+
+LOG_CHANNEL=stack
+LOG_LEVEL=debug
+
+FILESYSTEM_DISK=local
+BROADCAST_CONNECTION=log
+
+# ==================================================
+# MAIL
+# ==================================================
+
+MAIL_MAILER=log
+MAIL_FROM_ADDRESS="hello@jcmwebsolution.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+VITE_APP_NAME="${APP_NAME}"

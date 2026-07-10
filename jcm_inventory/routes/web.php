@@ -3,6 +3,7 @@
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\StockController;
 use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -111,11 +112,34 @@ Route::middleware(['auth'])->group(function () {
                         ->name('destroy');
                 });
 
-            Route::get('/stocks', function () {
-                return Inertia::render(
-                    'inventory/stocks/index'
-                );
-            })->name('stocks.index');
+            Route::prefix('stocks')
+                ->name('stocks.')
+                ->controller(StockController::class)
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
+
+                    Route::post('/', 'store')
+                        ->name('store');
+
+                    Route::patch(
+                        '/{stock}/settings',
+                        'updateSettings'
+                    )->name('settings');
+
+                    Route::post(
+                        '/{stock}/adjust',
+                        'adjust'
+                    )->name('adjust');
+
+                    Route::post(
+                        '/{stock}/transfer',
+                        'transfer'
+                    )->name('transfer');
+
+                    Route::delete('/{stock}', 'destroy')
+                        ->name('destroy');
+                });
         });
 
     Route::get('/stock-movements', function () {

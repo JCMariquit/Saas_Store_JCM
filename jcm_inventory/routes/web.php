@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -47,10 +48,8 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/{warehouse}', 'update')
                 ->name('update');
 
-            Route::patch(
-                '/{warehouse}/status',
-                'updateStatus'
-            )->name('status');
+            Route::patch('/{warehouse}/status', 'updateStatus')
+                ->name('status');
 
             Route::delete('/{warehouse}', 'destroy')
                 ->name('destroy');
@@ -71,11 +70,27 @@ Route::middleware(['auth'])->group(function () {
                 );
             })->name('products.index');
 
-            Route::get('/categories', function () {
-                return Inertia::render(
-                    'inventory/categories/index'
-                );
-            })->name('categories.index');
+            Route::prefix('categories')
+                ->name('categories.')
+                ->controller(CategoryController::class)
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
+
+                    Route::post('/', 'store')
+                        ->name('store');
+
+                    Route::put('/{category}', 'update')
+                        ->name('update');
+
+                    Route::patch(
+                        '/{category}/status',
+                        'updateStatus'
+                    )->name('status');
+
+                    Route::delete('/{category}', 'destroy')
+                        ->name('destroy');
+                });
 
             Route::get('/stocks', function () {
                 return Inertia::render(

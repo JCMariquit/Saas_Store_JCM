@@ -3,6 +3,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     BarChart3,
     Boxes,
+    Building2,
     ChevronDown,
     ClipboardCheck,
     Code2,
@@ -103,15 +104,15 @@ const inventoryGroup: SidebarGroup = {
     badge: 'DEV',
     items: [
         {
-            title: 'Products',
-            url: '/inventory/products',
-            icon: Package2,
-            badge: 'DEV',
-        },
-        {
             title: 'Categories',
             url: '/inventory/categories',
             icon: Tags,
+            badge: 'DEV',
+        },
+        {
+            title: 'Products',
+            url: '/inventory/products',
+            icon: Package2,
             badge: 'DEV',
         },
         {
@@ -131,8 +132,14 @@ const inventoryGroup: SidebarGroup = {
 
 const managementItems: SidebarItem[] = [
     {
+        title: 'Branches',
+        url: '/inventory/branches',
+        icon: Building2,
+        badge: 'DEV',
+    },
+    {
         title: 'Warehouse',
-        url: '/inventory/locations',
+        url: '/inventory/warehouses',
         icon: Warehouse,
         badge: 'DEV',
     },

@@ -12,18 +12,25 @@ class Branch extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $connection = 'mysql';
+
     protected $fillable = [
         'tenant_id',
         'name',
         'code',
+        'address',
+        'phone',
+        'email',
         'is_main',
         'is_active',
+        'created_by',
     ];
 
     protected function casts(): array
     {
         return [
             'tenant_id' => 'integer',
+            'created_by' => 'integer',
             'is_main' => 'boolean',
             'is_active' => 'boolean',
         ];
@@ -35,24 +42,9 @@ class Branch extends Model
     |--------------------------------------------------------------------------
     */
 
-    public function categories(): HasMany
+    public function warehouses(): HasMany
     {
-        return $this->hasMany(Category::class);
-    }
-
-    public function products(): HasMany
-    {
-        return $this->hasMany(Product::class);
-    }
-
-    public function stockBatches(): HasMany
-    {
-        return $this->hasMany(ProductStockBatch::class);
-    }
-
-    public function stockMovements(): HasMany
-    {
-        return $this->hasMany(StockMovement::class);
+        return $this->hasMany(Warehouse::class);
     }
 
     /*
@@ -76,5 +68,20 @@ class Branch extends Model
     public function scopeMain(Builder $query): Builder
     {
         return $query->where('is_main', true);
+    }
+
+    public function scopeSearch(
+        Builder $query,
+        ?string $search
+    ): Builder {
+        return $query->when(
+            filled($search),
+            fn (Builder $query) => $query->where(
+                fn (Builder $query) => $query
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%")
+            )
+        );
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -13,9 +14,10 @@ class Product extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $connection = 'mysql';
+
     protected $fillable = [
         'tenant_id',
-        'branch_id',
         'category_id',
         'name',
         'slug',
@@ -27,41 +29,23 @@ class Product extends Model
         'cost_price',
         'selling_price',
         'wholesale_price',
-        'compare_at_price',
-        'quantity',
-        'reorder_level',
-        'max_stock_level',
-        'is_taxable',
-        'tax_rate',
-        'allow_discount',
-        'discount_type',
-        'discount_value',
-        'product_type',
         'stock_tracking',
-        'low_stock_alert',
-        'status',
+        'is_active',
+        'created_by',
     ];
 
     protected function casts(): array
     {
         return [
             'tenant_id' => 'integer',
-            'branch_id' => 'integer',
             'category_id' => 'integer',
+            'created_by' => 'integer',
 
             'cost_price' => 'decimal:2',
             'selling_price' => 'decimal:2',
             'wholesale_price' => 'decimal:2',
-            'compare_at_price' => 'decimal:2',
-            'quantity' => 'decimal:2',
-            'reorder_level' => 'decimal:2',
-            'max_stock_level' => 'decimal:2',
-            'tax_rate' => 'decimal:2',
-            'discount_value' => 'decimal:2',
 
-            'is_taxable' => 'boolean',
-            'allow_discount' => 'boolean',
-            'low_stock_alert' => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -71,24 +55,37 @@ class Product extends Model
     |--------------------------------------------------------------------------
     */
 
-    public function branch(): BelongsTo
-    {
-        return $this->belongsTo(Branch::class);
-    }
-
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
-    public function stockBatches(): HasMany
+    public function warehouseStocks(): HasMany
     {
-        return $this->hasMany(ProductStockBatch::class);
+        return $this->hasMany(WarehouseStock::class);
     }
 
     public function stockMovements(): HasMany
     {
         return $this->hasMany(StockMovement::class);
+    }
+
+    public function warehouses(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Warehouse::class,
+            'warehouse_stocks'
+        )
+            ->withPivot([
+                'id',
+                'tenant_id',
+                'quantity',
+                'reorder_level',
+                'max_stock_level',
+                'average_cost',
+                'last_movement_at',
+            ])
+            ->withTimestamps();
     }
 
     /*
@@ -104,37 +101,21 @@ class Product extends Model
         return $query->where('tenant_id', $tenantId);
     }
 
-    public function scopeForBranch(
+    public function scopeForCategory(
         Builder $query,
-        int $branchId
+        int $categoryId
     ): Builder {
-        return $query->where('branch_id', $branchId);
+        return $query->where('category_id', $categoryId);
     }
 
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', 'active');
+        return $query->where('is_active', true);
     }
 
     public function scopeTracked(Builder $query): Builder
     {
         return $query->where('stock_tracking', 'tracked');
-    }
-
-    public function scopeLowStock(Builder $query): Builder
-    {
-        return $query
-            ->where('stock_tracking', 'tracked')
-            ->where('low_stock_alert', true)
-            ->where('quantity', '>', 0)
-            ->whereColumn('quantity', '<=', 'reorder_level');
-    }
-
-    public function scopeOutOfStock(Builder $query): Builder
-    {
-        return $query
-            ->where('stock_tracking', 'tracked')
-            ->where('quantity', '<=', 0);
     }
 
     public function scopeSearch(
@@ -148,6 +129,7 @@ class Product extends Model
                     ->where('name', 'like', "%{$search}%")
                     ->orWhere('sku', 'like', "%{$search}%")
                     ->orWhere('barcode', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
             )
         );
     }
@@ -163,34 +145,9 @@ class Product extends Model
         return $this->stock_tracking === 'tracked';
     }
 
-    public function isOutOfStock(): bool
+    public function totalStock(): float
     {
-        return $this->isStockTracked()
-            && (float) $this->quantity <= 0;
-    }
-
-    public function isLowStock(): bool
-    {
-        return $this->isStockTracked()
-            && $this->low_stock_alert
-            && (float) $this->quantity > 0
-            && (float) $this->quantity <= (float) $this->reorder_level;
-    }
-
-    public function getStockStatusAttribute(): string
-    {
-        if (! $this->isStockTracked()) {
-            return 'not_tracked';
-        }
-
-        if ($this->isOutOfStock()) {
-            return 'out_of_stock';
-        }
-
-        if ($this->isLowStock()) {
-            return 'low_stock';
-        }
-
-        return 'in_stock';
+        return (float) $this->warehouseStocks()
+            ->sum('quantity');
     }
 }

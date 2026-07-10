@@ -1,46 +1,18 @@
 <?php
 
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-
-/*
-|--------------------------------------------------------------------------
-| Public Routes
-|--------------------------------------------------------------------------
-*/
 
 Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-/*
-|--------------------------------------------------------------------------
-| Authenticated Routes
-|--------------------------------------------------------------------------
-*/
-
 Route::middleware(['auth'])->group(function () {
-
-    /*
-    |--------------------------------------------------------------------------
-    | Main Dashboard
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/dashboard', function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Branch Management
-    |--------------------------------------------------------------------------
-    |
-    | Page:
-    | resources/js/pages/branches/index.tsx
-    |
-    */
 
     Route::prefix('branches')
         ->name('branches.')
@@ -62,59 +34,36 @@ Route::middleware(['auth'])->group(function () {
                 ->name('destroy');
         });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Warehouse Management
-    |--------------------------------------------------------------------------
-    |
-    | Page:
-    | resources/js/pages/warehouses/index.tsx
-    |
-    */
+    Route::prefix('warehouses')
+        ->name('warehouses.')
+        ->controller(WarehouseController::class)
+        ->group(function () {
+            Route::get('/', 'index')
+                ->name('index');
 
-    Route::get('/warehouses', function () {
-        return Inertia::render('warehouses/index');
-    })->name('warehouses.index');
+            Route::post('/', 'store')
+                ->name('store');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Inventory Management
-    |--------------------------------------------------------------------------
-    |
-    | Folder:
-    | resources/js/pages/inventory/
-    |
-    */
+            Route::put('/{warehouse}', 'update')
+                ->name('update');
+
+            Route::patch(
+                '/{warehouse}/status',
+                'updateStatus'
+            )->name('status');
+
+            Route::delete('/{warehouse}', 'destroy')
+                ->name('destroy');
+        });
 
     Route::prefix('inventory')
         ->name('inventory.')
         ->group(function () {
-
-            /*
-            |--------------------------------------------------------------------------
-            | Stock Overview
-            |--------------------------------------------------------------------------
-            |
-            | Page:
-            | resources/js/pages/inventory/overview/index.tsx
-            |
-            */
-
             Route::get('/overview', function () {
                 return Inertia::render(
                     'inventory/overview/index'
                 );
             })->name('overview');
-
-            /*
-            |--------------------------------------------------------------------------
-            | Products
-            |--------------------------------------------------------------------------
-            |
-            | Page:
-            | resources/js/pages/inventory/products/index.tsx
-            |
-            */
 
             Route::get('/products', function () {
                 return Inertia::render(
@@ -122,31 +71,11 @@ Route::middleware(['auth'])->group(function () {
                 );
             })->name('products.index');
 
-            /*
-            |--------------------------------------------------------------------------
-            | Categories
-            |--------------------------------------------------------------------------
-            |
-            | Page:
-            | resources/js/pages/inventory/categories/index.tsx
-            |
-            */
-
             Route::get('/categories', function () {
                 return Inertia::render(
                     'inventory/categories/index'
                 );
             })->name('categories.index');
-
-            /*
-            |--------------------------------------------------------------------------
-            | Stock Management
-            |--------------------------------------------------------------------------
-            |
-            | Page:
-            | resources/js/pages/inventory/stocks/index.tsx
-            |
-            */
 
             Route::get('/stocks', function () {
                 return Inertia::render(
@@ -155,30 +84,11 @@ Route::middleware(['auth'])->group(function () {
             })->name('stocks.index');
         });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Stock Movements
-    |--------------------------------------------------------------------------
-    |
-    | Page:
-    | resources/js/pages/stock-movements/index.tsx
-    |
-    */
-
     Route::get('/stock-movements', function () {
         return Inertia::render(
             'stock-movements/index'
         );
     })->name('stock-movements.index');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Supplier Management
-    |--------------------------------------------------------------------------
-    |
-    | These routes are preserved for the planned supplier module.
-    |
-    */
 
     Route::prefix('suppliers')
         ->name('suppliers.')
@@ -202,15 +112,6 @@ Route::middleware(['auth'])->group(function () {
             })->name('receiving.index');
         });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Team Management
-    |--------------------------------------------------------------------------
-    |
-    | These routes are preserved for the planned team module.
-    |
-    */
-
     Route::prefix('team')
         ->name('team.')
         ->group(function () {
@@ -233,16 +134,6 @@ Route::middleware(['auth'])->group(function () {
             })->name('roles.index');
         });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Temporary Legacy Redirects
-    |--------------------------------------------------------------------------
-    |
-    | These redirects prevent the old sidebar URLs from returning 404
-    | while we are still restructuring the sidebar.
-    |
-    */
-
     Route::redirect(
         '/inventory/branches',
         '/branches'
@@ -263,12 +154,6 @@ Route::middleware(['auth'])->group(function () {
         '/stock-movements'
     );
 });
-
-/*
-|--------------------------------------------------------------------------
-| Additional Route Files
-|--------------------------------------------------------------------------
-*/
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

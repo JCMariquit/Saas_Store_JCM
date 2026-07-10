@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -48,8 +49,10 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/{warehouse}', 'update')
                 ->name('update');
 
-            Route::patch('/{warehouse}/status', 'updateStatus')
-                ->name('status');
+            Route::patch(
+                '/{warehouse}/status',
+                'updateStatus'
+            )->name('status');
 
             Route::delete('/{warehouse}', 'destroy')
                 ->name('destroy');
@@ -64,11 +67,27 @@ Route::middleware(['auth'])->group(function () {
                 );
             })->name('overview');
 
-            Route::get('/products', function () {
-                return Inertia::render(
-                    'inventory/products/index'
-                );
-            })->name('products.index');
+            Route::prefix('products')
+                ->name('products.')
+                ->controller(ProductController::class)
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
+
+                    Route::post('/', 'store')
+                        ->name('store');
+
+                    Route::put('/{product}', 'update')
+                        ->name('update');
+
+                    Route::patch(
+                        '/{product}/status',
+                        'updateStatus'
+                    )->name('status');
+
+                    Route::delete('/{product}', 'destroy')
+                        ->name('destroy');
+                });
 
             Route::prefix('categories')
                 ->name('categories.')

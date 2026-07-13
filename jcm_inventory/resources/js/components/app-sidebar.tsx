@@ -2,11 +2,15 @@ import * as React from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import {
     BarChart3,
+    Beaker,
     Boxes,
     Building2,
     ChevronDown,
+    Circle,
     ClipboardCheck,
+    Clock3,
     Code2,
+    FlaskConical,
     History,
     LayoutDashboard,
     Package2,
@@ -34,190 +38,123 @@ import {
 
 /*
 |--------------------------------------------------------------------------
-| Types
+| Dynamic sidebar types
 |--------------------------------------------------------------------------
 */
 
-type SidebarBadge =
-    | 'LIVE'
-    | 'CORE'
-    | 'DEV'
-    | 'TUNE'
-    | 'TEST'
-    | 'NEW'
-    | 'BETA'
-    | 'SOON';
+type IconComponent = React.ElementType;
 
-type SidebarItem = {
+type DynamicBadge = {
+    code: string;
+    name: string;
+    iconKey: string | null;
+    styleKey: string | null;
+};
+
+type DynamicSidebarItem = {
+    id: number;
+    key: string;
+    sectionKey: string;
+    type: 'link' | 'group' | 'heading';
     title: string;
     url: string;
-    icon: React.ElementType;
-    badge?: SidebarBadge;
-    disabled?: boolean;
+    iconKey: string | null;
+    disabled: boolean;
+    sortOrder: number;
+    badge: DynamicBadge | null;
+    children: DynamicSidebarItem[];
 };
 
-type SidebarGroup = {
-    title: string;
-    icon: React.ElementType;
-    badge?: SidebarBadge;
-    items: SidebarItem[];
+type DynamicSidebarSection = {
+    key: string;
+    label: string;
+    sortOrder: number;
+    items: DynamicSidebarItem[];
 };
 
-/*
-|--------------------------------------------------------------------------
-| Overview
-|--------------------------------------------------------------------------
-*/
+type SidebarPayload = {
+    product: {
+        id: number;
+        code: string;
+        name: string;
+        slug: string;
+        status: string;
+    } | null;
 
-const overviewItems: SidebarItem[] = [
-    {
-        title: 'Main Dashboard',
-        url: '/dashboard',
-        icon: LayoutDashboard,
-        badge: 'DEV',
-    },
-    {
-        title: 'Stock Overview',
-        url: '/inventory/overview',
-        icon: BarChart3,
-        badge: 'SOON',
-        disabled: true,
-    },
-    {
-        title: 'Team Overview',
-        url: '/team/overview',
-        icon: Users,
-        badge: 'SOON',
-        disabled: true,
-    },
-];
+    access: {
+        roleCode: string;
+        roleName: string;
+        accountOwnerId: number;
+    } | null;
 
-/*
-|--------------------------------------------------------------------------
-| Inventory
-|--------------------------------------------------------------------------
-*/
+    subscription: {
+        id: number;
+        planId: number;
+        status: string;
+        endDate: string | null;
+    } | null;
 
-const inventoryGroup: SidebarGroup = {
-    title: 'Inventory',
-    icon: Boxes,
-    badge: 'DEV',
-    items: [
-        {
-            title: 'Categories',
-            url: '/inventory/categories',
-            icon: Tags,
-            badge: 'DEV',
-        },
-        {
-            title: 'Products',
-            url: '/inventory/products',
-            icon: Package2,
-            badge: 'DEV',
-        },
-        {
-            title: 'Stock Management',
-            url: '/inventory/stocks',
-            icon: Boxes,
-            badge: 'DEV',
-        },
-    ],
+    sections: DynamicSidebarSection[];
+};
+
+type SidebarPageProps = {
+    [key: string]: unknown;
+    sidebar?: SidebarPayload;
 };
 
 /*
 |--------------------------------------------------------------------------
-| Direct Management Pages
+| Icon registry
 |--------------------------------------------------------------------------
+|
+| The database stores icon names such as "Boxes" or "Users".
+| React maps those names to the matching Lucide icon component.
+|
 */
 
-const managementItems: SidebarItem[] = [
-    {
-        title: 'Branches',
-        url: '/inventory/branches',
-        icon: Building2,
-        badge: 'DEV',
-    },
-    {
-        title: 'Warehouse',
-        url: '/inventory/warehouses',
-        icon: Warehouse,
-        badge: 'DEV',
-    },
-    {
-        title: 'Stock Movements',
-        url: '/inventory/movements',
-        icon: History,
-        badge: 'SOON',
-        disabled: true,
-    },
-];
+const iconMap: Record<string, IconComponent> = {
+    BarChart3,
+    Beaker,
+    Boxes,
+    Building2,
+    ChevronDown,
+    Circle,
+    ClipboardCheck,
+    Clock3,
+    Code2,
+    FlaskConical,
+    History,
+    LayoutDashboard,
+    Package2,
+    PackageCheck,
+    Settings,
+    Sparkles,
+    Tags,
+    Truck,
+    UserCog,
+    Users,
+    Warehouse,
+};
+
+function resolveIcon(iconKey: string | null): IconComponent {
+    if (!iconKey) {
+        return Circle;
+    }
+
+    return iconMap[iconKey] ?? Circle;
+}
 
 /*
 |--------------------------------------------------------------------------
-| Management Groups
+| Active URL helper
 |--------------------------------------------------------------------------
 */
 
-const managementGroups: SidebarGroup[] = [
-    {
-        title: 'Suppliers',
-        icon: Truck,
-        badge: 'SOON',
-        items: [
-            {
-                title: 'Supplier List',
-                url: '/suppliers',
-                icon: Truck,
-                badge: 'SOON',
-                disabled: true,
-            },
-            {
-                title: 'Purchase Orders',
-                url: '/suppliers/purchase-orders',
-                icon: ClipboardCheck,
-                badge: 'SOON',
-                disabled: true,
-            },
-            {
-                title: 'Receiving',
-                url: '/suppliers/receiving',
-                icon: PackageCheck,
-                badge: 'SOON',
-                disabled: true,
-            },
-        ],
-    },
-    {
-        title: 'Team Management',
-        icon: Users,
-        badge: 'SOON',
-        items: [
-            {
-                title: 'Staff Accounts',
-                url: '/team/staff',
-                icon: Users,
-                badge: 'SOON',
-                disabled: true,
-            },
-            {
-                title: 'Roles & Access',
-                url: '/team/roles',
-                icon: UserCog,
-                badge: 'SOON',
-                disabled: true,
-            },
-        ],
-    },
-];
-
-/*
-|--------------------------------------------------------------------------
-| Active URL Helper
-|--------------------------------------------------------------------------
-*/
-
-function isUrlActive(currentUrl: string, itemUrl: string): boolean {
-    if (itemUrl === '#') {
+function isUrlActive(
+    currentUrl: string,
+    itemUrl: string,
+): boolean {
+    if (!itemUrl || itemUrl === '#') {
         return false;
     }
 
@@ -232,52 +169,63 @@ function isUrlActive(currentUrl: string, itemUrl: string): boolean {
 
 /*
 |--------------------------------------------------------------------------
-| Menu Badge
+| Badge
 |--------------------------------------------------------------------------
 */
 
-function MenuBadge({ badge }: { badge?: SidebarBadge }) {
+function MenuBadge({
+    badge,
+}: {
+    badge: DynamicBadge | null;
+}) {
     if (!badge) {
         return null;
     }
 
-    const styles: Record<SidebarBadge, string> = {
-        LIVE: 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/15',
-        CORE: 'bg-blue-500/10 text-blue-600 ring-blue-500/15',
-        DEV: 'bg-sky-500/10 text-sky-600 ring-sky-500/15',
-        TUNE: 'bg-orange-500/10 text-orange-600 ring-orange-500/15',
-        TEST: 'bg-amber-500/10 text-amber-600 ring-amber-500/15',
-        NEW: 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/15',
-        BETA: 'bg-violet-500/10 text-violet-600 ring-violet-500/15',
-        SOON: 'bg-slate-500/10 text-slate-500 ring-slate-500/15',
+    const fallbackStyle =
+        'bg-slate-500/10 text-slate-500 ring-slate-500/15';
+
+    const styles: Record<string, string> = {
+        live: 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/15',
+        core: 'bg-blue-500/10 text-blue-600 ring-blue-500/15',
+        development:
+            'bg-sky-500/10 text-sky-600 ring-sky-500/15',
+        tuning:
+            'bg-orange-500/10 text-orange-600 ring-orange-500/15',
+        testing:
+            'bg-amber-500/10 text-amber-600 ring-amber-500/15',
+        new: 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/15',
+        beta: 'bg-violet-500/10 text-violet-600 ring-violet-500/15',
+        soon: fallbackStyle,
+        default: fallbackStyle,
     };
 
-    const Icon =
-        badge === 'DEV'
-            ? Code2
-            : badge === 'TUNE'
-              ? Settings
-              : Sparkles;
+    const BadgeIcon = resolveIcon(badge.iconKey);
+
+    const style = badge.styleKey
+        ? (styles[badge.styleKey] ?? fallbackStyle)
+        : fallbackStyle;
 
     return (
         <span
+            title={badge.name}
             className={[
                 'ml-auto inline-flex h-5 shrink-0 items-center gap-1',
                 'rounded-md px-1.5',
                 'text-[9px] font-bold tracking-wide',
                 'ring-1',
-                styles[badge],
+                style,
             ].join(' ')}
         >
-            <Icon className="size-3" />
-            {badge}
+            <BadgeIcon className="size-3" />
+            {badge.code}
         </span>
     );
 }
 
 /*
 |--------------------------------------------------------------------------
-| Direct Item Content
+| Direct item content
 |--------------------------------------------------------------------------
 */
 
@@ -286,11 +234,11 @@ function DirectItemContent({
     active,
     collapsed,
 }: {
-    item: SidebarItem;
+    item: DynamicSidebarItem;
     active: boolean;
     collapsed: boolean;
 }) {
-    const Icon = item.icon;
+    const Icon = resolveIcon(item.iconKey);
 
     return (
         <>
@@ -322,11 +270,15 @@ function DirectItemContent({
 
 /*
 |--------------------------------------------------------------------------
-| Direct Menu Item
+| Direct menu item
 |--------------------------------------------------------------------------
 */
 
-function DirectItem({ item }: { item: SidebarItem }) {
+function DirectItem({
+    item,
+}: {
+    item: DynamicSidebarItem;
+}) {
     const { url } = usePage();
     const { state } = useSidebar();
 
@@ -345,12 +297,12 @@ function DirectItem({ item }: { item: SidebarItem }) {
             : 'w-full px-3',
     ].join(' ');
 
-    if (item.disabled) {
+    if (item.disabled || item.url === '#') {
         return (
             <SidebarMenuItem>
                 <SidebarMenuButton
                     type="button"
-                    tooltip={`${item.title} — coming soon`}
+                    tooltip={`${item.title} — not yet available`}
                     aria-disabled="true"
                     className={[
                         baseClass,
@@ -363,7 +315,9 @@ function DirectItem({ item }: { item: SidebarItem }) {
                     <div
                         className={[
                             'flex h-full w-full items-center',
-                            collapsed ? 'justify-center' : 'gap-3',
+                            collapsed
+                                ? 'justify-center'
+                                : 'gap-3',
                         ].join(' ')}
                     >
                         <DirectItemContent
@@ -394,7 +348,9 @@ function DirectItem({ item }: { item: SidebarItem }) {
                     prefetch
                     className={[
                         'flex h-full w-full items-center',
-                        collapsed ? 'justify-center' : 'gap-3',
+                        collapsed
+                            ? 'justify-center'
+                            : 'gap-3',
                     ].join(' ')}
                 >
                     <DirectItemContent
@@ -410,7 +366,7 @@ function DirectItem({ item }: { item: SidebarItem }) {
 
 /*
 |--------------------------------------------------------------------------
-| Dropdown Item
+| Dropdown child item
 |--------------------------------------------------------------------------
 */
 
@@ -418,10 +374,10 @@ function DropdownItem({
     item,
     currentUrl,
 }: {
-    item: SidebarItem;
+    item: DynamicSidebarItem;
     currentUrl: string;
 }) {
-    const Icon = item.icon;
+    const Icon = resolveIcon(item.iconKey);
 
     const active =
         !item.disabled &&
@@ -434,7 +390,7 @@ function DropdownItem({
         'transition-all duration-200',
     ].join(' ');
 
-    const itemContent = (
+    const content = (
         <>
             <Icon
                 className={[
@@ -458,7 +414,7 @@ function DropdownItem({
             <button
                 type="button"
                 aria-disabled="true"
-                title={`${item.title} — coming soon`}
+                title={`${item.title} — not yet available`}
                 className={[
                     itemClass,
                     'cursor-not-allowed',
@@ -467,7 +423,7 @@ function DropdownItem({
                     'hover:text-sidebar-foreground/50',
                 ].join(' ')}
             >
-                {itemContent}
+                {content}
             </button>
         );
     }
@@ -483,43 +439,42 @@ function DropdownItem({
                     : 'text-sidebar-foreground/55 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground',
             ].join(' ')}
         >
-            {itemContent}
+            {content}
         </Link>
     );
 }
 
 /*
 |--------------------------------------------------------------------------
-| Dropdown Group
+| Dropdown group
 |--------------------------------------------------------------------------
 */
 
-function SidebarDropdown({ group }: { group: SidebarGroup }) {
+function SidebarDropdown({
+    group,
+}: {
+    group: DynamicSidebarItem;
+}) {
     const { url } = usePage();
     const { state, toggleSidebar } = useSidebar();
 
     const collapsed = state === 'collapsed';
-    const GroupIcon = group.icon;
+    const GroupIcon = resolveIcon(group.iconKey);
 
-    const hasActiveItem = group.items.some(
+    const hasActiveItem = group.children.some(
         (item) =>
             !item.disabled &&
             isUrlActive(url, item.url),
     );
 
-    const [open, setOpen] = React.useState(hasActiveItem);
+    const [open, setOpen] =
+        React.useState(hasActiveItem);
 
     React.useEffect(() => {
         if (hasActiveItem) {
             setOpen(true);
         }
     }, [hasActiveItem]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Collapsed State
-    |--------------------------------------------------------------------------
-    */
 
     if (collapsed) {
         return (
@@ -557,17 +512,13 @@ function SidebarDropdown({ group }: { group: SidebarGroup }) {
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Expanded State
-    |--------------------------------------------------------------------------
-    */
-
     return (
         <div className="space-y-1">
             <button
                 type="button"
-                onClick={() => setOpen((value) => !value)}
+                onClick={() =>
+                    setOpen((value) => !value)
+                }
                 className={[
                     'group flex h-10 w-full items-center gap-3',
                     'overflow-hidden rounded-[10px] px-3',
@@ -609,9 +560,9 @@ function SidebarDropdown({ group }: { group: SidebarGroup }) {
 
             {open && (
                 <div className="ml-5 space-y-0.5 border-l border-border/60 pl-3">
-                    {group.items.map((item) => (
+                    {group.children.map((item) => (
                         <DropdownItem
-                            key={item.title}
+                            key={item.id}
                             item={item}
                             currentUrl={url}
                         />
@@ -624,13 +575,75 @@ function SidebarDropdown({ group }: { group: SidebarGroup }) {
 
 /*
 |--------------------------------------------------------------------------
-| App Sidebar
+| Section items
+|--------------------------------------------------------------------------
+*/
+
+function SectionItems({
+    items,
+    collapsed,
+}: {
+    items: DynamicSidebarItem[];
+    collapsed: boolean;
+}) {
+    if (collapsed) {
+        return (
+            <SidebarMenu className="items-center space-y-1 px-0">
+                {items.map((item) =>
+                    item.type === 'group' ? (
+                        <SidebarDropdown
+                            key={item.id}
+                            group={item}
+                        />
+                    ) : (
+                        <DirectItem
+                            key={item.id}
+                            item={item}
+                        />
+                    ),
+                )}
+            </SidebarMenu>
+        );
+    }
+
+    return (
+        <div className="space-y-1 px-3">
+            {items.map((item) =>
+                item.type === 'group' ? (
+                    <SidebarDropdown
+                        key={item.id}
+                        group={item}
+                    />
+                ) : (
+                    <SidebarMenu
+                        key={item.id}
+                        className="space-y-0.5"
+                    >
+                        <DirectItem item={item} />
+                    </SidebarMenu>
+                ),
+            )}
+        </div>
+    );
+}
+
+/*
+|--------------------------------------------------------------------------
+| App sidebar
 |--------------------------------------------------------------------------
 */
 
 export function AppSidebar() {
     const { state } = useSidebar();
     const collapsed = state === 'collapsed';
+
+    const { sidebar } =
+        usePage<SidebarPageProps>().props;
+
+    const sections = sidebar?.sections ?? [];
+
+    const productName =
+        sidebar?.product?.name ?? 'JCM Inventory';
 
     return (
         <>
@@ -679,7 +692,7 @@ export function AppSidebar() {
                             <SidebarMenuButton
                                 size="lg"
                                 asChild
-                                tooltip="JCM Inventory"
+                                tooltip={productName}
                                 className={[
                                     'h-auto overflow-hidden rounded-[16px]',
                                     'transition-all duration-200',
@@ -710,87 +723,47 @@ export function AppSidebar() {
                     className={[
                         'inventory-scrollbar overflow-x-hidden overflow-y-auto',
                         'transition-all duration-200',
-                        collapsed ? 'gap-2 px-2' : 'gap-5 px-0',
+                        collapsed
+                            ? 'gap-2 px-2'
+                            : 'gap-5 px-0',
                     ].join(' ')}
                 >
-                    {/* Overview */}
-                    <div className={collapsed ? 'space-y-1' : 'space-y-2'}>
-                        {!collapsed && (
-                            <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35">
-                                Overview
-                            </p>
-                        )}
-
-                        <SidebarMenu
+                    {sections.map((section) => (
+                        <div
+                            key={section.key}
                             className={
                                 collapsed
-                                    ? 'items-center space-y-1 px-0'
-                                    : 'space-y-0.5 px-3'
+                                    ? 'space-y-1'
+                                    : 'space-y-2 pb-2'
                             }
                         >
-                            {overviewItems.map((item) => (
-                                <DirectItem
-                                    key={item.title}
-                                    item={item}
-                                />
-                            ))}
-                        </SidebarMenu>
-                    </div>
+                            {!collapsed && (
+                                <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35">
+                                    {section.label}
+                                </p>
+                            )}
 
-                    {/* Management */}
-                    <div
-                        className={
-                            collapsed
-                                ? 'space-y-1'
-                                : 'space-y-2 pb-5'
-                        }
-                    >
-                        {!collapsed && (
-                            <p className="px-5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35">
-                                Management
-                            </p>
-                        )}
+                            <SectionItems
+                                items={section.items}
+                                collapsed={collapsed}
+                            />
+                        </div>
+                    ))}
 
-                        {collapsed ? (
-                            <SidebarMenu className="items-center space-y-1 px-0">
-                                <SidebarDropdown group={inventoryGroup} />
+                    {sections.length === 0 &&
+                        !collapsed && (
+                            <div className="px-5 py-4">
+                                <p className="text-xs font-medium text-sidebar-foreground/50">
+                                    No menu access assigned.
+                                </p>
 
-                                {managementItems.map((item) => (
-                                    <DirectItem
-                                        key={item.title}
-                                        item={item}
-                                    />
-                                ))}
-
-                                {managementGroups.map((group) => (
-                                    <SidebarDropdown
-                                        key={group.title}
-                                        group={group}
-                                    />
-                                ))}
-                            </SidebarMenu>
-                        ) : (
-                            <div className="space-y-1 px-3">
-                                <SidebarDropdown group={inventoryGroup} />
-
-                                <SidebarMenu className="space-y-0.5 py-0.5">
-                                    {managementItems.map((item) => (
-                                        <DirectItem
-                                            key={item.title}
-                                            item={item}
-                                        />
-                                    ))}
-                                </SidebarMenu>
-
-                                {managementGroups.map((group) => (
-                                    <SidebarDropdown
-                                        key={group.title}
-                                        group={group}
-                                    />
-                                ))}
+                                <p className="mt-1 text-[11px] leading-4 text-sidebar-foreground/35">
+                                    Check the user product
+                                    access, subscription and
+                                    sidebar assignments.
+                                </p>
                             </div>
                         )}
-                    </div>
                 </SidebarContent>
             </Sidebar>
         </>

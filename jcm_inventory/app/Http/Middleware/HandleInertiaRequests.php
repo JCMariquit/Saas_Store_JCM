@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\DynamicSidebarService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -9,18 +10,12 @@ use Inertia\Middleware;
 class HandleInertiaRequests extends Middleware
 {
     /**
-     * The root template that's loaded on the first page visit.
-     *
-     * @see https://inertiajs.com/server-side-setup#root-template
-     *
-     * @var string
+     * The root template loaded on the first page visit.
      */
     protected $rootView = 'app';
 
     /**
-     * Determines the current asset version.
-     *
-     * @see https://inertiajs.com/asset-versioning
+     * Determine the current asset version.
      */
     public function version(Request $request): ?string
     {
@@ -28,23 +23,42 @@ class HandleInertiaRequests extends Middleware
     }
 
     /**
-     * Define the props that are shared by default.
-     *
-     * @see https://inertiajs.com/shared-data
+     * Define the props shared with every Inertia page.
      *
      * @return array<string, mixed>
      */
     public function share(Request $request): array
     {
-        [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
+        [$message, $author] = str(
+            Inspiring::quotes()->random()
+        )->explode('-');
 
         return array_merge(parent::share($request), [
-            ...parent::share($request),
             'name' => config('app.name'),
-            'quote' => ['message' => trim($message), 'author' => trim($author)],
+
+            'quote' => [
+                'message' => trim($message),
+                'author' => trim($author),
+            ],
+
             'auth' => [
                 'user' => $request->user(),
             ],
+
+            'sidebar' => fn (): array => $request->user()
+                ? app(DynamicSidebarService::class)->forUser(
+                    $request->user(),
+                    config(
+                        'jcm.product_code',
+                        'JCM-INVENTORY-001'
+                    )
+                )
+                : [
+                    'product' => null,
+                    'access' => null,
+                    'subscription' => null,
+                    'sections' => [],
+                ],
         ]);
     }
 }

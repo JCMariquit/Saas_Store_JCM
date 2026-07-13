@@ -4,45 +4,21 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-
-/*
-|--------------------------------------------------------------------------
-| Public routes
-|--------------------------------------------------------------------------
-*/
 
 Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-/*
-|--------------------------------------------------------------------------
-| Authenticated Inventory routes
-|--------------------------------------------------------------------------
-*/
-
 Route::middleware(['auth'])->group(function () {
-
-    /*
-    |--------------------------------------------------------------------------
-    | Dashboard
-    |--------------------------------------------------------------------------
-    */
-
     Route::get('/dashboard', function () {
         return Inertia::render('dashboard');
     })
         ->middleware('feature:dashboard')
         ->name('dashboard');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Branches
-    |--------------------------------------------------------------------------
-    */
 
     Route::prefix('branches')
         ->name('branches.')
@@ -67,12 +43,6 @@ Route::middleware(['auth'])->group(function () {
                 ->name('destroy');
         });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Warehouses
-    |--------------------------------------------------------------------------
-    */
-
     Route::prefix('warehouses')
         ->name('warehouses.')
         ->middleware('feature:warehouse_management')
@@ -96,22 +66,9 @@ Route::middleware(['auth'])->group(function () {
                 ->name('destroy');
         });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Inventory
-    |--------------------------------------------------------------------------
-    */
-
     Route::prefix('inventory')
         ->name('inventory.')
         ->group(function () {
-
-            /*
-            |--------------------------------------------------------------------------
-            | Inventory overview
-            |--------------------------------------------------------------------------
-            */
-
             Route::get('/overview', function () {
                 return Inertia::render(
                     'inventory/overview/index'
@@ -121,12 +78,6 @@ Route::middleware(['auth'])->group(function () {
                     'feature:inventory_overview'
                 )
                 ->name('overview');
-
-            /*
-            |--------------------------------------------------------------------------
-            | Products
-            |--------------------------------------------------------------------------
-            */
 
             Route::prefix('products')
                 ->name('products.')
@@ -139,8 +90,10 @@ Route::middleware(['auth'])->group(function () {
                     Route::post('/', 'store')
                         ->name('store');
 
-                    Route::put('/{product}', 'update')
-                        ->name('update');
+                    Route::put(
+                        '/{product}',
+                        'update'
+                    )->name('update');
 
                     Route::patch(
                         '/{product}/status',
@@ -152,12 +105,6 @@ Route::middleware(['auth'])->group(function () {
                         'destroy'
                     )->name('destroy');
                 });
-
-            /*
-            |--------------------------------------------------------------------------
-            | Categories
-            |--------------------------------------------------------------------------
-            */
 
             Route::prefix('categories')
                 ->name('categories.')
@@ -186,20 +133,6 @@ Route::middleware(['auth'])->group(function () {
                     )->name('destroy');
                 });
 
-            /*
-            |--------------------------------------------------------------------------
-            | Stocks
-            |--------------------------------------------------------------------------
-            |
-            | Sa ngayon, lahat ng stock actions ay protected ng
-            | stock_management feature.
-            |
-            | Later puwede tayong gumawa ng separate action permissions para:
-            | - stock_adjustment
-            | - stock_transfer
-            |
-            */
-
             Route::prefix('stocks')
                 ->name('stocks.')
                 ->middleware(
@@ -221,12 +154,20 @@ Route::middleware(['auth'])->group(function () {
                     Route::post(
                         '/{stock}/adjust',
                         'adjust'
-                    )->name('adjust');
+                    )
+                        ->middleware(
+                            'feature:stock_adjustment'
+                        )
+                        ->name('adjust');
 
                     Route::post(
                         '/{stock}/transfer',
                         'transfer'
-                    )->name('transfer');
+                    )
+                        ->middleware(
+                            'feature:stock_transfer'
+                        )
+                        ->name('transfer');
 
                     Route::delete(
                         '/{stock}',
@@ -235,25 +176,12 @@ Route::middleware(['auth'])->group(function () {
                 });
         });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Stock movements
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/stock-movements', function () {
-        return Inertia::render(
-            'stock-movements/index'
-        );
-    })
+    Route::get(
+        '/stock-movements',
+        [StockMovementController::class, 'index']
+    )
         ->middleware('feature:stock_movements')
         ->name('stock-movements.index');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Suppliers
-    |--------------------------------------------------------------------------
-    */
 
     Route::prefix('suppliers')
         ->name('suppliers.')
@@ -290,12 +218,6 @@ Route::middleware(['auth'])->group(function () {
                 ->name('receiving.index');
         });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Team
-    |--------------------------------------------------------------------------
-    */
-
     Route::prefix('team')
         ->name('team.')
         ->group(function () {
@@ -330,12 +252,6 @@ Route::middleware(['auth'])->group(function () {
                 ->name('roles.index');
         });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Legacy redirects
-    |--------------------------------------------------------------------------
-    */
-
     Route::redirect(
         '/inventory/branches',
         '/branches'
@@ -356,12 +272,6 @@ Route::middleware(['auth'])->group(function () {
         '/stock-movements'
     );
 });
-
-/*
-|--------------------------------------------------------------------------
-| Additional route files
-|--------------------------------------------------------------------------
-*/
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

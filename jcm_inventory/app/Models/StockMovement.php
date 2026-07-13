@@ -13,6 +13,8 @@ class StockMovement extends Model
 
     protected $connection = 'mysql';
 
+    protected $table = 'stock_movements';
+
     public const OPENING_STOCK = 'opening_stock';
     public const STOCK_IN = 'stock_in';
     public const STOCK_OUT = 'stock_out';
@@ -66,20 +68,20 @@ class StockMovement extends Model
         ];
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Relationships
-    |--------------------------------------------------------------------------
-    */
-
     public function warehouse(): BelongsTo
     {
-        return $this->belongsTo(Warehouse::class);
+        return $this->belongsTo(
+            Warehouse::class,
+            'warehouse_id'
+        );
     }
 
     public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(
+            Product::class,
+            'product_id'
+        );
     }
 
     public function relatedWarehouse(): BelongsTo
@@ -90,17 +92,14 @@ class StockMovement extends Model
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Query Scopes
-    |--------------------------------------------------------------------------
-    */
-
     public function scopeForTenant(
         Builder $query,
         int $tenantId
     ): Builder {
-        return $query->where('tenant_id', $tenantId);
+        return $query->where(
+            $this->qualifyColumn('tenant_id'),
+            $tenantId
+        );
     }
 
     public function scopeForWarehouse(
@@ -108,7 +107,7 @@ class StockMovement extends Model
         int $warehouseId
     ): Builder {
         return $query->where(
-            'warehouse_id',
+            $this->qualifyColumn('warehouse_id'),
             $warehouseId
         );
     }
@@ -118,7 +117,7 @@ class StockMovement extends Model
         int $productId
     ): Builder {
         return $query->where(
-            'product_id',
+            $this->qualifyColumn('product_id'),
             $productId
         );
     }
@@ -128,25 +127,43 @@ class StockMovement extends Model
         string $movementType
     ): Builder {
         return $query->where(
-            'movement_type',
+            $this->qualifyColumn('movement_type'),
             $movementType
         );
     }
 
-    public function scopeIncoming(Builder $query): Builder
+    public function scopeIncoming(
+        Builder $query
+    ): Builder {
+        return $query->whereIn(
+            $this->qualifyColumn('movement_type'),
+            self::incomingTypes()
+        );
+    }
+
+    public function scopeOutgoing(
+        Builder $query
+    ): Builder {
+        return $query->whereIn(
+            $this->qualifyColumn('movement_type'),
+            self::outgoingTypes()
+        );
+    }
+
+    public static function incomingTypes(): array
     {
-        return $query->whereIn('movement_type', [
+        return [
             self::OPENING_STOCK,
             self::STOCK_IN,
             self::ADJUSTMENT_IN,
             self::TRANSFER_IN,
             self::RETURN_IN,
-        ]);
+        ];
     }
 
-    public function scopeOutgoing(Builder $query): Builder
+    public static function outgoingTypes(): array
     {
-        return $query->whereIn('movement_type', [
+        return [
             self::STOCK_OUT,
             self::ADJUSTMENT_OUT,
             self::TRANSFER_OUT,
@@ -154,36 +171,62 @@ class StockMovement extends Model
             self::RETURN_OUT,
             self::DAMAGE,
             self::EXPIRED,
-        ]);
+        ];
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Helpers
-    |--------------------------------------------------------------------------
-    */
+    public static function movementLabels(): array
+    {
+        return [
+            self::OPENING_STOCK => 'Opening Stock',
+            self::STOCK_IN => 'Stock In',
+            self::STOCK_OUT => 'Stock Out',
+            self::ADJUSTMENT_IN => 'Adjustment In',
+            self::ADJUSTMENT_OUT => 'Adjustment Out',
+            self::TRANSFER_IN => 'Transfer In',
+            self::TRANSFER_OUT => 'Transfer Out',
+            self::SALE => 'Sale',
+            self::RETURN_IN => 'Return In',
+            self::RETURN_OUT => 'Return Out',
+            self::DAMAGE => 'Damage',
+            self::EXPIRED => 'Expired',
+        ];
+    }
 
     public function isIncoming(): bool
     {
-        return in_array($this->movement_type, [
-            self::OPENING_STOCK,
-            self::STOCK_IN,
-            self::ADJUSTMENT_IN,
-            self::TRANSFER_IN,
-            self::RETURN_IN,
-        ], true);
+        return in_array(
+            $this->movement_type,
+            self::incomingTypes(),
+            true
+        );
     }
 
     public function isOutgoing(): bool
     {
-        return in_array($this->movement_type, [
-            self::STOCK_OUT,
-            self::ADJUSTMENT_OUT,
-            self::TRANSFER_OUT,
-            self::SALE,
-            self::RETURN_OUT,
-            self::DAMAGE,
-            self::EXPIRED,
-        ], true);
+        return in_array(
+            $this->movement_type,
+            self::outgoingTypes(),
+            true
+        );
+    }
+
+    public function movementLabel(): string
+    {
+        return self::movementLabels()[
+            $this->movement_type
+        ] ?? ucfirst(
+            str_replace(
+                '_',
+                ' ',
+                $this->movement_type
+            )
+        );
+    }
+
+    public function direction(): string
+    {
+        return $this->isIncoming()
+            ? 'in'
+            : 'out';
     }
 }

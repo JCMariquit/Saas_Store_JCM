@@ -1,0 +1,1614 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class ReceivingController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $tenantId = $this->getTenantId($request);
+
+        $search = trim(
+            (string) $request->input('search', '')
+        );
+
+        $status = trim(
+            (string) $request->input('status', '')
+        );
+
+        $supplierId = (int) $request->input(
+            'supplier_id',
+            0
+        );
+
+        $warehouseId = (int) $request->input(
+            'warehouse_id',
+            0
+        );
+
+        $dateFrom = $this->validDate(
+            (string) $request->input(
+                'date_from',
+                ''
+            )
+        );
+
+        $dateTo = $this->validDate(
+            (string) $request->input(
+                'date_to',
+                ''
+            )
+        );
+
+        $allowedStatuses = [
+            'posted',
+            'voided',
+        ];
+
+        $receipts = DB::connection('mysql')
+            ->table('purchase_receipts')
+            ->join(
+                'purchase_orders',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'purchase_orders.id',
+                            '=',
+                            'purchase_receipts.purchase_order_id'
+                        )
+                        ->on(
+                            'purchase_orders.tenant_id',
+                            '=',
+                            'purchase_receipts.tenant_id'
+                        );
+                }
+            )
+            ->join(
+                'suppliers',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'suppliers.id',
+                            '=',
+                            'purchase_receipts.supplier_id'
+                        )
+                        ->on(
+                            'suppliers.tenant_id',
+                            '=',
+                            'purchase_receipts.tenant_id'
+                        );
+                }
+            )
+            ->join(
+                'branches',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'branches.id',
+                            '=',
+                            'purchase_receipts.branch_id'
+                        )
+                        ->on(
+                            'branches.tenant_id',
+                            '=',
+                            'purchase_receipts.tenant_id'
+                        );
+                }
+            )
+            ->join(
+                'warehouses',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'warehouses.id',
+                            '=',
+                            'purchase_receipts.warehouse_id'
+                        )
+                        ->on(
+                            'warehouses.tenant_id',
+                            '=',
+                            'purchase_receipts.tenant_id'
+                        );
+                }
+            )
+            ->where(
+                'purchase_receipts.tenant_id',
+                $tenantId
+            )
+            ->when(
+                $search !== '',
+                function ($query) use ($search): void {
+                    $like = "%{$search}%";
+
+                    $query->where(
+                        function ($searchQuery) use (
+                            $like
+                        ): void {
+                            $searchQuery
+                                ->where(
+                                    'purchase_receipts.receipt_number',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'purchase_receipts.delivery_reference',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'purchase_orders.po_number',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'suppliers.name',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'suppliers.code',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'branches.name',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'warehouses.name',
+                                    'like',
+                                    $like
+                                )
+                                ->orWhere(
+                                    'purchase_receipts.notes',
+                                    'like',
+                                    $like
+                                );
+                        }
+                    );
+                }
+            )
+            ->when(
+                in_array(
+                    $status,
+                    $allowedStatuses,
+                    true
+                ),
+                fn ($query) => $query->where(
+                    'purchase_receipts.status',
+                    $status
+                )
+            )
+            ->when(
+                $supplierId > 0,
+                fn ($query) => $query->where(
+                    'purchase_receipts.supplier_id',
+                    $supplierId
+                )
+            )
+            ->when(
+                $warehouseId > 0,
+                fn ($query) => $query->where(
+                    'purchase_receipts.warehouse_id',
+                    $warehouseId
+                )
+            )
+            ->when(
+                $dateFrom !== null,
+                fn ($query) => $query->whereDate(
+                    'purchase_receipts.received_date',
+                    '>=',
+                    $dateFrom
+                )
+            )
+            ->when(
+                $dateTo !== null,
+                fn ($query) => $query->whereDate(
+                    'purchase_receipts.received_date',
+                    '<=',
+                    $dateTo
+                )
+            )
+            ->select([
+                'purchase_receipts.id',
+                'purchase_receipts.purchase_order_id',
+                'purchase_receipts.supplier_id',
+                'purchase_receipts.branch_id',
+                'purchase_receipts.warehouse_id',
+                'purchase_receipts.receipt_number',
+                'purchase_receipts.delivery_reference',
+                'purchase_receipts.received_date',
+                'purchase_receipts.status',
+                'purchase_receipts.total_quantity',
+                'purchase_receipts.total_amount',
+                'purchase_receipts.notes',
+                'purchase_receipts.received_by',
+                'purchase_receipts.voided_by',
+                'purchase_receipts.voided_at',
+                'purchase_receipts.void_reason',
+                'purchase_receipts.created_at',
+                'purchase_receipts.updated_at',
+
+                'purchase_orders.po_number',
+
+                'suppliers.name as supplier_name',
+                'suppliers.code as supplier_code',
+                'suppliers.contact_person as supplier_contact_person',
+
+                'branches.name as branch_name',
+                'branches.code as branch_code',
+
+                'warehouses.name as warehouse_name',
+                'warehouses.code as warehouse_code',
+            ])
+            ->selectSub(
+                function ($query): void {
+                    $query
+                        ->from('purchase_receipt_items')
+                        ->selectRaw('COUNT(*)')
+                        ->whereColumn(
+                            'purchase_receipt_items.purchase_receipt_id',
+                            'purchase_receipts.id'
+                        );
+                },
+                'items_count'
+            )
+            ->orderByDesc(
+                'purchase_receipts.received_date'
+            )
+            ->orderByDesc(
+                'purchase_receipts.id'
+            )
+            ->paginate(15)
+            ->withQueryString();
+
+        $receiptIds = $receipts
+            ->getCollection()
+            ->pluck('id')
+            ->map(
+                fn ($id): int => (int) $id
+            )
+            ->values();
+
+        $receiptItems = $receiptIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql')
+                ->table('purchase_receipt_items')
+                ->where('tenant_id', $tenantId)
+                ->whereIn(
+                    'purchase_receipt_id',
+                    $receiptIds
+                )
+                ->orderBy('id')
+                ->get([
+                    'id',
+                    'purchase_receipt_id',
+                    'purchase_order_item_id',
+                    'product_id',
+                    'product_name',
+                    'product_sku',
+                    'unit',
+                    'quantity_received',
+                    'unit_cost',
+                    'line_total',
+                    'notes',
+                ])
+                ->groupBy('purchase_receipt_id');
+
+        $userIds = $receipts
+            ->getCollection()
+            ->flatMap(
+                fn ($receipt): array => [
+                    $receipt->received_by,
+                    $receipt->voided_by,
+                ]
+            )
+            ->filter()
+            ->map(
+                fn ($id): int => (int) $id
+            )
+            ->unique()
+            ->values();
+
+        $users = $this->getSaasUsers(
+            $userIds
+        );
+
+        $receipts->setCollection(
+            $receipts
+                ->getCollection()
+                ->map(
+                    function ($receipt) use (
+                        $receiptItems,
+                        $users
+                    ): array {
+                        return [
+                            'id' => (int) $receipt->id,
+
+                            'receipt_number' =>
+                                $receipt->receipt_number,
+
+                            'delivery_reference' =>
+                                $receipt->delivery_reference,
+
+                            'received_date' =>
+                                $receipt->received_date,
+
+                            'status' =>
+                                $receipt->status,
+
+                            'status_label' =>
+                                $receipt->status === 'posted'
+                                    ? 'Posted'
+                                    : 'Voided',
+
+                            'purchase_order' => [
+                                'id' => (int) $receipt
+                                    ->purchase_order_id,
+
+                                'po_number' =>
+                                    $receipt->po_number,
+                            ],
+
+                            'supplier' => [
+                                'id' => (int) $receipt
+                                    ->supplier_id,
+
+                                'name' =>
+                                    $receipt->supplier_name,
+
+                                'code' =>
+                                    $receipt->supplier_code,
+
+                                'contact_person' =>
+                                    $receipt
+                                        ->supplier_contact_person,
+                            ],
+
+                            'branch' => [
+                                'id' => (int) $receipt
+                                    ->branch_id,
+
+                                'name' =>
+                                    $receipt->branch_name,
+
+                                'code' =>
+                                    $receipt->branch_code,
+                            ],
+
+                            'warehouse' => [
+                                'id' => (int) $receipt
+                                    ->warehouse_id,
+
+                                'name' =>
+                                    $receipt->warehouse_name,
+
+                                'code' =>
+                                    $receipt->warehouse_code,
+                            ],
+
+                            'items_count' =>
+                                (int) $receipt->items_count,
+
+                            'total_quantity' =>
+                                (float) $receipt
+                                    ->total_quantity,
+
+                            'total_amount' =>
+                                (float) $receipt
+                                    ->total_amount,
+
+                            'notes' => $receipt->notes,
+
+                            'received_by' =>
+                                $this->formatUser(
+                                    $receipt->received_by,
+                                    $users
+                                ),
+
+                            'voided_by' =>
+                                $this->formatUser(
+                                    $receipt->voided_by,
+                                    $users
+                                ),
+
+                            'voided_at' =>
+                                $receipt->voided_at,
+
+                            'void_reason' =>
+                                $receipt->void_reason,
+
+                            'created_at' =>
+                                $receipt->created_at,
+
+                            'updated_at' =>
+                                $receipt->updated_at,
+
+                            'items' => $receiptItems
+                                ->get(
+                                    (int) $receipt->id,
+                                    collect()
+                                )
+                                ->map(
+                                    fn ($item): array => [
+                                        'id' =>
+                                            (int) $item->id,
+
+                                        'purchase_order_item_id' =>
+                                            (int) $item
+                                                ->purchase_order_item_id,
+
+                                        'product_id' =>
+                                            (int) $item
+                                                ->product_id,
+
+                                        'product_name' =>
+                                            $item->product_name,
+
+                                        'product_sku' =>
+                                            $item->product_sku,
+
+                                        'unit' =>
+                                            $item->unit,
+
+                                        'quantity_received' =>
+                                            (float) $item
+                                                ->quantity_received,
+
+                                        'unit_cost' =>
+                                            (float) $item
+                                                ->unit_cost,
+
+                                        'line_total' =>
+                                            (float) $item
+                                                ->line_total,
+
+                                        'notes' =>
+                                            $item->notes,
+                                    ]
+                                )
+                                ->values()
+                                ->all(),
+                        ];
+                    }
+                )
+        );
+
+        $summaryQuery = DB::connection('mysql')
+            ->table('purchase_receipts')
+            ->where('tenant_id', $tenantId);
+
+        $summary = [
+            'total' => (clone $summaryQuery)
+                ->count(),
+
+            'posted' => (clone $summaryQuery)
+                ->where('status', 'posted')
+                ->count(),
+
+            'voided' => (clone $summaryQuery)
+                ->where('status', 'voided')
+                ->count(),
+
+            'received_quantity' =>
+                (float) (clone $summaryQuery)
+                    ->where('status', 'posted')
+                    ->sum('total_quantity'),
+
+            'received_value' =>
+                (float) (clone $summaryQuery)
+                    ->where('status', 'posted')
+                    ->sum('total_amount'),
+        ];
+
+        $suppliers = DB::connection('mysql')
+            ->table('suppliers')
+            ->where('tenant_id', $tenantId)
+            ->whereNull('deleted_at')
+            ->orderBy('name')
+            ->get([
+                'id',
+                'code',
+                'name',
+            ]);
+
+        $warehouses = DB::connection('mysql')
+            ->table('warehouses')
+            ->where('tenant_id', $tenantId)
+            ->whereNull('deleted_at')
+            ->orderByDesc('is_main')
+            ->orderBy('name')
+            ->get([
+                'id',
+                'branch_id',
+                'code',
+                'name',
+                'is_main',
+            ]);
+
+        $openOrders = DB::connection('mysql')
+            ->table('purchase_orders')
+            ->join(
+                'suppliers',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'suppliers.id',
+                            '=',
+                            'purchase_orders.supplier_id'
+                        )
+                        ->on(
+                            'suppliers.tenant_id',
+                            '=',
+                            'purchase_orders.tenant_id'
+                        );
+                }
+            )
+            ->join(
+                'branches',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'branches.id',
+                            '=',
+                            'purchase_orders.branch_id'
+                        )
+                        ->on(
+                            'branches.tenant_id',
+                            '=',
+                            'purchase_orders.tenant_id'
+                        );
+                }
+            )
+            ->join(
+                'warehouses',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'warehouses.id',
+                            '=',
+                            'purchase_orders.warehouse_id'
+                        )
+                        ->on(
+                            'warehouses.tenant_id',
+                            '=',
+                            'purchase_orders.tenant_id'
+                        );
+                }
+            )
+            ->where(
+                'purchase_orders.tenant_id',
+                $tenantId
+            )
+            ->whereNull(
+                'purchase_orders.deleted_at'
+            )
+            ->whereIn(
+                'purchase_orders.status',
+                [
+                    'approved',
+                    'partially_received',
+                ]
+            )
+            ->orderByDesc(
+                'purchase_orders.order_date'
+            )
+            ->orderByDesc(
+                'purchase_orders.id'
+            )
+            ->get([
+                'purchase_orders.id',
+                'purchase_orders.po_number',
+                'purchase_orders.supplier_id',
+                'purchase_orders.branch_id',
+                'purchase_orders.warehouse_id',
+                'purchase_orders.order_date',
+                'purchase_orders.expected_delivery_date',
+                'purchase_orders.status',
+                'purchase_orders.total_amount',
+
+                'suppliers.name as supplier_name',
+                'suppliers.code as supplier_code',
+
+                'branches.name as branch_name',
+                'branches.code as branch_code',
+
+                'warehouses.name as warehouse_name',
+                'warehouses.code as warehouse_code',
+            ]);
+
+        $openOrderIds = $openOrders
+            ->pluck('id')
+            ->map(
+                fn ($id): int => (int) $id
+            )
+            ->values();
+
+        $openOrderItems = $openOrderIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql')
+                ->table('purchase_order_items')
+                ->where('tenant_id', $tenantId)
+                ->whereIn(
+                    'purchase_order_id',
+                    $openOrderIds
+                )
+                ->whereColumn(
+                    'received_quantity',
+                    '<',
+                    'quantity'
+                )
+                ->orderBy('id')
+                ->get([
+                    'id',
+                    'purchase_order_id',
+                    'product_id',
+                    'product_name',
+                    'product_sku',
+                    'unit',
+                    'quantity',
+                    'received_quantity',
+                    'unit_cost',
+                    'line_total',
+                    'notes',
+                ])
+                ->groupBy('purchase_order_id');
+
+        $purchaseOrders = $openOrders
+            ->map(
+                function ($order) use (
+                    $openOrderItems
+                ): array {
+                    $items = $openOrderItems
+                        ->get(
+                            (int) $order->id,
+                            collect()
+                        )
+                        ->map(
+                            function ($item): array {
+                                $remaining = round(
+                                    (float) $item->quantity
+                                    - (float) $item
+                                        ->received_quantity,
+                                    3
+                                );
+
+                                return [
+                                    'id' =>
+                                        (int) $item->id,
+
+                                    'product_id' =>
+                                        (int) $item
+                                            ->product_id,
+
+                                    'product_name' =>
+                                        $item->product_name,
+
+                                    'product_sku' =>
+                                        $item->product_sku,
+
+                                    'unit' =>
+                                        $item->unit,
+
+                                    'ordered_quantity' =>
+                                        (float) $item
+                                            ->quantity,
+
+                                    'received_quantity' =>
+                                        (float) $item
+                                            ->received_quantity,
+
+                                    'remaining_quantity' =>
+                                        max($remaining, 0),
+
+                                    'unit_cost' =>
+                                        (float) $item
+                                            ->unit_cost,
+
+                                    'notes' =>
+                                        $item->notes,
+                                ];
+                            }
+                        )
+                        ->filter(
+                            fn (array $item): bool =>
+                                $item[
+                                    'remaining_quantity'
+                                ] > 0
+                        )
+                        ->values();
+
+                    return [
+                        'id' => (int) $order->id,
+
+                        'po_number' =>
+                            $order->po_number,
+
+                        'order_date' =>
+                            $order->order_date,
+
+                        'expected_delivery_date' =>
+                            $order
+                                ->expected_delivery_date,
+
+                        'status' => $order->status,
+
+                        'total_amount' =>
+                            (float) $order
+                                ->total_amount,
+
+                        'supplier' => [
+                            'id' => (int) $order
+                                ->supplier_id,
+
+                            'name' =>
+                                $order->supplier_name,
+
+                            'code' =>
+                                $order->supplier_code,
+                        ],
+
+                        'branch' => [
+                            'id' => (int) $order
+                                ->branch_id,
+
+                            'name' =>
+                                $order->branch_name,
+
+                            'code' =>
+                                $order->branch_code,
+                        ],
+
+                        'warehouse' => [
+                            'id' => (int) $order
+                                ->warehouse_id,
+
+                            'name' =>
+                                $order->warehouse_name,
+
+                            'code' =>
+                                $order->warehouse_code,
+                        ],
+
+                        'items' => $items->all(),
+                    ];
+                }
+            )
+            ->filter(
+                fn (array $order): bool =>
+                    count($order['items']) > 0
+            )
+            ->values();
+
+        return Inertia::render(
+            'suppliers/receiving/index',
+            [
+                'receipts' => $receipts,
+
+                'summary' => $summary,
+
+                'suppliers' => $suppliers,
+
+                'warehouses' => $warehouses,
+
+                'purchase_orders' =>
+                    $purchaseOrders,
+
+                'statuses' => [
+                    [
+                        'value' => 'posted',
+                        'label' => 'Posted',
+                    ],
+                    [
+                        'value' => 'voided',
+                        'label' => 'Voided',
+                    ],
+                ],
+
+                'filters' => [
+                    'search' => $search,
+
+                    'status' => $status,
+
+                    'supplier_id' =>
+                        $supplierId > 0
+                            ? (string) $supplierId
+                            : '',
+
+                    'warehouse_id' =>
+                        $warehouseId > 0
+                            ? (string) $warehouseId
+                            : '',
+
+                    'date_from' =>
+                        $dateFrom ?? '',
+
+                    'date_to' =>
+                        $dateTo ?? '',
+                ],
+            ]
+        );
+    }
+
+    public function store(
+        Request $request
+    ): RedirectResponse {
+        $tenantId = $this->getTenantId($request);
+
+        $validated = $request->validate([
+            'purchase_order_id' => [
+                'required',
+                'integer',
+
+                Rule::exists(
+                    'purchase_orders',
+                    'id'
+                )->where(
+                    fn ($query) => $query
+                        ->where(
+                            'tenant_id',
+                            $tenantId
+                        )
+                        ->whereIn(
+                            'status',
+                            [
+                                'approved',
+                                'partially_received',
+                            ]
+                        )
+                        ->whereNull(
+                            'deleted_at'
+                        )
+                ),
+            ],
+
+            'delivery_reference' => [
+                'nullable',
+                'string',
+                'max:120',
+            ],
+
+            'received_date' => [
+                'required',
+                'date_format:Y-m-d',
+            ],
+
+            'notes' => [
+                'nullable',
+                'string',
+                'max:5000',
+            ],
+
+            'items' => [
+                'required',
+                'array',
+                'min:1',
+            ],
+
+            'items.*.purchase_order_item_id' => [
+                'required',
+                'integer',
+                'distinct',
+            ],
+
+            'items.*.quantity_received' => [
+                'required',
+                'numeric',
+                'gt:0',
+                'max:99999999999.999',
+            ],
+
+            'items.*.notes' => [
+                'nullable',
+                'string',
+                'max:500',
+            ],
+        ]);
+
+        $receiptNumber = DB::connection(
+            'mysql'
+        )->transaction(
+            function () use (
+                $request,
+                $tenantId,
+                $validated
+            ): string {
+                $order = DB::connection('mysql')
+                    ->table('purchase_orders')
+                    ->where(
+                        'id',
+                        (int) $validated[
+                            'purchase_order_id'
+                        ]
+                    )
+                    ->where(
+                        'tenant_id',
+                        $tenantId
+                    )
+                    ->whereNull('deleted_at')
+                    ->lockForUpdate()
+                    ->first();
+
+                if (
+                    ! $order
+                    || ! in_array(
+                        $order->status,
+                        [
+                            'approved',
+                            'partially_received',
+                        ],
+                        true
+                    )
+                ) {
+                    throw ValidationException::withMessages([
+                        'purchase_order_id' =>
+                            'The selected purchase order is not available for receiving.',
+                    ]);
+                }
+
+                $submittedItemIds = collect(
+                    $validated['items']
+                )
+                    ->pluck(
+                        'purchase_order_item_id'
+                    )
+                    ->map(
+                        fn ($id): int => (int) $id
+                    )
+                    ->unique()
+                    ->values();
+
+                $orderItems = DB::connection('mysql')
+                    ->table('purchase_order_items')
+                    ->where(
+                        'tenant_id',
+                        $tenantId
+                    )
+                    ->where(
+                        'purchase_order_id',
+                        $order->id
+                    )
+                    ->whereIn(
+                        'id',
+                        $submittedItemIds
+                    )
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                if (
+                    $orderItems->count()
+                    !== $submittedItemIds->count()
+                ) {
+                    throw ValidationException::withMessages([
+                        'items' =>
+                            'One or more selected items do not belong to the purchase order.',
+                    ]);
+                }
+
+                $preparedItems = collect();
+
+                foreach (
+                    $validated['items']
+                    as $index => $input
+                ) {
+                    $orderItem = $orderItems->get(
+                        (int) $input[
+                            'purchase_order_item_id'
+                        ]
+                    );
+
+                    $rawQuantity = (float) $input[
+                        'quantity_received'
+                    ];
+
+                    $quantity = round(
+                        $rawQuantity,
+                        3
+                    );
+
+                    if (
+                        abs(
+                            $rawQuantity - $quantity
+                        ) > 0.0000001
+                    ) {
+                        throw ValidationException::withMessages([
+                            "items.{$index}.quantity_received" =>
+                                'Quantity may only contain up to three decimal places.',
+                        ]);
+                    }
+
+                    $remainingQuantity = round(
+                        (float) $orderItem->quantity
+                        - (float) $orderItem
+                            ->received_quantity,
+                        3
+                    );
+
+                    if ($remainingQuantity <= 0) {
+                        throw ValidationException::withMessages([
+                            "items.{$index}.quantity_received" =>
+                                "{$orderItem->product_name} has already been fully received.",
+                        ]);
+                    }
+
+                    if (
+                        $quantity
+                        > $remainingQuantity
+                    ) {
+                        throw ValidationException::withMessages([
+                            "items.{$index}.quantity_received" =>
+                                "Only {$remainingQuantity} {$orderItem->unit} remain for {$orderItem->product_name}.",
+                        ]);
+                    }
+
+                    $unitCost = round(
+                        (float) $orderItem->unit_cost,
+                        2
+                    );
+
+                    $lineTotal = round(
+                        $quantity * $unitCost,
+                        2
+                    );
+
+                    $preparedItems->push([
+                        'order_item' =>
+                            $orderItem,
+
+                        'quantity' =>
+                            $quantity,
+
+                        'unit_cost' =>
+                            $unitCost,
+
+                        'line_total' =>
+                            $lineTotal,
+
+                        'notes' =>
+                            isset($input['notes'])
+                            && trim(
+                                (string) $input[
+                                    'notes'
+                                ]
+                            ) !== ''
+                                ? trim(
+                                    (string) $input[
+                                        'notes'
+                                    ]
+                                )
+                                : null,
+                    ]);
+                }
+
+                $totalQuantity = round(
+                    (float) $preparedItems->sum(
+                        'quantity'
+                    ),
+                    3
+                );
+
+                $totalAmount = round(
+                    (float) $preparedItems->sum(
+                        'line_total'
+                    ),
+                    2
+                );
+
+                $receiptNumber =
+                    $this->generateReceiptNumber(
+                        $tenantId
+                    );
+
+                $now = now();
+
+                $movementDate = Carbon::parse(
+                    $validated['received_date']
+                    .' '
+                    .$now->format('H:i:s')
+                );
+
+                $receiptId = DB::connection('mysql')
+                    ->table('purchase_receipts')
+                    ->insertGetId([
+                        'tenant_id' =>
+                            $tenantId,
+
+                        'purchase_order_id' =>
+                            $order->id,
+
+                        'supplier_id' =>
+                            $order->supplier_id,
+
+                        'branch_id' =>
+                            $order->branch_id,
+
+                        'warehouse_id' =>
+                            $order->warehouse_id,
+
+                        'receipt_number' =>
+                            $receiptNumber,
+
+                        'delivery_reference' =>
+                            $this->nullableString(
+                                $validated[
+                                    'delivery_reference'
+                                ] ?? null
+                            ),
+
+                        'received_date' =>
+                            $validated[
+                                'received_date'
+                            ],
+
+                        'status' => 'posted',
+
+                        'total_quantity' =>
+                            $totalQuantity,
+
+                        'total_amount' =>
+                            $totalAmount,
+
+                        'notes' =>
+                            $this->nullableString(
+                                $validated['notes']
+                                ?? null
+                            ),
+
+                        'received_by' =>
+                            $request->user()->id,
+
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+
+                foreach (
+                    $preparedItems
+                    as $preparedItem
+                ) {
+                    $orderItem =
+                        $preparedItem[
+                            'order_item'
+                        ];
+
+                    $quantity =
+                        $preparedItem[
+                            'quantity'
+                        ];
+
+                    $unitCost =
+                        $preparedItem[
+                            'unit_cost'
+                        ];
+
+                    $lineTotal =
+                        $preparedItem[
+                            'line_total'
+                        ];
+
+                    DB::connection('mysql')
+                        ->table(
+                            'purchase_receipt_items'
+                        )
+                        ->insert([
+                            'tenant_id' =>
+                                $tenantId,
+
+                            'purchase_receipt_id' =>
+                                $receiptId,
+
+                            'purchase_order_item_id' =>
+                                $orderItem->id,
+
+                            'product_id' =>
+                                $orderItem->product_id,
+
+                            'product_name' =>
+                                $orderItem->product_name,
+
+                            'product_sku' =>
+                                $orderItem->product_sku,
+
+                            'unit' =>
+                                $orderItem->unit,
+
+                            'quantity_received' =>
+                                $quantity,
+
+                            'unit_cost' =>
+                                $unitCost,
+
+                            'line_total' =>
+                                $lineTotal,
+
+                            'notes' =>
+                                $preparedItem['notes'],
+
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+
+                    $newReceivedQuantity = round(
+                        (float) $orderItem
+                            ->received_quantity
+                        + $quantity,
+                        3
+                    );
+
+                    DB::connection('mysql')
+                        ->table(
+                            'purchase_order_items'
+                        )
+                        ->where(
+                            'id',
+                            $orderItem->id
+                        )
+                        ->where(
+                            'tenant_id',
+                            $tenantId
+                        )
+                        ->update([
+                            'received_quantity' =>
+                                $newReceivedQuantity,
+
+                            'updated_at' => $now,
+                        ]);
+
+                    DB::connection('mysql')
+                        ->table('warehouse_stocks')
+                        ->insertOrIgnore([
+                            'tenant_id' =>
+                                $tenantId,
+
+                            'warehouse_id' =>
+                                $order->warehouse_id,
+
+                            'product_id' =>
+                                $orderItem->product_id,
+
+                            'quantity' => 0,
+
+                            'reorder_level' => 0,
+
+                            'average_cost' => 0,
+
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+
+                    $stock = DB::connection('mysql')
+                        ->table('warehouse_stocks')
+                        ->where(
+                            'tenant_id',
+                            $tenantId
+                        )
+                        ->where(
+                            'warehouse_id',
+                            $order->warehouse_id
+                        )
+                        ->where(
+                            'product_id',
+                            $orderItem->product_id
+                        )
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $stock) {
+                        throw ValidationException::withMessages([
+                            'items' =>
+                                'Unable to prepare the warehouse stock record.',
+                        ]);
+                    }
+
+                    $quantityBefore = round(
+                        (float) $stock->quantity,
+                        3
+                    );
+
+                    $quantityAfter = round(
+                        $quantityBefore
+                        + $quantity,
+                        3
+                    );
+
+                    $previousValue =
+                        $quantityBefore
+                        * (float) $stock
+                            ->average_cost;
+
+                    $receivedValue =
+                        $quantity
+                        * $unitCost;
+
+                    $averageCost =
+                        $quantityAfter > 0
+                            ? round(
+                                (
+                                    $previousValue
+                                    + $receivedValue
+                                )
+                                / $quantityAfter,
+                                2
+                            )
+                            : 0;
+
+                    DB::connection('mysql')
+                        ->table('warehouse_stocks')
+                        ->where(
+                            'id',
+                            $stock->id
+                        )
+                        ->update([
+                            'quantity' =>
+                                $quantityAfter,
+
+                            'average_cost' =>
+                                $averageCost,
+
+                            'last_movement_at' =>
+                                $movementDate,
+
+                            'updated_at' => $now,
+                        ]);
+
+                    $remarks =
+                        "Received from PO {$order->po_number}";
+
+                    $deliveryReference =
+                        $this->nullableString(
+                            $validated[
+                                'delivery_reference'
+                            ] ?? null
+                        );
+
+                    if ($deliveryReference) {
+                        $remarks .=
+                            " | Delivery reference: {$deliveryReference}";
+                    }
+
+                    DB::connection('mysql')
+                        ->table('stock_movements')
+                        ->insert([
+                            'tenant_id' =>
+                                $tenantId,
+
+                            'warehouse_id' =>
+                                $order->warehouse_id,
+
+                            'product_id' =>
+                                $orderItem->product_id,
+
+                            'movement_type' =>
+                                'stock_in',
+
+                            'quantity' =>
+                                $quantity,
+
+                            'quantity_before' =>
+                                $quantityBefore,
+
+                            'quantity_after' =>
+                                $quantityAfter,
+
+                            'unit_cost' =>
+                                $unitCost,
+
+                            'total_cost' =>
+                                $lineTotal,
+
+                            'reference_type' =>
+                                'purchase_receipt',
+
+                            'reference_id' =>
+                                $receiptId,
+
+                            'reference_no' =>
+                                $receiptNumber,
+
+                            'related_warehouse_id' =>
+                                null,
+
+                            'remarks' => $remarks,
+
+                            'movement_date' =>
+                                $movementDate,
+
+                            'created_by' =>
+                                $request->user()->id,
+
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+                }
+
+                $hasRemainingItems =
+                    DB::connection('mysql')
+                        ->table(
+                            'purchase_order_items'
+                        )
+                        ->where(
+                            'tenant_id',
+                            $tenantId
+                        )
+                        ->where(
+                            'purchase_order_id',
+                            $order->id
+                        )
+                        ->whereColumn(
+                            'received_quantity',
+                            '<',
+                            'quantity'
+                        )
+                        ->exists();
+
+                DB::connection('mysql')
+                    ->table('purchase_orders')
+                    ->where(
+                        'id',
+                        $order->id
+                    )
+                    ->where(
+                        'tenant_id',
+                        $tenantId
+                    )
+                    ->update([
+                        'status' =>
+                            $hasRemainingItems
+                                ? 'partially_received'
+                                : 'received',
+
+                        'updated_at' => $now,
+                    ]);
+
+                return $receiptNumber;
+            }
+        );
+
+        return back()->with(
+            'success',
+            "Receipt {$receiptNumber} posted successfully."
+        );
+    }
+
+    private function generateReceiptNumber(
+        int $tenantId
+    ): string {
+        do {
+            $receiptNumber =
+                'RCV-'
+                .now()->format('Ymd')
+                .'-'
+                .Str::upper(
+                    Str::random(6)
+                );
+
+            $exists = DB::connection('mysql')
+                ->table('purchase_receipts')
+                ->where(
+                    'tenant_id',
+                    $tenantId
+                )
+                ->where(
+                    'receipt_number',
+                    $receiptNumber
+                )
+                ->exists();
+        } while ($exists);
+
+        return $receiptNumber;
+    }
+
+    private function nullableString(
+        mixed $value
+    ): ?string {
+        $value = trim(
+            (string) ($value ?? '')
+        );
+
+        return $value !== ''
+            ? $value
+            : null;
+    }
+
+    private function getSaasUsers(
+        Collection $userIds
+    ): Collection {
+        if ($userIds->isEmpty()) {
+            return collect();
+        }
+
+        return DB::connection('saas')
+            ->table('users')
+            ->whereIn('id', $userIds)
+            ->get([
+                'id',
+                'name',
+                'email',
+            ])
+            ->keyBy('id');
+    }
+
+    private function formatUser(
+        mixed $userId,
+        Collection $users
+    ): ?array {
+        if (! $userId) {
+            return null;
+        }
+
+        $user = $users->get(
+            (int) $userId
+        );
+
+        return [
+            'id' => (int) $userId,
+
+            'name' =>
+                $user?->name
+                ?? "User #{$userId}",
+
+            'email' =>
+                $user?->email,
+        ];
+    }
+
+    private function validDate(
+        string $value
+    ): ?string {
+        $value = trim($value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat(
+            'Y-m-d',
+            $value
+        );
+
+        if (
+            ! $date
+            || $date->format('Y-m-d') !== $value
+        ) {
+            return null;
+        }
+
+        return $value;
+    }
+
+    private function getTenantId(
+        Request $request
+    ): int {
+        $tenantId = (int) (
+            $request->user()->client_id
+            ?? 0
+        );
+
+        if (
+            $tenantId <= 0
+            && app()->environment('local')
+        ) {
+            return 1;
+        }
+
+        abort_if(
+            $tenantId <= 0,
+            403,
+            'Your account is not assigned to a client.'
+        );
+
+        return $tenantId;
+    }
+}

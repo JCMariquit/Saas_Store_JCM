@@ -3,8 +3,11 @@
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\ReceivingController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\StockMovementController;
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -186,36 +189,89 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('suppliers')
         ->name('suppliers.')
         ->group(function () {
-            Route::get('/', function () {
-                return Inertia::render(
-                    'suppliers/index'
-                );
-            })
-                ->middleware(
-                    'feature:supplier_management'
-                )
-                ->name('index');
-
-            Route::get(
-                '/purchase-orders',
-                function () {
-                    return Inertia::render(
-                        'suppliers/purchase-orders/index'
-                    );
-                }
+            Route::middleware(
+                'feature:supplier_management'
             )
+                ->controller(
+                    SupplierController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
+
+                    Route::post('/', 'store')
+                        ->name('store');
+
+                    Route::put(
+                        '/{supplier}',
+                        'update'
+                    )->name('update');
+
+                    Route::patch(
+                        '/{supplier}/status',
+                        'updateStatus'
+                    )->name('status');
+
+                    Route::delete(
+                        '/{supplier}',
+                        'destroy'
+                    )->name('destroy');
+                });
+
+            Route::prefix('purchase-orders')
+                ->name('purchase-orders.')
                 ->middleware(
                     'feature:purchase_orders'
                 )
-                ->name('purchase-orders.index');
+                ->controller(
+                    PurchaseOrderController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
 
-            Route::get('/receiving', function () {
-                return Inertia::render(
-                    'suppliers/receiving/index'
-                );
-            })
+                    Route::post('/', 'store')
+                        ->name('store');
+
+                    Route::put(
+                        '/{purchaseOrder}',
+                        'update'
+                    )->name('update');
+
+                    Route::post(
+                        '/{purchaseOrder}/submit',
+                        'submit'
+                    )->name('submit');
+
+                    Route::post(
+                        '/{purchaseOrder}/approve',
+                        'approve'
+                    )->name('approve');
+
+                    Route::post(
+                        '/{purchaseOrder}/cancel',
+                        'cancel'
+                    )->name('cancel');
+
+                    Route::delete(
+                        '/{purchaseOrder}',
+                        'destroy'
+                    )->name('destroy');
+                });
+
+            Route::prefix('receiving')
+                ->name('receiving.')
                 ->middleware('feature:receiving')
-                ->name('receiving.index');
+                ->controller(
+                    ReceivingController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
+
+                    Route::post('/', 'store')
+                        ->name('store');
+                });
         });
 
     Route::prefix('team')

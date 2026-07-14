@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 13, 2026 at 07:11 AM
+-- Generation Time: Jul 14, 2026 at 04:16 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -52,12 +52,12 @@ INSERT INTO `app_features` (`id`, `product_id`, `feature_code`, `name`, `descrip
 (5, 11, 'stock_management', 'Stock Management', 'Current stock management.', 1, 50, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
 (6, 11, 'stock_adjustment', 'Stock Adjustment', 'Increase, decrease or correct stock.', 1, 60, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
 (7, 11, 'stock_transfer', 'Stock Transfer', 'Transfer stock between warehouses.', 1, 90, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
-(8, 11, 'stock_movements', 'Stock Movements', 'View stock movement history.', 0, 100, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
+(8, 11, 'stock_movements', 'Stock Movements', 'View stock movement history.', 1, 100, 'active', '2026-07-13 02:00:57', '2026-07-13 06:28:46'),
 (9, 11, 'branch_management', 'Branch Management', 'Manage business branches.', 1, 70, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
 (10, 11, 'warehouse_management', 'Warehouse Management', 'Manage warehouse locations.', 1, 80, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
-(11, 11, 'supplier_management', 'Supplier Management', 'Manage supplier records.', 0, 110, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
-(12, 11, 'purchase_orders', 'Purchase Orders', 'Create and track purchase orders.', 0, 120, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
-(13, 11, 'receiving', 'Receiving', 'Receive ordered inventory.', 0, 130, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
+(11, 11, 'supplier_management', 'Supplier Management', 'Manage supplier records.', 1, 110, 'active', '2026-07-13 02:00:57', '2026-07-14 01:41:09'),
+(12, 11, 'purchase_orders', 'Purchase Orders', 'Create and track purchase orders.', 1, 120, 'active', '2026-07-13 02:00:57', '2026-07-14 01:41:09'),
+(13, 11, 'receiving', 'Receiving', 'Receive ordered inventory.', 1, 130, 'active', '2026-07-13 02:00:57', '2026-07-14 01:41:09'),
 (14, 11, 'team_overview', 'Team Overview', 'Team account overview.', 0, 140, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
 (15, 11, 'staff_management', 'Staff Management', 'Create and manage staff accounts.', 0, 150, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
 (16, 11, 'roles_access', 'Roles and Access', 'Manage roles and access.', 0, 160, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28');
@@ -763,16 +763,16 @@ INSERT INTO `sidebar_items` (`id`, `product_id`, `parent_id`, `feature_id`, `ite
 (3, 11, NULL, NULL, 'inventory-group', 'management', 'group', 'Inventory', NULL, NULL, 'Boxes', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (4, 11, NULL, 9, 'branches', 'management', 'link', 'Branches', 'branches.index', '/branches', 'Building2', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (5, 11, NULL, 10, 'warehouses', 'management', 'link', 'Warehouse', 'warehouses.index', '/warehouses', 'Warehouse', 'DEV', 3, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
-(6, 11, NULL, 8, 'stock-movements', 'management', 'link', 'Stock Movements', 'stock-movements.index', '/stock-movements', 'History', 'SOON', 8, 40, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
-(7, 11, NULL, NULL, 'suppliers-group', 'management', 'group', 'Suppliers', NULL, NULL, 'Truck', 'SOON', 8, 50, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
+(6, 11, NULL, 8, 'stock-movements', 'management', 'link', 'Stock Movements', 'stock-movements.index', '/stock-movements', 'History', 'DEV', 3, 40, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 06:28:46'),
+(7, 11, NULL, NULL, 'suppliers-group', 'management', 'group', 'Suppliers', NULL, NULL, 'Truck', 'DEV', 3, 50, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 01:41:09'),
 (8, 11, NULL, 14, 'team-overview', 'overview', 'link', 'Team Overview', 'team.overview', '/team/overview', 'Users', 'SOON', 8, 30, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (9, 11, NULL, NULL, 'team-group', 'management', 'group', 'Team Management', NULL, NULL, 'Users', 'SOON', 8, 60, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (16, 11, 3, 3, 'categories', 'management', 'link', 'Categories', 'inventory.categories.index', '/inventory/categories', 'Tags', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (17, 11, 3, 4, 'products', 'management', 'link', 'Products', 'inventory.products.index', '/inventory/products', 'Package2', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (18, 11, 3, 5, 'stock-management', 'management', 'link', 'Stock Management', 'inventory.stocks.index', '/inventory/stocks', 'Boxes', 'DEV', 3, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
-(19, 11, 7, 11, 'suppliers', 'management', 'link', 'Supplier List', 'suppliers.index', '/suppliers', 'Truck', 'SOON', 8, 10, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
-(20, 11, 7, 12, 'purchase-orders', 'management', 'link', 'Purchase Orders', 'suppliers.purchase-orders.index', '/suppliers/purchase-orders', 'ClipboardCheck', 'SOON', 8, 20, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
-(21, 11, 7, 13, 'receiving', 'management', 'link', 'Receiving', 'suppliers.receiving.index', '/suppliers/receiving', 'PackageCheck', 'SOON', 8, 30, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
+(19, 11, 7, 11, 'suppliers', 'management', 'link', 'Supplier List', 'suppliers.index', '/suppliers', 'Truck', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 01:41:09'),
+(20, 11, 7, 12, 'purchase-orders', 'management', 'link', 'Purchase Orders', 'suppliers.purchase-orders.index', '/suppliers/purchase-orders', 'ClipboardCheck', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 01:41:09'),
+(21, 11, 7, 13, 'receiving', 'management', 'link', 'Receiving', 'suppliers.receiving.index', '/suppliers/receiving', 'PackageCheck', 'DEV', 3, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 01:41:09'),
 (22, 11, 9, 15, 'staff-accounts', 'management', 'link', 'Staff Accounts', 'team.staff.index', '/team/staff', 'Users', 'SOON', 8, 10, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (23, 11, 9, 16, 'roles-access', 'management', 'link', 'Roles & Access', 'team.roles.index', '/team/roles', 'UserCog', 'SOON', 8, 20, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23');
 

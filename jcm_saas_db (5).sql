@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 14, 2026 at 04:16 AM
+-- Generation Time: Jul 14, 2026 at 05:37 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -58,9 +58,9 @@ INSERT INTO `app_features` (`id`, `product_id`, `feature_code`, `name`, `descrip
 (11, 11, 'supplier_management', 'Supplier Management', 'Manage supplier records.', 1, 110, 'active', '2026-07-13 02:00:57', '2026-07-14 01:41:09'),
 (12, 11, 'purchase_orders', 'Purchase Orders', 'Create and track purchase orders.', 1, 120, 'active', '2026-07-13 02:00:57', '2026-07-14 01:41:09'),
 (13, 11, 'receiving', 'Receiving', 'Receive ordered inventory.', 1, 130, 'active', '2026-07-13 02:00:57', '2026-07-14 01:41:09'),
-(14, 11, 'team_overview', 'Team Overview', 'Team account overview.', 0, 140, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
-(15, 11, 'staff_management', 'Staff Management', 'Create and manage staff accounts.', 0, 150, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
-(16, 11, 'roles_access', 'Roles and Access', 'Manage roles and access.', 0, 160, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28');
+(14, 11, 'team_overview', 'Team Overview', 'View team account summaries, role distribution, and team activity.', 1, 140, 'active', '2026-07-13 02:00:57', '2026-07-14 03:32:48'),
+(15, 11, 'staff_management', 'Team Members', 'Create and manage manager and staff accounts.', 1, 150, 'active', '2026-07-13 02:00:57', '2026-07-14 02:43:32'),
+(16, 11, 'roles_access', 'Roles & Access', 'Manage module access for inventory team roles.', 1, 160, 'active', '2026-07-13 02:00:57', '2026-07-14 02:43:32');
 
 -- --------------------------------------------------------
 
@@ -399,7 +399,7 @@ INSERT INTO `plan_features` (`id`, `plan_id`, `feature_id`, `is_enabled`, `limit
 (18, 13, 11, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (19, 13, 12, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (20, 13, 13, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
-(21, 13, 14, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
+(21, 13, 14, 1, NULL, '2026-07-13 02:00:58', '2026-07-14 03:32:48'),
 (22, 13, 15, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (23, 13, 16, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (39, 12, 12, 1, NULL, '2026-07-13 02:11:28', '2026-07-13 02:11:28'),
@@ -547,7 +547,7 @@ INSERT INTO `product_user_type_sidebar_items` (`id`, `product_user_type_id`, `si
 (13, 3, 19, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (14, 3, 7, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (15, 3, 9, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
-(16, 3, 8, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
+(16, 3, 8, 1, '2026-07-13 02:00:58', '2026-07-14 03:32:48'),
 (17, 3, 5, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (32, 1, 4, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (33, 1, 16, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
@@ -765,16 +765,16 @@ INSERT INTO `sidebar_items` (`id`, `product_id`, `parent_id`, `feature_id`, `ite
 (5, 11, NULL, 10, 'warehouses', 'management', 'link', 'Warehouse', 'warehouses.index', '/warehouses', 'Warehouse', 'DEV', 3, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (6, 11, NULL, 8, 'stock-movements', 'management', 'link', 'Stock Movements', 'stock-movements.index', '/stock-movements', 'History', 'DEV', 3, 40, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 06:28:46'),
 (7, 11, NULL, NULL, 'suppliers-group', 'management', 'group', 'Suppliers', NULL, NULL, 'Truck', 'DEV', 3, 50, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 01:41:09'),
-(8, 11, NULL, 14, 'team-overview', 'overview', 'link', 'Team Overview', 'team.overview', '/team/overview', 'Users', 'SOON', 8, 30, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
-(9, 11, NULL, NULL, 'team-group', 'management', 'group', 'Team Management', NULL, NULL, 'Users', 'SOON', 8, 60, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
+(8, 11, NULL, 14, 'team-overview', 'overview', 'link', 'Team Overview', 'team.overview', '/team/overview', 'Users', 'DEV', 3, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 03:32:48'),
+(9, 11, NULL, NULL, 'team-group', 'management', 'group', 'Team Management', NULL, NULL, 'Users', 'DEV', 3, 60, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 02:43:32'),
 (16, 11, 3, 3, 'categories', 'management', 'link', 'Categories', 'inventory.categories.index', '/inventory/categories', 'Tags', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (17, 11, 3, 4, 'products', 'management', 'link', 'Products', 'inventory.products.index', '/inventory/products', 'Package2', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (18, 11, 3, 5, 'stock-management', 'management', 'link', 'Stock Management', 'inventory.stocks.index', '/inventory/stocks', 'Boxes', 'DEV', 3, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (19, 11, 7, 11, 'suppliers', 'management', 'link', 'Supplier List', 'suppliers.index', '/suppliers', 'Truck', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 01:41:09'),
 (20, 11, 7, 12, 'purchase-orders', 'management', 'link', 'Purchase Orders', 'suppliers.purchase-orders.index', '/suppliers/purchase-orders', 'ClipboardCheck', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 01:41:09'),
 (21, 11, 7, 13, 'receiving', 'management', 'link', 'Receiving', 'suppliers.receiving.index', '/suppliers/receiving', 'PackageCheck', 'DEV', 3, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 01:41:09'),
-(22, 11, 9, 15, 'staff-accounts', 'management', 'link', 'Staff Accounts', 'team.staff.index', '/team/staff', 'Users', 'SOON', 8, 10, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
-(23, 11, 9, 16, 'roles-access', 'management', 'link', 'Roles & Access', 'team.roles.index', '/team/roles', 'UserCog', 'SOON', 8, 20, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23');
+(22, 11, 9, 15, 'staff-accounts', 'management', 'link', 'Team Members', 'team.members.index', '/team/members', 'Users', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 02:43:32'),
+(23, 11, 9, 16, 'roles-access', 'management', 'link', 'Roles & Access', 'team.roles.index', '/team/roles', 'UserCog', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 02:43:32');
 
 -- --------------------------------------------------------
 

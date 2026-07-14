@@ -5,9 +5,11 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ReceivingController;
+use App\Http\Controllers\RoleAccessController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\TeamMemberController;
 use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -277,36 +279,65 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('team')
         ->name('team.')
         ->group(function () {
-            Route::get('/overview', function () {
-                return Inertia::render(
-                    'team/overview/index'
-                );
-            })
-                ->middleware(
-                    'feature:team_overview'
-                )
-                ->name('overview');
-
-            Route::get('/staff', function () {
-                return Inertia::render(
-                    'team/staff/index'
-                );
-            })
+            Route::prefix('members')
+                ->name('members.')
                 ->middleware(
                     'feature:staff_management'
                 )
-                ->name('staff.index');
+                ->controller(
+                    TeamMemberController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
 
-            Route::get('/roles', function () {
-                return Inertia::render(
-                    'team/roles/index'
-                );
-            })
+                    Route::post('/', 'store')
+                        ->name('store');
+
+                    Route::put(
+                        '/{member}',
+                        'update'
+                    )->name('update');
+
+                    Route::patch(
+                        '/{member}/status',
+                        'updateStatus'
+                    )->name('status');
+
+                    Route::post(
+                        '/{member}/reset-password',
+                        'resetPassword'
+                    )->name('reset-password');
+
+                    Route::delete(
+                        '/{member}',
+                        'destroy'
+                    )->name('destroy');
+                });
+
+            Route::prefix('roles')
+                ->name('roles.')
                 ->middleware(
                     'feature:roles_access'
                 )
-                ->name('roles.index');
+                ->controller(
+                    RoleAccessController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
+
+                    Route::put(
+                        '/{role}',
+                        'update'
+                    )->name('update');
+                });
         });
+
+    Route::redirect(
+        '/team/staff',
+        '/team/members'
+    );
 
     Route::redirect(
         '/inventory/branches',

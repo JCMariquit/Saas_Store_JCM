@@ -273,6 +273,11 @@ Route::middleware(['auth'])->group(function () {
 
                     Route::post('/', 'store')
                         ->name('store');
+
+                    Route::post(
+                        '/{receipt}/void',
+                        'void'
+                    )->name('void');
                 });
         });
 

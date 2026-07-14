@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 14, 2026 at 05:37 AM
+-- Generation Time: Jul 14, 2026 at 10:40 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -40,7 +40,8 @@ CREATE TABLE `branches` (
   `created_by` bigint(20) UNSIGNED DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
-  `deleted_at` timestamp NULL DEFAULT NULL
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `active_main_tenant_id` bigint(20) UNSIGNED GENERATED ALWAYS AS (case when `is_main` = 1 and `is_active` = 1 and `deleted_at` is null then `tenant_id` else NULL end) STORED
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -95,7 +96,7 @@ CREATE TABLE `products` (
   `description` text DEFAULT NULL,
   `image_path` varchar(255) DEFAULT NULL,
   `unit` varchar(50) NOT NULL DEFAULT 'pcs',
-  `cost_price` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `cost_price` decimal(18,4) NOT NULL DEFAULT 0.0000,
   `selling_price` decimal(14,2) NOT NULL DEFAULT 0.00,
   `wholesale_price` decimal(14,2) DEFAULT NULL,
   `stock_tracking` enum('tracked','not_tracked') NOT NULL DEFAULT 'tracked',
@@ -104,14 +105,14 @@ CREATE TABLE `products` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ;
 
 --
 -- Dumping data for table `products`
 --
 
 INSERT INTO `products` (`id`, `tenant_id`, `category_id`, `name`, `slug`, `sku`, `barcode`, `description`, `image_path`, `unit`, `cost_price`, `selling_price`, `wholesale_price`, `stock_tracking`, `is_active`, `created_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 1, 'qw', 'qw', 'QW', 'qw', '0', NULL, 'pcs', 10.00, 50.00, 40.00, 'tracked', 1, 1, '2026-07-10 06:13:07', '2026-07-10 06:13:07', NULL);
+(1, 1, 1, 'qw', 'qw', 'QW', 'qw', '0', NULL, 'pcs', 10.0000, 50.00, 40.00, 'tracked', 1, 1, '2026-07-10 06:13:07', '2026-07-10 06:13:07', NULL);
 
 -- --------------------------------------------------------
 
@@ -146,7 +147,7 @@ CREATE TABLE `purchase_orders` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ;
 
 -- --------------------------------------------------------
 
@@ -164,12 +165,12 @@ CREATE TABLE `purchase_order_items` (
   `unit` varchar(50) NOT NULL DEFAULT 'pcs',
   `quantity` decimal(14,3) NOT NULL DEFAULT 0.000,
   `received_quantity` decimal(14,3) NOT NULL DEFAULT 0.000,
-  `unit_cost` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `unit_cost` decimal(18,4) NOT NULL DEFAULT 0.0000,
   `line_total` decimal(14,2) NOT NULL DEFAULT 0.00,
   `notes` varchar(500) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ;
 
 -- --------------------------------------------------------
 
@@ -192,12 +193,13 @@ CREATE TABLE `purchase_receipts` (
   `total_amount` decimal(14,2) NOT NULL DEFAULT 0.00,
   `notes` text DEFAULT NULL,
   `received_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `posted_at` timestamp NULL DEFAULT NULL,
   `voided_by` bigint(20) UNSIGNED DEFAULT NULL,
   `voided_at` timestamp NULL DEFAULT NULL,
   `void_reason` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ;
 
 -- --------------------------------------------------------
 
@@ -211,16 +213,18 @@ CREATE TABLE `purchase_receipt_items` (
   `purchase_receipt_id` bigint(20) UNSIGNED NOT NULL,
   `purchase_order_item_id` bigint(20) UNSIGNED NOT NULL,
   `product_id` bigint(20) UNSIGNED NOT NULL,
+  `stock_movement_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `void_stock_movement_id` bigint(20) UNSIGNED DEFAULT NULL,
   `product_name` varchar(180) NOT NULL,
   `product_sku` varchar(100) DEFAULT NULL,
   `unit` varchar(50) NOT NULL DEFAULT 'pcs',
   `quantity_received` decimal(14,3) NOT NULL DEFAULT 0.000,
-  `unit_cost` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `unit_cost` decimal(18,4) NOT NULL DEFAULT 0.0000,
   `line_total` decimal(14,2) NOT NULL DEFAULT 0.00,
   `notes` varchar(500) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ;
 
 -- --------------------------------------------------------
 
@@ -233,29 +237,32 @@ CREATE TABLE `stock_movements` (
   `tenant_id` bigint(20) UNSIGNED NOT NULL,
   `warehouse_id` bigint(20) UNSIGNED NOT NULL,
   `product_id` bigint(20) UNSIGNED NOT NULL,
-  `movement_type` enum('opening_stock','stock_in','stock_out','adjustment_in','adjustment_out','transfer_in','transfer_out','sale','return_in','return_out','damage','expired') NOT NULL,
+  `movement_type` enum('opening_stock','stock_in','stock_out','adjustment_in','adjustment_out','transfer_in','transfer_out','purchase_receipt','purchase_receipt_void','sale','return_in','return_out','damage','expired') NOT NULL,
   `quantity` decimal(14,3) NOT NULL,
   `quantity_before` decimal(14,3) NOT NULL DEFAULT 0.000,
   `quantity_after` decimal(14,3) NOT NULL DEFAULT 0.000,
-  `unit_cost` decimal(14,2) NOT NULL DEFAULT 0.00,
-  `total_cost` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `unit_cost` decimal(18,4) NOT NULL DEFAULT 0.0000,
+  `total_cost` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `average_cost_before` decimal(18,4) DEFAULT NULL,
+  `average_cost_after` decimal(18,4) DEFAULT NULL,
   `reference_type` varchar(100) DEFAULT NULL,
   `reference_id` bigint(20) UNSIGNED DEFAULT NULL,
   `reference_no` varchar(120) DEFAULT NULL,
   `related_warehouse_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `reversal_of_movement_id` bigint(20) UNSIGNED DEFAULT NULL,
   `remarks` text DEFAULT NULL,
   `movement_date` datetime NOT NULL,
   `created_by` bigint(20) UNSIGNED DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ;
 
 --
 -- Dumping data for table `stock_movements`
 --
 
-INSERT INTO `stock_movements` (`id`, `tenant_id`, `warehouse_id`, `product_id`, `movement_type`, `quantity`, `quantity_before`, `quantity_after`, `unit_cost`, `total_cost`, `reference_type`, `reference_id`, `reference_no`, `related_warehouse_id`, `remarks`, `movement_date`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 1, 'opening_stock', 50.000, 0.000, 50.000, 10.00, 500.00, 'opening_stock', NULL, 'OPEN-20260710150716-KURFIZ', NULL, NULL, '2026-07-10 15:07:16', 1, '2026-07-10 07:07:16', '2026-07-10 07:07:16');
+INSERT INTO `stock_movements` (`id`, `tenant_id`, `warehouse_id`, `product_id`, `movement_type`, `quantity`, `quantity_before`, `quantity_after`, `unit_cost`, `total_cost`, `average_cost_before`, `average_cost_after`, `reference_type`, `reference_id`, `reference_no`, `related_warehouse_id`, `reversal_of_movement_id`, `remarks`, `movement_date`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 1, 'opening_stock', 50.000, 0.000, 50.000, 10.0000, 500.00, NULL, NULL, 'opening_stock', NULL, 'OPEN-20260710150716-KURFIZ', NULL, NULL, NULL, '2026-07-10 15:07:16', 1, '2026-07-10 07:07:16', '2026-07-10 07:07:16');
 
 -- --------------------------------------------------------
 
@@ -282,7 +289,7 @@ CREATE TABLE `suppliers` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ;
 
 --
 -- Dumping data for table `suppliers`
@@ -312,7 +319,9 @@ CREATE TABLE `warehouses` (
   `created_by` bigint(20) UNSIGNED DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
-  `deleted_at` timestamp NULL DEFAULT NULL
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `active_main_tenant_id` bigint(20) UNSIGNED GENERATED ALWAYS AS (case when `is_main` = 1 and `is_active` = 1 and `deleted_at` is null then `tenant_id` else NULL end) STORED,
+  `active_main_branch_id` bigint(20) UNSIGNED GENERATED ALWAYS AS (case when `is_main` = 1 and `is_active` = 1 and `deleted_at` is null then `branch_id` else NULL end) STORED
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -336,18 +345,18 @@ CREATE TABLE `warehouse_stocks` (
   `quantity` decimal(14,3) NOT NULL DEFAULT 0.000,
   `reorder_level` decimal(14,3) NOT NULL DEFAULT 0.000,
   `max_stock_level` decimal(14,3) DEFAULT NULL,
-  `average_cost` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `average_cost` decimal(18,4) NOT NULL DEFAULT 0.0000,
   `last_movement_at` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ;
 
 --
 -- Dumping data for table `warehouse_stocks`
 --
 
 INSERT INTO `warehouse_stocks` (`id`, `tenant_id`, `warehouse_id`, `product_id`, `quantity`, `reorder_level`, `max_stock_level`, `average_cost`, `last_movement_at`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 1, 50.000, 5.000, NULL, 10.00, '2026-07-10 15:07:16', '2026-07-10 07:07:16', '2026-07-10 07:07:16');
+(1, 1, 1, 1, 50.000, 5.000, NULL, 10.0000, '2026-07-10 15:07:16', '2026-07-10 07:07:16', '2026-07-10 07:07:16');
 
 --
 -- Indexes for dumped tables
@@ -359,6 +368,8 @@ INSERT INTO `warehouse_stocks` (`id`, `tenant_id`, `warehouse_id`, `product_id`,
 ALTER TABLE `branches`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `branches_tenant_code_unique` (`tenant_id`,`code`),
+  ADD UNIQUE KEY `branches_tenant_id_unique` (`tenant_id`,`id`),
+  ADD UNIQUE KEY `branches_one_active_main_per_tenant` (`active_main_tenant_id`),
   ADD KEY `branches_tenant_id_index` (`tenant_id`),
   ADD KEY `branches_tenant_active_index` (`tenant_id`,`is_active`),
   ADD KEY `branches_created_by_index` (`created_by`);
@@ -369,10 +380,12 @@ ALTER TABLE `branches`
 ALTER TABLE `categories`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `categories_tenant_slug_unique` (`tenant_id`,`slug`),
+  ADD UNIQUE KEY `categories_tenant_id_unique` (`tenant_id`,`id`),
   ADD KEY `categories_tenant_id_index` (`tenant_id`),
   ADD KEY `categories_parent_id_index` (`parent_id`),
   ADD KEY `categories_tenant_active_index` (`tenant_id`,`is_active`),
-  ADD KEY `categories_created_by_index` (`created_by`);
+  ADD KEY `categories_created_by_index` (`created_by`),
+  ADD KEY `categories_tenant_parent_index` (`tenant_id`,`parent_id`);
 
 --
 -- Indexes for table `products`
@@ -380,6 +393,7 @@ ALTER TABLE `categories`
 ALTER TABLE `products`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `products_tenant_slug_unique` (`tenant_id`,`slug`),
+  ADD UNIQUE KEY `products_tenant_id_unique` (`tenant_id`,`id`),
   ADD UNIQUE KEY `products_tenant_sku_unique` (`tenant_id`,`sku`),
   ADD UNIQUE KEY `products_tenant_barcode_unique` (`tenant_id`,`barcode`),
   ADD KEY `products_tenant_id_index` (`tenant_id`),
@@ -394,6 +408,8 @@ ALTER TABLE `products`
 ALTER TABLE `purchase_orders`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `purchase_orders_tenant_po_number_unique` (`tenant_id`,`po_number`),
+  ADD UNIQUE KEY `purchase_orders_tenant_id_unique` (`tenant_id`,`id`),
+  ADD UNIQUE KEY `purchase_orders_context_unique` (`tenant_id`,`id`,`supplier_id`,`branch_id`,`warehouse_id`),
   ADD KEY `purchase_orders_tenant_id_index` (`tenant_id`),
   ADD KEY `purchase_orders_supplier_id_index` (`supplier_id`),
   ADD KEY `purchase_orders_branch_id_index` (`branch_id`),
@@ -401,7 +417,8 @@ ALTER TABLE `purchase_orders`
   ADD KEY `purchase_orders_tenant_status_index` (`tenant_id`,`status`),
   ADD KEY `purchase_orders_tenant_supplier_index` (`tenant_id`,`supplier_id`),
   ADD KEY `purchase_orders_tenant_order_date_index` (`tenant_id`,`order_date`),
-  ADD KEY `purchase_orders_created_by_index` (`created_by`);
+  ADD KEY `purchase_orders_created_by_index` (`created_by`),
+  ADD KEY `purchase_orders_tenant_branch_warehouse_index` (`tenant_id`,`branch_id`,`warehouse_id`);
 
 --
 -- Indexes for table `purchase_order_items`
@@ -409,10 +426,13 @@ ALTER TABLE `purchase_orders`
 ALTER TABLE `purchase_order_items`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `purchase_order_items_order_product_unique` (`purchase_order_id`,`product_id`),
+  ADD UNIQUE KEY `purchase_order_items_tenant_id_unique` (`tenant_id`,`id`),
+  ADD UNIQUE KEY `purchase_order_items_context_unique` (`tenant_id`,`id`,`product_id`),
   ADD KEY `purchase_order_items_tenant_id_index` (`tenant_id`),
   ADD KEY `purchase_order_items_purchase_order_id_index` (`purchase_order_id`),
   ADD KEY `purchase_order_items_product_id_index` (`product_id`),
-  ADD KEY `purchase_order_items_tenant_product_index` (`tenant_id`,`product_id`);
+  ADD KEY `purchase_order_items_tenant_product_index` (`tenant_id`,`product_id`),
+  ADD KEY `purchase_order_items_tenant_order_index` (`tenant_id`,`purchase_order_id`);
 
 --
 -- Indexes for table `purchase_receipts`
@@ -420,6 +440,7 @@ ALTER TABLE `purchase_order_items`
 ALTER TABLE `purchase_receipts`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `purchase_receipts_tenant_number_unique` (`tenant_id`,`receipt_number`),
+  ADD UNIQUE KEY `purchase_receipts_tenant_id_unique` (`tenant_id`,`id`),
   ADD KEY `purchase_receipts_tenant_id_index` (`tenant_id`),
   ADD KEY `purchase_receipts_purchase_order_id_index` (`purchase_order_id`),
   ADD KEY `purchase_receipts_supplier_id_index` (`supplier_id`),
@@ -427,7 +448,8 @@ ALTER TABLE `purchase_receipts`
   ADD KEY `purchase_receipts_warehouse_id_index` (`warehouse_id`),
   ADD KEY `purchase_receipts_tenant_status_index` (`tenant_id`,`status`),
   ADD KEY `purchase_receipts_tenant_date_index` (`tenant_id`,`received_date`),
-  ADD KEY `purchase_receipts_received_by_index` (`received_by`);
+  ADD KEY `purchase_receipts_received_by_index` (`received_by`),
+  ADD KEY `purchase_receipts_order_context_index` (`tenant_id`,`purchase_order_id`,`supplier_id`,`branch_id`,`warehouse_id`);
 
 --
 -- Indexes for table `purchase_receipt_items`
@@ -435,17 +457,23 @@ ALTER TABLE `purchase_receipts`
 ALTER TABLE `purchase_receipt_items`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `purchase_receipt_items_receipt_order_item_unique` (`purchase_receipt_id`,`purchase_order_item_id`),
+  ADD UNIQUE KEY `receipt_items_stock_move_unique` (`tenant_id`,`stock_movement_id`),
+  ADD UNIQUE KEY `receipt_items_void_move_unique` (`tenant_id`,`void_stock_movement_id`),
   ADD KEY `purchase_receipt_items_tenant_id_index` (`tenant_id`),
   ADD KEY `purchase_receipt_items_receipt_id_index` (`purchase_receipt_id`),
   ADD KEY `purchase_receipt_items_order_item_id_index` (`purchase_order_item_id`),
   ADD KEY `purchase_receipt_items_product_id_index` (`product_id`),
-  ADD KEY `purchase_receipt_items_tenant_product_index` (`tenant_id`,`product_id`);
+  ADD KEY `purchase_receipt_items_tenant_product_index` (`tenant_id`,`product_id`),
+  ADD KEY `purchase_receipt_items_tenant_receipt_index` (`tenant_id`,`purchase_receipt_id`),
+  ADD KEY `purchase_receipt_items_tenant_order_item_product_index` (`tenant_id`,`purchase_order_item_id`,`product_id`);
 
 --
 -- Indexes for table `stock_movements`
 --
 ALTER TABLE `stock_movements`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `stock_movements_tenant_id_unique` (`tenant_id`,`id`),
+  ADD UNIQUE KEY `stock_movements_one_reversal_unique` (`tenant_id`,`reversal_of_movement_id`),
   ADD KEY `stock_movements_tenant_id_index` (`tenant_id`),
   ADD KEY `stock_movements_warehouse_id_index` (`warehouse_id`),
   ADD KEY `stock_movements_product_id_index` (`product_id`),
@@ -454,7 +482,8 @@ ALTER TABLE `stock_movements`
   ADD KEY `stock_movements_type_date_index` (`movement_type`,`movement_date`),
   ADD KEY `stock_movements_reference_index` (`reference_type`,`reference_id`),
   ADD KEY `stock_movements_created_by_index` (`created_by`),
-  ADD KEY `stock_movements_related_warehouse_index` (`related_warehouse_id`);
+  ADD KEY `stock_movements_related_warehouse_index` (`related_warehouse_id`),
+  ADD KEY `stock_movements_tenant_related_warehouse_index` (`tenant_id`,`related_warehouse_id`);
 
 --
 -- Indexes for table `suppliers`
@@ -462,6 +491,7 @@ ALTER TABLE `stock_movements`
 ALTER TABLE `suppliers`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `suppliers_tenant_code_unique` (`tenant_id`,`code`),
+  ADD UNIQUE KEY `suppliers_tenant_id_unique` (`tenant_id`,`id`),
   ADD KEY `suppliers_tenant_id_index` (`tenant_id`),
   ADD KEY `suppliers_tenant_name_index` (`tenant_id`,`name`),
   ADD KEY `suppliers_tenant_active_index` (`tenant_id`,`is_active`),
@@ -475,6 +505,9 @@ ALTER TABLE `suppliers`
 ALTER TABLE `warehouses`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `warehouses_branch_code_unique` (`tenant_id`,`branch_id`,`code`),
+  ADD UNIQUE KEY `warehouses_tenant_id_unique` (`tenant_id`,`id`),
+  ADD UNIQUE KEY `warehouses_tenant_branch_id_unique` (`tenant_id`,`branch_id`,`id`),
+  ADD UNIQUE KEY `warehouses_one_active_main_per_branch` (`active_main_tenant_id`,`active_main_branch_id`),
   ADD KEY `warehouses_tenant_id_index` (`tenant_id`),
   ADD KEY `warehouses_branch_id_index` (`branch_id`),
   ADD KEY `warehouses_tenant_branch_index` (`tenant_id`,`branch_id`),
@@ -513,7 +546,7 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `purchase_orders`
@@ -543,13 +576,13 @@ ALTER TABLE `purchase_receipt_items`
 -- AUTO_INCREMENT for table `stock_movements`
 --
 ALTER TABLE `stock_movements`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `suppliers`
 --
 ALTER TABLE `suppliers`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `warehouses`
@@ -561,7 +594,7 @@ ALTER TABLE `warehouses`
 -- AUTO_INCREMENT for table `warehouse_stocks`
 --
 ALTER TABLE `warehouse_stocks`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
@@ -571,13 +604,15 @@ ALTER TABLE `warehouse_stocks`
 -- Constraints for table `categories`
 --
 ALTER TABLE `categories`
-  ADD CONSTRAINT `categories_parent_id_foreign` FOREIGN KEY (`parent_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `categories_parent_id_foreign` FOREIGN KEY (`parent_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `categories_tenant_parent_foreign` FOREIGN KEY (`tenant_id`,`parent_id`) REFERENCES `categories` (`tenant_id`, `id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `products`
 --
 ALTER TABLE `products`
-  ADD CONSTRAINT `products_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `products_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `products_tenant_category_foreign` FOREIGN KEY (`tenant_id`,`category_id`) REFERENCES `categories` (`tenant_id`, `id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `purchase_orders`
@@ -585,6 +620,8 @@ ALTER TABLE `products`
 ALTER TABLE `purchase_orders`
   ADD CONSTRAINT `purchase_orders_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `purchase_orders_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `purchase_orders_tenant_branch_warehouse_foreign` FOREIGN KEY (`tenant_id`,`branch_id`,`warehouse_id`) REFERENCES `warehouses` (`tenant_id`, `branch_id`, `id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `purchase_orders_tenant_supplier_foreign` FOREIGN KEY (`tenant_id`,`supplier_id`) REFERENCES `suppliers` (`tenant_id`, `id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `purchase_orders_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `warehouses` (`id`) ON UPDATE CASCADE;
 
 --
@@ -592,13 +629,16 @@ ALTER TABLE `purchase_orders`
 --
 ALTER TABLE `purchase_order_items`
   ADD CONSTRAINT `purchase_order_items_order_id_foreign` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `purchase_order_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON UPDATE CASCADE;
+  ADD CONSTRAINT `purchase_order_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `purchase_order_items_tenant_order_foreign` FOREIGN KEY (`tenant_id`,`purchase_order_id`) REFERENCES `purchase_orders` (`tenant_id`, `id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `purchase_order_items_tenant_product_foreign` FOREIGN KEY (`tenant_id`,`product_id`) REFERENCES `products` (`tenant_id`, `id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `purchase_receipts`
 --
 ALTER TABLE `purchase_receipts`
   ADD CONSTRAINT `purchase_receipts_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `purchase_receipts_order_context_foreign` FOREIGN KEY (`tenant_id`,`purchase_order_id`,`supplier_id`,`branch_id`,`warehouse_id`) REFERENCES `purchase_orders` (`tenant_id`, `id`, `supplier_id`, `branch_id`, `warehouse_id`),
   ADD CONSTRAINT `purchase_receipts_order_id_foreign` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `purchase_receipts_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `purchase_receipts_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `warehouses` (`id`) ON UPDATE CASCADE;
@@ -608,8 +648,12 @@ ALTER TABLE `purchase_receipts`
 --
 ALTER TABLE `purchase_receipt_items`
   ADD CONSTRAINT `purchase_receipt_items_order_item_id_foreign` FOREIGN KEY (`purchase_order_item_id`) REFERENCES `purchase_order_items` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `purchase_receipt_items_order_item_product_foreign` FOREIGN KEY (`tenant_id`,`purchase_order_item_id`,`product_id`) REFERENCES `purchase_order_items` (`tenant_id`, `id`, `product_id`),
   ADD CONSTRAINT `purchase_receipt_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `purchase_receipt_items_receipt_id_foreign` FOREIGN KEY (`purchase_receipt_id`) REFERENCES `purchase_receipts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `purchase_receipt_items_receipt_id_foreign` FOREIGN KEY (`purchase_receipt_id`) REFERENCES `purchase_receipts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `purchase_receipt_items_tenant_receipt_foreign` FOREIGN KEY (`tenant_id`,`purchase_receipt_id`) REFERENCES `purchase_receipts` (`tenant_id`, `id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `receipt_items_stock_move_foreign` FOREIGN KEY (`tenant_id`,`stock_movement_id`) REFERENCES `stock_movements` (`tenant_id`, `id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `receipt_items_void_move_foreign` FOREIGN KEY (`tenant_id`,`void_stock_movement_id`) REFERENCES `stock_movements` (`tenant_id`, `id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `stock_movements`
@@ -617,19 +661,26 @@ ALTER TABLE `purchase_receipt_items`
 ALTER TABLE `stock_movements`
   ADD CONSTRAINT `stock_movements_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `stock_movements_related_warehouse_id_foreign` FOREIGN KEY (`related_warehouse_id`) REFERENCES `warehouses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `stock_movements_tenant_product_foreign` FOREIGN KEY (`tenant_id`,`product_id`) REFERENCES `products` (`tenant_id`, `id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `stock_movements_tenant_related_warehouse_foreign` FOREIGN KEY (`tenant_id`,`related_warehouse_id`) REFERENCES `warehouses` (`tenant_id`, `id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `stock_movements_tenant_reversal_foreign` FOREIGN KEY (`tenant_id`,`reversal_of_movement_id`) REFERENCES `stock_movements` (`tenant_id`, `id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `stock_movements_tenant_warehouse_foreign` FOREIGN KEY (`tenant_id`,`warehouse_id`) REFERENCES `warehouses` (`tenant_id`, `id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `stock_movements_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `warehouses` (`id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `warehouses`
 --
 ALTER TABLE `warehouses`
-  ADD CONSTRAINT `warehouses_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON UPDATE CASCADE;
+  ADD CONSTRAINT `warehouses_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `warehouses_tenant_branch_foreign` FOREIGN KEY (`tenant_id`,`branch_id`) REFERENCES `branches` (`tenant_id`, `id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `warehouse_stocks`
 --
 ALTER TABLE `warehouse_stocks`
   ADD CONSTRAINT `warehouse_stocks_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `warehouse_stocks_tenant_product_foreign` FOREIGN KEY (`tenant_id`,`product_id`) REFERENCES `products` (`tenant_id`, `id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `warehouse_stocks_tenant_warehouse_foreign` FOREIGN KEY (`tenant_id`,`warehouse_id`) REFERENCES `warehouses` (`tenant_id`, `id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `warehouse_stocks_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `warehouses` (`id`) ON UPDATE CASCADE;
 COMMIT;
 

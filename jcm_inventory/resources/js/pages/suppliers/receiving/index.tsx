@@ -20,12 +20,7 @@ import {
     X,
     XCircle,
 } from 'lucide-react';
-import {
-    type FormEvent,
-    type ReactNode,
-    useMemo,
-    useState,
-} from 'react';
+import { type FormEvent, type ReactNode, useMemo, useState } from 'react';
 
 type UserReference = {
     id: number;
@@ -114,6 +109,7 @@ type Receipt = {
     received_date: string;
     status: string;
     status_label: string;
+    can_void: boolean;
 
     purchase_order: {
         id: number;
@@ -209,6 +205,10 @@ type ReceivingFormData = {
     items: ReceivingFormItem[];
 };
 
+type VoidReceiptFormData = {
+    reason: string;
+};
+
 type ReceivingPageProps = {
     receipts: PaginatedReceipts;
     summary: ReceivingSummary;
@@ -238,9 +238,7 @@ function todayDate(): string {
     const date = new Date();
     const offset = date.getTimezoneOffset() * 60_000;
 
-    return new Date(date.getTime() - offset)
-        .toISOString()
-        .slice(0, 10);
+    return new Date(date.getTime() - offset).toISOString().slice(0, 10);
 }
 
 function emptyForm(): ReceivingFormData {
@@ -262,52 +260,39 @@ export default function ReceivingIndex({
     statuses,
     filters,
 }: ReceivingPageProps) {
-    const [isCreateModalOpen, setIsCreateModalOpen] =
-        useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-    const [viewingReceipt, setViewingReceipt] =
-        useState<Receipt | null>(null);
+    const [viewingReceipt, setViewingReceipt] = useState<Receipt | null>(null);
 
-    const [search, setSearch] = useState(
-        filters.search ?? '',
-    );
+    const [voidingReceipt, setVoidingReceipt] = useState<Receipt | null>(null);
 
-    const [status, setStatus] = useState(
-        filters.status ?? '',
-    );
+    const [search, setSearch] = useState(filters.search ?? '');
 
-    const [supplierId, setSupplierId] = useState(
-        filters.supplier_id ?? '',
-    );
+    const [status, setStatus] = useState(filters.status ?? '');
 
-    const [warehouseId, setWarehouseId] = useState(
-        filters.warehouse_id ?? '',
-    );
+    const [supplierId, setSupplierId] = useState(filters.supplier_id ?? '');
 
-    const [dateFrom, setDateFrom] = useState(
-        filters.date_from ?? '',
-    );
+    const [warehouseId, setWarehouseId] = useState(filters.warehouse_id ?? '');
 
-    const [dateTo, setDateTo] = useState(
-        filters.date_to ?? '',
-    );
+    const [dateFrom, setDateFrom] = useState(filters.date_from ?? '');
 
-    const form = useForm<ReceivingFormData>(
-        emptyForm(),
-    );
+    const [dateTo, setDateTo] = useState(filters.date_to ?? '');
+
+    const form = useForm<ReceivingFormData>(emptyForm());
+
+    const voidForm = useForm<VoidReceiptFormData>({
+        reason: '',
+    });
+
+    const voidErrors = voidForm.errors as Record<string, string | undefined>;
 
     const selectedPurchaseOrder = useMemo(() => {
         return (
             purchase_orders.find(
-                (order) =>
-                    String(order.id) ===
-                    form.data.purchase_order_id,
+                (order) => String(order.id) === form.data.purchase_order_id,
             ) ?? null
         );
-    }, [
-        form.data.purchase_order_id,
-        purchase_orders,
-    ]);
+    }, [form.data.purchase_order_id, purchase_orders]);
 
     const receiptTotals = useMemo(() => {
         if (!selectedPurchaseOrder) {
@@ -320,38 +305,24 @@ export default function ReceivingIndex({
 
         return form.data.items.reduce(
             (totals, item) => {
-                const quantity = Number(
-                    item.quantity_received || 0,
+                const quantity = Number(item.quantity_received || 0);
+
+                const orderItem = selectedPurchaseOrder.items.find(
+                    (candidate) =>
+                        String(candidate.id) === item.purchase_order_item_id,
                 );
 
-                const orderItem =
-                    selectedPurchaseOrder.items.find(
-                        (candidate) =>
-                            String(candidate.id) ===
-                            item.purchase_order_item_id,
-                    );
-
-                if (
-                    !orderItem ||
-                    !Number.isFinite(quantity) ||
-                    quantity <= 0
-                ) {
+                if (!orderItem || !Number.isFinite(quantity) || quantity <= 0) {
                     return totals;
                 }
 
                 return {
-                    quantity:
-                        totals.quantity + quantity,
+                    quantity: totals.quantity + quantity,
 
                     amount:
-                        totals.amount +
-                        quantity *
-                            Number(
-                                orderItem.unit_cost,
-                            ),
+                        totals.amount + quantity * Number(orderItem.unit_cost),
 
-                    itemCount:
-                        totals.itemCount + 1,
+                    itemCount: totals.itemCount + 1,
                 };
             },
             {
@@ -360,10 +331,7 @@ export default function ReceivingIndex({
                 itemCount: 0,
             },
         );
-    }, [
-        form.data.items,
-        selectedPurchaseOrder,
-    ]);
+    }, [form.data.items, selectedPurchaseOrder]);
 
     function openCreateModal(): void {
         form.clearErrors();
@@ -381,12 +349,9 @@ export default function ReceivingIndex({
         form.setData(emptyForm());
     }
 
-    function changePurchaseOrder(
-        purchaseOrderId: string,
-    ): void {
+    function changePurchaseOrder(purchaseOrderId: string): void {
         const order = purchase_orders.find(
-            (item) =>
-                String(item.id) === purchaseOrderId,
+            (item) => String(item.id) === purchaseOrderId,
         );
 
         form.clearErrors();
@@ -394,13 +359,11 @@ export default function ReceivingIndex({
         form.setData({
             ...form.data,
 
-            purchase_order_id:
-                purchaseOrderId,
+            purchase_order_id: purchaseOrderId,
 
             items:
                 order?.items.map((item) => ({
-                    purchase_order_item_id:
-                        String(item.id),
+                    purchase_order_item_id: String(item.id),
 
                     quantity_received: '',
 
@@ -432,22 +395,17 @@ export default function ReceivingIndex({
         form.setData(
             'items',
             form.data.items.map((item) => {
-                const orderItem =
-                    selectedPurchaseOrder.items.find(
-                        (candidate) =>
-                            String(candidate.id) ===
-                            item.purchase_order_item_id,
-                    );
+                const orderItem = selectedPurchaseOrder.items.find(
+                    (candidate) =>
+                        String(candidate.id) === item.purchase_order_item_id,
+                );
 
                 return {
                     ...item,
 
-                    quantity_received:
-                        orderItem
-                            ? String(
-                                  orderItem.remaining_quantity,
-                              )
-                            : '',
+                    quantity_received: orderItem
+                        ? String(orderItem.remaining_quantity)
+                        : '',
                 };
             }),
         );
@@ -467,27 +425,19 @@ export default function ReceivingIndex({
         index: number,
         field: keyof ReceivingFormItem,
     ): string | undefined {
-        return (
-            form.errors as Record<string, string>
-        )[`items.${index}.${field}`];
+        return (form.errors as Record<string, string>)[
+            `items.${index}.${field}`
+        ];
     }
 
-    function submitReceipt(
-        event: FormEvent<HTMLFormElement>,
-    ): void {
+    function submitReceipt(event: FormEvent<HTMLFormElement>): void {
         event.preventDefault();
 
-        const selectedItems =
-            form.data.items.filter((item) => {
-                const quantity = Number(
-                    item.quantity_received || 0,
-                );
+        const selectedItems = form.data.items.filter((item) => {
+            const quantity = Number(item.quantity_received || 0);
 
-                return (
-                    Number.isFinite(quantity) &&
-                    quantity > 0
-                );
-            });
+            return Number.isFinite(quantity) && quantity > 0;
+        });
 
         if (selectedItems.length === 0) {
             form.setError(
@@ -503,14 +453,9 @@ export default function ReceivingIndex({
         form.transform((data) => ({
             ...data,
             items: data.items.filter((item) => {
-                const quantity = Number(
-                    item.quantity_received || 0,
-                );
+                const quantity = Number(item.quantity_received || 0);
 
-                return (
-                    Number.isFinite(quantity) &&
-                    quantity > 0
-                );
+                return Number.isFinite(quantity) && quantity > 0;
             }),
         }));
 
@@ -529,31 +474,60 @@ export default function ReceivingIndex({
         });
     }
 
-    function applyFilters(
-        event: FormEvent<HTMLFormElement>,
-    ): void {
+    function openVoidModal(receipt: Receipt): void {
+        if (!receipt.can_void) {
+            return;
+        }
+
+        voidForm.clearErrors();
+        voidForm.setData('reason', '');
+        setVoidingReceipt(receipt);
+    }
+
+    function closeVoidModal(): void {
+        if (voidForm.processing) {
+            return;
+        }
+
+        setVoidingReceipt(null);
+        voidForm.clearErrors();
+        voidForm.reset();
+    }
+
+    function submitVoidReceipt(event: FormEvent<HTMLFormElement>): void {
+        event.preventDefault();
+
+        if (!voidingReceipt) {
+            return;
+        }
+
+        voidForm.post(`/suppliers/receiving/${voidingReceipt.id}/void`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setVoidingReceipt(null);
+                setViewingReceipt(null);
+                voidForm.reset();
+            },
+        });
+    }
+
+    function applyFilters(event: FormEvent<HTMLFormElement>): void {
         event.preventDefault();
 
         router.get(
             '/suppliers/receiving',
             {
-                search:
-                    search.trim() || undefined,
+                search: search.trim() || undefined,
 
-                status:
-                    status || undefined,
+                status: status || undefined,
 
-                supplier_id:
-                    supplierId || undefined,
+                supplier_id: supplierId || undefined,
 
-                warehouse_id:
-                    warehouseId || undefined,
+                warehouse_id: warehouseId || undefined,
 
-                date_from:
-                    dateFrom || undefined,
+                date_from: dateFrom || undefined,
 
-                date_to:
-                    dateTo || undefined,
+                date_to: dateTo || undefined,
             },
             {
                 preserveState: true,
@@ -598,22 +572,18 @@ export default function ReceivingIndex({
                         </h1>
 
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Record supplier deliveries and
-                            automatically update warehouse
-                            stock.
+                            Record supplier deliveries and automatically update
+                            warehouse stock.
                         </p>
                     </div>
 
                     <button
                         type="button"
                         onClick={openCreateModal}
-                        disabled={
-                            purchase_orders.length === 0
-                        }
+                        disabled={purchase_orders.length === 0}
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <Plus className="size-4" />
-
                         Receive Delivery
                     </button>
                 </section>
@@ -624,14 +594,12 @@ export default function ReceivingIndex({
 
                         <div>
                             <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                                No approved purchase orders
-                                available
+                                No approved purchase orders available
                             </p>
 
                             <p className="mt-1 text-xs text-amber-700/80 dark:text-amber-400/80">
-                                Approve a purchase order first
-                                before recording a supplier
-                                delivery.
+                                Approve a purchase order first before recording
+                                a supplier delivery.
                             </p>
                         </div>
                     </section>
@@ -641,37 +609,25 @@ export default function ReceivingIndex({
                     <SummaryCard
                         title="Total Receipts"
                         value={summary.total}
-                        icon={
-                            <ReceiptText className="size-5" />
-                        }
+                        icon={<ReceiptText className="size-5" />}
                     />
 
                     <SummaryCard
                         title="Posted Receipts"
                         value={summary.posted}
-                        icon={
-                            <CheckCircle2 className="size-5" />
-                        }
+                        icon={<CheckCircle2 className="size-5" />}
                     />
 
                     <SummaryCard
                         title="Quantity Received"
-                        value={formatQuantity(
-                            summary.received_quantity,
-                        )}
-                        icon={
-                            <Boxes className="size-5" />
-                        }
+                        value={formatQuantity(summary.received_quantity)}
+                        icon={<Boxes className="size-5" />}
                     />
 
                     <SummaryCard
                         title="Received Value"
-                        value={formatCurrency(
-                            summary.received_value,
-                        )}
-                        icon={
-                            <Banknote className="size-5" />
-                        }
+                        value={formatCurrency(summary.received_value)}
+                        icon={<Banknote className="size-5" />}
                     />
                 </section>
 
@@ -687,10 +643,7 @@ export default function ReceivingIndex({
                                 type="text"
                                 value={search}
                                 onChange={(event) =>
-                                    setSearch(
-                                        event.target
-                                            .value,
-                                    )
+                                    setSearch(event.target.value)
                                 }
                                 placeholder="Search receipt, PO, supplier, or reference..."
                                 className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
@@ -699,98 +652,55 @@ export default function ReceivingIndex({
 
                         <select
                             value={status}
-                            onChange={(event) =>
-                                setStatus(
-                                    event.target.value,
-                                )
-                            }
+                            onChange={(event) => setStatus(event.target.value)}
                             className="h-10 rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                         >
-                            <option value="">
-                                All statuses
-                            </option>
+                            <option value="">All statuses</option>
 
-                            {statuses.map(
-                                (item) => (
-                                    <option
-                                        key={
-                                            item.value
-                                        }
-                                        value={
-                                            item.value
-                                        }
-                                    >
-                                        {item.label}
-                                    </option>
-                                ),
-                            )}
+                            {statuses.map((item) => (
+                                <option key={item.value} value={item.value}>
+                                    {item.label}
+                                </option>
+                            ))}
                         </select>
 
                         <select
                             value={supplierId}
                             onChange={(event) =>
-                                setSupplierId(
-                                    event.target.value,
-                                )
+                                setSupplierId(event.target.value)
                             }
                             className="h-10 rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                         >
-                            <option value="">
-                                All suppliers
-                            </option>
+                            <option value="">All suppliers</option>
 
-                            {suppliers.map(
-                                (supplier) => (
-                                    <option
-                                        key={
-                                            supplier.id
-                                        }
-                                        value={
-                                            supplier.id
-                                        }
-                                    >
-                                        {supplier.name}
-                                    </option>
-                                ),
-                            )}
+                            {suppliers.map((supplier) => (
+                                <option key={supplier.id} value={supplier.id}>
+                                    {supplier.name}
+                                </option>
+                            ))}
                         </select>
 
                         <select
                             value={warehouseId}
                             onChange={(event) =>
-                                setWarehouseId(
-                                    event.target.value,
-                                )
+                                setWarehouseId(event.target.value)
                             }
                             className="h-10 rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                         >
-                            <option value="">
-                                All warehouses
-                            </option>
+                            <option value="">All warehouses</option>
 
-                            {warehouses.map(
-                                (warehouse) => (
-                                    <option
-                                        key={
-                                            warehouse.id
-                                        }
-                                        value={
-                                            warehouse.id
-                                        }
-                                    >
-                                        {warehouse.name}
-                                    </option>
-                                ),
-                            )}
+                            {warehouses.map((warehouse) => (
+                                <option key={warehouse.id} value={warehouse.id}>
+                                    {warehouse.name}
+                                </option>
+                            ))}
                         </select>
 
                         <input
                             type="date"
                             value={dateFrom}
                             onChange={(event) =>
-                                setDateFrom(
-                                    event.target.value,
-                                )
+                                setDateFrom(event.target.value)
                             }
                             title="Received date from"
                             className="h-10 rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
@@ -799,11 +709,7 @@ export default function ReceivingIndex({
                         <input
                             type="date"
                             value={dateTo}
-                            onChange={(event) =>
-                                setDateTo(
-                                    event.target.value,
-                                )
-                            }
+                            onChange={(event) => setDateTo(event.target.value)}
                             title="Received date to"
                             className="h-10 rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                         />
@@ -863,176 +769,166 @@ export default function ReceivingIndex({
                             </thead>
 
                             <tbody className="divide-y">
-                                {receipts.data.map(
-                                    (receipt) => (
-                                        <tr
-                                            key={receipt.id}
-                                            className="transition hover:bg-muted/30"
-                                        >
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-start gap-3">
-                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                                        <ReceiptText className="size-5" />
-                                                    </div>
-
-                                                    <div>
-                                                        <p className="font-medium">
-                                                            {
-                                                                receipt.receipt_number
-                                                            }
-                                                        </p>
-
-                                                        <p className="mt-1 text-xs text-muted-foreground">
-                                                            {receipt.delivery_reference
-                                                                ? `Reference: ${receipt.delivery_reference}`
-                                                                : 'No delivery reference'}
-                                                        </p>
-
-                                                        {receipt.received_by && (
-                                                            <p className="mt-1 text-xs text-muted-foreground">
-                                                                Received
-                                                                by{' '}
-                                                                {
-                                                                    receipt
-                                                                        .received_by
-                                                                        .name
-                                                                }
-                                                            </p>
-                                                        )}
-                                                    </div>
+                                {receipts.data.map((receipt) => (
+                                    <tr
+                                        key={receipt.id}
+                                        className="transition hover:bg-muted/30"
+                                    >
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-start gap-3">
+                                                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                                    <ReceiptText className="size-5" />
                                                 </div>
-                                            </td>
 
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-start gap-2">
-                                                    <ClipboardList className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                                                <div>
+                                                    <p className="font-medium">
+                                                        {receipt.receipt_number}
+                                                    </p>
 
-                                                    <div>
-                                                        <p className="text-sm font-medium">
+                                                    <p className="mt-1 text-xs text-muted-foreground">
+                                                        {receipt.delivery_reference
+                                                            ? `Reference: ${receipt.delivery_reference}`
+                                                            : 'No delivery reference'}
+                                                    </p>
+
+                                                    {receipt.received_by && (
+                                                        <p className="mt-1 text-xs text-muted-foreground">
+                                                            Received by{' '}
                                                             {
                                                                 receipt
-                                                                    .purchase_order
-                                                                    .po_number
-                                                            }
-                                                        </p>
-
-                                                        <p className="mt-1 text-xs text-muted-foreground">
-                                                            {
-                                                                receipt.items_count
-                                                            }{' '}
-                                                            product
-                                                            {receipt.items_count !==
-                                                            1
-                                                                ? 's'
-                                                                : ''}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-start gap-2">
-                                                    <Truck className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-
-                                                    <div>
-                                                        <p className="text-sm font-medium">
-                                                            {
-                                                                receipt
-                                                                    .supplier
+                                                                    .received_by
                                                                     .name
                                                             }
                                                         </p>
-
-                                                        <p className="mt-1 text-xs text-muted-foreground">
-                                                            {receipt
-                                                                .supplier
-                                                                .code ??
-                                                                'No supplier code'}
-                                                        </p>
-                                                    </div>
+                                                    )}
                                                 </div>
-                                            </td>
+                                            </div>
+                                        </td>
 
-                                            <td className="px-5 py-4">
-                                                <div className="space-y-1.5">
-                                                    <p className="flex items-center gap-2 text-sm">
-                                                        <Warehouse className="size-4 text-muted-foreground" />
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-start gap-2">
+                                                <ClipboardList className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 
+                                                <div>
+                                                    <p className="text-sm font-medium">
                                                         {
                                                             receipt
-                                                                .warehouse
-                                                                .name
+                                                                .purchase_order
+                                                                .po_number
                                                         }
                                                     </p>
 
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {
-                                                            receipt
-                                                                .branch
-                                                                .name
-                                                        }
+                                                    <p className="mt-1 text-xs text-muted-foreground">
+                                                        {receipt.items_count}{' '}
+                                                        product
+                                                        {receipt.items_count !==
+                                                        1
+                                                            ? 's'
+                                                            : ''}
                                                     </p>
                                                 </div>
-                                            </td>
+                                            </div>
+                                        </td>
 
-                                            <td className="px-5 py-4">
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-start gap-2">
+                                                <Truck className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+
+                                                <div>
+                                                    <p className="text-sm font-medium">
+                                                        {receipt.supplier.name}
+                                                    </p>
+
+                                                    <p className="mt-1 text-xs text-muted-foreground">
+                                                        {receipt.supplier
+                                                            .code ??
+                                                            'No supplier code'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <div className="space-y-1.5">
                                                 <p className="flex items-center gap-2 text-sm">
-                                                    <CalendarDays className="size-4 text-muted-foreground" />
+                                                    <Warehouse className="size-4 text-muted-foreground" />
 
-                                                    {formatDate(
-                                                        receipt.received_date,
-                                                    )}
+                                                    {receipt.warehouse.name}
                                                 </p>
 
-                                                <p className="mt-1.5 text-xs text-muted-foreground">
-                                                    {formatQuantity(
-                                                        receipt.total_quantity,
-                                                    )}{' '}
-                                                    units
+                                                <p className="text-xs text-muted-foreground">
+                                                    {receipt.branch.name}
                                                 </p>
-                                            </td>
+                                            </div>
+                                        </td>
 
-                                            <td className="px-5 py-4">
-                                                <p className="font-semibold">
-                                                    {formatCurrency(
-                                                        receipt.total_amount,
-                                                    )}
-                                                </p>
-                                            </td>
+                                        <td className="px-5 py-4">
+                                            <p className="flex items-center gap-2 text-sm">
+                                                <CalendarDays className="size-4 text-muted-foreground" />
 
-                                            <td className="px-5 py-4">
-                                                <StatusBadge
-                                                    status={
-                                                        receipt.status
+                                                {formatDate(
+                                                    receipt.received_date,
+                                                )}
+                                            </p>
+
+                                            <p className="mt-1.5 text-xs text-muted-foreground">
+                                                {formatQuantity(
+                                                    receipt.total_quantity,
+                                                )}{' '}
+                                                units
+                                            </p>
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <p className="font-semibold">
+                                                {formatCurrency(
+                                                    receipt.total_amount,
+                                                )}
+                                            </p>
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <StatusBadge
+                                                status={receipt.status}
+                                                label={receipt.status_label}
+                                            />
+                                        </td>
+
+                                        <td className="px-5 py-4">
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    title="View receipt"
+                                                    onClick={() =>
+                                                        setViewingReceipt(
+                                                            receipt,
+                                                        )
                                                     }
-                                                    label={
-                                                        receipt.status_label
-                                                    }
-                                                />
-                                            </td>
+                                                    className="inline-flex size-9 items-center justify-center rounded-lg border transition hover:bg-muted"
+                                                >
+                                                    <Eye className="size-4" />
+                                                </button>
 
-                                            <td className="px-5 py-4">
-                                                <div className="flex justify-end">
+                                                {receipt.can_void && (
                                                     <button
                                                         type="button"
-                                                        title="View receipt"
+                                                        title="Void receipt"
                                                         onClick={() =>
-                                                            setViewingReceipt(
+                                                            openVoidModal(
                                                                 receipt,
                                                             )
                                                         }
-                                                        className="inline-flex size-9 items-center justify-center rounded-lg border transition hover:bg-muted"
+                                                        className="inline-flex size-9 items-center justify-center rounded-lg border border-destructive/30 text-destructive transition hover:bg-destructive/10"
                                                     >
-                                                        <Eye className="size-4" />
+                                                        <RotateCcw className="size-4" />
                                                     </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ),
-                                )}
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
 
-                                {receipts.data.length ===
-                                    0 && (
+                                {receipts.data.length === 0 && (
                                     <tr>
                                         <td
                                             colSpan={8}
@@ -1041,29 +937,22 @@ export default function ReceivingIndex({
                                             <ArrowDownToLine className="mx-auto size-12 text-muted-foreground/30" />
 
                                             <h3 className="mt-3 font-medium">
-                                                No receiving
-                                                records found
+                                                No receiving records found
                                             </h3>
 
                                             <p className="mt-1 text-sm text-muted-foreground">
-                                                Posted supplier
-                                                deliveries will
+                                                Posted supplier deliveries will
                                                 appear here.
                                             </p>
 
-                                            {purchase_orders.length >
-                                                0 && (
+                                            {purchase_orders.length > 0 && (
                                                 <button
                                                     type="button"
-                                                    onClick={
-                                                        openCreateModal
-                                                    }
+                                                    onClick={openCreateModal}
                                                     className="mt-4 inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
                                                 >
                                                     <Plus className="size-4" />
-
-                                                    Receive
-                                                    Delivery
+                                                    Receive Delivery
                                                 </button>
                                             )}
                                         </td>
@@ -1073,9 +962,7 @@ export default function ReceivingIndex({
                         </table>
                     </div>
 
-                    <ReceiptPagination
-                        receipts={receipts}
-                    />
+                    <ReceiptPagination receipts={receipts} />
                 </section>
             </div>
 
@@ -1083,10 +970,7 @@ export default function ReceivingIndex({
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
                     onMouseDown={(event) => {
-                        if (
-                            event.target ===
-                            event.currentTarget
-                        ) {
+                        if (event.target === event.currentTarget) {
                             closeCreateModal();
                         }
                     }}
@@ -1095,25 +979,19 @@ export default function ReceivingIndex({
                         <div className="sticky top-0 z-20 flex items-center justify-between border-b bg-background px-6 py-4">
                             <div>
                                 <h2 className="text-lg font-semibold">
-                                    Receive Supplier
-                                    Delivery
+                                    Receive Supplier Delivery
                                 </h2>
 
                                 <p className="text-sm text-muted-foreground">
-                                    Record delivered items
-                                    from an approved purchase
-                                    order.
+                                    Record delivered items from an approved
+                                    purchase order.
                                 </p>
                             </div>
 
                             <button
                                 type="button"
-                                onClick={
-                                    closeCreateModal
-                                }
-                                disabled={
-                                    form.processing
-                                }
+                                onClick={closeCreateModal}
+                                disabled={form.processing}
                                 className="inline-flex size-9 items-center justify-center rounded-lg transition hover:bg-muted disabled:opacity-50"
                             >
                                 <X className="size-5" />
@@ -1127,88 +1005,51 @@ export default function ReceivingIndex({
                             <FormSection
                                 title="Delivery Information"
                                 description="Select the approved purchase order and provide the delivery details."
-                                icon={
-                                    <Truck className="size-4" />
-                                }
+                                icon={<Truck className="size-4" />}
                             >
                                 <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                                     <FormField
                                         label="Purchase Order"
-                                        error={
-                                            form.errors
-                                                .purchase_order_id
-                                        }
+                                        error={form.errors.purchase_order_id}
                                         required
                                     >
                                         <select
-                                            value={
-                                                form.data
-                                                    .purchase_order_id
-                                            }
-                                            onChange={(
-                                                event,
-                                            ) =>
+                                            value={form.data.purchase_order_id}
+                                            onChange={(event) =>
                                                 changePurchaseOrder(
-                                                    event
-                                                        .target
-                                                        .value,
+                                                    event.target.value,
                                                 )
                                             }
                                             className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                                         >
                                             <option value="">
-                                                Select
-                                                purchase
-                                                order
+                                                Select purchase order
                                             </option>
 
-                                            {purchase_orders.map(
-                                                (order) => (
-                                                    <option
-                                                        key={
-                                                            order.id
-                                                        }
-                                                        value={
-                                                            order.id
-                                                        }
-                                                    >
-                                                        {
-                                                            order.po_number
-                                                        }{' '}
-                                                        —{' '}
-                                                        {
-                                                            order
-                                                                .supplier
-                                                                .name
-                                                        }
-                                                    </option>
-                                                ),
-                                            )}
+                                            {purchase_orders.map((order) => (
+                                                <option
+                                                    key={order.id}
+                                                    value={order.id}
+                                                >
+                                                    {order.po_number} —{' '}
+                                                    {order.supplier.name}
+                                                </option>
+                                            ))}
                                         </select>
                                     </FormField>
 
                                     <FormField
                                         label="Received Date"
-                                        error={
-                                            form.errors
-                                                .received_date
-                                        }
+                                        error={form.errors.received_date}
                                         required
                                     >
                                         <input
                                             type="date"
-                                            value={
-                                                form.data
-                                                    .received_date
-                                            }
-                                            onChange={(
-                                                event,
-                                            ) =>
+                                            value={form.data.received_date}
+                                            onChange={(event) =>
                                                 form.setData(
                                                     'received_date',
-                                                    event
-                                                        .target
-                                                        .value,
+                                                    event.target.value,
                                                 )
                                             }
                                             className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
@@ -1217,25 +1058,15 @@ export default function ReceivingIndex({
 
                                     <FormField
                                         label="Delivery Reference"
-                                        error={
-                                            form.errors
-                                                .delivery_reference
-                                        }
+                                        error={form.errors.delivery_reference}
                                     >
                                         <input
                                             type="text"
-                                            value={
-                                                form.data
-                                                    .delivery_reference
-                                            }
-                                            onChange={(
-                                                event,
-                                            ) =>
+                                            value={form.data.delivery_reference}
+                                            onChange={(event) =>
                                                 form.setData(
                                                     'delivery_reference',
-                                                    event
-                                                        .target
-                                                        .value,
+                                                    event.target.value,
                                                 )
                                             }
                                             placeholder="DR, invoice, or delivery number"
@@ -1250,37 +1081,25 @@ export default function ReceivingIndex({
                                     <DetailItem
                                         label="Supplier"
                                         value={
-                                            selectedPurchaseOrder
-                                                .supplier
-                                                .name
+                                            selectedPurchaseOrder.supplier.name
                                         }
-                                        icon={
-                                            <Truck className="size-4" />
-                                        }
+                                        icon={<Truck className="size-4" />}
                                     />
 
                                     <DetailItem
                                         label="Branch"
                                         value={
-                                            selectedPurchaseOrder
-                                                .branch
-                                                .name
+                                            selectedPurchaseOrder.branch.name
                                         }
-                                        icon={
-                                            <Boxes className="size-4" />
-                                        }
+                                        icon={<Boxes className="size-4" />}
                                     />
 
                                     <DetailItem
                                         label="Warehouse"
                                         value={
-                                            selectedPurchaseOrder
-                                                .warehouse
-                                                .name
+                                            selectedPurchaseOrder.warehouse.name
                                         }
-                                        icon={
-                                            <Warehouse className="size-4" />
-                                        }
+                                        icon={<Warehouse className="size-4" />}
                                     />
 
                                     <DetailItem
@@ -1299,9 +1118,7 @@ export default function ReceivingIndex({
                                 <FormSection
                                     title="Delivered Items"
                                     description="Enter the actual quantity delivered for each product."
-                                    icon={
-                                        <PackageCheck className="size-4" />
-                                    }
+                                    icon={<PackageCheck className="size-4" />}
                                     action={
                                         <div className="flex flex-wrap gap-2">
                                             <button
@@ -1312,20 +1129,15 @@ export default function ReceivingIndex({
                                                 className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition hover:bg-muted"
                                             >
                                                 <ArrowDownToLine className="size-4" />
-
-                                                Receive All
-                                                Remaining
+                                                Receive All Remaining
                                             </button>
 
                                             <button
                                                 type="button"
-                                                onClick={
-                                                    clearQuantities
-                                                }
+                                                onClick={clearQuantities}
                                                 className="inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition hover:bg-muted"
                                             >
                                                 <RotateCcw className="size-4" />
-
                                                 Clear
                                             </button>
                                         </div>
@@ -1333,10 +1145,7 @@ export default function ReceivingIndex({
                                 >
                                     {form.errors.items && (
                                         <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                                            {
-                                                form.errors
-                                                    .items
-                                            }
+                                            {form.errors.items}
                                         </p>
                                     )}
 
@@ -1353,8 +1162,7 @@ export default function ReceivingIndex({
                                                     </th>
 
                                                     <th className="w-32 px-4 py-3 font-medium">
-                                                        Previously
-                                                        Received
+                                                        Previously Received
                                                     </th>
 
                                                     <th className="w-32 px-4 py-3 font-medium">
@@ -1362,8 +1170,7 @@ export default function ReceivingIndex({
                                                     </th>
 
                                                     <th className="w-40 px-4 py-3 font-medium">
-                                                        Receive
-                                                        Now
+                                                        Receive Now
                                                     </th>
 
                                                     <th className="w-40 px-4 py-3 font-medium">
@@ -1378,23 +1185,16 @@ export default function ReceivingIndex({
 
                                             <tbody className="divide-y">
                                                 {selectedPurchaseOrder.items.map(
-                                                    (
-                                                        orderItem,
-                                                        index,
-                                                    ) => {
+                                                    (orderItem, index) => {
                                                         const formItem =
-                                                            form
-                                                                .data
-                                                                .items[
+                                                            form.data.items[
                                                                 index
                                                             ];
 
-                                                        const quantity =
-                                                            Number(
-                                                                formItem
-                                                                    ?.quantity_received ||
-                                                                    0,
-                                                            );
+                                                        const quantity = Number(
+                                                            formItem?.quantity_received ||
+                                                                0,
+                                                        );
 
                                                         const lineTotal =
                                                             Number.isFinite(
@@ -1475,8 +1275,7 @@ export default function ReceivingIndex({
                                                                         }
                                                                         step="0.001"
                                                                         value={
-                                                                            formItem
-                                                                                ?.quantity_received ??
+                                                                            formItem?.quantity_received ??
                                                                             ''
                                                                         }
                                                                         onChange={(
@@ -1544,8 +1343,7 @@ export default function ReceivingIndex({
                                                                     <input
                                                                         type="text"
                                                                         value={
-                                                                            formItem
-                                                                                ?.notes ??
+                                                                            formItem?.notes ??
                                                                             ''
                                                                         }
                                                                         onChange={(
@@ -1596,25 +1394,15 @@ export default function ReceivingIndex({
                                     >
                                         <FormField
                                             label="Notes"
-                                            error={
-                                                form.errors
-                                                    .notes
-                                            }
+                                            error={form.errors.notes}
                                         >
                                             <textarea
                                                 rows={6}
-                                                value={
-                                                    form.data
-                                                        .notes
-                                                }
-                                                onChange={(
-                                                    event,
-                                                ) =>
+                                                value={form.data.notes}
+                                                onChange={(event) =>
                                                     form.setData(
                                                         'notes',
-                                                        event
-                                                            .target
-                                                            .value,
+                                                        event.target.value,
                                                     )
                                                 }
                                                 placeholder="Delivery condition, shortages, damaged items, or other remarks"
@@ -1660,12 +1448,8 @@ export default function ReceivingIndex({
                             <div className="flex justify-end gap-3 border-t pt-5">
                                 <button
                                     type="button"
-                                    onClick={
-                                        closeCreateModal
-                                    }
-                                    disabled={
-                                        form.processing
-                                    }
+                                    onClick={closeCreateModal}
+                                    disabled={form.processing}
                                     className="h-10 rounded-lg border px-4 text-sm font-medium transition hover:bg-muted disabled:opacity-50"
                                 >
                                     Cancel
@@ -1676,8 +1460,7 @@ export default function ReceivingIndex({
                                     disabled={
                                         form.processing ||
                                         !selectedPurchaseOrder ||
-                                        receiptTotals.itemCount ===
-                                            0
+                                        receiptTotals.itemCount === 0
                                     }
                                     className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
@@ -1686,7 +1469,6 @@ export default function ReceivingIndex({
                                     ) : (
                                         <PackageCheck className="size-4" />
                                     )}
-
                                     Post Receipt
                                 </button>
                             </div>
@@ -1699,10 +1481,7 @@ export default function ReceivingIndex({
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
                     onMouseDown={(event) => {
-                        if (
-                            event.target ===
-                            event.currentTarget
-                        ) {
+                        if (event.target === event.currentTarget) {
                             setViewingReceipt(null);
                         }
                     }}
@@ -1712,36 +1491,24 @@ export default function ReceivingIndex({
                             <div>
                                 <div className="flex flex-wrap items-center gap-2">
                                     <h2 className="text-lg font-semibold">
-                                        {
-                                            viewingReceipt.receipt_number
-                                        }
+                                        {viewingReceipt.receipt_number}
                                     </h2>
 
                                     <StatusBadge
-                                        status={
-                                            viewingReceipt.status
-                                        }
-                                        label={
-                                            viewingReceipt.status_label
-                                        }
+                                        status={viewingReceipt.status}
+                                        label={viewingReceipt.status_label}
                                     />
                                 </div>
 
                                 <p className="mt-1 text-sm text-muted-foreground">
                                     Purchase order{' '}
-                                    {
-                                        viewingReceipt
-                                            .purchase_order
-                                            .po_number
-                                    }
+                                    {viewingReceipt.purchase_order.po_number}
                                 </p>
                             </div>
 
                             <button
                                 type="button"
-                                onClick={() =>
-                                    setViewingReceipt(null)
-                                }
+                                onClick={() => setViewingReceipt(null)}
                                 className="inline-flex size-9 items-center justify-center rounded-lg transition hover:bg-muted"
                             >
                                 <X className="size-5" />
@@ -1752,24 +1519,14 @@ export default function ReceivingIndex({
                             <section className="grid gap-4 rounded-xl border bg-muted/20 p-4 sm:grid-cols-2 xl:grid-cols-4">
                                 <DetailItem
                                     label="Supplier"
-                                    value={
-                                        viewingReceipt
-                                            .supplier.name
-                                    }
-                                    icon={
-                                        <Truck className="size-4" />
-                                    }
+                                    value={viewingReceipt.supplier.name}
+                                    icon={<Truck className="size-4" />}
                                 />
 
                                 <DetailItem
                                     label="Warehouse"
-                                    value={
-                                        viewingReceipt
-                                            .warehouse.name
-                                    }
-                                    icon={
-                                        <Warehouse className="size-4" />
-                                    }
+                                    value={viewingReceipt.warehouse.name}
+                                    icon={<Warehouse className="size-4" />}
                                 />
 
                                 <DetailItem
@@ -1777,9 +1534,7 @@ export default function ReceivingIndex({
                                     value={formatDate(
                                         viewingReceipt.received_date,
                                     )}
-                                    icon={
-                                        <CalendarDays className="size-4" />
-                                    }
+                                    icon={<CalendarDays className="size-4" />}
                                 />
 
                                 <DetailItem
@@ -1788,9 +1543,7 @@ export default function ReceivingIndex({
                                         viewingReceipt.delivery_reference ??
                                         'Not provided'
                                     }
-                                    icon={
-                                        <ReceiptText className="size-4" />
-                                    }
+                                    icon={<ReceiptText className="size-4" />}
                                 />
                             </section>
 
@@ -1801,8 +1554,7 @@ export default function ReceivingIndex({
                                     </h3>
 
                                     <p className="text-sm text-muted-foreground">
-                                        Products added to
-                                        warehouse inventory.
+                                        Products added to warehouse inventory.
                                     </p>
                                 </div>
 
@@ -1835,11 +1587,7 @@ export default function ReceivingIndex({
                                         <tbody className="divide-y">
                                             {viewingReceipt.items.map(
                                                 (item) => (
-                                                    <tr
-                                                        key={
-                                                            item.id
-                                                        }
-                                                    >
+                                                    <tr key={item.id}>
                                                         <td className="px-4 py-3">
                                                             <p className="text-sm font-medium">
                                                                 {
@@ -1851,9 +1599,7 @@ export default function ReceivingIndex({
                                                                 {item.product_sku
                                                                     ? `${item.product_sku} · `
                                                                     : ''}
-                                                                {
-                                                                    item.unit
-                                                                }
+                                                                {item.unit}
                                                             </p>
                                                         </td>
 
@@ -1861,9 +1607,7 @@ export default function ReceivingIndex({
                                                             {formatQuantity(
                                                                 item.quantity_received,
                                                             )}{' '}
-                                                            {
-                                                                item.unit
-                                                            }
+                                                            {item.unit}
                                                         </td>
 
                                                         <td className="px-4 py-3 text-sm">
@@ -1879,8 +1623,7 @@ export default function ReceivingIndex({
                                                         </td>
 
                                                         <td className="px-4 py-3 text-sm text-muted-foreground">
-                                                            {item.notes ??
-                                                                '—'}
+                                                            {item.notes ?? '—'}
                                                         </td>
                                                     </tr>
                                                 ),
@@ -1923,9 +1666,7 @@ export default function ReceivingIndex({
                                     </p>
 
                                     <p className="mt-2 font-medium">
-                                        {viewingReceipt
-                                            .received_by
-                                            ?.name ??
+                                        {viewingReceipt.received_by?.name ??
                                             'Unknown user'}
                                     </p>
 
@@ -1949,16 +1690,14 @@ export default function ReceivingIndex({
                                 </div>
                             </section>
 
-                            {viewingReceipt.status ===
-                                'voided' && (
+                            {viewingReceipt.status === 'voided' && (
                                 <section className="rounded-xl border border-destructive/30 bg-destructive/10 p-4">
                                     <div className="flex items-start gap-3">
                                         <XCircle className="mt-0.5 size-5 shrink-0 text-destructive" />
 
                                         <div>
                                             <p className="font-medium text-destructive">
-                                                Receipt
-                                                Voided
+                                                Receipt Voided
                                             </p>
 
                                             <p className="mt-1 text-sm">
@@ -1968,8 +1707,7 @@ export default function ReceivingIndex({
 
                                             <p className="mt-2 text-xs text-muted-foreground">
                                                 By{' '}
-                                                {viewingReceipt
-                                                    .voided_by
+                                                {viewingReceipt.voided_by
                                                     ?.name ??
                                                     'Unknown user'}{' '}
                                                 on{' '}
@@ -1982,20 +1720,203 @@ export default function ReceivingIndex({
                                 </section>
                             )}
 
-                            <div className="flex justify-end border-t pt-5">
+                            <div className="flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:justify-end">
+                                {viewingReceipt.can_void && (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            openVoidModal(viewingReceipt)
+                                        }
+                                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-destructive/30 px-4 text-sm font-medium text-destructive transition hover:bg-destructive/10"
+                                    >
+                                        <RotateCcw className="size-4" />
+                                        Void Receipt
+                                    </button>
+                                )}
+
                                 <button
                                     type="button"
-                                    onClick={() =>
-                                        setViewingReceipt(
-                                            null,
-                                        )
-                                    }
+                                    onClick={() => setViewingReceipt(null)}
                                     className="h-10 rounded-lg border px-4 text-sm font-medium transition hover:bg-muted"
                                 >
                                     Close
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {voidingReceipt && (
+                <div
+                    className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+                    onMouseDown={(event) => {
+                        if (event.target === event.currentTarget) {
+                            closeVoidModal();
+                        }
+                    }}
+                >
+                    <div className="w-full max-w-lg overflow-hidden rounded-2xl border bg-background shadow-2xl">
+                        <div className="flex items-start justify-between gap-4 border-b px-6 py-5">
+                            <div className="flex items-start gap-3">
+                                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                                    <RotateCcw className="size-5" />
+                                </div>
+
+                                <div>
+                                    <h2 className="text-lg font-semibold">
+                                        Void Receipt
+                                    </h2>
+
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        Reverse{' '}
+                                        <span className="font-medium text-foreground">
+                                            {voidingReceipt.receipt_number}
+                                        </span>{' '}
+                                        and restore its previous stock state.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={closeVoidModal}
+                                disabled={voidForm.processing}
+                                className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg transition hover:bg-muted disabled:opacity-50"
+                            >
+                                <X className="size-5" />
+                            </button>
+                        </div>
+
+                        <form
+                            onSubmit={submitVoidReceipt}
+                            className="space-y-5 p-6"
+                        >
+                            <section className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+                                <div className="flex items-start gap-3">
+                                    <XCircle className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+
+                                    <div>
+                                        <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                                            This action creates a reversal
+                                            record
+                                        </p>
+
+                                        <p className="mt-1 text-xs leading-5 text-amber-700/80 dark:text-amber-400/80">
+                                            The receipt will remain in history
+                                            as voided. Stock quantity, weighted
+                                            average cost, and purchase order
+                                            received quantities will be restored
+                                            only when the receipt is still
+                                            safely reversible.
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="grid gap-3 rounded-xl border bg-muted/20 p-4 sm:grid-cols-2">
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Purchase Order
+                                    </p>
+
+                                    <p className="mt-1 text-sm font-medium">
+                                        {
+                                            voidingReceipt.purchase_order
+                                                .po_number
+                                        }
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Received Value
+                                    </p>
+
+                                    <p className="mt-1 text-sm font-medium">
+                                        {formatCurrency(
+                                            voidingReceipt.total_amount,
+                                        )}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Warehouse
+                                    </p>
+
+                                    <p className="mt-1 text-sm font-medium">
+                                        {voidingReceipt.warehouse.name}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Quantity
+                                    </p>
+
+                                    <p className="mt-1 text-sm font-medium">
+                                        {formatQuantity(
+                                            voidingReceipt.total_quantity,
+                                        )}{' '}
+                                        units
+                                    </p>
+                                </div>
+                            </section>
+
+                            <FormField
+                                label="Reason for voiding"
+                                error={voidForm.errors.reason}
+                                required
+                            >
+                                <textarea
+                                    rows={5}
+                                    value={voidForm.data.reason}
+                                    onChange={(event) =>
+                                        voidForm.setData(
+                                            'reason',
+                                            event.target.value,
+                                        )
+                                    }
+                                    maxLength={1000}
+                                    placeholder="Explain why this receipt must be reversed"
+                                    className="w-full resize-none rounded-lg border bg-background px-3 py-2 text-sm outline-none transition focus:border-destructive focus:ring-2 focus:ring-destructive/10"
+                                />
+                            </FormField>
+
+                            {(voidErrors.receipt || voidErrors.void) && (
+                                <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                                    {voidErrors.receipt ?? voidErrors.void}
+                                </p>
+                            )}
+
+                            <div className="flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={closeVoidModal}
+                                    disabled={voidForm.processing}
+                                    className="h-10 rounded-lg border px-4 text-sm font-medium transition hover:bg-muted disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    disabled={
+                                        voidForm.processing ||
+                                        voidForm.data.reason.trim().length < 3
+                                    }
+                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-destructive px-4 text-sm font-medium text-destructive-foreground transition hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {voidForm.processing ? (
+                                        <LoaderCircle className="size-4 animate-spin" />
+                                    ) : (
+                                        <RotateCcw className="size-4" />
+                                    )}
+                                    Confirm Void
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
@@ -2016,9 +1937,7 @@ function SummaryCard({
         <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border bg-card p-5">
             <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                    <p className="text-sm text-muted-foreground">
-                        {title}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{title}</p>
 
                     <div className="mt-2 truncate text-2xl font-semibold">
                         {value}
@@ -2055,9 +1974,7 @@ function FormSection({
                     </div>
 
                     <div>
-                        <h3 className="text-sm font-semibold">
-                            {title}
-                        </h3>
+                        <h3 className="text-sm font-semibold">{title}</h3>
 
                         <p className="mt-0.5 text-xs text-muted-foreground">
                             {description}
@@ -2089,19 +2006,13 @@ function FormField({
             <span className="text-sm font-medium">
                 {label}
 
-                {required && (
-                    <span className="ml-1 text-destructive">
-                        *
-                    </span>
-                )}
+                {required && <span className="ml-1 text-destructive">*</span>}
             </span>
 
             {children}
 
             {error && (
-                <span className="block text-xs text-destructive">
-                    {error}
-                </span>
+                <span className="block text-xs text-destructive">{error}</span>
             )}
         </label>
     );
@@ -2123,13 +2034,9 @@ function DetailItem({
             </div>
 
             <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">
-                    {label}
-                </p>
+                <p className="text-xs text-muted-foreground">{label}</p>
 
-                <p className="mt-1 truncate text-sm font-medium">
-                    {value}
-                </p>
+                <p className="mt-1 truncate text-sm font-medium">{value}</p>
             </div>
         </div>
     );
@@ -2148,9 +2055,7 @@ function SummaryRow({
         <div className="flex items-center justify-between gap-4">
             <span
                 className={
-                    strong
-                        ? 'font-semibold'
-                        : 'text-sm text-muted-foreground'
+                    strong ? 'font-semibold' : 'text-sm text-muted-foreground'
                 }
             >
                 {label}
@@ -2158,9 +2063,7 @@ function SummaryRow({
 
             <span
                 className={
-                    strong
-                        ? 'text-xl font-semibold'
-                        : 'text-sm font-medium'
+                    strong ? 'text-xl font-semibold' : 'text-sm font-medium'
                 }
             >
                 {value}
@@ -2169,13 +2072,7 @@ function SummaryRow({
     );
 }
 
-function StatusBadge({
-    status,
-    label,
-}: {
-    status: string;
-    label: string;
-}) {
+function StatusBadge({ status, label }: { status: string; label: string }) {
     const style =
         status === 'posted'
             ? 'bg-emerald-500/10 text-emerald-600'
@@ -2199,11 +2096,7 @@ function StatusBadge({
     );
 }
 
-function ReceiptPagination({
-    receipts,
-}: {
-    receipts: PaginatedReceipts;
-}) {
+function ReceiptPagination({ receipts }: { receipts: PaginatedReceipts }) {
     if (receipts.last_page <= 1) {
         return null;
     }
@@ -2211,58 +2104,49 @@ function ReceiptPagination({
     return (
         <div className="flex flex-col gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
-                Showing {receipts.from ?? 0} to{' '}
-                {receipts.to ?? 0} of {receipts.total}{' '}
-                receipts
+                Showing {receipts.from ?? 0} to {receipts.to ?? 0} of{' '}
+                {receipts.total} receipts
             </p>
 
             <div className="flex flex-wrap gap-1">
-                {receipts.links.map(
-                    (link, index) => (
-                        <button
-                            key={`${link.label}-${index}`}
-                            type="button"
-                            disabled={!link.url}
-                            onClick={() => {
-                                if (!link.url) {
-                                    return;
-                                }
+                {receipts.links.map((link, index) => (
+                    <button
+                        key={`${link.label}-${index}`}
+                        type="button"
+                        disabled={!link.url}
+                        onClick={() => {
+                            if (!link.url) {
+                                return;
+                            }
 
-                                router.get(
-                                    link.url,
-                                    {},
-                                    {
-                                        preserveState:
-                                            true,
+                            router.get(
+                                link.url,
+                                {},
+                                {
+                                    preserveState: true,
 
-                                        preserveScroll:
-                                            true,
-                                    },
-                                );
-                            }}
-                            className={[
-                                'min-w-9 rounded-lg border px-3 py-1.5 text-sm transition',
-                                link.active
-                                    ? 'border-primary bg-primary text-primary-foreground'
-                                    : 'bg-background hover:bg-muted',
-                                !link.url
-                                    ? 'cursor-not-allowed opacity-40'
-                                    : '',
-                            ].join(' ')}
-                            dangerouslySetInnerHTML={{
-                                __html: link.label,
-                            }}
-                        />
-                    ),
-                )}
+                                    preserveScroll: true,
+                                },
+                            );
+                        }}
+                        className={[
+                            'min-w-9 rounded-lg border px-3 py-1.5 text-sm transition',
+                            link.active
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'bg-background hover:bg-muted',
+                            !link.url ? 'cursor-not-allowed opacity-40' : '',
+                        ].join(' ')}
+                        dangerouslySetInnerHTML={{
+                            __html: link.label,
+                        }}
+                    />
+                ))}
             </div>
         </div>
     );
 }
 
-function formatCurrency(
-    value: number | string | null,
-): string {
+function formatCurrency(value: number | string | null): string {
     const amount = Number(value ?? 0);
 
     return new Intl.NumberFormat('en-PH', {
@@ -2270,36 +2154,24 @@ function formatCurrency(
         currency: 'PHP',
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    }).format(
-        Number.isFinite(amount) ? amount : 0,
-    );
+    }).format(Number.isFinite(amount) ? amount : 0);
 }
 
-function formatQuantity(
-    value: number | string | null,
-): string {
+function formatQuantity(value: number | string | null): string {
     const quantity = Number(value ?? 0);
 
     return new Intl.NumberFormat('en-PH', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 3,
-    }).format(
-        Number.isFinite(quantity) ? quantity : 0,
-    );
+    }).format(Number.isFinite(quantity) ? quantity : 0);
 }
 
-function formatDate(
-    value: string | null,
-): string {
+function formatDate(value: string | null): string {
     if (!value) {
         return 'Not set';
     }
 
-    const date = new Date(
-        value.includes('T')
-            ? value
-            : `${value}T00:00:00`,
-    );
+    const date = new Date(value.includes('T') ? value : `${value}T00:00:00`);
 
     if (Number.isNaN(date.getTime())) {
         return value;
@@ -2312,9 +2184,7 @@ function formatDate(
     }).format(date);
 }
 
-function formatDateTime(
-    value: string | null,
-): string {
+function formatDateTime(value: string | null): string {
     if (!value) {
         return 'Not available';
     }

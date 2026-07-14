@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 14, 2026 at 05:37 AM
+-- Generation Time: Jul 14, 2026 at 10:40 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,48 @@ SET time_zone = "+00:00";
 --
 -- Database: `jcm_saas_db`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `account_role_sidebar_items`
+--
+
+CREATE TABLE `account_role_sidebar_items` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `account_owner_id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `product_user_type_id` bigint(20) UNSIGNED NOT NULL,
+  `sidebar_item_id` bigint(20) UNSIGNED NOT NULL,
+  `is_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `assigned_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `account_role_sidebar_items`
+--
+
+INSERT INTO `account_role_sidebar_items` (`id`, `account_owner_id`, `product_id`, `product_user_type_id`, `sidebar_item_id`, `is_enabled`, `assigned_by`, `created_at`, `updated_at`) VALUES
+(1, 1, 11, 1, 1, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(2, 1, 11, 1, 2, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(3, 1, 11, 1, 3, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(4, 1, 11, 1, 4, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(5, 1, 11, 1, 5, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(6, 1, 11, 1, 6, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(7, 1, 11, 1, 7, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(8, 1, 11, 1, 16, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(9, 1, 11, 1, 17, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(10, 1, 11, 1, 18, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(11, 1, 11, 1, 19, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(12, 1, 11, 1, 20, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(13, 1, 11, 1, 21, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(14, 1, 11, 5, 1, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(15, 1, 11, 5, 3, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(16, 1, 11, 5, 6, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(17, 1, 11, 5, 17, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(18, 1, 11, 5, 18, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40');
 
 -- --------------------------------------------------------
 
@@ -933,7 +975,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `two_factor_secret`, `two_factor_recovery_codes`, `two_factor_confirmed_at`, `remember_token`, `created_at`, `updated_at`, `role`, `client_id`, `branch_id`, `system_used`, `created_by`, `is_active`) VALUES
-(1, 'June Charles Mariquit', 'junecharlesmariquit553@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, 'TM4tQnUvhc2aB4ZP94jpvUTKLYAOJwD2iLHwFjXt97C3kUVJS6QYroMeeEZ2', '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'client', NULL, NULL, 'pos', NULL, 1),
+(1, 'June Charles Mariquit', 'junecharlesmariquit553@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, 'vpUzaGffa1xNA86wt1MoIctJb3oG7RRTu0dx8GRe8mCzsdYZWFgqsO2481aY', '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'client', NULL, NULL, 'pos', NULL, 1),
 (7, 'admin', 'admin@gmail.com', NULL, '$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi', NULL, NULL, NULL, 'AKzQuJt0QVa7Gfsmsdgbl7sZzNkzjrD04AxBAX7SjbmjrBx0ZVXnNHNNyqCn', '2026-04-13 21:58:39', '2026-04-13 21:58:39', 'admin', NULL, NULL, NULL, NULL, 1),
 (12, 'cashier', 'cashier@pos.com', NULL, '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-05-29 18:52:57', '2026-05-29 18:52:57', 'cashier', 1, 1, 'pos', 1, 1),
 (13, 'Store Manager 1', 'manager1@pos.com', '2026-06-05 01:41:18', '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-06-05 01:41:18', '2026-06-05 01:41:18', 'manager', 1, 1, 'pos', 1, 1),
@@ -941,7 +983,8 @@ INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `tw
 (15, 'Store Staff 1', 'staff1@pos.com', '2026-06-05 01:41:18', '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-06-05 01:41:18', '2026-06-05 01:41:18', 'staff', 1, 1, 'pos', 1, 1),
 (16, 'Store Staff 2', 'staff2@pos.com', '2026-06-05 01:41:18', '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-06-05 01:41:18', '2026-06-08 19:38:03', 'staff', 1, 1, 'pos', 1, 1),
 (17, 'Cashier 2', 'cashier2@pos.com', '2026-06-05 01:43:20', '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NULL, NULL, NULL, NULL, '2026-06-05 01:43:20', '2026-06-05 01:43:20', 'cashier', 1, 1, 'pos', 1, 1),
-(18, 'cashier1', 'cashier1@pos.com', NULL, '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-05-29 18:52:57', '2026-05-29 18:52:57', 'cashier', 1, 1, 'pos', 1, 1);
+(18, 'cashier1', 'cashier1@pos.com', NULL, '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-05-29 18:52:57', '2026-05-29 18:52:57', 'cashier', 1, 1, 'pos', 1, 1),
+(19, 'staff', 'staff@inventory.com', NULL, '$2y$12$NdDKLmZaROoi/5YdtQeVYOE77wbMgLXLjAhHixLGlPC9VSUn0wfkK', NULL, NULL, NULL, NULL, '2026-07-14 03:59:29', '2026-07-14 03:59:29', 'staff', 1, 1, NULL, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -969,7 +1012,8 @@ CREATE TABLE `user_product_access` (
 
 INSERT INTO `user_product_access` (`id`, `user_id`, `product_id`, `product_user_type_id`, `account_owner_id`, `subscription_id`, `status`, `assigned_by`, `joined_at`, `created_at`, `updated_at`) VALUES
 (1, 1, 10, 4, 1, 18, 'inactive', 1, NULL, '2026-07-13 02:00:57', '2026-07-13 02:00:57'),
-(2, 1, 11, 3, 1, 19, 'active', 1, '2026-07-13 02:33:41', '2026-07-13 02:33:41', '2026-07-13 02:33:41');
+(2, 1, 11, 3, 1, 19, 'active', 1, '2026-07-13 02:33:41', '2026-07-13 02:33:41', '2026-07-13 02:33:41'),
+(3, 19, 11, 5, 1, 19, 'active', 1, '2026-07-14 03:59:29', '2026-07-14 03:59:29', '2026-07-14 03:59:29');
 
 -- --------------------------------------------------------
 
@@ -1001,6 +1045,18 @@ INSERT INTO `user_types` (`id`, `type_code`, `name`, `description`, `is_owner_ty
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `account_role_sidebar_items`
+--
+ALTER TABLE `account_role_sidebar_items`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `account_role_sidebar_unique` (`account_owner_id`,`product_id`,`product_user_type_id`,`sidebar_item_id`),
+  ADD KEY `account_role_sidebar_lookup_index` (`account_owner_id`,`product_id`,`product_user_type_id`,`is_enabled`),
+  ADD KEY `account_role_sidebar_item_index` (`sidebar_item_id`),
+  ADD KEY `account_role_sidebar_assigned_by_index` (`assigned_by`),
+  ADD KEY `account_role_sidebar_product_foreign` (`product_id`),
+  ADD KEY `account_role_sidebar_role_foreign` (`product_user_type_id`);
 
 --
 -- Indexes for table `app_features`
@@ -1308,6 +1364,12 @@ ALTER TABLE `user_types`
 --
 
 --
+-- AUTO_INCREMENT for table `account_role_sidebar_items`
+--
+ALTER TABLE `account_role_sidebar_items`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+
+--
 -- AUTO_INCREMENT for table `app_features`
 --
 ALTER TABLE `app_features`
@@ -1473,13 +1535,13 @@ ALTER TABLE `transactions`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `user_product_access`
 --
 ALTER TABLE `user_product_access`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `user_types`
@@ -1490,6 +1552,16 @@ ALTER TABLE `user_types`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `account_role_sidebar_items`
+--
+ALTER TABLE `account_role_sidebar_items`
+  ADD CONSTRAINT `account_role_sidebar_assigned_by_foreign` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `account_role_sidebar_item_foreign` FOREIGN KEY (`sidebar_item_id`) REFERENCES `sidebar_items` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `account_role_sidebar_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `account_role_sidebar_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `account_role_sidebar_role_foreign` FOREIGN KEY (`product_user_type_id`) REFERENCES `product_user_types` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `app_features`

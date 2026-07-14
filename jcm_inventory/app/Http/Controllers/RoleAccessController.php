@@ -6,7 +6,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,222 +28,131 @@ class RoleAccessController extends Controller
     public function index(Request $request): Response
     {
         $context = $this->ownerContext($request);
-
-        $catalog = $this->permissionCatalog(
-            productId: $context['product_id'],
-            planId: $context['plan_id']
-        );
+        $catalog = $this->permissionCatalog($context);
 
         $roles = DB::connection('saas')
-            ->table('product_user_types')
+            ->table('product_user_types as product_role')
             ->join(
-                'user_types',
-                'user_types.id',
+                'user_types as user_type',
+                'user_type.id',
                 '=',
-                'product_user_types.user_type_id'
+                'product_role.user_type_id'
             )
             ->where(
-                'product_user_types.product_id',
+                'product_role.product_id',
                 $context['product_id']
             )
             ->where(
-                'product_user_types.status',
+                'product_role.status',
                 'active'
             )
             ->where(
-                'user_types.status',
+                'user_type.status',
                 'active'
             )
             ->where(
-                'user_types.is_owner_type',
-                false
+                'user_type.is_owner_type',
+                0
             )
-            ->orderBy('user_types.sort_order')
-            ->get([
-                'product_user_types.id',
-                'product_user_types.display_name',
-                'user_types.type_code',
-                'user_types.name',
-                'user_types.description',
-                'user_types.sort_order',
-            ]);
+            ->orderBy('user_type.sort_order')
+            ->select([
+                'product_role.id',
+                'product_role.display_name',
+                'user_type.type_code',
+                'user_type.name',
+                'user_type.description',
+            ])
+            ->get()
+            ->map(function ($role) use (
+                $context,
+                $catalog
+            ): array {
+                $assignedItemIds =
+                    $this->assignedItemIds(
+                        $context,
+                        (int) $role->id,
+                        $catalog['assignable_ids']
+                    );
 
-        $roleIds = $roles
-            ->pluck('id')
-            ->map(
-                fn ($id): int => (int) $id
-            )
+                $membersCount = DB::connection('saas')
+                    ->table('user_product_access')
+                    ->where(
+                        'account_owner_id',
+                        $context['account_owner_id']
+                    )
+                    ->where(
+                        'product_id',
+                        $context['product_id']
+                    )
+                    ->where(
+                        'product_user_type_id',
+                        $role->id
+                    )
+                    ->where(
+                        'status',
+                        'active'
+                    )
+                    ->count();
+
+                return [
+                    'id' => (int) $role->id,
+                    'code' => (string) $role->type_code,
+                    'name' => (string) (
+                        $role->display_name
+                        ?: $role->name
+                    ),
+                    'description' =>
+                        $role->description,
+                    'members_count' =>
+                        (int) $membersCount,
+                    'assigned_item_ids' =>
+                        $assignedItemIds,
+                    'enabled_count' =>
+                        count($assignedItemIds),
+                    'available_count' =>
+                        count(
+                            $catalog[
+                                'assignable_ids'
+                            ]
+                        ),
+                ];
+            })
             ->values();
 
-        $assignments = $roleIds->isEmpty()
-            ? collect()
-            : DB::connection('saas')
-                ->table(
-                    'product_user_type_sidebar_items'
-                )
-                ->whereIn(
-                    'product_user_type_id',
-                    $roleIds
-                )
-                ->where(
-                    'is_enabled',
-                    true
-                )
-                ->get([
-                    'product_user_type_id',
-                    'sidebar_item_id',
-                ])
-                ->groupBy(
-                    'product_user_type_id'
-                );
+        $managerAccess = $roles
+            ->firstWhere('code', 'manager');
 
-        $memberCounts = $roleIds->isEmpty()
-            ? collect()
-            : DB::connection('saas')
-                ->table('user_product_access')
-                ->where(
-                    'account_owner_id',
-                    $context['owner_id']
-                )
-                ->where(
-                    'product_id',
-                    $context['product_id']
-                )
-                ->whereIn(
-                    'product_user_type_id',
-                    $roleIds
-                )
-                ->whereNot(
-                    'status',
-                    'removed'
-                )
-                ->selectRaw(
-                    '
-                    product_user_type_id,
-                    COUNT(*) as members_count
-                    '
-                )
-                ->groupBy(
-                    'product_user_type_id'
-                )
-                ->pluck(
-                    'members_count',
-                    'product_user_type_id'
-                );
-
-        $assignableIds = $catalog[
-            'assignable_link_ids'
-        ];
-
-        $requiredIds = $catalog[
-            'required_link_ids'
-        ];
-
-        $formattedRoles = $roles
-            ->map(
-                function ($role) use (
-                    $assignments,
-                    $memberCounts,
-                    $assignableIds,
-                    $requiredIds
-                ): array {
-                    $roleAssignments = $assignments
-                        ->get(
-                            (int) $role->id,
-                            collect()
-                        )
-                        ->pluck('sidebar_item_id')
-                        ->map(
-                            fn ($id): int => (int) $id
-                        )
-                        ->intersect($assignableIds)
-                        ->merge($requiredIds)
-                        ->unique()
-                        ->sort()
-                        ->values();
-
-                    return [
-                        'id' => (int) $role->id,
-
-                        'code' => $role->type_code,
-
-                        'name' =>
-                            $role->display_name
-                            ?: $role->name,
-
-                        'description' =>
-                            $role->description,
-
-                        'members_count' =>
-                            (int) (
-                                $memberCounts->get(
-                                    (int) $role->id
-                                ) ?? 0
-                            ),
-
-                        'assigned_item_ids' =>
-                            $roleAssignments->all(),
-
-                        'enabled_count' =>
-                            $roleAssignments->count(),
-
-                        'available_count' =>
-                            $assignableIds->count(),
-                    ];
-                }
-            )
-            ->values();
-
-        $manager = $formattedRoles->firstWhere(
-            'code',
-            'manager'
-        );
-
-        $staff = $formattedRoles->firstWhere(
-            'code',
-            'staff'
-        );
+        $staffAccess = $roles
+            ->firstWhere('code', 'staff');
 
         return Inertia::render(
             'team-management/roles-access/index',
             [
-                'roles' => $formattedRoles,
-
+                'roles' => $roles,
                 'sections' =>
                     $catalog['sections'],
-
                 'summary' => [
-                    'roles' =>
-                        $formattedRoles->count(),
-
-                    'available_modules' =>
-                        $assignableIds->count(),
-
-                    'manager_access' =>
-                        (int) (
-                            $manager[
-                                'enabled_count'
-                            ] ?? 0
-                        ),
-
-                    'staff_access' =>
-                        (int) (
-                            $staff[
-                                'enabled_count'
-                            ] ?? 0
-                        ),
+                    'roles' => $roles->count(),
+                    'available_modules' => count(
+                        $catalog['assignable_ids']
+                    ),
+                    'manager_access' => (int) (
+                        $managerAccess[
+                            'enabled_count'
+                        ] ?? 0
+                    ),
+                    'staff_access' => (int) (
+                        $staffAccess[
+                            'enabled_count'
+                        ] ?? 0
+                    ),
                 ],
-
                 'plan' => [
-                    'id' =>
-                        $context['plan_id'],
-
+                    'id' => $context['plan_id'],
                     'code' =>
                         $context['plan_code'],
-
                     'name' =>
                         $context['plan_name'],
-
                     'has_role_based_access' =>
                         $context[
                             'has_role_based_access'
@@ -260,14 +168,21 @@ class RoleAccessController extends Controller
     ): RedirectResponse {
         $context = $this->ownerContext($request);
 
-        $productRole = $this->findAssignableRole(
-            productId: $context['product_id'],
-            productUserTypeId: $role
+        abort_unless(
+            $context['has_role_based_access'],
+            403,
+            'Role-based access is not included in your current plan.'
         );
 
-        $catalog = $this->permissionCatalog(
-            productId: $context['product_id'],
-            planId: $context['plan_id']
+        $productRole = $this->findAssignableRole(
+            $context['product_id'],
+            $role
+        );
+
+        abort_unless(
+            $productRole,
+            404,
+            'The selected role was not found.'
         );
 
         $validated = $request->validate([
@@ -275,12 +190,15 @@ class RoleAccessController extends Controller
                 'present',
                 'array',
             ],
-
             'sidebar_item_ids.*' => [
                 'integer',
                 'distinct',
             ],
         ]);
+
+        $catalog = $this->permissionCatalog(
+            $context
+        );
 
         $requestedIds = collect(
             $validated['sidebar_item_ids']
@@ -291,396 +209,663 @@ class RoleAccessController extends Controller
             ->unique()
             ->values();
 
+        $availableIds = collect(
+            $catalog['assignable_ids']
+        );
+
         $invalidIds = $requestedIds->diff(
-            $catalog['assignable_link_ids']
+            $availableIds
         );
 
         if ($invalidIds->isNotEmpty()) {
             throw ValidationException::withMessages([
                 'sidebar_item_ids' =>
-                    'One or more selected modules are unavailable.',
+                    'One or more selected modules are unavailable for your current plan.',
             ]);
         }
 
-        $selectedLinkIds = $requestedIds
-            ->intersect(
-                $catalog[
-                    'assignable_link_ids'
-                ]
-            )
+        $selectedIds = $requestedIds
             ->merge(
-                $catalog[
-                    'required_link_ids'
-                ]
+                $catalog['required_ids']
             )
             ->unique()
             ->values();
 
-        $selectedItemIds = $this
-            ->includeParentItems(
-                selectedIds: $selectedLinkIds,
-                parentMap: $catalog['parent_map']
-            );
+        $storedIds = $this->includeParentItems(
+            $selectedIds,
+            $catalog['parent_map']
+        );
 
-        DB::connection('saas')->transaction(
+        $connection = DB::connection('saas');
+
+        $connection->transaction(
             function () use (
-                $role,
-                $catalog,
-                $selectedItemIds
+                $connection,
+                $context,
+                $productRole,
+                $storedIds,
+                $request
             ): void {
-                DB::connection('saas')
+                $connection
                     ->table(
-                        'product_user_type_sidebar_items'
+                        'account_role_sidebar_items'
+                    )
+                    ->where(
+                        'account_owner_id',
+                        $context[
+                            'account_owner_id'
+                        ]
+                    )
+                    ->where(
+                        'product_id',
+                        $context['product_id']
                     )
                     ->where(
                         'product_user_type_id',
-                        $role
-                    )
-                    ->whereIn(
-                        'sidebar_item_id',
-                        $catalog[
-                            'managed_item_ids'
-                        ]
+                        $productRole->id
                     )
                     ->delete();
 
-                if ($selectedItemIds->isEmpty()) {
+                if ($storedIds->isEmpty()) {
                     return;
                 }
 
                 $now = now();
+                $assignedBy = (int) (
+                    $request->user()?->id
+                );
 
-                $records = $selectedItemIds
+                $rows = $storedIds
                     ->map(
-                        fn (int $sidebarItemId): array => [
-                            'product_user_type_id' =>
-                                $role,
-
-                            'sidebar_item_id' =>
-                                $sidebarItemId,
-
-                            'is_enabled' => true,
-
-                            'created_at' => $now,
-                            'updated_at' => $now,
-                        ]
+                        function (
+                            int $sidebarItemId
+                        ) use (
+                            $context,
+                            $productRole,
+                            $assignedBy,
+                            $now
+                        ): array {
+                            return [
+                                'account_owner_id' =>
+                                    $context[
+                                        'account_owner_id'
+                                    ],
+                                'product_id' =>
+                                    $context[
+                                        'product_id'
+                                    ],
+                                'product_user_type_id' =>
+                                    (int) $productRole->id,
+                                'sidebar_item_id' =>
+                                    $sidebarItemId,
+                                'is_enabled' => 1,
+                                'assigned_by' =>
+                                    $assignedBy,
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ];
+                        }
                     )
                     ->all();
 
-                DB::connection('saas')
+                $connection
                     ->table(
-                        'product_user_type_sidebar_items'
+                        'account_role_sidebar_items'
                     )
-                    ->insert($records);
+                    ->insert($rows);
             }
         );
 
-        $roleName =
-            $productRole->display_name
-            ?: $productRole->name;
-
         return back()->with(
             'success',
-            "{$roleName} access updated successfully."
+            $productRole->display_name
+                .' permissions updated successfully.'
         );
     }
 
-    private function permissionCatalog(
-        int $productId,
-        int $planId
+    private function ownerContext(
+        Request $request
     ): array {
-        $items = DB::connection('saas')
-            ->table('sidebar_items as item')
+        $userId = (int) (
+            $request->user()?->id
+        );
+
+        abort_unless(
+            $userId > 0,
+            401
+        );
+
+        $context = DB::connection('saas')
+            ->table(
+                'user_product_access as access'
+            )
+            ->join(
+                'products as product',
+                'product.id',
+                '=',
+                'access.product_id'
+            )
+            ->join(
+                'product_user_types as owner_role',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'owner_role.id',
+                            '=',
+                            'access.product_user_type_id'
+                        )
+                        ->on(
+                            'owner_role.product_id',
+                            '=',
+                            'access.product_id'
+                        );
+                }
+            )
+            ->join(
+                'user_types as owner_type',
+                'owner_type.id',
+                '=',
+                'owner_role.user_type_id'
+            )
+            ->join(
+                'subscriptions as subscription',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'subscription.id',
+                            '=',
+                            'access.subscription_id'
+                        )
+                        ->on(
+                            'subscription.product_id',
+                            '=',
+                            'access.product_id'
+                        );
+                }
+            )
+            ->join(
+                'plans as plan',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'plan.id',
+                            '=',
+                            'subscription.plan_id'
+                        )
+                        ->on(
+                            'plan.product_id',
+                            '=',
+                            'subscription.product_id'
+                        );
+                }
+            )
+            ->where(
+                'access.user_id',
+                $userId
+            )
+            ->where(
+                'access.account_owner_id',
+                $userId
+            )
+            ->where(
+                'access.status',
+                'active'
+            )
+            ->where(
+                'product.product_code',
+                self::PRODUCT_CODE
+            )
+            ->whereIn(
+                'product.status',
+                [
+                    'development',
+                    'active',
+                ]
+            )
+            ->where(
+                'owner_role.status',
+                'active'
+            )
+            ->where(
+                'owner_type.status',
+                'active'
+            )
+            ->where(
+                'owner_type.is_owner_type',
+                1
+            )
+            ->whereIn(
+                'subscription.status',
+                [
+                    'trial',
+                    'active',
+                ]
+            )
+            ->where(
+                'plan.status',
+                'active'
+            )
+            ->orderByDesc(
+                'subscription.id'
+            )
+            ->select([
+                'access.account_owner_id',
+                'access.product_id',
+                'access.subscription_id',
+                'product.product_code',
+                'plan.id as plan_id',
+                'plan.plan_code',
+                'plan.plan_name',
+                'plan.has_role_based_access',
+            ])
+            ->first();
+
+        abort_unless(
+            $context,
+            403,
+            'Only the account owner can manage role permissions.'
+        );
+
+        return [
+            'account_owner_id' => (int) (
+                $context->account_owner_id
+            ),
+            'product_id' => (int) (
+                $context->product_id
+            ),
+            'subscription_id' => (int) (
+                $context->subscription_id
+            ),
+            'product_code' => (string) (
+                $context->product_code
+            ),
+            'plan_id' => (int) (
+                $context->plan_id
+            ),
+            'plan_code' => (string) (
+                $context->plan_code
+            ),
+            'plan_name' => (string) (
+                $context->plan_name
+            ),
+            'has_role_based_access' =>
+                (bool) (
+                    $context
+                        ->has_role_based_access
+                ),
+        ];
+    }
+
+    private function permissionCatalog(
+        array $context
+    ): array {
+        $enabledFeatureIds = DB::connection(
+            'saas'
+        )
+            ->table(
+                'plan_features as plan_feature'
+            )
+            ->join(
+                'app_features as feature',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'feature.id',
+                            '=',
+                            'plan_feature.feature_id'
+                        );
+                }
+            )
+            ->where(
+                'plan_feature.plan_id',
+                $context['plan_id']
+            )
+            ->where(
+                'plan_feature.is_enabled',
+                1
+            )
+            ->where(
+                'feature.product_id',
+                $context['product_id']
+            )
+            ->where(
+                'feature.status',
+                'active'
+            )
+            ->where(
+                'feature.is_developer_ready',
+                1
+            )
+            ->pluck('feature.id')
+            ->map(
+                fn ($id): int => (int) $id
+            )
+            ->values();
+
+        $rows = DB::connection('saas')
+            ->table('sidebar_items as sidebar')
             ->leftJoin(
                 'app_features as feature',
                 'feature.id',
                 '=',
-                'item.feature_id'
-            )
-            ->leftJoin(
-                'plan_features as plan_feature',
-                function ($join) use (
-                    $planId
-                ): void {
-                    $join
-                        ->on(
-                            'plan_feature.feature_id',
-                            '=',
-                            'item.feature_id'
-                        )
-                        ->where(
-                            'plan_feature.plan_id',
-                            $planId
-                        );
-                }
+                'sidebar.feature_id'
             )
             ->where(
-                'item.product_id',
-                $productId
+                'sidebar.product_id',
+                $context['product_id']
             )
             ->where(
-                'item.status',
+                'sidebar.status',
                 'active'
             )
             ->where(
-                'item.is_visible',
-                true
+                'sidebar.is_visible',
+                1
             )
             ->where(
-                'item.is_developer_ready',
-                true
+                'sidebar.is_developer_ready',
+                1
             )
             ->whereNotIn(
-                'item.item_key',
+                'sidebar.item_key',
                 self::PROTECTED_ITEM_KEYS
             )
             ->where(
-                function ($query): void {
-                    $query
-                        ->whereNull(
-                            'item.feature_id'
-                        )
-                        ->orWhere(
-                            function (
-                                $featureQuery
-                            ): void {
-                                $featureQuery
-                                    ->where(
-                                        'feature.status',
-                                        'active'
-                                    )
-                                    ->where(
-                                        'feature.is_developer_ready',
-                                        true
-                                    )
-                                    ->where(
-                                        'plan_feature.is_enabled',
-                                        true
-                                    );
-                            }
-                        );
-                }
-            )
-            ->orderBy('item.section_key')
-            ->orderBy('item.sort_order')
-            ->orderBy('item.id')
-            ->get([
-                'item.id',
-                'item.parent_id',
-                'item.feature_id',
-                'item.item_key',
-                'item.section_key',
-                'item.item_type',
-                'item.label',
-                'item.route_name',
-                'item.url_override',
-                'item.icon_key',
-                'item.sort_order',
-
-                'feature.feature_code',
-                'feature.name as feature_name',
-                'feature.description as feature_description',
-            ]);
-
-        $itemsById = $items->keyBy(
-            fn ($item): int => (int) $item->id
-        );
-
-        $childrenByParent = $items
-            ->filter(
-                fn ($item): bool =>
-                    $item->parent_id !== null
-            )
-            ->groupBy(
-                fn ($item): int =>
-                    (int) $item->parent_id
-            );
-
-        $topLevelItems = $items
-            ->filter(
-                fn ($item): bool =>
-                    $item->parent_id === null
-            );
-
-        $formattedTopLevel = $topLevelItems
-            ->map(
-                function ($item) use (
-                    $childrenByParent
-                ): ?array {
-                    return $this->formatSidebarItem(
-                        item: $item,
-                        childrenByParent:
-                            $childrenByParent
+                function ($query) use (
+                    $enabledFeatureIds
+                ): void {
+                    $query->whereNull(
+                        'sidebar.feature_id'
                     );
+
+                    if (
+                        $enabledFeatureIds
+                            ->isNotEmpty()
+                    ) {
+                        $query->orWhereIn(
+                            'sidebar.feature_id',
+                            $enabledFeatureIds
+                        );
+                    }
                 }
             )
-            ->filter()
+            ->orderBy(
+                'sidebar.section_key'
+            )
+            ->orderBy(
+                'sidebar.sort_order'
+            )
+            ->orderBy(
+                'sidebar.id'
+            )
+            ->select([
+                'sidebar.id',
+                'sidebar.parent_id',
+                'sidebar.feature_id',
+                'sidebar.item_key',
+                'sidebar.section_key',
+                'sidebar.item_type',
+                'sidebar.label',
+                'sidebar.route_name',
+                'sidebar.url_override',
+                'sidebar.icon_key',
+                'sidebar.sort_order',
+                'feature.feature_code',
+                'feature.description',
+            ])
+            ->get();
+
+        $assignableIds = $rows
+            ->filter(
+                fn ($row): bool =>
+                    $row->item_type === 'link'
+            )
+            ->pluck('id')
+            ->map(
+                fn ($id): int => (int) $id
+            )
+            ->values()
+            ->all();
+
+        $requiredIds = $rows
+            ->filter(
+                fn ($row): bool =>
+                    in_array(
+                        $row->item_key,
+                        self::REQUIRED_ITEM_KEYS,
+                        true
+                    )
+            )
+            ->pluck('id')
+            ->map(
+                fn ($id): int => (int) $id
+            )
+            ->values()
+            ->all();
+
+        $parentMap = [];
+
+        foreach ($rows as $row) {
+            $parentMap[(int) $row->id] =
+                $row->parent_id === null
+                    ? null
+                    : (int) $row->parent_id;
+        }
+
+        $sectionKeys = $rows
+            ->filter(
+                fn ($row): bool =>
+                    $row->parent_id === null
+            )
+            ->pluck('section_key')
+            ->unique()
             ->values();
 
-        $sections = $formattedTopLevel
-            ->groupBy('section_key')
+        $sections = $sectionKeys
             ->map(
                 function (
-                    Collection $sectionItems,
                     string $sectionKey
-                ): array {
+                ) use ($rows): array {
                     return [
                         'key' => $sectionKey,
-
                         'label' =>
                             $this->sectionLabel(
                                 $sectionKey
                             ),
-
                         'items' =>
-                            $sectionItems
-                                ->values()
-                                ->all(),
+                            $this->buildPermissionItems(
+                                $rows,
+                                null,
+                                $sectionKey
+                            ),
+                    ];
+                }
+            )
+            ->filter(
+                fn (array $section): bool =>
+                    count(
+                        $section['items']
+                    ) > 0
+            )
+            ->values()
+            ->all();
+
+        return [
+            'sections' => $sections,
+            'assignable_ids' =>
+                $assignableIds,
+            'required_ids' =>
+                $requiredIds,
+            'parent_map' =>
+                $parentMap,
+        ];
+    }
+
+    private function buildPermissionItems(
+        Collection $rows,
+        ?int $parentId,
+        ?string $sectionKey = null
+    ): array {
+        return $rows
+            ->filter(
+                function ($row) use (
+                    $parentId,
+                    $sectionKey
+                ): bool {
+                    $rowParentId =
+                        $row->parent_id === null
+                            ? null
+                            : (int) $row->parent_id;
+
+                    if (
+                        $rowParentId
+                        !== $parentId
+                    ) {
+                        return false;
+                    }
+
+                    if (
+                        $parentId === null
+                        && $sectionKey !== null
+                    ) {
+                        return (
+                            $row->section_key
+                            === $sectionKey
+                        );
+                    }
+
+                    return true;
+                }
+            )
+            ->map(
+                function ($row) use (
+                    $rows
+                ): array {
+                    return [
+                        'id' => (int) $row->id,
+                        'parent_id' =>
+                            $row->parent_id === null
+                                ? null
+                                : (int) $row->parent_id,
+                        'key' =>
+                            (string) $row->item_key,
+                        'section_key' =>
+                            (string) $row->section_key,
+                        'type' =>
+                            (string) $row->item_type,
+                        'label' =>
+                            (string) $row->label,
+                        'route_name' =>
+                            $row->route_name,
+                        'url' =>
+                            $row->url_override
+                            ?: '#',
+                        'icon_key' =>
+                            $row->icon_key,
+                        'feature_code' =>
+                            $row->feature_code,
+                        'description' =>
+                            $row->description,
+                        'required' => in_array(
+                            $row->item_key,
+                            self::REQUIRED_ITEM_KEYS,
+                            true
+                        ),
+                        'assignable' =>
+                            $row->item_type
+                            === 'link',
+                        'children' =>
+                            $this->buildPermissionItems(
+                                $rows,
+                                (int) $row->id
+                            ),
                     ];
                 }
             )
             ->values()
             ->all();
-
-        $assignableLinks = $items
-            ->where(
-                'item_type',
-                'link'
-            )
-            ->values();
-
-        $assignableLinkIds = $assignableLinks
-            ->pluck('id')
-            ->map(
-                fn ($id): int => (int) $id
-            )
-            ->unique()
-            ->values();
-
-        $requiredLinkIds = $assignableLinks
-            ->whereIn(
-                'item_key',
-                self::REQUIRED_ITEM_KEYS
-            )
-            ->pluck('id')
-            ->map(
-                fn ($id): int => (int) $id
-            )
-            ->unique()
-            ->values();
-
-        $parentMap = $itemsById
-            ->mapWithKeys(
-                fn ($item): array => [
-                    (int) $item->id =>
-                        $item->parent_id !== null
-                            ? (int) $item->parent_id
-                            : null,
-                ]
-            );
-
-        $managedItemIds = $this
-            ->includeParentItems(
-                selectedIds: $assignableLinkIds,
-                parentMap: $parentMap
-            )
-            ->values();
-
-        return [
-            'sections' => $sections,
-
-            'assignable_link_ids' =>
-                $assignableLinkIds,
-
-            'required_link_ids' =>
-                $requiredLinkIds,
-
-            'parent_map' => $parentMap,
-
-            'managed_item_ids' =>
-                $managedItemIds,
-        ];
     }
 
-    private function formatSidebarItem(
-        object $item,
-        Collection $childrenByParent
-    ): ?array {
-        $children = $childrenByParent
-            ->get(
-                (int) $item->id,
-                collect()
+    private function assignedItemIds(
+        array $context,
+        int $productRoleId,
+        array $assignableIds
+    ): array {
+        $tenantQuery = DB::connection('saas')
+            ->table(
+                'account_role_sidebar_items'
             )
-            ->map(
-                function ($child) use (
-                    $childrenByParent
-                ): ?array {
-                    return $this->formatSidebarItem(
-                        item: $child,
-                        childrenByParent:
-                            $childrenByParent
-                    );
-                }
+            ->where(
+                'account_owner_id',
+                $context['account_owner_id']
             )
-            ->filter()
-            ->values();
+            ->where(
+                'product_id',
+                $context['product_id']
+            )
+            ->where(
+                'product_user_type_id',
+                $productRoleId
+            );
 
-        if (
-            $item->item_type === 'group'
-            && $children->isEmpty()
-        ) {
-            return null;
+        if ($tenantQuery->exists()) {
+            $assignedIds = $tenantQuery
+                ->where('is_enabled', 1)
+                ->pluck('sidebar_item_id')
+                ->map(
+                    fn ($id): int =>
+                        (int) $id
+                )
+                ->all();
+        } else {
+            $assignedIds = DB::connection(
+                'saas'
+            )
+                ->table(
+                    'product_user_type_sidebar_items as permission'
+                )
+                ->join(
+                    'sidebar_items as sidebar',
+                    'sidebar.id',
+                    '=',
+                    'permission.sidebar_item_id'
+                )
+                ->where(
+                    'permission.product_user_type_id',
+                    $productRoleId
+                )
+                ->where(
+                    'permission.is_enabled',
+                    1
+                )
+                ->where(
+                    'sidebar.product_id',
+                    $context['product_id']
+                )
+                ->pluck(
+                    'permission.sidebar_item_id'
+                )
+                ->map(
+                    fn ($id): int =>
+                        (int) $id
+                )
+                ->all();
         }
 
-        return [
-            'id' => (int) $item->id,
-
-            'parent_id' =>
-                $item->parent_id !== null
-                    ? (int) $item->parent_id
-                    : null,
-
-            'key' => $item->item_key,
-
-            'section_key' =>
-                $item->section_key,
-
-            'type' => $item->item_type,
-
-            'label' => $item->label,
-
-            'route_name' =>
-                $item->route_name,
-
-            'url' =>
-                $item->url_override
-                ?: '#',
-
-            'icon_key' =>
-                $item->icon_key,
-
-            'feature_code' =>
-                $item->feature_code,
-
-            'description' =>
-                $item->feature_description,
-
-            'required' => in_array(
-                $item->item_key,
-                self::REQUIRED_ITEM_KEYS,
-                true
-            ),
-
-            'assignable' =>
-                $item->item_type === 'link',
-
-            'children' => $children->all(),
-        ];
+        return collect($assignedIds)
+            ->intersect($assignableIds)
+            ->map(
+                fn ($id): int => (int) $id
+            )
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
     }
 
     private function includeParentItems(
         Collection $selectedIds,
-        Collection $parentMap
+        array $parentMap
     ): Collection {
         $result = $selectedIds
             ->map(
@@ -689,33 +874,24 @@ class RoleAccessController extends Controller
             ->unique()
             ->values();
 
-        foreach ($selectedIds as $selectedId) {
-            $parentId = $parentMap->get(
-                (int) $selectedId
-            );
+        foreach ($result->all() as $itemId) {
+            $currentId = $itemId;
 
-            $visited = [];
-
-            while ($parentId !== null) {
-                if (
-                    in_array(
-                        $parentId,
-                        $visited,
-                        true
-                    )
-                ) {
-                    break;
-                }
-
-                $visited[] = $parentId;
-
-                $result->push(
-                    (int) $parentId
+            while (
+                array_key_exists(
+                    $currentId,
+                    $parentMap
+                )
+                && $parentMap[
+                    $currentId
+                ] !== null
+            ) {
+                $parentId = (int) (
+                    $parentMap[$currentId]
                 );
 
-                $parentId = $parentMap->get(
-                    (int) $parentId
-                );
+                $result->push($parentId);
+                $currentId = $parentId;
             }
         }
 
@@ -727,168 +903,45 @@ class RoleAccessController extends Controller
 
     private function findAssignableRole(
         int $productId,
-        int $productUserTypeId
-    ): object {
-        $role = DB::connection('saas')
-            ->table('product_user_types')
+        int $roleId
+    ): ?object {
+        return DB::connection('saas')
+            ->table(
+                'product_user_types as product_role'
+            )
             ->join(
-                'user_types',
-                'user_types.id',
+                'user_types as user_type',
+                'user_type.id',
                 '=',
-                'product_user_types.user_type_id'
+                'product_role.user_type_id'
             )
             ->where(
-                'product_user_types.id',
-                $productUserTypeId
+                'product_role.id',
+                $roleId
             )
             ->where(
-                'product_user_types.product_id',
+                'product_role.product_id',
                 $productId
             )
             ->where(
-                'product_user_types.status',
+                'product_role.status',
                 'active'
             )
             ->where(
-                'user_types.status',
+                'user_type.status',
                 'active'
             )
             ->where(
-                'user_types.is_owner_type',
-                false
+                'user_type.is_owner_type',
+                0
             )
-            ->first([
-                'product_user_types.id',
-                'product_user_types.display_name',
-                'user_types.type_code',
-                'user_types.name',
-            ]);
-
-        if (! $role) {
-            throw ValidationException::withMessages([
-                'role' =>
-                    'The selected role is unavailable.',
-            ]);
-        }
-
-        return $role;
-    }
-
-    private function ownerContext(
-        Request $request
-    ): array {
-        $userId = (int) $request->user()->id;
-
-        $context = DB::connection('saas')
-            ->table('user_product_access as access')
-            ->join(
-                'products',
-                'products.id',
-                '=',
-                'access.product_id'
-            )
-            ->join(
-                'product_user_types',
-                'product_user_types.id',
-                '=',
-                'access.product_user_type_id'
-            )
-            ->join(
-                'user_types',
-                'user_types.id',
-                '=',
-                'product_user_types.user_type_id'
-            )
-            ->join(
-                'subscriptions',
-                'subscriptions.id',
-                '=',
-                'access.subscription_id'
-            )
-            ->join(
-                'plans',
-                'plans.id',
-                '=',
-                'subscriptions.plan_id'
-            )
-            ->where(
-                'access.user_id',
-                $userId
-            )
-            ->where(
-                'access.account_owner_id',
-                $userId
-            )
-            ->where(
-                'products.product_code',
-                self::PRODUCT_CODE
-            )
-            ->where(
-                'access.status',
-                'active'
-            )
-            ->where(
-                'user_types.is_owner_type',
-                true
-            )
-            ->whereIn(
-                'subscriptions.status',
-                [
-                    'trial',
-                    'active',
-                ]
-            )
-            ->first([
-                'access.account_owner_id',
-                'access.product_id',
-                'access.subscription_id',
-
-                'products.name as product_name',
-
-                'plans.id as plan_id',
-                'plans.plan_code',
-                'plans.plan_name',
-                'plans.has_role_based_access',
-            ]);
-
-        abort_if(
-            ! $context,
-            403,
-            'Only the account owner can manage role access.'
-        );
-
-        abort_if(
-            ! (bool) $context
-                ->has_role_based_access,
-            403,
-            'Your current plan does not include role-based access.'
-        );
-
-        return [
-            'owner_id' =>
-                (int) $context
-                    ->account_owner_id,
-
-            'product_id' =>
-                (int) $context->product_id,
-
-            'subscription_id' =>
-                (int) $context
-                    ->subscription_id,
-
-            'plan_id' =>
-                (int) $context->plan_id,
-
-            'plan_code' =>
-                $context->plan_code,
-
-            'plan_name' =>
-                $context->plan_name,
-
-            'has_role_based_access' =>
-                (bool) $context
-                    ->has_role_based_access,
-        ];
+            ->select([
+                'product_role.id',
+                'product_role.display_name',
+                'user_type.type_code',
+                'user_type.name',
+            ])
+            ->first();
     }
 
     private function sectionLabel(
@@ -897,9 +950,12 @@ class RoleAccessController extends Controller
         return match ($sectionKey) {
             'overview' => 'Overview',
             'management' => 'Management',
-            default => Str::headline(
-                $sectionKey
-            ),
+            'reports' => 'Reports',
+            'settings' => 'Settings',
+            default => str($sectionKey)
+                ->replace(['-', '_'], ' ')
+                ->title()
+                ->toString(),
         };
     }
 }

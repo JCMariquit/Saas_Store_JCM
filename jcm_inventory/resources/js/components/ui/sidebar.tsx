@@ -276,19 +276,33 @@ const SidebarRail = React.forwardRef<HTMLButtonElement, React.ComponentProps<'bu
 });
 SidebarRail.displayName = 'SidebarRail';
 
-const SidebarInset = React.forwardRef<HTMLDivElement, React.ComponentProps<'main'>>(({ className, ...props }, ref) => {
+const SidebarInset = React.forwardRef<
+    HTMLElement,
+    React.ComponentPropsWithoutRef<'main'>
+>(({ className, ...props }, ref) => {
     return (
         <main
             ref={ref}
             className={cn(
-                'relative flex min-h-svh flex-1 flex-col bg-background',
-                'peer-data-[variant=inset]:min-h-[calc(100svh-(--spacing(4)))] md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm',
+                'relative flex min-h-svh w-full min-w-0',
+                'max-w-full flex-1 flex-col',
+                'overflow-x-hidden bg-background',
+                'peer-data-[variant=inset]:min-h-[calc(100svh-(--spacing(4)))]',
+                'md:peer-data-[variant=inset]:m-2',
+                'md:peer-data-[variant=inset]:ml-0',
+                'md:peer-data-[variant=inset]:rounded-xl',
+                'md:peer-data-[variant=inset]:shadow-sm',
+                'md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2',
                 className,
             )}
             {...props}
         />
     );
 });
+
+SidebarInset.displayName = 'SidebarInset';
+
+SidebarInset.displayName = 'SidebarInset';
 SidebarInset.displayName = 'SidebarInset';
 
 const SidebarInput = React.forwardRef<React.ElementRef<typeof Input>, React.ComponentProps<typeof Input>>(({ className, ...props }, ref) => {

@@ -39,7 +39,9 @@ export function SectionCard({
     return (
         <Card
             className={cn(
-                'overflow-hidden shadow-none',
+                'min-w-0 max-w-full overflow-hidden',
+                'border-border/60 bg-card/60',
+                'shadow-[0_1px_0_rgba(255,255,255,0.025)]',
                 className,
             )}
             {...props}
@@ -48,19 +50,21 @@ export function SectionCard({
                 <CardHeader
                     className={cn(
                         'flex-row items-start justify-between',
-                        'gap-4 space-y-0 border-b p-5',
+                        'gap-4 space-y-0',
+                        'border-b border-border/60',
+                        'bg-muted/10 px-4 py-3.5',
                         headerClassName,
                     )}
                 >
                     <div className="min-w-0 space-y-1">
                         {title && (
-                            <CardTitle className="text-base">
+                            <CardTitle className="text-[15px] font-semibold tracking-tight">
                                 {title}
                             </CardTitle>
                         )}
 
                         {description && (
-                            <CardDescription>
+                            <CardDescription className="text-xs leading-5">
                                 {description}
                             </CardDescription>
                         )}
@@ -76,7 +80,7 @@ export function SectionCard({
 
             <CardContent
                 className={cn(
-                    'p-0',
+                    'min-h-[150px] min-w-0 max-w-full p-0',
                     contentClassName,
                 )}
             >

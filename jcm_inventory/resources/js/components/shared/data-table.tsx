@@ -1,8 +1,8 @@
+import type { LucideIcon } from 'lucide-react';
 import type {
     Key,
     ReactNode,
 } from 'react';
-import type { LucideIcon } from 'lucide-react';
 
 import { EmptyState } from '@/components/shared/empty-state';
 import {
@@ -18,7 +18,10 @@ import { cn } from '@/lib/utils';
 export type DataTableColumn<T> = {
     key: string;
     header: ReactNode;
-    cell: (row: T, index: number) => ReactNode;
+    cell: (
+        row: T,
+        index: number,
+    ) => ReactNode;
     className?: string;
     headerClassName?: string;
 };
@@ -26,7 +29,11 @@ export type DataTableColumn<T> = {
 type DataTableProps<T> = {
     data: T[];
     columns: DataTableColumn<T>[];
-    getRowKey: (row: T, index: number) => Key;
+
+    getRowKey: (
+        row: T,
+        index: number,
+    ) => Key;
 
     emptyIcon: LucideIcon;
     emptyTitle: string;
@@ -39,7 +46,10 @@ type DataTableProps<T> = {
 
     rowClassName?:
         | string
-        | ((row: T, index: number) => string);
+        | ((
+              row: T,
+              index: number,
+          ) => string);
 
     onRowClick?: (
         row: T,
@@ -66,7 +76,9 @@ export function DataTable<T>({
             <EmptyState
                 icon={emptyIcon}
                 title={emptyTitle}
-                description={emptyDescription}
+                description={
+                    emptyDescription
+                }
                 action={emptyAction}
                 className={className}
             />
@@ -74,66 +86,104 @@ export function DataTable<T>({
     }
 
     return (
-        <div className={cn('w-full', className)}>
+        <div
+            className={cn(
+                'block w-full min-w-0',
+                'max-w-full overflow-hidden',
+                className,
+            )}
+        >
             <Table
-                style={{ minWidth }}
-                className={tableClassName}
+                style={{
+                    minWidth,
+                }}
+                className={cn(
+                    'border-collapse',
+                    tableClassName,
+                )}
             >
-                <TableHeader className="bg-muted/40">
-                    <TableRow className="hover:bg-muted/40">
-                        {columns.map((column) => (
-                            <TableHead
-                                key={column.key}
-                                className={
-                                    column.headerClassName
-                                }
-                            >
-                                {column.header}
-                            </TableHead>
-                        ))}
+                <TableHeader className="bg-muted/15">
+                    <TableRow className="border-border/60 hover:bg-muted/15">
+                        {columns.map(
+                            (column) => (
+                                <TableHead
+                                    key={
+                                        column.key
+                                    }
+                                    className={cn(
+                                        'h-10 px-4',
+                                        'text-[10px]',
+                                        'font-semibold uppercase',
+                                        'tracking-[0.1em]',
+                                        'text-muted-foreground/75',
+                                        column.headerClassName,
+                                    )}
+                                >
+                                    {
+                                        column.header
+                                    }
+                                </TableHead>
+                            ),
+                        )}
                     </TableRow>
                 </TableHeader>
 
                 <TableBody>
-                    {data.map((row, rowIndex) => (
-                        <TableRow
-                            key={getRowKey(
-                                row,
-                                rowIndex,
-                            )}
-                            onClick={() =>
-                                onRowClick?.(
+                    {data.map(
+                        (
+                            row,
+                            rowIndex,
+                        ) => (
+                            <TableRow
+                                key={getRowKey(
                                     row,
                                     rowIndex,
-                                )
-                            }
-                            className={cn(
-                                onRowClick &&
-                                    'cursor-pointer',
-                                typeof rowClassName ===
-                                    'function'
-                                    ? rowClassName(
-                                          row,
-                                          rowIndex,
-                                      )
-                                    : rowClassName,
-                            )}
-                        >
-                            {columns.map((column) => (
-                                <TableCell
-                                    key={column.key}
-                                    className={
-                                        column.className
-                                    }
-                                >
-                                    {column.cell(
+                                )}
+                                onClick={() =>
+                                    onRowClick?.(
                                         row,
                                         rowIndex,
-                                    )}
-                                </TableCell>
-                            ))}
-                        </TableRow>
-                    ))}
+                                    )
+                                }
+                                className={cn(
+                                    'group border-border/50',
+                                    'transition-all duration-150',
+                                    'hover:bg-primary/[0.025]',
+                                    onRowClick &&
+                                        'cursor-pointer',
+                                    typeof rowClassName ===
+                                        'function'
+                                        ? rowClassName(
+                                              row,
+                                              rowIndex,
+                                          )
+                                        : rowClassName,
+                                )}
+                            >
+                                {columns.map(
+                                    (
+                                        column,
+                                    ) => (
+                                        <TableCell
+                                            key={
+                                                column.key
+                                            }
+                                            className={cn(
+                                                'px-4 py-3',
+                                                'text-[13px]',
+                                                column.className,
+                                            )}
+                                        >
+                                            {column.cell(
+                                                row,
+                                                rowIndex,
+                                            )}
+                                        </TableCell>
+                                    ),
+                                )}
+                            </TableRow>
+                        ),
+                    )}
                 </TableBody>
             </Table>
         </div>

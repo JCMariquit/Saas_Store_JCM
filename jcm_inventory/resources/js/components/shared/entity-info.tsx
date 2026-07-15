@@ -32,7 +32,7 @@ export function EntityInfo({
 
             <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                    <div className="min-w-0 truncate font-medium">
+                    <div className="min-w-0 truncate font-semibold tracking-[-0.01em] text-foreground">
                         {title}
                     </div>
 
@@ -40,13 +40,13 @@ export function EntityInfo({
                 </div>
 
                 {subtitle && (
-                    <div className="mt-1 truncate text-xs text-muted-foreground">
+                    <div className="mt-1 truncate font-mono text-[11px] text-muted-foreground">
                         {subtitle}
                     </div>
                 )}
 
                 {description && (
-                    <div className="mt-1 max-w-md truncate text-xs text-muted-foreground">
+                    <div className="mt-1.5 max-w-md truncate text-xs leading-5 text-muted-foreground/80">
                         {description}
                     </div>
                 )}

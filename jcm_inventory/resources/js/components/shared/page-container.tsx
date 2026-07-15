@@ -9,7 +9,8 @@ export function PageContainer({
     return (
         <div
             className={cn(
-                'flex h-full flex-1 flex-col',
+                'flex h-full min-w-0 max-w-full flex-1',
+                'flex-col overflow-x-hidden',
                 'gap-5 rounded-xl p-4',
                 'md:gap-6 md:p-6',
                 className,

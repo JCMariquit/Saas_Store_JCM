@@ -23,12 +23,12 @@ export function IconButton({
     children,
     className,
     type = 'button',
-    variant = 'outline',
+    variant = 'ghost',
     size = 'icon',
     ...props
 }: IconButtonProps) {
     return (
-        <TooltipProvider delayDuration={300}>
+        <TooltipProvider delayDuration={250}>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button
@@ -37,7 +37,13 @@ export function IconButton({
                         size={size}
                         aria-label={label}
                         className={cn(
-                            'size-9',
+                            'size-8 rounded-lg',
+                            'border border-transparent',
+                            'text-muted-foreground',
+                            'transition-all duration-150',
+                            'hover:border-border/70',
+                            'hover:bg-muted/70',
+                            'hover:text-foreground',
                             className,
                         )}
                         {...props}
@@ -46,7 +52,7 @@ export function IconButton({
                     </Button>
                 </TooltipTrigger>
 
-                <TooltipContent>
+                <TooltipContent sideOffset={6}>
                     <p>{label}</p>
                 </TooltipContent>
             </Tooltip>

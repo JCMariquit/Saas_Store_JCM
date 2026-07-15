@@ -27,22 +27,38 @@ type StatusBadgeProps = {
     className?: string;
 };
 
-const variantStyles: Record<
+const badgeStyles: Record<
     StatusVariant,
     string
 > = {
     success:
-        'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
+        'border-emerald-500/20 bg-emerald-500/10 text-emerald-400',
     danger:
-        'border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-400',
+        'border-red-500/20 bg-red-500/10 text-red-400',
     warning:
-        'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400',
+        'border-amber-500/20 bg-amber-500/10 text-amber-400',
     info:
-        'border-blue-500/20 bg-blue-500/10 text-blue-700 dark:text-blue-400',
+        'border-blue-500/20 bg-blue-500/10 text-blue-400',
     pending:
-        'border-violet-500/20 bg-violet-500/10 text-violet-700 dark:text-violet-400',
+        'border-violet-500/20 bg-violet-500/10 text-violet-400',
     neutral:
-        'border-border bg-muted text-muted-foreground',
+        'border-border/70 bg-muted/60 text-muted-foreground',
+};
+
+const iconWrapStyles: Record<
+    StatusVariant,
+    string
+> = {
+    success:
+        'bg-emerald-500/15 text-emerald-400',
+    danger: 'bg-red-500/15 text-red-400',
+    warning:
+        'bg-amber-500/15 text-amber-400',
+    info: 'bg-blue-500/15 text-blue-400',
+    pending:
+        'bg-violet-500/15 text-violet-400',
+    neutral:
+        'bg-muted text-muted-foreground',
 };
 
 const defaultIcons: Record<
@@ -70,16 +86,25 @@ export function StatusBadge({
         <Badge
             variant="outline"
             className={cn(
-                'gap-1.5 whitespace-nowrap font-medium',
-                variantStyles[variant],
+                'h-6 gap-1.5 rounded-full px-2 py-0.5',
+                'whitespace-nowrap border font-medium',
+                'text-[10px] shadow-none',
+                badgeStyles[variant],
                 className,
             )}
         >
             {showIcon && (
-                <Icon className="size-3.5" />
+                <span
+                    className={cn(
+                        'inline-flex size-4 items-center justify-center rounded-full',
+                        iconWrapStyles[variant],
+                    )}
+                >
+                    <Icon className="size-2.5" />
+                </span>
             )}
 
-            {label}
+            <span>{label}</span>
         </Badge>
     );
 }

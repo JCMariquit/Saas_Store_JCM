@@ -1,6 +1,48 @@
+import { ActionGroup } from '@/components/shared/action-group';
+import { AppDrawer } from '@/components/shared/app-drawer';
+import { AppDrawerActions } from '@/components/shared/app-drawer-actions';
+import { AppPagination } from '@/components/shared/app-pagination';
+import { CalloutCard } from '@/components/shared/callout-card';
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { ContextCard } from '@/components/shared/context-card';
+import {
+    DataTable,
+    type DataTableColumn,
+} from '@/components/shared/data-table';
+import { EntityAvatar } from '@/components/shared/entity-avatar';
+import { EntityInfo } from '@/components/shared/entity-info';
+import { FilterBar } from '@/components/shared/filter-bar';
+import { FormField } from '@/components/shared/form-field';
+import { FormSection } from '@/components/shared/form-section';
+import { HighlightStatCard } from '@/components/shared/highlight-stat-card';
+import { IconButton } from '@/components/shared/icon-button';
+import { MoneyInput } from '@/components/shared/money-input';
+import { NumberInput } from '@/components/shared/number-input';
+import { PageContainer } from '@/components/shared/page-container';
+import { PageHeader } from '@/components/shared/page-header';
+import { SearchInput } from '@/components/shared/search-input';
+import { SectionCard } from '@/components/shared/section-card';
+import { StatCard } from '@/components/shared/stat-card';
+import { StatusBadge } from '@/components/shared/status-badge';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import {
+    Head,
+    Link,
+    router,
+    useForm,
+} from '@inertiajs/react';
 import {
     ArrowDownRight,
     ArrowRightLeft,
@@ -10,24 +52,26 @@ import {
     CircleDollarSign,
     ClipboardPenLine,
     Layers3,
-    LoaderCircle,
     Package2,
     Plus,
     RefreshCw,
-    Search,
     Settings2,
-    SlidersHorizontal,
     Trash2,
     TriangleAlert,
     Warehouse as WarehouseIcon,
-    X,
 } from 'lucide-react';
 import {
     type FormEvent,
-    type ReactNode,
+    useEffect,
     useMemo,
     useState,
 } from 'react';
+
+/*
+|--------------------------------------------------------------------------
+| Types
+|--------------------------------------------------------------------------
+*/
 
 type BranchOption = {
     id: number;
@@ -204,6 +248,12 @@ type DrawerType =
     | 'transfer'
     | null;
 
+/*
+|--------------------------------------------------------------------------
+| Configuration
+|--------------------------------------------------------------------------
+*/
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
@@ -218,12 +268,6 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/inventory/stocks',
     },
 ];
-
-const inputClass =
-    'h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10';
-
-const textareaClass =
-    'w-full resize-none rounded-xl border border-border bg-background px-3 py-3 text-sm outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/10';
 
 const emptySettingsForm: StockSettingsForm = {
     reorder_level: '0',
@@ -243,6 +287,9 @@ const emptyTransferForm: TransferStockForm = {
     quantity: '',
     remarks: '',
 };
+
+const ALL_VALUE = 'all';
+const NONE_VALUE = 'none';
 
 function getDefaultWarehouseId(
     warehouses: WarehouseOption[],
@@ -264,7 +311,8 @@ function getEmptyCreateForm(
     warehouses: WarehouseOption[],
 ): CreateStockForm {
     return {
-        warehouse_id: getDefaultWarehouseId(warehouses),
+        warehouse_id:
+            getDefaultWarehouseId(warehouses),
         product_id: '',
         opening_quantity: '0',
         reorder_level: '5',
@@ -273,6 +321,12 @@ function getEmptyCreateForm(
         remarks: '',
     };
 }
+
+/*
+|--------------------------------------------------------------------------
+| Page
+|--------------------------------------------------------------------------
+*/
 
 export default function StockIndex({
     stocks,
@@ -290,6 +344,12 @@ export default function StockIndex({
     const [selectedStock, setSelectedStock] =
         useState<WarehouseStock | null>(null);
 
+    const [deleteTarget, setDeleteTarget] =
+        useState<WarehouseStock | null>(null);
+
+    const [deleteProcessing, setDeleteProcessing] =
+        useState(false);
+
     const [search, setSearch] = useState(
         filters.search ?? '',
     );
@@ -304,11 +364,12 @@ export default function StockIndex({
             : '',
     );
 
-    const [warehouseId, setWarehouseId] = useState(
-        filters.warehouse_id
-            ? String(filters.warehouse_id)
-            : '',
-    );
+    const [warehouseId, setWarehouseId] =
+        useState(
+            filters.warehouse_id
+                ? String(filters.warehouse_id)
+                : '',
+        );
 
     const [categoryId, setCategoryId] = useState(
         filters.category_id
@@ -325,14 +386,44 @@ export default function StockIndex({
             ...emptySettingsForm,
         });
 
-    const adjustForm = useForm<AdjustStockForm>({
-        ...emptyAdjustForm,
-    });
+    const adjustForm =
+        useForm<AdjustStockForm>({
+            ...emptyAdjustForm,
+        });
 
     const transferForm =
         useForm<TransferStockForm>({
             ...emptyTransferForm,
         });
+
+    useEffect(() => {
+        setSearch(filters.search ?? '');
+        setStatus(filters.status ?? '');
+
+        setBranchId(
+            filters.branch_id
+                ? String(filters.branch_id)
+                : '',
+        );
+
+        setWarehouseId(
+            filters.warehouse_id
+                ? String(filters.warehouse_id)
+                : '',
+        );
+
+        setCategoryId(
+            filters.category_id
+                ? String(filters.category_id)
+                : '',
+        );
+    }, [
+        filters.search,
+        filters.status,
+        filters.branch_id,
+        filters.warehouse_id,
+        filters.category_id,
+    ]);
 
     const filteredWarehouses = useMemo(() => {
         if (!branchId) {
@@ -341,7 +432,8 @@ export default function StockIndex({
 
         return warehouses.filter(
             (warehouse) =>
-                String(warehouse.branch_id) === branchId,
+                String(warehouse.branch_id) ===
+                branchId,
         );
     }, [branchId, warehouses]);
 
@@ -371,6 +463,16 @@ export default function StockIndex({
         settingsForm.processing ||
         adjustForm.processing ||
         transferForm.processing;
+
+    const requirementsComplete =
+        warehouses.length > 0 &&
+        products.length > 0;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Drawer actions
+    |--------------------------------------------------------------------------
+    */
 
     function resetDrawer(): void {
         setDrawerType(null);
@@ -431,7 +533,9 @@ export default function StockIndex({
             ),
             max_stock_level:
                 stock.max_stock_level !== null
-                    ? String(stock.max_stock_level)
+                    ? String(
+                          stock.max_stock_level,
+                      )
                     : '',
         });
 
@@ -465,15 +569,19 @@ export default function StockIndex({
 
         transferForm.clearErrors();
 
-        const firstDestination = warehouses.find(
-            (warehouse) =>
-                warehouse.id !== stock.warehouse_id,
-        );
+        const firstDestination =
+            warehouses.find(
+                (warehouse) =>
+                    warehouse.id !==
+                    stock.warehouse_id,
+            );
 
         transferForm.setData({
             destination_warehouse_id:
                 firstDestination
-                    ? String(firstDestination.id)
+                    ? String(
+                          firstDestination.id,
+                      )
                     : '',
             quantity: '',
             remarks: '',
@@ -481,6 +589,12 @@ export default function StockIndex({
 
         setDrawerType('transfer');
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Submit actions
+    |--------------------------------------------------------------------------
+    */
 
     function submitCreateStock(
         event: FormEvent<HTMLFormElement>,
@@ -547,6 +661,12 @@ export default function StockIndex({
         );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Filters
+    |--------------------------------------------------------------------------
+    */
+
     function applyFilters(
         event: FormEvent<HTMLFormElement>,
     ): void {
@@ -555,9 +675,11 @@ export default function StockIndex({
         router.get(
             '/inventory/stocks',
             {
-                search: search.trim() || undefined,
+                search:
+                    search.trim() || undefined,
                 status: status || undefined,
-                branch_id: branchId || undefined,
+                branch_id:
+                    branchId || undefined,
                 warehouse_id:
                     warehouseId || undefined,
                 category_id:
@@ -607,793 +729,879 @@ export default function StockIndex({
 
         if (
             currentWarehouse &&
-            String(currentWarehouse.branch_id) !==
-                value
+            String(
+                currentWarehouse.branch_id,
+            ) !== value
         ) {
             setWarehouseId('');
         }
     }
 
-    function deleteStock(
+    /*
+    |--------------------------------------------------------------------------
+    | Delete
+    |--------------------------------------------------------------------------
+    */
+
+    function requestDelete(
         stock: WarehouseStock,
     ): void {
-        const productName =
-            stock.product?.name ??
-            'this stock record';
+        setDeleteTarget(stock);
+    }
 
-        const confirmed = window.confirm(
-            `Delete the stock record for "${productName}"?`,
-        );
-
-        if (!confirmed) {
+    function deleteStock(): void {
+        if (
+            !deleteTarget ||
+            deleteProcessing
+        ) {
             return;
         }
 
         router.delete(
-            `/inventory/stocks/${stock.id}`,
+            `/inventory/stocks/${deleteTarget.id}`,
             {
                 preserveScroll: true,
+                onStart: () =>
+                    setDeleteProcessing(true),
+                onSuccess: () =>
+                    setDeleteTarget(null),
+                onFinish: () =>
+                    setDeleteProcessing(false),
             },
         );
     }
 
-    const requirementsComplete =
-        warehouses.length > 0 &&
-        products.length > 0;
+    /*
+    |--------------------------------------------------------------------------
+    | Table
+    |--------------------------------------------------------------------------
+    */
+
+    const stockColumns: DataTableColumn<WarehouseStock>[] =
+        [
+            {
+                key: 'product',
+                header: 'Product',
+                className: 'min-w-[250px]',
+                cell: (stock) => (
+                    <EntityInfo
+                        avatar={
+                            <EntityAvatar
+                                icon={Package2}
+                                className="border-blue-500/15 bg-blue-500/10 text-blue-400 group-hover:border-blue-500/25 group-hover:bg-blue-500/15"
+                            />
+                        }
+                        title={
+                            stock.product?.name ??
+                            'Unknown product'
+                        }
+                        subtitle={
+                            <>
+                                SKU:{' '}
+                                <span className="font-semibold text-foreground/70">
+                                    {stock.product
+                                        ?.sku ?? '—'}
+                                </span>
+                            </>
+                        }
+                        description={
+                            stock.product?.category
+                                ?.name ??
+                            'Uncategorized'
+                        }
+                    />
+                ),
+            },
+            {
+                key: 'location',
+                header: 'Location',
+                className: 'min-w-[200px]',
+                cell: (stock) => (
+                    <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                            <span className="inline-flex size-7 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
+                                <WarehouseIcon className="size-3.5" />
+                            </span>
+
+                            <span className="max-w-36 truncate text-[12px] font-semibold">
+                                {stock.warehouse
+                                    ?.name ??
+                                    'Unknown warehouse'}
+                            </span>
+
+                            {stock.warehouse
+                                ?.is_main && (
+                                <Badge
+                                    variant="outline"
+                                    className="h-5 rounded-full border-violet-500/20 bg-violet-500/10 px-2 text-[9px] text-violet-300"
+                                >
+                                    MAIN
+                                </Badge>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 pl-1 text-[10px] text-muted-foreground">
+                            <Building2 className="size-3" />
+
+                            {stock.warehouse?.branch
+                                ?.name ??
+                                'No branch'}
+                        </div>
+                    </div>
+                ),
+            },
+            {
+                key: 'availability',
+                header: 'Availability',
+                className: 'min-w-[190px]',
+                cell: (stock) => {
+                    const statusInfo =
+                        getStockStatus(stock);
+
+                    const percentage =
+                        getStockPercentage(stock);
+
+                    return (
+                        <div className="min-w-[170px]">
+                            <div className="flex items-end justify-between gap-3">
+                                <div>
+                                    <p className="text-lg font-semibold leading-none tabular-nums">
+                                        {formatQuantity(
+                                            stock.quantity,
+                                        )}
+                                    </p>
+
+                                    <p className="mt-1 text-[10px] text-muted-foreground">
+                                        {stock.product
+                                            ?.unit ??
+                                            'unit'}
+                                    </p>
+                                </div>
+
+                                <StatusBadge
+                                    label={
+                                        statusInfo.label
+                                    }
+                                    variant={
+                                        statusInfo.variant
+                                    }
+                                />
+                            </div>
+
+                            <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-muted">
+                                <div
+                                    className={`h-full rounded-full ${statusInfo.progressClass}`}
+                                    style={{
+                                        width: `${percentage}%`,
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    );
+                },
+            },
+            {
+                key: 'levels',
+                header: 'Stock Levels',
+                className: 'min-w-[150px]',
+                cell: (stock) => (
+                    <div className="space-y-1.5 text-[11px]">
+                        <div className="flex items-center justify-between gap-5">
+                            <span className="text-muted-foreground">
+                                Reorder
+                            </span>
+
+                            <span className="font-semibold tabular-nums">
+                                {formatQuantity(
+                                    stock.reorder_level,
+                                )}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-5">
+                            <span className="text-muted-foreground">
+                                Maximum
+                            </span>
+
+                            <span className="font-semibold tabular-nums">
+                                {stock.max_stock_level !==
+                                null
+                                    ? formatQuantity(
+                                          stock.max_stock_level,
+                                      )
+                                    : 'Not set'}
+                            </span>
+                        </div>
+                    </div>
+                ),
+            },
+            {
+                key: 'valuation',
+                header: 'Valuation',
+                className: 'min-w-[165px]',
+                cell: (stock) => {
+                    const quantity = Number(
+                        stock.quantity ?? 0,
+                    );
+
+                    const averageCost = Number(
+                        stock.average_cost ?? 0,
+                    );
+
+                    return (
+                        <div className="space-y-1">
+                            <p className="text-[12px] font-semibold tabular-nums text-emerald-400">
+                                {formatCurrency(
+                                    quantity *
+                                        averageCost,
+                                )}
+                            </p>
+
+                            <p className="text-[10px] text-muted-foreground">
+                                {formatCurrency(
+                                    averageCost,
+                                )}{' '}
+                                average cost
+                            </p>
+                        </div>
+                    );
+                },
+            },
+            {
+                key: 'movement',
+                header: 'Last Movement',
+                className: 'min-w-[145px]',
+                cell: (stock) => (
+                    <div>
+                        <p className="text-[11px] font-medium">
+                            {formatDate(
+                                stock.last_movement_at,
+                            )}
+                        </p>
+
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                            {formatTime(
+                                stock.last_movement_at,
+                            )}
+                        </p>
+                    </div>
+                ),
+            },
+            {
+                key: 'actions',
+                header: 'Actions',
+                headerClassName:
+                    'text-right',
+                className: 'text-right',
+                cell: (stock) => {
+                    const quantity = Number(
+                        stock.quantity ?? 0,
+                    );
+
+                    return (
+                        <ActionGroup>
+                            <Button
+                                type="button"
+                                size="sm"
+                                onClick={() =>
+                                    openAdjustDrawer(
+                                        stock,
+                                    )
+                                }
+                                className="h-8 rounded-lg px-3 text-[11px]"
+                            >
+                                <ClipboardPenLine className="size-3.5" />
+                                Adjust
+                            </Button>
+
+                            <IconButton
+                                label="Transfer stock"
+                                disabled={
+                                    warehouses.length <=
+                                        1 ||
+                                    quantity <= 0
+                                }
+                                onClick={() =>
+                                    openTransferDrawer(
+                                        stock,
+                                    )
+                                }
+                                className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
+                            >
+                                <ArrowRightLeft className="size-3.5" />
+                            </IconButton>
+
+                            <IconButton
+                                label="Stock settings"
+                                onClick={() =>
+                                    openSettingsDrawer(
+                                        stock,
+                                    )
+                                }
+                                className="text-violet-400 hover:bg-violet-500/10 hover:text-violet-400"
+                            >
+                                <Settings2 className="size-3.5" />
+                            </IconButton>
+
+                            <IconButton
+                                label="Delete stock record"
+                                onClick={() =>
+                                    requestDelete(
+                                        stock,
+                                    )
+                                }
+                                className="text-red-400 hover:bg-red-500/10 hover:text-red-400"
+                            >
+                                <Trash2 className="size-3.5" />
+                            </IconButton>
+                        </ActionGroup>
+                    );
+                },
+            },
+        ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Stock Management" />
 
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-                <section className="overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/10 via-background to-background">
-                    <div className="flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between lg:p-8">
-                        <div className="max-w-2xl">
-                            <div className="mb-3 inline-flex items-center gap-2 rounded-full border bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
-                                <Boxes className="size-3.5 text-primary" />
-                                Inventory Control
-                            </div>
-
-                            <h1 className="text-3xl font-semibold tracking-tight">
-                                Stock Management
-                            </h1>
-
-                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                                Monitor product quantities,
-                                warehouse availability, stock
-                                thresholds, adjustments, and
-                                transfers from one place.
-                            </p>
-                        </div>
-
-                        <button
+            <PageContainer className="min-w-0 max-w-full overflow-x-hidden">
+                <PageHeader
+                    variant="accent"
+                    eyebrow="Inventory Control"
+                    eyebrowIcon={<Boxes />}
+                    title="Stock Management"
+                    description="Monitor product quantities, warehouse availability, stock thresholds, adjustments, and transfers from one place."
+                    actions={
+                        <Button
                             type="button"
-                            onClick={openCreateDrawer}
-                            disabled={!requirementsComplete}
-                            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled={
+                                !requirementsComplete
+                            }
+                            onClick={
+                                openCreateDrawer
+                            }
+                            className="h-10 rounded-xl px-4 text-sm"
                         >
                             <Plus className="size-4" />
                             Add Stock Record
-                        </button>
-                    </div>
-                </section>
+                        </Button>
+                    }
+                />
 
                 {!requirementsComplete && (
-                    <section className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="flex items-start gap-3">
-                                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
-                                    <TriangleAlert className="size-5" />
-                                </div>
-
-                                <div>
-                                    <p className="font-medium">
-                                        Complete your inventory setup
-                                    </p>
-
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        An active warehouse and an
-                                        active stock-tracked product
-                                        are required before adding
-                                        stock records.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2">
-                                {warehouses.length === 0 && (
-                                    <Link
-                                        href="/warehouses"
-                                        className="inline-flex h-9 items-center justify-center rounded-lg border bg-background px-4 text-sm font-medium transition hover:bg-muted"
+                    <CalloutCard
+                        tone="warning"
+                        icon={TriangleAlert}
+                        title="Complete your inventory setup"
+                        description="An active warehouse and an active stock-tracked product are required before adding stock records."
+                        actions={
+                            <>
+                                {warehouses.length ===
+                                    0 && (
+                                    <Button
+                                        asChild
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
                                     >
-                                        Add Warehouse
-                                    </Link>
+                                        <Link href="/warehouses">
+                                            Add Warehouse
+                                        </Link>
+                                    </Button>
                                 )}
 
-                                {products.length === 0 && (
-                                    <Link
-                                        href="/inventory/products"
-                                        className="inline-flex h-9 items-center justify-center rounded-lg border bg-background px-4 text-sm font-medium transition hover:bg-muted"
+                                {products.length ===
+                                    0 && (
+                                    <Button
+                                        asChild
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
                                     >
-                                        Add Product
-                                    </Link>
+                                        <Link href="/inventory/products">
+                                            Add Product
+                                        </Link>
+                                    </Button>
                                 )}
-                            </div>
-                        </div>
-                    </section>
+                            </>
+                        }
+                    />
                 )}
 
-                <section className="grid gap-4 xl:grid-cols-[1.3fr_2fr]">
-                    <div className="relative overflow-hidden rounded-2xl bg-primary p-6 text-primary-foreground">
-                        <div className="relative z-10">
-                            <div className="flex items-center justify-between">
-                                <div className="flex size-11 items-center justify-center rounded-xl bg-primary-foreground/10">
-                                    <CircleDollarSign className="size-5" />
-                                </div>
+                <section className="grid min-w-0 max-w-full gap-3 2xl:grid-cols-[minmax(300px,1.05fr)_minmax(0,2fr)]">
+                    <HighlightStatCard
+                        title="Total Inventory Value"
+                        value={formatCurrency(
+                            summary.inventory_value,
+                        )}
+                        description="Based on current quantity and average acquisition cost."
+                        icon={
+                            <CircleDollarSign />
+                        }
+                        tone="emerald"
+                        badge={
+                            <Badge
+                                variant="outline"
+                                className="border-emerald-500/20 bg-emerald-500/10 text-[10px] text-emerald-300"
+                            >
+                                Current valuation
+                            </Badge>
+                        }
+                    />
 
-                                <span className="rounded-full bg-primary-foreground/10 px-3 py-1 text-xs font-medium">
-                                    Current valuation
-                                </span>
-                            </div>
-
-                            <p className="mt-8 text-sm text-primary-foreground/70">
-                                Total Inventory Value
-                            </p>
-
-                            <p className="mt-2 text-3xl font-semibold tracking-tight">
-                                {formatCurrency(
-                                    summary.inventory_value,
-                                )}
-                            </p>
-
-                            <p className="mt-3 text-xs text-primary-foreground/70">
-                                Based on current quantity and
-                                average acquisition cost.
-                            </p>
-                        </div>
-
-                        <div className="absolute -bottom-16 -right-12 size-52 rounded-full bg-primary-foreground/10" />
-                        <div className="absolute -right-8 -top-20 size-40 rounded-full bg-primary-foreground/5" />
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <MetricCard
+                    <div className="grid min-w-0 max-w-full gap-3 sm:grid-cols-2">
+                        <StatCard
                             title="Stock Records"
                             value={formatNumber(
                                 summary.records,
                             )}
+                            icon={<Layers3 />}
+                            iconTone="blue"
                             description="Product and warehouse pairs"
-                            icon={
-                                <Layers3 className="size-5" />
-                            }
                         />
 
-                        <MetricCard
+                        <StatCard
                             title="Total Quantity"
                             value={formatQuantity(
                                 summary.total_quantity,
                             )}
+                            icon={<Boxes />}
+                            iconTone="violet"
                             description="Combined available units"
-                            icon={<Boxes className="size-5" />}
                         />
 
-                        <MetricCard
+                        <StatCard
                             title="Low Stock"
                             value={formatNumber(
                                 summary.low_stock,
                             )}
-                            description="Needs replenishment"
                             icon={
-                                <TriangleAlert className="size-5" />
+                                <TriangleAlert />
                             }
-                            tone="warning"
+                            iconTone="amber"
+                            description="Needs replenishment"
                         />
 
-                        <MetricCard
+                        <StatCard
                             title="Out of Stock"
                             value={formatNumber(
                                 summary.out_of_stock,
                             )}
-                            description="No available quantity"
                             icon={
-                                <ArrowDownRight className="size-5" />
+                                <ArrowDownRight />
                             }
-                            tone="danger"
+                            iconTone="red"
+                            description="No available quantity"
                         />
                     </div>
                 </section>
 
-                <section className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-                    <div className="border-b px-5 py-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                <SlidersHorizontal className="size-5" />
-                            </div>
-
-                            <div>
-                                <h2 className="font-semibold">
-                                    Stock Records
-                                </h2>
-
-                                <p className="text-sm text-muted-foreground">
-                                    Search and filter inventory
-                                    records by location and status.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <form
-                        onSubmit={applyFilters}
-                        className="grid gap-3 border-b bg-muted/20 p-4 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_repeat(4,minmax(150px,auto))_auto_auto]"
-                    >
-                        <div className="relative md:col-span-2 xl:col-span-1">
-                            <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(event) =>
-                                    setSearch(
-                                        event.target.value,
-                                    )
-                                }
-                                placeholder="Search product, SKU, barcode, warehouse..."
-                                className="h-11 w-full rounded-xl border bg-background pl-10 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                            />
-                        </div>
-
-                        <select
-                            value={branchId}
-                            onChange={(event) =>
-                                handleBranchChange(
-                                    event.target.value,
-                                )
-                            }
-                            className={inputClass}
-                        >
-                            <option value="">
-                                All branches
-                            </option>
-
-                            {branches.map((branch) => (
-                                <option
-                                    key={branch.id}
-                                    value={branch.id}
-                                >
-                                    {branch.name}
-                                </option>
-                            ))}
-                        </select>
-
-                        <select
-                            value={warehouseId}
-                            onChange={(event) =>
-                                setWarehouseId(
-                                    event.target.value,
-                                )
-                            }
-                            className={inputClass}
-                        >
-                            <option value="">
-                                All warehouses
-                            </option>
-
-                            {filteredWarehouses.map(
-                                (warehouse) => (
-                                    <option
-                                        key={warehouse.id}
-                                        value={warehouse.id}
-                                    >
-                                        {warehouse.name}
-                                    </option>
-                                ),
-                            )}
-                        </select>
-
-                        <select
-                            value={categoryId}
-                            onChange={(event) =>
-                                setCategoryId(
-                                    event.target.value,
-                                )
-                            }
-                            className={inputClass}
-                        >
-                            <option value="">
-                                All categories
-                            </option>
-
-                            {categories.map((category) => (
-                                <option
-                                    key={category.id}
-                                    value={category.id}
-                                >
-                                    {category.parent_id
-                                        ? '— '
-                                        : ''}
-                                    {category.name}
-                                </option>
-                            ))}
-                        </select>
-
-                        <select
-                            value={status}
-                            onChange={(event) =>
-                                setStatus(
-                                    event.target.value,
-                                )
-                            }
-                            className={inputClass}
-                        >
-                            <option value="">
-                                All statuses
-                            </option>
-
-                            <option value="in_stock">
-                                In stock
-                            </option>
-
-                            <option value="low_stock">
-                                Low stock
-                            </option>
-
-                            <option value="out_of_stock">
-                                Out of stock
-                            </option>
-                        </select>
-
-                        <button
-                            type="submit"
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80"
-                        >
-                            <Search className="size-4" />
-                            Apply
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={resetFilters}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border bg-background px-4 text-sm font-medium transition hover:bg-muted"
-                        >
-                            <RefreshCw className="size-4" />
-                            Reset
-                        </button>
-                    </form>
-
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[1180px] text-left">
-                            <thead>
-                                <tr className="border-b bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
-                                    <th className="px-5 py-3.5 font-medium">
-                                        Product
-                                    </th>
-
-                                    <th className="px-5 py-3.5 font-medium">
-                                        Location
-                                    </th>
-
-                                    <th className="px-5 py-3.5 font-medium">
-                                        Availability
-                                    </th>
-
-                                    <th className="px-5 py-3.5 font-medium">
-                                        Stock Levels
-                                    </th>
-
-                                    <th className="px-5 py-3.5 font-medium">
-                                        Valuation
-                                    </th>
-
-                                    <th className="px-5 py-3.5 font-medium">
-                                        Last Movement
-                                    </th>
-
-                                    <th className="px-5 py-3.5 text-right font-medium">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-
-                            <tbody className="divide-y">
-                                {stocks.data.map((stock) => {
-                                    const quantity = Number(
-                                        stock.quantity ?? 0,
-                                    );
-
-                                    const averageCost = Number(
-                                        stock.average_cost ?? 0,
-                                    );
-
-                                    const statusInfo =
-                                        getStockStatus(stock);
-
-                                    const percentage =
-                                        getStockPercentage(stock);
-
-                                    return (
-                                        <tr
-                                            key={stock.id}
-                                            className="group transition hover:bg-muted/20"
-                                        >
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-start gap-3">
-                                                    <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                                                        <Package2 className="size-5" />
-                                                    </div>
-
-                                                    <div className="min-w-0">
-                                                        <p className="max-w-[230px] truncate font-medium">
-                                                            {stock.product
-                                                                ?.name ??
-                                                                'Unknown product'}
-                                                        </p>
-
-                                                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                                                            <span>
-                                                                SKU:{' '}
-                                                                {stock.product
-                                                                    ?.sku ??
-                                                                    '—'}
-                                                            </span>
-
-                                                            <span>
-                                                                {stock.product
-                                                                    ?.category
-                                                                    ?.name ??
-                                                                    'Uncategorized'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            <td className="px-5 py-4">
-                                                <div className="space-y-1.5">
-                                                    <div className="flex items-center gap-2 text-sm font-medium">
-                                                        <WarehouseIcon className="size-4 text-primary" />
-
-                                                        <span>
-                                                            {stock.warehouse
-                                                                ?.name ??
-                                                                'Unknown warehouse'}
-                                                        </span>
-
-                                                        {stock.warehouse
-                                                            ?.is_main && (
-                                                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                                                                MAIN
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                        <Building2 className="size-3.5" />
-
-                                                        {stock.warehouse
-                                                            ?.branch
-                                                            ?.name ??
-                                                            'No branch'}
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            <td className="px-5 py-4">
-                                                <div className="min-w-[180px]">
-                                                    <div className="flex items-end justify-between gap-3">
-                                                        <div>
-                                                            <p className="text-xl font-semibold">
-                                                                {formatQuantity(
-                                                                    quantity,
-                                                                )}
-                                                            </p>
-
-                                                            <p className="text-xs text-muted-foreground">
-                                                                {stock.product
-                                                                    ?.unit ??
-                                                                    'unit'}
-                                                            </p>
-                                                        </div>
-
-                                                        <StockStatusBadge
-                                                            label={
-                                                                statusInfo.label
-                                                            }
-                                                            tone={
-                                                                statusInfo.tone
-                                                            }
-                                                        />
-                                                    </div>
-
-                                                    <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-                                                        <div
-                                                            className={[
-                                                                'h-full rounded-full transition-all',
-                                                                statusInfo.progressClass,
-                                                            ].join(
-                                                                ' ',
-                                                            )}
-                                                            style={{
-                                                                width: `${percentage}%`,
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            <td className="px-5 py-4">
-                                                <div className="space-y-2 text-sm">
-                                                    <div className="flex items-center justify-between gap-5">
-                                                        <span className="text-muted-foreground">
-                                                            Reorder
-                                                        </span>
-
-                                                        <span className="font-medium">
-                                                            {formatQuantity(
-                                                                stock.reorder_level,
-                                                            )}
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between gap-5">
-                                                        <span className="text-muted-foreground">
-                                                            Maximum
-                                                        </span>
-
-                                                        <span className="font-medium">
-                                                            {stock.max_stock_level !==
-                                                            null
-                                                                ? formatQuantity(
-                                                                      stock.max_stock_level,
-                                                                  )
-                                                                : 'Not set'}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            <td className="px-5 py-4">
-                                                <div className="space-y-1">
-                                                    <p className="font-semibold">
-                                                        {formatCurrency(
-                                                            quantity *
-                                                                averageCost,
-                                                        )}
-                                                    </p>
-
-                                                    <p className="text-xs text-muted-foreground">
-                                                        {formatCurrency(
-                                                            averageCost,
-                                                        )}{' '}
-                                                        average cost
-                                                    </p>
-                                                </div>
-                                            </td>
-
-                                            <td className="px-5 py-4">
-                                                <p className="text-sm">
-                                                    {formatDate(
-                                                        stock.last_movement_at,
-                                                    )}
-                                                </p>
-
-                                                <p className="mt-1 text-xs text-muted-foreground">
-                                                    {formatTime(
-                                                        stock.last_movement_at,
-                                                    )}
-                                                </p>
-                                            </td>
-
-                                            <td className="px-5 py-4">
-                                                <div className="flex justify-end gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            openAdjustDrawer(
-                                                                stock,
-                                                            )
-                                                        }
-                                                        title="Adjust stock"
-                                                        className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-xs font-medium text-primary-foreground transition hover:bg-primary/90"
-                                                    >
-                                                        <ClipboardPenLine className="size-3.5" />
-                                                        Adjust
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            openTransferDrawer(
-                                                                stock,
-                                                            )
-                                                        }
-                                                        disabled={
-                                                            warehouses.length <=
-                                                                1 ||
-                                                            quantity <= 0
-                                                        }
-                                                        title="Transfer stock"
-                                                        className="inline-flex size-9 items-center justify-center rounded-lg border transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
-                                                    >
-                                                        <ArrowRightLeft className="size-4" />
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            openSettingsDrawer(
-                                                                stock,
-                                                            )
-                                                        }
-                                                        title="Stock settings"
-                                                        className="inline-flex size-9 items-center justify-center rounded-lg border transition hover:bg-muted"
-                                                    >
-                                                        <Settings2 className="size-4" />
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            deleteStock(
-                                                                stock,
-                                                            )
-                                                        }
-                                                        title="Delete stock record"
-                                                        className="inline-flex size-9 items-center justify-center rounded-lg border text-destructive transition hover:border-destructive/40 hover:bg-destructive/10"
-                                                    >
-                                                        <Trash2 className="size-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-
-                                {stocks.data.length === 0 && (
-                                    <tr>
-                                        <td
-                                            colSpan={7}
-                                            className="px-6 py-20 text-center"
-                                        >
-                                            <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-muted">
-                                                <Boxes className="size-8 text-muted-foreground/50" />
-                                            </div>
-
-                                            <h3 className="mt-4 text-lg font-semibold">
-                                                No stock records found
-                                            </h3>
-
-                                            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
-                                                No inventory records
-                                                matched your filters.
-                                                Add a stock record or
-                                                reset the filters.
-                                            </p>
-
-                                            <div className="mt-5 flex justify-center gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={
-                                                        resetFilters
-                                                    }
-                                                    className="inline-flex h-10 items-center gap-2 rounded-xl border px-4 text-sm font-medium transition hover:bg-muted"
-                                                >
-                                                    <RefreshCw className="size-4" />
-                                                    Reset Filters
-                                                </button>
-
-                                                {requirementsComplete && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={
-                                                            openCreateDrawer
-                                                        }
-                                                        className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-                                                    >
-                                                        <Plus className="size-4" />
-                                                        Add Stock
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <StockPagination stocks={stocks} />
-                </section>
-            </div>
-
-            {drawerType === 'create' && (
-                <Drawer
-                    title="Add Stock Record"
-                    description="Connect a tracked product to a warehouse and enter its opening inventory."
-                    onClose={closeDrawer}
-                    processing={createForm.processing}
+                <SectionCard
+                    title="Stock Records"
+                    description="Search and filter inventory records by product, location, category, and stock status."
+                    className="min-w-0 max-w-full"
                 >
-                    <form
-                        onSubmit={submitCreateStock}
-                        className="flex min-h-full flex-col"
-                    >
-                        <div className="flex-1 space-y-6 p-6">
-                            <FormSection
-                                title="Product Location"
-                                description="Choose where the product stock will be stored."
-                            >
-                                <FormField
-                                    label="Warehouse"
-                                    error={
-                                        createForm.errors
-                                            .warehouse_id
-                                    }
-                                    required
+                    <FilterBar
+                        onSubmit={applyFilters}
+                        contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(220px,1fr)_repeat(4,minmax(120px,0.65fr))]"
+                        actions={
+                            <>
+                                <Button
+                                    type="submit"
+                                    variant="secondary"
+                                    className="h-10 px-4 text-sm"
                                 >
-                                    <select
-                                        value={
-                                            createForm.data
-                                                .warehouse_id
+                                    Apply Filters
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={
+                                        resetFilters
+                                    }
+                                    className="h-10 px-3 text-sm"
+                                >
+                                    <RefreshCw className="size-3.5" />
+                                    Reset
+                                </Button>
+                            </>
+                        }
+                    >
+                        <SearchInput
+                            value={search}
+                            onChange={(event) =>
+                                setSearch(
+                                    event.target
+                                        .value,
+                                )
+                            }
+                            onClear={() =>
+                                setSearch('')
+                            }
+                            placeholder="Search product, SKU, barcode, warehouse..."
+                            className="sm:col-span-2 xl:col-span-3 2xl:col-span-1"
+                        />
+
+                        <Select
+                            value={
+                                branchId ||
+                                ALL_VALUE
+                            }
+                            onValueChange={(
+                                value,
+                            ) =>
+                                handleBranchChange(
+                                    value ===
+                                        ALL_VALUE
+                                        ? ''
+                                        : value,
+                                )
+                            }
+                        >
+                            <SelectTrigger className="h-10 w-full text-sm">
+                                <SelectValue placeholder="All branches" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem
+                                    value={
+                                        ALL_VALUE
+                                    }
+                                >
+                                    All branches
+                                </SelectItem>
+
+                                {branches.map(
+                                    (branch) => (
+                                        <SelectItem
+                                            key={
+                                                branch.id
+                                            }
+                                            value={String(
+                                                branch.id,
+                                            )}
+                                        >
+                                            {branch.name}
+                                        </SelectItem>
+                                    ),
+                                )}
+                            </SelectContent>
+                        </Select>
+
+                        <Select
+                            value={
+                                warehouseId ||
+                                ALL_VALUE
+                            }
+                            onValueChange={(
+                                value,
+                            ) =>
+                                setWarehouseId(
+                                    value ===
+                                        ALL_VALUE
+                                        ? ''
+                                        : value,
+                                )
+                            }
+                        >
+                            <SelectTrigger className="h-10 w-full text-sm">
+                                <SelectValue placeholder="All warehouses" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem
+                                    value={
+                                        ALL_VALUE
+                                    }
+                                >
+                                    All warehouses
+                                </SelectItem>
+
+                                {filteredWarehouses.map(
+                                    (warehouse) => (
+                                        <SelectItem
+                                            key={
+                                                warehouse.id
+                                            }
+                                            value={String(
+                                                warehouse.id,
+                                            )}
+                                        >
+                                            {
+                                                warehouse.name
+                                            }
+                                        </SelectItem>
+                                    ),
+                                )}
+                            </SelectContent>
+                        </Select>
+
+                        <Select
+                            value={
+                                categoryId ||
+                                ALL_VALUE
+                            }
+                            onValueChange={(
+                                value,
+                            ) =>
+                                setCategoryId(
+                                    value ===
+                                        ALL_VALUE
+                                        ? ''
+                                        : value,
+                                )
+                            }
+                        >
+                            <SelectTrigger className="h-10 w-full text-sm">
+                                <SelectValue placeholder="All categories" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem
+                                    value={
+                                        ALL_VALUE
+                                    }
+                                >
+                                    All categories
+                                </SelectItem>
+
+                                {categories.map(
+                                    (category) => (
+                                        <SelectItem
+                                            key={
+                                                category.id
+                                            }
+                                            value={String(
+                                                category.id,
+                                            )}
+                                        >
+                                            {category.parent_id
+                                                ? '— '
+                                                : ''}
+                                            {category.name}
+                                        </SelectItem>
+                                    ),
+                                )}
+                            </SelectContent>
+                        </Select>
+
+                        <Select
+                            value={
+                                status ||
+                                ALL_VALUE
+                            }
+                            onValueChange={(
+                                value,
+                            ) =>
+                                setStatus(
+                                    value ===
+                                        ALL_VALUE
+                                        ? ''
+                                        : value,
+                                )
+                            }
+                        >
+                            <SelectTrigger className="h-10 w-full text-sm">
+                                <SelectValue placeholder="All statuses" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem
+                                    value={
+                                        ALL_VALUE
+                                    }
+                                >
+                                    All statuses
+                                </SelectItem>
+
+                                <SelectItem value="in_stock">
+                                    In stock
+                                </SelectItem>
+
+                                <SelectItem value="low_stock">
+                                    Low stock
+                                </SelectItem>
+
+                                <SelectItem value="out_of_stock">
+                                    Out of stock
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </FilterBar>
+
+                    <DataTable
+                        data={stocks.data}
+                        columns={stockColumns}
+                        getRowKey={(stock) => stock.id}
+                        emptyIcon={Boxes}
+                        emptyTitle="No stock records found"
+                        emptyDescription="No inventory records matched your filters. Adjust the filters or add a new stock record."
+                        emptyAction={
+                            <div className="flex flex-wrap justify-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={resetFilters}
+                                >
+                                    <RefreshCw className="size-4" />
+                                    Reset Filters
+                                </Button>
+
+                                {requirementsComplete && (
+                                    <Button
+                                        type="button"
+                                        onClick={
+                                            openCreateDrawer
                                         }
-                                        onChange={(event) =>
-                                            createForm.setData(
-                                                'warehouse_id',
-                                                event.target.value,
-                                            )
-                                        }
-                                        className={inputClass}
                                     >
-                                        <option value="">
+                                        <Plus className="size-4" />
+                                        Add Stock
+                                    </Button>
+                                )}
+                            </div>
+                        }
+                        minWidth="1080px"
+                    />
+
+                    <AppPagination
+                        pagination={stocks}
+                        itemLabel="stock records"
+                    />
+                </SectionCard>
+            </PageContainer>
+
+            {/* Create stock */}
+
+            <AppDrawer
+                open={drawerType === 'create'}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        closeDrawer();
+                    }
+                }}
+                title="Add Stock Record"
+                description="Connect a tracked product to a warehouse and enter its opening inventory."
+                processing={createForm.processing}
+            >
+                <form
+                    onSubmit={submitCreateStock}
+                    className="flex min-h-full flex-col"
+                >
+                    <div className="flex-1 space-y-4 p-5">
+                        <FormSection
+                            title="Product Location"
+                            description="Choose where the product stock will be stored."
+                            icon={<WarehouseIcon />}
+                        >
+                            <FormField
+                                id="warehouse_id"
+                                label="Warehouse"
+                                error={
+                                    createForm.errors
+                                        .warehouse_id
+                                }
+                                required
+                            >
+                                <Select
+                                    value={
+                                        createForm.data
+                                            .warehouse_id ||
+                                        NONE_VALUE
+                                    }
+                                    disabled={
+                                        createForm.processing
+                                    }
+                                    onValueChange={(
+                                        value,
+                                    ) =>
+                                        createForm.setData(
+                                            'warehouse_id',
+                                            value ===
+                                                NONE_VALUE
+                                                ? ''
+                                                : value,
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger id="warehouse_id">
+                                        <SelectValue placeholder="Select warehouse" />
+                                    </SelectTrigger>
+
+                                    <SelectContent>
+                                        <SelectItem
+                                            value={
+                                                NONE_VALUE
+                                            }
+                                        >
                                             Select warehouse
-                                        </option>
+                                        </SelectItem>
 
                                         {warehouses.map(
-                                            (warehouse) => (
-                                                <option
+                                            (
+                                                warehouse,
+                                            ) => (
+                                                <SelectItem
                                                     key={
                                                         warehouse.id
                                                     }
-                                                    value={
-                                                        warehouse.id
-                                                    }
+                                                    value={String(
+                                                        warehouse.id,
+                                                    )}
                                                 >
-                                                    {warehouse.name}
+                                                    {
+                                                        warehouse.name
+                                                    }
                                                     {warehouse.branch
                                                         ? ` — ${warehouse.branch.name}`
                                                         : ''}
-                                                </option>
+                                                </SelectItem>
                                             ),
                                         )}
-                                    </select>
-                                </FormField>
+                                    </SelectContent>
+                                </Select>
+                            </FormField>
 
-                                <FormField
-                                    label="Product"
-                                    error={
-                                        createForm.errors
-                                            .product_id
+                            <FormField
+                                id="product_id"
+                                label="Product"
+                                error={
+                                    createForm.errors
+                                        .product_id
+                                }
+                                required
+                            >
+                                <Select
+                                    value={
+                                        createForm.data
+                                            .product_id ||
+                                        NONE_VALUE
                                     }
-                                    required
-                                >
-                                    <select
-                                        value={
-                                            createForm.data
-                                                .product_id
-                                        }
-                                        onChange={(event) => {
-                                            const value =
-                                                event.target.value;
+                                    disabled={
+                                        createForm.processing
+                                    }
+                                    onValueChange={(
+                                        selectedValue,
+                                    ) => {
+                                        const value =
+                                            selectedValue ===
+                                            NONE_VALUE
+                                                ? ''
+                                                : selectedValue;
 
-                                            const product =
-                                                products.find(
-                                                    (item) =>
-                                                        String(
-                                                            item.id,
-                                                        ) ===
-                                                        value,
-                                                );
+                                        const product =
+                                            products.find(
+                                                (
+                                                    item,
+                                                ) =>
+                                                    String(
+                                                        item.id,
+                                                    ) ===
+                                                    value,
+                                            );
 
-                                            createForm.setData({
+                                        createForm.setData(
+                                            {
                                                 ...createForm.data,
                                                 product_id:
                                                     value,
@@ -1403,295 +1611,495 @@ export default function StockIndex({
                                                               product.cost_price,
                                                           )
                                                         : '',
-                                            });
-                                        }}
-                                        className={inputClass}
-                                    >
-                                        <option value="">
+                                            },
+                                        );
+                                    }}
+                                >
+                                    <SelectTrigger id="product_id">
+                                        <SelectValue placeholder="Select product" />
+                                    </SelectTrigger>
+
+                                    <SelectContent>
+                                        <SelectItem
+                                            value={
+                                                NONE_VALUE
+                                            }
+                                        >
                                             Select product
-                                        </option>
+                                        </SelectItem>
 
                                         {products.map(
                                             (product) => (
-                                                <option
+                                                <SelectItem
                                                     key={
                                                         product.id
                                                     }
-                                                    value={
-                                                        product.id
-                                                    }
+                                                    value={String(
+                                                        product.id,
+                                                    )}
                                                 >
-                                                    {product.name}
+                                                    {
+                                                        product.name
+                                                    }
                                                     {product.sku
                                                         ? ` — ${product.sku}`
                                                         : ''}
-                                                </option>
+                                                </SelectItem>
                                             ),
                                         )}
-                                    </select>
-                                </FormField>
-                            </FormSection>
+                                    </SelectContent>
+                                </Select>
+                            </FormField>
+                        </FormSection>
 
-                            <FormSection
-                                title="Opening Inventory"
-                                description="Set the beginning quantity and valuation."
-                            >
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <FormField
-                                        label="Opening Quantity"
-                                        error={
-                                            createForm.errors
+                        <FormSection
+                            title="Opening Inventory"
+                            description="Set the beginning quantity and valuation."
+                            icon={<Boxes />}
+                        >
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <FormField
+                                    id="opening_quantity"
+                                    label="Opening Quantity"
+                                    error={
+                                        createForm
+                                            .errors
+                                            .opening_quantity
+                                    }
+                                    required
+                                >
+                                    <NumberInput
+                                        id="opening_quantity"
+                                        value={
+                                            createForm
+                                                .data
                                                 .opening_quantity
                                         }
-                                        required
-                                    >
-                                        <NumberInput
-                                            value={
-                                                createForm.data
-                                                    .opening_quantity
-                                            }
-                                            onChange={(value) =>
-                                                createForm.setData(
-                                                    'opening_quantity',
-                                                    value,
-                                                )
-                                            }
-                                        />
-                                    </FormField>
+                                        disabled={
+                                            createForm.processing
+                                        }
+                                        onValueChange={(
+                                            value,
+                                        ) =>
+                                            createForm.setData(
+                                                'opening_quantity',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                </FormField>
 
-                                    <FormField
-                                        label="Unit Cost"
-                                        error={
-                                            createForm.errors
+                                <FormField
+                                    id="unit_cost"
+                                    label="Unit Cost"
+                                    error={
+                                        createForm
+                                            .errors
+                                            .unit_cost
+                                    }
+                                >
+                                    <MoneyInput
+                                        id="unit_cost"
+                                        value={
+                                            createForm
+                                                .data
                                                 .unit_cost
                                         }
-                                    >
-                                        <PriceInput
-                                            value={
-                                                createForm.data
-                                                    .unit_cost
-                                            }
-                                            onChange={(value) =>
-                                                createForm.setData(
-                                                    'unit_cost',
-                                                    value,
-                                                )
-                                            }
-                                        />
-                                    </FormField>
-                                </div>
-                            </FormSection>
+                                        disabled={
+                                            createForm.processing
+                                        }
+                                        onValueChange={(
+                                            value,
+                                        ) =>
+                                            createForm.setData(
+                                                'unit_cost',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                </FormField>
+                            </div>
+                        </FormSection>
+
+                        <FormSection
+                            title="Stock Thresholds"
+                            description="Use these values to identify low-stock items."
+                            icon={
+                                <TriangleAlert />
+                            }
+                        >
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <FormField
+                                    id="reorder_level"
+                                    label="Reorder Level"
+                                    error={
+                                        createForm
+                                            .errors
+                                            .reorder_level
+                                    }
+                                    required
+                                >
+                                    <NumberInput
+                                        id="reorder_level"
+                                        value={
+                                            createForm
+                                                .data
+                                                .reorder_level
+                                        }
+                                        disabled={
+                                            createForm.processing
+                                        }
+                                        onValueChange={(
+                                            value,
+                                        ) =>
+                                            createForm.setData(
+                                                'reorder_level',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                </FormField>
+
+                                <FormField
+                                    id="max_stock_level"
+                                    label="Maximum Level"
+                                    description="Optional"
+                                    error={
+                                        createForm
+                                            .errors
+                                            .max_stock_level
+                                    }
+                                >
+                                    <NumberInput
+                                        id="max_stock_level"
+                                        value={
+                                            createForm
+                                                .data
+                                                .max_stock_level
+                                        }
+                                        disabled={
+                                            createForm.processing
+                                        }
+                                        placeholder="Optional"
+                                        onValueChange={(
+                                            value,
+                                        ) =>
+                                            createForm.setData(
+                                                'max_stock_level',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                </FormField>
+                            </div>
+                        </FormSection>
+
+                        <FormField
+                            id="create_remarks"
+                            label="Remarks"
+                            error={
+                                createForm.errors
+                                    .remarks
+                            }
+                        >
+                            <Textarea
+                                id="create_remarks"
+                                rows={4}
+                                value={
+                                    createForm.data
+                                        .remarks
+                                }
+                                disabled={
+                                    createForm.processing
+                                }
+                                onChange={(event) =>
+                                    createForm.setData(
+                                        'remarks',
+                                        event.target
+                                            .value,
+                                    )
+                                }
+                                placeholder="Optional notes about the opening stock..."
+                                className="resize-none"
+                            />
+                        </FormField>
+                    </div>
+
+                    <AppDrawerActions
+                        processing={
+                            createForm.processing
+                        }
+                        onCancel={closeDrawer}
+                        submitLabel="Create Stock Record"
+                        processingLabel="Creating Stock..."
+                    />
+                </form>
+            </AppDrawer>
+
+            {/* Settings */}
+
+            <AppDrawer
+                open={
+                    drawerType === 'settings' &&
+                    selectedStock !== null
+                }
+                onOpenChange={(open) => {
+                    if (!open) {
+                        closeDrawer();
+                    }
+                }}
+                title="Stock Settings"
+                description={`Update stock thresholds for ${selectedStock?.product?.name ?? 'this product'}.`}
+                processing={
+                    settingsForm.processing
+                }
+            >
+                {selectedStock && (
+                    <form
+                        onSubmit={submitSettings}
+                        className="flex min-h-full flex-col"
+                    >
+                        <div className="flex-1 space-y-4 p-5">
+                            <ContextCard
+                                icon={<Package2 />}
+                                title={
+                                    selectedStock
+                                        .product
+                                        ?.name ??
+                                    'Unknown product'
+                                }
+                                subtitle={
+                                    <>
+                                        {selectedStock
+                                            .warehouse
+                                            ?.name ??
+                                            'Unknown warehouse'}
+                                        {selectedStock
+                                            .warehouse
+                                            ?.branch
+                                            ? ` • ${selectedStock.warehouse.branch.name}`
+                                            : ''}
+                                    </>
+                                }
+                                metrics={[
+                                    {
+                                        label:
+                                            'Current Quantity',
+                                        value: `${formatQuantity(
+                                            selectedStock.quantity,
+                                        )} ${
+                                            selectedStock
+                                                .product
+                                                ?.unit ??
+                                            ''
+                                        }`,
+                                    },
+                                    {
+                                        label:
+                                            'Average Cost',
+                                        value: formatCurrency(
+                                            selectedStock.average_cost,
+                                        ),
+                                    },
+                                ]}
+                            />
 
                             <FormSection
-                                title="Stock Thresholds"
-                                description="Use these values to identify low stock items."
-                            >
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <FormField
-                                        label="Reorder Level"
-                                        error={
-                                            createForm.errors
-                                                .reorder_level
-                                        }
-                                        required
-                                    >
-                                        <NumberInput
-                                            value={
-                                                createForm.data
-                                                    .reorder_level
-                                            }
-                                            onChange={(value) =>
-                                                createForm.setData(
-                                                    'reorder_level',
-                                                    value,
-                                                )
-                                            }
-                                        />
-                                    </FormField>
-
-                                    <FormField
-                                        label="Maximum Level"
-                                        error={
-                                            createForm.errors
-                                                .max_stock_level
-                                        }
-                                    >
-                                        <NumberInput
-                                            value={
-                                                createForm.data
-                                                    .max_stock_level
-                                            }
-                                            onChange={(value) =>
-                                                createForm.setData(
-                                                    'max_stock_level',
-                                                    value,
-                                                )
-                                            }
-                                            allowEmpty
-                                        />
-                                    </FormField>
-                                </div>
-                            </FormSection>
-
-                            <FormField
-                                label="Remarks"
-                                error={
-                                    createForm.errors.remarks
+                                title="Threshold Settings"
+                                description="Set when the product should be considered low stock."
+                                icon={
+                                    <Settings2 />
                                 }
                             >
-                                <textarea
-                                    rows={4}
-                                    value={
-                                        createForm.data.remarks
+                                <FormField
+                                    id="settings_reorder_level"
+                                    label="Reorder Level"
+                                    error={
+                                        settingsForm
+                                            .errors
+                                            .reorder_level
                                     }
-                                    onChange={(event) =>
-                                        createForm.setData(
-                                            'remarks',
-                                            event.target.value,
-                                        )
+                                    required
+                                >
+                                    <NumberInput
+                                        id="settings_reorder_level"
+                                        value={
+                                            settingsForm
+                                                .data
+                                                .reorder_level
+                                        }
+                                        disabled={
+                                            settingsForm.processing
+                                        }
+                                        onValueChange={(
+                                            value,
+                                        ) =>
+                                            settingsForm.setData(
+                                                'reorder_level',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                </FormField>
+
+                                <FormField
+                                    id="settings_max_stock_level"
+                                    label="Maximum Stock Level"
+                                    description="Optional"
+                                    error={
+                                        settingsForm
+                                            .errors
+                                            .max_stock_level
                                     }
-                                    placeholder="Optional notes about the opening stock..."
-                                    className={textareaClass}
-                                />
-                            </FormField>
+                                >
+                                    <NumberInput
+                                        id="settings_max_stock_level"
+                                        value={
+                                            settingsForm
+                                                .data
+                                                .max_stock_level
+                                        }
+                                        disabled={
+                                            settingsForm.processing
+                                        }
+                                        placeholder="Optional"
+                                        onValueChange={(
+                                            value,
+                                        ) =>
+                                            settingsForm.setData(
+                                                'max_stock_level',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                </FormField>
+                            </FormSection>
                         </div>
 
-                        <DrawerActions
+                        <AppDrawerActions
                             processing={
-                                createForm.processing
+                                settingsForm.processing
                             }
                             onCancel={closeDrawer}
-                            submitLabel="Create Stock Record"
+                            submitLabel="Save Settings"
+                            processingLabel="Saving Settings..."
                         />
                     </form>
-                </Drawer>
-            )}
-
-            {drawerType === 'settings' &&
-                selectedStock && (
-                    <Drawer
-                        title="Stock Settings"
-                        description={`Update stock thresholds for ${selectedStock.product?.name ?? 'this product'}.`}
-                        onClose={closeDrawer}
-                        processing={
-                            settingsForm.processing
-                        }
-                    >
-                        <form
-                            onSubmit={submitSettings}
-                            className="flex min-h-full flex-col"
-                        >
-                            <div className="flex-1 space-y-6 p-6">
-                                <StockContextCard
-                                    stock={selectedStock}
-                                />
-
-                                <FormSection
-                                    title="Threshold Settings"
-                                    description="Set when the product should be considered low stock."
-                                >
-                                    <FormField
-                                        label="Reorder Level"
-                                        error={
-                                            settingsForm.errors
-                                                .reorder_level
-                                        }
-                                        required
-                                    >
-                                        <NumberInput
-                                            value={
-                                                settingsForm.data
-                                                    .reorder_level
-                                            }
-                                            onChange={(value) =>
-                                                settingsForm.setData(
-                                                    'reorder_level',
-                                                    value,
-                                                )
-                                            }
-                                        />
-                                    </FormField>
-
-                                    <FormField
-                                        label="Maximum Stock Level"
-                                        error={
-                                            settingsForm.errors
-                                                .max_stock_level
-                                        }
-                                    >
-                                        <NumberInput
-                                            value={
-                                                settingsForm.data
-                                                    .max_stock_level
-                                            }
-                                            onChange={(value) =>
-                                                settingsForm.setData(
-                                                    'max_stock_level',
-                                                    value,
-                                                )
-                                            }
-                                            allowEmpty
-                                        />
-                                    </FormField>
-                                </FormSection>
-                            </div>
-
-                            <DrawerActions
-                                processing={
-                                    settingsForm.processing
-                                }
-                                onCancel={closeDrawer}
-                                submitLabel="Save Settings"
-                            />
-                        </form>
-                    </Drawer>
                 )}
+            </AppDrawer>
 
-            {drawerType === 'adjust' &&
-                selectedStock && (
-                    <Drawer
-                        title="Adjust Stock"
-                        description="Record incoming or outgoing stock and automatically update the inventory balance."
-                        onClose={closeDrawer}
-                        processing={adjustForm.processing}
+            {/* Adjustment */}
+
+            <AppDrawer
+                open={
+                    drawerType === 'adjust' &&
+                    selectedStock !== null
+                }
+                onOpenChange={(open) => {
+                    if (!open) {
+                        closeDrawer();
+                    }
+                }}
+                title="Adjust Stock"
+                description="Record incoming or outgoing stock and update the inventory balance."
+                processing={adjustForm.processing}
+            >
+                {selectedStock && (
+                    <form
+                        onSubmit={
+                            submitAdjustment
+                        }
+                        className="flex min-h-full flex-col"
                     >
-                        <form
-                            onSubmit={submitAdjustment}
-                            className="flex min-h-full flex-col"
-                        >
-                            <div className="flex-1 space-y-6 p-6">
-                                <StockContextCard
-                                    stock={selectedStock}
-                                />
+                        <div className="flex-1 space-y-4 p-5">
+                            <ContextCard
+                                icon={<Package2 />}
+                                title={
+                                    selectedStock
+                                        .product
+                                        ?.name ??
+                                    'Unknown product'
+                                }
+                                subtitle={
+                                    <>
+                                        {selectedStock
+                                            .warehouse
+                                            ?.name ??
+                                            'Unknown warehouse'}
+                                        {selectedStock
+                                            .warehouse
+                                            ?.branch
+                                            ? ` • ${selectedStock.warehouse.branch.name}`
+                                            : ''}
+                                    </>
+                                }
+                                metrics={[
+                                    {
+                                        label:
+                                            'Current Quantity',
+                                        value: `${formatQuantity(
+                                            selectedStock.quantity,
+                                        )} ${
+                                            selectedStock
+                                                .product
+                                                ?.unit ??
+                                            ''
+                                        }`,
+                                    },
+                                    {
+                                        label:
+                                            'Average Cost',
+                                        value: formatCurrency(
+                                            selectedStock.average_cost,
+                                        ),
+                                    },
+                                ]}
+                            />
 
-                                <FormSection
-                                    title="Stock Movement"
-                                    description="Choose the reason and quantity of the stock change."
+                            <FormSection
+                                title="Stock Movement"
+                                description="Choose the reason and quantity of the stock change."
+                                icon={
+                                    <ClipboardPenLine />
+                                }
+                            >
+                                <FormField
+                                    id="movement_type"
+                                    label="Movement Type"
+                                    error={
+                                        adjustForm.errors
+                                            .movement_type
+                                    }
+                                    required
                                 >
-                                    <FormField
-                                        label="Movement Type"
-                                        error={
-                                            adjustForm.errors
+                                    <Select
+                                        value={
+                                            adjustForm
+                                                .data
                                                 .movement_type
                                         }
-                                        required
+                                        disabled={
+                                            adjustForm.processing
+                                        }
+                                        onValueChange={(
+                                            value,
+                                        ) =>
+                                            adjustForm.setData(
+                                                'movement_type',
+                                                value,
+                                            )
+                                        }
                                     >
-                                        <select
-                                            value={
-                                                adjustForm.data
-                                                    .movement_type
-                                            }
-                                            onChange={(event) =>
-                                                adjustForm.setData(
-                                                    'movement_type',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className={inputClass}
-                                        >
+                                        <SelectTrigger id="movement_type">
+                                            <SelectValue />
+                                        </SelectTrigger>
+
+                                        <SelectContent>
                                             {movementTypes.map(
-                                                (movement) => (
-                                                    <option
+                                                (
+                                                    movement,
+                                                ) => (
+                                                    <SelectItem
                                                         key={
                                                             movement.value
                                                         }
@@ -1706,759 +2114,491 @@ export default function StockIndex({
                                                         {
                                                             movement.label
                                                         }
-                                                    </option>
+                                                    </SelectItem>
                                                 ),
                                             )}
-                                        </select>
-                                    </FormField>
+                                        </SelectContent>
+                                    </Select>
+                                </FormField>
 
-                                    <div
-                                        className={[
-                                            'flex items-center gap-3 rounded-xl border p-4',
-                                            isIncomingMovement
-                                                ? 'border-emerald-500/30 bg-emerald-500/5'
-                                                : 'border-red-500/30 bg-red-500/5',
-                                        ].join(' ')}
-                                    >
-                                        <div
-                                            className={[
-                                                'flex size-10 items-center justify-center rounded-xl',
-                                                isIncomingMovement
-                                                    ? 'bg-emerald-500/10 text-emerald-600'
-                                                    : 'bg-red-500/10 text-red-600',
-                                            ].join(' ')}
-                                        >
-                                            {isIncomingMovement ? (
-                                                <ArrowUpRight className="size-5" />
-                                            ) : (
-                                                <ArrowDownRight className="size-5" />
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <p className="text-sm font-medium">
-                                                {isIncomingMovement
-                                                    ? 'Quantity will be added'
-                                                    : 'Quantity will be deducted'}
-                                            </p>
-
-                                            <p className="text-xs text-muted-foreground">
-                                                Current available
-                                                stock:{' '}
-                                                {formatQuantity(
-                                                    selectedStock.quantity,
-                                                )}{' '}
-                                                {selectedStock.product
-                                                    ?.unit ?? ''}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <FormField
-                                        label="Quantity"
-                                        error={
-                                            adjustForm.errors
-                                                .quantity
-                                        }
-                                        required
-                                    >
-                                        <NumberInput
-                                            value={
-                                                adjustForm.data
-                                                    .quantity
-                                            }
-                                            onChange={(value) =>
-                                                adjustForm.setData(
-                                                    'quantity',
-                                                    value,
-                                                )
-                                            }
-                                            minimum="0.001"
-                                        />
-                                    </FormField>
-
-                                    {isIncomingMovement && (
-                                        <FormField
-                                            label="Unit Cost"
-                                            error={
-                                                adjustForm.errors
-                                                    .unit_cost
-                                            }
-                                        >
-                                            <PriceInput
-                                                value={
-                                                    adjustForm.data
-                                                        .unit_cost
-                                                }
-                                                onChange={(value) =>
-                                                    adjustForm.setData(
-                                                        'unit_cost',
-                                                        value,
-                                                    )
-                                                }
-                                            />
-                                        </FormField>
-                                    )}
-                                </FormSection>
-
-                                <FormSection
-                                    title="Movement Details"
-                                    description="Optional reference and explanation for audit purposes."
-                                >
-                                    <FormField
-                                        label="Reference Number"
-                                        error={
-                                            adjustForm.errors
-                                                .reference_no
-                                        }
-                                    >
-                                        <input
-                                            type="text"
-                                            value={
-                                                adjustForm.data
-                                                    .reference_no
-                                            }
-                                            onChange={(event) =>
-                                                adjustForm.setData(
-                                                    'reference_no',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder="Invoice, receipt, or document number"
-                                            className={inputClass}
-                                        />
-                                    </FormField>
-
-                                    <FormField
-                                        label="Remarks"
-                                        error={
-                                            adjustForm.errors
-                                                .remarks
-                                        }
-                                    >
-                                        <textarea
-                                            rows={4}
-                                            value={
-                                                adjustForm.data
-                                                    .remarks
-                                            }
-                                            onChange={(event) =>
-                                                adjustForm.setData(
-                                                    'remarks',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            placeholder="Explain the reason for this adjustment..."
-                                            className={textareaClass}
-                                        />
-                                    </FormField>
-                                </FormSection>
-                            </div>
-
-                            <DrawerActions
-                                processing={
-                                    adjustForm.processing
-                                }
-                                onCancel={closeDrawer}
-                                submitLabel="Apply Adjustment"
-                            />
-                        </form>
-                    </Drawer>
-                )}
-
-            {drawerType === 'transfer' &&
-                selectedStock && (
-                    <Drawer
-                        title="Transfer Stock"
-                        description="Move available stock to another active warehouse."
-                        onClose={closeDrawer}
-                        processing={
-                            transferForm.processing
-                        }
-                    >
-                        <form
-                            onSubmit={submitTransfer}
-                            className="flex min-h-full flex-col"
-                        >
-                            <div className="flex-1 space-y-6 p-6">
-                                <StockContextCard
-                                    stock={selectedStock}
+                                <CalloutCard
+                                    tone={
+                                        isIncomingMovement
+                                            ? 'success'
+                                            : 'danger'
+                                    }
+                                    icon={
+                                        isIncomingMovement
+                                            ? ArrowUpRight
+                                            : ArrowDownRight
+                                    }
+                                    title={
+                                        isIncomingMovement
+                                            ? 'Quantity will be added'
+                                            : 'Quantity will be deducted'
+                                    }
+                                    description={`Current available stock: ${formatQuantity(
+                                        selectedStock.quantity,
+                                    )} ${
+                                        selectedStock
+                                            .product
+                                            ?.unit ?? ''
+                                    }`}
                                 />
 
-                                <div className="flex items-center justify-center gap-3 rounded-2xl border bg-muted/20 p-5">
-                                    <div className="rounded-xl border bg-background px-4 py-3 text-center">
-                                        <p className="text-xs text-muted-foreground">
-                                            Source
-                                        </p>
-
-                                        <p className="mt-1 text-sm font-medium">
-                                            {selectedStock.warehouse
-                                                ?.name ??
-                                                'Warehouse'}
-                                        </p>
-                                    </div>
-
-                                    <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                        <ArrowRightLeft className="size-5" />
-                                    </div>
-
-                                    <div className="rounded-xl border bg-background px-4 py-3 text-center">
-                                        <p className="text-xs text-muted-foreground">
-                                            Destination
-                                        </p>
-
-                                        <p className="mt-1 text-sm font-medium">
-                                            {destinationWarehouses.find(
-                                                (warehouse) =>
-                                                    String(
-                                                        warehouse.id,
-                                                    ) ===
-                                                    transferForm
-                                                        .data
-                                                        .destination_warehouse_id,
-                                            )?.name ??
-                                                'Select warehouse'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <FormSection
-                                    title="Transfer Information"
-                                    description="Choose the destination and quantity to move."
+                                <FormField
+                                    id="adjust_quantity"
+                                    label="Quantity"
+                                    error={
+                                        adjustForm.errors
+                                            .quantity
+                                    }
+                                    required
                                 >
-                                    <FormField
-                                        label="Destination Warehouse"
-                                        error={
-                                            transferForm.errors
-                                                .destination_warehouse_id
-                                        }
-                                        required
-                                    >
-                                        <select
-                                            value={
-                                                transferForm.data
-                                                    .destination_warehouse_id
-                                            }
-                                            onChange={(event) =>
-                                                transferForm.setData(
-                                                    'destination_warehouse_id',
-                                                    event.target.value,
-                                                )
-                                            }
-                                            className={inputClass}
-                                        >
-                                            <option value="">
-                                                Select destination
-                                            </option>
-
-                                            {destinationWarehouses.map(
-                                                (warehouse) => (
-                                                    <option
-                                                        key={
-                                                            warehouse.id
-                                                        }
-                                                        value={
-                                                            warehouse.id
-                                                        }
-                                                    >
-                                                        {warehouse.name}
-                                                        {warehouse.branch
-                                                            ? ` — ${warehouse.branch.name}`
-                                                            : ''}
-                                                    </option>
-                                                ),
-                                            )}
-                                        </select>
-                                    </FormField>
-
-                                    <FormField
-                                        label="Transfer Quantity"
-                                        error={
-                                            transferForm.errors
+                                    <NumberInput
+                                        id="adjust_quantity"
+                                        min="0.001"
+                                        value={
+                                            adjustForm
+                                                .data
                                                 .quantity
                                         }
-                                        required
+                                        disabled={
+                                            adjustForm.processing
+                                        }
+                                        onValueChange={(
+                                            value,
+                                        ) =>
+                                            adjustForm.setData(
+                                                'quantity',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                </FormField>
+
+                                {isIncomingMovement && (
+                                    <FormField
+                                        id="adjust_unit_cost"
+                                        label="Unit Cost"
+                                        error={
+                                            adjustForm
+                                                .errors
+                                                .unit_cost
+                                        }
                                     >
-                                        <NumberInput
+                                        <MoneyInput
+                                            id="adjust_unit_cost"
                                             value={
-                                                transferForm.data
-                                                    .quantity
+                                                adjustForm
+                                                    .data
+                                                    .unit_cost
                                             }
-                                            onChange={(value) =>
-                                                transferForm.setData(
-                                                    'quantity',
+                                            disabled={
+                                                adjustForm.processing
+                                            }
+                                            onValueChange={(
+                                                value,
+                                            ) =>
+                                                adjustForm.setData(
+                                                    'unit_cost',
                                                     value,
                                                 )
                                             }
-                                            minimum="0.001"
-                                            maximum={String(
-                                                selectedStock.quantity,
-                                            )}
                                         />
-
-                                        <p className="mt-2 text-xs text-muted-foreground">
-                                            Maximum transferable:{' '}
-                                            {formatQuantity(
-                                                selectedStock.quantity,
-                                            )}{' '}
-                                            {selectedStock.product
-                                                ?.unit ?? ''}
-                                        </p>
                                     </FormField>
-                                </FormSection>
+                                )}
+                            </FormSection>
+
+                            <FormSection
+                                title="Movement Details"
+                                description="Optional reference and explanation for audit purposes."
+                                icon={<Layers3 />}
+                            >
+                                <FormField
+                                    id="reference_no"
+                                    label="Reference Number"
+                                    error={
+                                        adjustForm.errors
+                                            .reference_no
+                                    }
+                                >
+                                    <Input
+                                        id="reference_no"
+                                        type="text"
+                                        value={
+                                            adjustForm
+                                                .data
+                                                .reference_no
+                                        }
+                                        disabled={
+                                            adjustForm.processing
+                                        }
+                                        onChange={(event) =>
+                                            adjustForm.setData(
+                                                'reference_no',
+                                                event.target
+                                                    .value,
+                                            )
+                                        }
+                                        placeholder="Invoice, receipt, or document number"
+                                    />
+                                </FormField>
 
                                 <FormField
+                                    id="adjust_remarks"
                                     label="Remarks"
                                     error={
-                                        transferForm.errors
+                                        adjustForm.errors
                                             .remarks
                                     }
                                 >
-                                    <textarea
+                                    <Textarea
+                                        id="adjust_remarks"
                                         rows={4}
                                         value={
-                                            transferForm.data
+                                            adjustForm
+                                                .data
                                                 .remarks
                                         }
+                                        disabled={
+                                            adjustForm.processing
+                                        }
                                         onChange={(event) =>
-                                            transferForm.setData(
+                                            adjustForm.setData(
                                                 'remarks',
-                                                event.target.value,
+                                                event.target
+                                                    .value,
                                             )
                                         }
-                                        placeholder="Reason or additional transfer details..."
-                                        className={textareaClass}
+                                        placeholder="Explain the reason for this adjustment..."
+                                        className="resize-none"
                                     />
                                 </FormField>
+                            </FormSection>
+                        </div>
+
+                        <AppDrawerActions
+                            processing={
+                                adjustForm.processing
+                            }
+                            onCancel={closeDrawer}
+                            submitLabel="Apply Adjustment"
+                            processingLabel="Applying Adjustment..."
+                        />
+                    </form>
+                )}
+            </AppDrawer>
+
+            {/* Transfer */}
+
+            <AppDrawer
+                open={
+                    drawerType === 'transfer' &&
+                    selectedStock !== null
+                }
+                onOpenChange={(open) => {
+                    if (!open) {
+                        closeDrawer();
+                    }
+                }}
+                title="Transfer Stock"
+                description="Move available stock to another active warehouse."
+                processing={
+                    transferForm.processing
+                }
+            >
+                {selectedStock && (
+                    <form
+                        onSubmit={submitTransfer}
+                        className="flex min-h-full flex-col"
+                    >
+                        <div className="flex-1 space-y-4 p-5">
+                            <ContextCard
+                                icon={<Package2 />}
+                                title={
+                                    selectedStock
+                                        .product
+                                        ?.name ??
+                                    'Unknown product'
+                                }
+                                subtitle={
+                                    <>
+                                        {selectedStock
+                                            .warehouse
+                                            ?.name ??
+                                            'Unknown warehouse'}
+                                        {selectedStock
+                                            .warehouse
+                                            ?.branch
+                                            ? ` • ${selectedStock.warehouse.branch.name}`
+                                            : ''}
+                                    </>
+                                }
+                                metrics={[
+                                    {
+                                        label:
+                                            'Available Quantity',
+                                        value: `${formatQuantity(
+                                            selectedStock.quantity,
+                                        )} ${
+                                            selectedStock
+                                                .product
+                                                ?.unit ??
+                                            ''
+                                        }`,
+                                    },
+                                    {
+                                        label:
+                                            'Average Cost',
+                                        value: formatCurrency(
+                                            selectedStock.average_cost,
+                                        ),
+                                    },
+                                ]}
+                            />
+
+                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl border border-border/60 bg-muted/[0.025] p-3">
+                                <div className="min-w-0 rounded-lg border border-border/50 bg-background/60 p-3 text-center">
+                                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                                        Source
+                                    </p>
+
+                                    <p className="mt-1 truncate text-[11px] font-semibold">
+                                        {selectedStock
+                                            .warehouse
+                                            ?.name ??
+                                            'Warehouse'}
+                                    </p>
+                                </div>
+
+                                <div className="flex size-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-400">
+                                    <ArrowRightLeft className="size-4" />
+                                </div>
+
+                                <div className="min-w-0 rounded-lg border border-border/50 bg-background/60 p-3 text-center">
+                                    <p className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                                        Destination
+                                    </p>
+
+                                    <p className="mt-1 truncate text-[11px] font-semibold">
+                                        {destinationWarehouses.find(
+                                            (
+                                                warehouse,
+                                            ) =>
+                                                String(
+                                                    warehouse.id,
+                                                ) ===
+                                                transferForm
+                                                    .data
+                                                    .destination_warehouse_id,
+                                        )?.name ??
+                                            'Select warehouse'}
+                                    </p>
+                                </div>
                             </div>
 
-                            <DrawerActions
-                                processing={
-                                    transferForm.processing
+                            <FormSection
+                                title="Transfer Information"
+                                description="Choose the destination and quantity to move."
+                                icon={
+                                    <ArrowRightLeft />
                                 }
-                                onCancel={closeDrawer}
-                                submitLabel="Transfer Stock"
-                            />
-                        </form>
-                    </Drawer>
+                            >
+                                <FormField
+                                    id="destination_warehouse_id"
+                                    label="Destination Warehouse"
+                                    error={
+                                        transferForm
+                                            .errors
+                                            .destination_warehouse_id
+                                    }
+                                    required
+                                >
+                                    <Select
+                                        value={
+                                            transferForm
+                                                .data
+                                                .destination_warehouse_id ||
+                                            NONE_VALUE
+                                        }
+                                        disabled={
+                                            transferForm.processing
+                                        }
+                                        onValueChange={(
+                                            value,
+                                        ) =>
+                                            transferForm.setData(
+                                                'destination_warehouse_id',
+                                                value ===
+                                                    NONE_VALUE
+                                                    ? ''
+                                                    : value,
+                                            )
+                                        }
+                                    >
+                                        <SelectTrigger id="destination_warehouse_id">
+                                            <SelectValue placeholder="Select destination" />
+                                        </SelectTrigger>
+
+                                        <SelectContent>
+                                            <SelectItem
+                                                value={
+                                                    NONE_VALUE
+                                                }
+                                            >
+                                                Select destination
+                                            </SelectItem>
+
+                                            {destinationWarehouses.map(
+                                                (
+                                                    warehouse,
+                                                ) => (
+                                                    <SelectItem
+                                                        key={
+                                                            warehouse.id
+                                                        }
+                                                        value={String(
+                                                            warehouse.id,
+                                                        )}
+                                                    >
+                                                        {
+                                                            warehouse.name
+                                                        }
+                                                        {warehouse.branch
+                                                            ? ` — ${warehouse.branch.name}`
+                                                            : ''}
+                                                    </SelectItem>
+                                                ),
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </FormField>
+
+                                <FormField
+                                    id="transfer_quantity"
+                                    label="Transfer Quantity"
+                                    description={`Maximum transferable: ${formatQuantity(
+                                        selectedStock.quantity,
+                                    )} ${
+                                        selectedStock
+                                            .product
+                                            ?.unit ?? ''
+                                    }`}
+                                    error={
+                                        transferForm
+                                            .errors
+                                            .quantity
+                                    }
+                                    required
+                                >
+                                    <NumberInput
+                                        id="transfer_quantity"
+                                        min="0.001"
+                                        max={String(
+                                            selectedStock.quantity,
+                                        )}
+                                        value={
+                                            transferForm
+                                                .data
+                                                .quantity
+                                        }
+                                        disabled={
+                                            transferForm.processing
+                                        }
+                                        onValueChange={(
+                                            value,
+                                        ) =>
+                                            transferForm.setData(
+                                                'quantity',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                </FormField>
+                            </FormSection>
+
+                            <FormField
+                                id="transfer_remarks"
+                                label="Remarks"
+                                error={
+                                    transferForm.errors
+                                        .remarks
+                                }
+                            >
+                                <Textarea
+                                    id="transfer_remarks"
+                                    rows={4}
+                                    value={
+                                        transferForm.data
+                                            .remarks
+                                    }
+                                    disabled={
+                                        transferForm.processing
+                                    }
+                                    onChange={(event) =>
+                                        transferForm.setData(
+                                            'remarks',
+                                            event.target
+                                                .value,
+                                        )
+                                    }
+                                    placeholder="Reason or additional transfer details..."
+                                    className="resize-none"
+                                />
+                            </FormField>
+                        </div>
+
+                        <AppDrawerActions
+                            processing={
+                                transferForm.processing
+                            }
+                            onCancel={closeDrawer}
+                            submitLabel="Transfer Stock"
+                            processingLabel="Transferring Stock..."
+                        />
+                    </form>
                 )}
+            </AppDrawer>
+
+            <ConfirmDialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDeleteTarget(null);
+                    }
+                }}
+                title="Delete Stock Record"
+                description={`Delete the stock record for "${deleteTarget?.product?.name ?? 'this product'}"? Existing stock movements may prevent deletion to preserve inventory history.`}
+                confirmText="Delete Stock Record"
+                processing={deleteProcessing}
+                destructive
+                onConfirm={deleteStock}
+            />
         </AppLayout>
     );
 }
 
-function MetricCard({
-    title,
-    value,
-    description,
-    icon,
-    tone = 'default',
-}: {
-    title: string;
-    value: string;
-    description: string;
-    icon: ReactNode;
-    tone?: 'default' | 'warning' | 'danger';
-}) {
-    const iconClass =
-        tone === 'warning'
-            ? 'bg-amber-500/10 text-amber-600'
-            : tone === 'danger'
-              ? 'bg-red-500/10 text-red-600'
-              : 'bg-primary/10 text-primary';
-
-    return (
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-                <div>
-                    <p className="text-sm text-muted-foreground">
-                        {title}
-                    </p>
-
-                    <p className="mt-2 text-2xl font-semibold tracking-tight">
-                        {value}
-                    </p>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                        {description}
-                    </p>
-                </div>
-
-                <div
-                    className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${iconClass}`}
-                >
-                    {icon}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function StockStatusBadge({
-    label,
-    tone,
-}: {
-    label: string;
-    tone: 'healthy' | 'warning' | 'danger';
-}) {
-    const className =
-        tone === 'danger'
-            ? 'bg-red-500/10 text-red-600'
-            : tone === 'warning'
-              ? 'bg-amber-500/10 text-amber-600'
-              : 'bg-emerald-500/10 text-emerald-600';
-
-    return (
-        <span
-            className={`inline-flex shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${className}`}
-        >
-            {label}
-        </span>
-    );
-}
-
-function FormSection({
-    title,
-    description,
-    children,
-}: {
-    title: string;
-    description: string;
-    children: ReactNode;
-}) {
-    return (
-        <section className="rounded-2xl border bg-card p-5">
-            <div className="mb-5">
-                <h3 className="text-sm font-semibold">
-                    {title}
-                </h3>
-
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    {description}
-                </p>
-            </div>
-
-            <div className="space-y-4">
-                {children}
-            </div>
-        </section>
-    );
-}
-
-function FormField({
-    label,
-    error,
-    required = false,
-    children,
-}: {
-    label: string;
-    error?: string;
-    required?: boolean;
-    children: ReactNode;
-}) {
-    return (
-        <label className="block">
-            <span className="mb-2 block text-sm font-medium">
-                {label}
-
-                {required && (
-                    <span className="ml-1 text-destructive">
-                        *
-                    </span>
-                )}
-            </span>
-
-            {children}
-
-            {error && (
-                <span className="mt-1.5 block text-xs text-destructive">
-                    {error}
-                </span>
-            )}
-        </label>
-    );
-}
-
-function StockContextCard({
-    stock,
-}: {
-    stock: WarehouseStock;
-}) {
-    return (
-        <div className="rounded-2xl border bg-muted/20 p-5">
-            <div className="flex items-start gap-4">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Package2 className="size-6" />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">
-                        {stock.product?.name ??
-                            'Unknown product'}
-                    </p>
-
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        {stock.warehouse?.name ??
-                            'Unknown warehouse'}
-                        {stock.warehouse?.branch
-                            ? ` • ${stock.warehouse.branch.name}`
-                            : ''}
-                    </p>
-
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                        <div className="rounded-xl border bg-background px-3 py-2">
-                            <p className="text-xs text-muted-foreground">
-                                Current Quantity
-                            </p>
-
-                            <p className="mt-1 font-semibold">
-                                {formatQuantity(
-                                    stock.quantity,
-                                )}{' '}
-                                {stock.product?.unit ?? ''}
-                            </p>
-                        </div>
-
-                        <div className="rounded-xl border bg-background px-3 py-2">
-                            <p className="text-xs text-muted-foreground">
-                                Average Cost
-                            </p>
-
-                            <p className="mt-1 font-semibold">
-                                {formatCurrency(
-                                    stock.average_cost,
-                                )}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function Drawer({
-    title,
-    description,
-    processing,
-    onClose,
-    children,
-}: {
-    title: string;
-    description: string;
-    processing: boolean;
-    onClose: () => void;
-    children: ReactNode;
-}) {
-    return (
-        <div
-            className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm"
-            onMouseDown={(event) => {
-                if (
-                    event.target === event.currentTarget
-                ) {
-                    onClose();
-                }
-            }}
-        >
-            <aside className="flex h-full w-full max-w-xl flex-col border-l bg-background shadow-2xl">
-                <div className="flex items-start justify-between gap-4 border-b px-6 py-5">
-                    <div>
-                        <h2 className="text-xl font-semibold">
-                            {title}
-                        </h2>
-
-                        <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                            {description}
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        disabled={processing}
-                        className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border transition hover:bg-muted disabled:opacity-50"
-                    >
-                        <X className="size-5" />
-                    </button>
-                </div>
-
-                <div className="min-h-0 flex-1 overflow-y-auto">
-                    {children}
-                </div>
-            </aside>
-        </div>
-    );
-}
-
-function DrawerActions({
-    processing,
-    onCancel,
-    submitLabel,
-}: {
-    processing: boolean;
-    onCancel: () => void;
-    submitLabel: string;
-}) {
-    return (
-        <div className="sticky bottom-0 flex justify-end gap-3 border-t bg-background px-6 py-4">
-            <button
-                type="button"
-                onClick={onCancel}
-                disabled={processing}
-                className="h-11 rounded-xl border px-5 text-sm font-medium transition hover:bg-muted disabled:opacity-50"
-            >
-                Cancel
-            </button>
-
-            <button
-                type="submit"
-                disabled={processing}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-                {processing && (
-                    <LoaderCircle className="size-4 animate-spin" />
-                )}
-
-                {submitLabel}
-            </button>
-        </div>
-    );
-}
-
-function NumberInput({
-    value,
-    onChange,
-    minimum = '0',
-    maximum,
-    allowEmpty = false,
-}: {
-    value: string;
-    onChange: (value: string) => void;
-    minimum?: string;
-    maximum?: string;
-    allowEmpty?: boolean;
-}) {
-    return (
-        <input
-            type="number"
-            min={minimum}
-            max={maximum}
-            step="0.001"
-            value={value}
-            onChange={(event) => {
-                const nextValue = event.target.value;
-
-                if (
-                    nextValue === '' &&
-                    allowEmpty
-                ) {
-                    onChange('');
-
-                    return;
-                }
-
-                onChange(nextValue);
-            }}
-            placeholder={
-                allowEmpty ? 'Optional' : '0'
-            }
-            className={inputClass}
-        />
-    );
-}
-
-function PriceInput({
-    value,
-    onChange,
-}: {
-    value: string;
-    onChange: (value: string) => void;
-}) {
-    return (
-        <div className="relative">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-medium text-muted-foreground">
-                ₱
-            </span>
-
-            <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={value}
-                onChange={(event) =>
-                    onChange(event.target.value)
-                }
-                placeholder="0.00"
-                className="h-11 w-full rounded-xl border bg-background pl-8 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-            />
-        </div>
-    );
-}
-
-function StockPagination({
-    stocks,
-}: {
-    stocks: PaginatedStocks;
-}) {
-    if (stocks.last_page <= 1) {
-        return null;
-    }
-
-    return (
-        <div className="flex flex-col gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-                Showing {stocks.from ?? 0} to{' '}
-                {stocks.to ?? 0} of {stocks.total}{' '}
-                stock records
-            </p>
-
-            <div className="flex flex-wrap gap-1.5">
-                {stocks.links.map((link, index) => (
-                    <button
-                        key={`${link.label}-${index}`}
-                        type="button"
-                        disabled={!link.url}
-                        onClick={() => {
-                            if (!link.url) {
-                                return;
-                            }
-
-                            router.get(
-                                link.url,
-                                {},
-                                {
-                                    preserveState: true,
-                                    preserveScroll: true,
-                                },
-                            );
-                        }}
-                        className={[
-                            'min-w-9 rounded-lg border px-3 py-1.5 text-sm transition',
-                            link.active
-                                ? 'border-primary bg-primary text-primary-foreground'
-                                : 'bg-background hover:bg-muted',
-                            !link.url
-                                ? 'cursor-not-allowed opacity-40'
-                                : '',
-                        ].join(' ')}
-                        dangerouslySetInnerHTML={{
-                            __html: link.label,
-                        }}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-}
+/*
+|--------------------------------------------------------------------------
+| Helpers
+|--------------------------------------------------------------------------
+*/
 
 function getStockStatus(
     stock: WarehouseStock,
 ): {
     label: string;
-    tone: 'healthy' | 'warning' | 'danger';
+    variant:
+        | 'success'
+        | 'warning'
+        | 'danger';
     progressClass: string;
 } {
-    const quantity = Number(stock.quantity ?? 0);
+    const quantity = Number(
+        stock.quantity ?? 0,
+    );
+
     const reorderLevel = Number(
         stock.reorder_level ?? 0,
     );
@@ -2466,33 +2606,37 @@ function getStockStatus(
     if (quantity <= 0) {
         return {
             label: 'Out of stock',
-            tone: 'danger',
-            progressClass: 'bg-red-500',
+            variant: 'danger',
+            progressClass: 'bg-red-400',
         };
     }
 
     if (quantity <= reorderLevel) {
         return {
             label: 'Low stock',
-            tone: 'warning',
-            progressClass: 'bg-amber-500',
+            variant: 'warning',
+            progressClass: 'bg-amber-400',
         };
     }
 
     return {
         label: 'In stock',
-        tone: 'healthy',
-        progressClass: 'bg-emerald-500',
+        variant: 'success',
+        progressClass: 'bg-emerald-400',
     };
 }
 
 function getStockPercentage(
     stock: WarehouseStock,
 ): number {
-    const quantity = Number(stock.quantity ?? 0);
+    const quantity = Number(
+        stock.quantity ?? 0,
+    );
+
     const maximum = Number(
         stock.max_stock_level ?? 0,
     );
+
     const reorder = Number(
         stock.reorder_level ?? 0,
     );
@@ -2500,7 +2644,10 @@ function getStockPercentage(
     if (maximum > 0) {
         return Math.min(
             100,
-            Math.max(0, (quantity / maximum) * 100),
+            Math.max(
+                0,
+                (quantity / maximum) * 100,
+            ),
         );
     }
 
@@ -2508,7 +2655,10 @@ function getStockPercentage(
         return 0;
     }
 
-    if (reorder > 0 && quantity <= reorder) {
+    if (
+        reorder > 0 &&
+        quantity <= reorder
+    ) {
         return 35;
     }
 
@@ -2525,7 +2675,9 @@ function formatCurrency(
         currency: 'PHP',
         minimumFractionDigits: 2,
     }).format(
-        Number.isFinite(amount) ? amount : 0,
+        Number.isFinite(amount)
+            ? amount
+            : 0,
     );
 }
 
@@ -2538,7 +2690,9 @@ function formatQuantity(
         minimumFractionDigits: 0,
         maximumFractionDigits: 3,
     }).format(
-        Number.isFinite(quantity) ? quantity : 0,
+        Number.isFinite(quantity)
+            ? quantity
+            : 0,
     );
 }
 
@@ -2550,7 +2704,9 @@ function formatNumber(
     return new Intl.NumberFormat(
         'en-PH',
     ).format(
-        Number.isFinite(amount) ? amount : 0,
+        Number.isFinite(amount)
+            ? amount
+            : 0,
     );
 }
 
@@ -2567,11 +2723,14 @@ function formatDate(
         return 'Invalid date';
     }
 
-    return new Intl.DateTimeFormat('en-PH', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    }).format(date);
+    return new Intl.DateTimeFormat(
+        'en-PH',
+        {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+        },
+    ).format(date);
 }
 
 function formatTime(
@@ -2587,8 +2746,11 @@ function formatTime(
         return '';
     }
 
-    return new Intl.DateTimeFormat('en-PH', {
-        hour: 'numeric',
-        minute: '2-digit',
-    }).format(date);
+    return new Intl.DateTimeFormat(
+        'en-PH',
+        {
+            hour: 'numeric',
+            minute: '2-digit',
+        },
+    ).format(date);
 }

@@ -10,6 +10,8 @@ type FilterBarProps = {
     actions?: ReactNode;
     onSubmit?: FormEventHandler<HTMLFormElement>;
     className?: string;
+    contentClassName?: string;
+    actionsClassName?: string;
 };
 
 export function FilterBar({
@@ -17,22 +19,45 @@ export function FilterBar({
     actions,
     onSubmit,
     className,
+    contentClassName,
+    actionsClassName,
 }: FilterBarProps) {
     return (
         <form
             onSubmit={onSubmit}
             className={cn(
-                'flex flex-col gap-3 border-b p-4',
-                'xl:flex-row xl:items-center',
+                'grid min-w-0 max-w-full gap-3',
+                'border-b border-border/60',
+                'bg-muted/[0.025] p-3',
+                '2xl:grid-cols-[minmax(0,1fr)_auto]',
+                '2xl:items-center',
                 className,
             )}
         >
-            <div className="flex min-w-0 flex-1 flex-col gap-3 xl:flex-row">
+            <div
+                className={cn(
+                    'flex min-w-0 max-w-full',
+                    'flex-1 flex-col gap-2.5',
+                    'md:flex-row md:flex-wrap',
+                    'md:items-center',
+                    '[&>*]:min-w-0',
+                    contentClassName,
+                )}
+            >
                 {children}
             </div>
 
             {actions && (
-                <div className="flex shrink-0 flex-wrap gap-2">
+                <div
+                    className={cn(
+                        'flex min-w-0 flex-wrap',
+                        'items-center gap-2',
+                        '2xl:border-l',
+                        '2xl:border-border/60',
+                        '2xl:pl-3',
+                        actionsClassName,
+                    )}
+                >
                     {actions}
                 </div>
             )}

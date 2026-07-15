@@ -30,7 +30,7 @@ export function SearchInput({
     return (
         <div
             className={cn(
-                'relative min-w-0 flex-1',
+                'group relative min-w-0 flex-1',
                 className,
             )}
         >
@@ -40,6 +40,8 @@ export function SearchInput({
                     'left-3 top-1/2 size-4',
                     '-translate-y-1/2',
                     'text-muted-foreground',
+                    'transition-colors',
+                    'group-focus-within:text-primary',
                 )}
             />
 
@@ -50,7 +52,13 @@ export function SearchInput({
                 onChange={onChange}
                 placeholder={placeholder}
                 className={cn(
-                    'pl-9',
+                    'h-11 rounded-lg',
+                    'border-border/70 bg-background/70',
+                    'pl-9 shadow-none',
+                    'focus-visible:border-primary/40',
+                    'focus-visible:ring-4',
+                    'focus-visible:ring-primary/10',
+                    'focus-visible:ring-offset-0',
                     value && onClear
                         ? 'pr-10'
                         : 'pr-3',
@@ -65,9 +73,10 @@ export function SearchInput({
                     onClick={onClear}
                     aria-label="Clear search"
                     className={cn(
-                        'absolute right-1 top-1/2',
+                        'absolute right-1.5 top-1/2',
                         'size-8 -translate-y-1/2',
-                        'text-muted-foreground',
+                        'rounded-md text-muted-foreground',
+                        'hover:text-foreground',
                     )}
                 >
                     <X className="size-4" />

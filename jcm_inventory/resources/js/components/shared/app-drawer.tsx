@@ -139,7 +139,7 @@ export function AppDrawer({
                     </IconButton>
                 </header>
 
-                <div className="min-h-0 flex-1 overflow-y-auto">
+                <div className="app-scrollbar min-h-0 flex-1 overflow-y-auto">
                     {children}
                 </div>
             </aside>

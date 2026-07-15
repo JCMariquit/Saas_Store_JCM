@@ -8,7 +8,14 @@
 
 @theme {
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+        'Instrument Sans',
+        ui-sans-serif,
+        system-ui,
+        sans-serif,
+        'Apple Color Emoji',
+        'Segoe UI Emoji',
+        'Segoe UI Symbol',
+        'Noto Color Emoji';
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
@@ -51,57 +58,60 @@
     --color-sidebar: var(--sidebar-background);
     --color-sidebar-foreground: var(--sidebar-foreground);
     --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary-foreground: var(
+        --sidebar-primary-foreground
+    );
     --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent-foreground: var(
+        --sidebar-accent-foreground
+    );
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
 }
 
 /*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
+|--------------------------------------------------------------------------
+| Light Theme
+|--------------------------------------------------------------------------
 */
-@layer base {
-    *,
-    ::after,
-    ::before,
-    ::backdrop,
-    ::file-selector-button {
-        border-color: var(--color-gray-200, currentColor);
-    }
-}
 
 :root {
     --background: hsl(0, 0%, 100%);
     --foreground: hsl(0, 0%, 3.9%);
+
     --card: hsl(0, 0%, 100%);
     --card-foreground: hsl(0, 0%, 3.9%);
+
     --popover: hsl(0, 0%, 100%);
     --popover-foreground: hsl(0, 0%, 3.9%);
+
     --primary: hsl(0, 0%, 9%);
     --primary-foreground: hsl(0, 0%, 98%);
+
     --secondary: hsl(0, 0%, 96.1%);
     --secondary-foreground: hsl(0, 0%, 9%);
+
     --muted: hsl(0, 0%, 96.1%);
     --muted-foreground: hsl(0, 0%, 45.1%);
+
     --accent: hsl(0, 0%, 96.1%);
     --accent-foreground: hsl(0, 0%, 9%);
+
     --destructive: hsl(0, 84.2%, 60.2%);
     --destructive-foreground: hsl(0, 0%, 98%);
+
     --border: hsl(0, 0%, 92.8%);
     --input: hsl(0, 0%, 89.8%);
     --ring: hsl(0, 0%, 3.9%);
+
     --chart-1: hsl(12, 76%, 61%);
     --chart-2: hsl(173, 58%, 39%);
     --chart-3: hsl(197, 37%, 24%);
     --chart-4: hsl(43, 74%, 66%);
     --chart-5: hsl(27, 87%, 67%);
+
     --radius: 0.5rem;
+
     --sidebar-background: hsl(0, 0%, 98%);
     --sidebar-foreground: hsl(240, 5.3%, 30%);
     --sidebar-primary: hsl(0, 0%, 10%);
@@ -110,33 +120,60 @@
     --sidebar-accent-foreground: hsl(0, 0%, 30%);
     --sidebar-border: hsl(0, 0%, 91%);
     --sidebar-ring: hsl(217.2, 91.2%, 59.8%);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Scrollbar Theme
+    |--------------------------------------------------------------------------
+    */
+
+    --scrollbar-track: transparent;
+    --scrollbar-thumb: hsla(215, 16%, 47%, 0.32);
+    --scrollbar-thumb-hover: hsla(217, 91%, 60%, 0.72);
+    --scrollbar-thumb-active: hsla(221, 83%, 53%, 0.92);
 }
+
+/*
+|--------------------------------------------------------------------------
+| Dark Theme
+|--------------------------------------------------------------------------
+*/
 
 .dark {
     --background: hsl(0, 0%, 3.9%);
     --foreground: hsl(0, 0%, 98%);
+
     --card: hsl(0, 0%, 3.9%);
     --card-foreground: hsl(0, 0%, 98%);
+
     --popover: hsl(0, 0%, 3.9%);
     --popover-foreground: hsl(0, 0%, 98%);
+
     --primary: hsl(0, 0%, 98%);
     --primary-foreground: hsl(0, 0%, 9%);
+
     --secondary: hsl(0, 0%, 14.9%);
     --secondary-foreground: hsl(0, 0%, 98%);
+
     --muted: hsl(0, 0%, 6.9%);
     --muted-foreground: hsl(0, 0%, 63.9%);
+
     --accent: hsl(0, 0%, 14.9%);
     --accent-foreground: hsl(0, 0%, 98%);
+
     --destructive: hsl(0, 84%, 60%);
     --destructive-foreground: hsl(0, 0%, 98%);
+
     --border: hsl(0, 0%, 14.9%);
     --input: hsl(0, 0%, 14.9%);
     --ring: hsl(0, 0%, 83.1%);
+
     --chart-1: hsl(220, 70%, 50%);
     --chart-2: hsl(160, 60%, 45%);
     --chart-3: hsl(30, 80%, 55%);
     --chart-4: hsl(280, 65%, 60%);
     --chart-5: hsl(340, 75%, 55%);
+
     --sidebar-background: hsl(0, 0%, 7%);
     --sidebar-foreground: hsl(0, 0%, 80%);
     --sidebar-primary: hsl(360, 100%, 100%);
@@ -145,14 +182,227 @@
     --sidebar-accent-foreground: hsl(240, 4.8%, 95.9%);
     --sidebar-border: hsl(0, 0%, 15.9%);
     --sidebar-ring: hsl(217.2, 91.2%, 59.8%);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dark Scrollbar Theme
+    |--------------------------------------------------------------------------
+    */
+
+    --scrollbar-track: transparent;
+    --scrollbar-thumb: hsla(215, 20%, 65%, 0.22);
+    --scrollbar-thumb-hover: hsla(217, 91%, 60%, 0.72);
+    --scrollbar-thumb-active: hsla(213, 94%, 68%, 0.92);
 }
 
+/*
+|--------------------------------------------------------------------------
+| Base Styles
+|--------------------------------------------------------------------------
+*/
+
 @layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(
+            --color-gray-200,
+            currentColor
+        );
+    }
+
     * {
         @apply border-border;
     }
 
+    html {
+        min-width: 0;
+        max-width: 100%;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color:
+            var(--scrollbar-thumb)
+            var(--scrollbar-track);
+    }
+
     body {
+        min-width: 0;
+        max-width: 100%;
+        overflow-x: hidden;
+
         @apply bg-background text-foreground;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Global WebKit Scrollbar
+    |--------------------------------------------------------------------------
+    */
+
+    *::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    *::-webkit-scrollbar-track {
+        border-radius: 9999px;
+        background: var(--scrollbar-track);
+    }
+
+    *::-webkit-scrollbar-thumb {
+        min-width: 48px;
+        min-height: 48px;
+        border: 2px solid transparent;
+        border-radius: 9999px;
+        background-color: var(--scrollbar-thumb);
+        background-clip: padding-box;
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+        background-color: var(
+            --scrollbar-thumb-hover
+        );
+    }
+
+    *::-webkit-scrollbar-thumb:active {
+        background-color: var(
+            --scrollbar-thumb-active
+        );
+    }
+
+    *::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+
+    *::-webkit-scrollbar-button {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Reusable Scrollbar Utilities
+|--------------------------------------------------------------------------
+*/
+
+@layer utilities {
+    /*
+    | Standard scrollbar
+    */
+
+    .app-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color:
+            var(--scrollbar-thumb)
+            transparent;
+    }
+
+    .app-scrollbar::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    .app-scrollbar::-webkit-scrollbar-track {
+        margin: 4px;
+        border-radius: 9999px;
+        background: transparent;
+    }
+
+    .app-scrollbar::-webkit-scrollbar-thumb {
+        min-width: 48px;
+        min-height: 48px;
+        border: 2px solid transparent;
+        border-radius: 9999px;
+        background-color: var(--scrollbar-thumb);
+        background-clip: padding-box;
+    }
+
+    .app-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: var(
+            --scrollbar-thumb-hover
+        );
+    }
+
+    .app-scrollbar::-webkit-scrollbar-thumb:active {
+        background-color: var(
+            --scrollbar-thumb-active
+        );
+    }
+
+    .app-scrollbar::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+
+    .app-scrollbar::-webkit-scrollbar-button {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+
+    /*
+    | Thin scrollbar for tables
+    */
+
+    .app-scrollbar-thin {
+        scrollbar-width: thin;
+        scrollbar-color:
+            var(--scrollbar-thumb)
+            transparent;
+    }
+
+    .app-scrollbar-thin::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .app-scrollbar-thin::-webkit-scrollbar-track {
+        margin-inline: 6px;
+        border-radius: 9999px;
+        background: transparent;
+    }
+
+    .app-scrollbar-thin::-webkit-scrollbar-thumb {
+        min-width: 56px;
+        min-height: 56px;
+        border-radius: 9999px;
+        background-color: var(--scrollbar-thumb);
+    }
+
+    .app-scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        background-color: var(
+            --scrollbar-thumb-hover
+        );
+    }
+
+    .app-scrollbar-thin::-webkit-scrollbar-thumb:active {
+        background-color: var(
+            --scrollbar-thumb-active
+        );
+    }
+
+    .app-scrollbar-thin::-webkit-scrollbar-corner {
+        background: transparent;
+    }
+
+    .app-scrollbar-thin::-webkit-scrollbar-button {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+
+    /*
+    | Hidden scrollbar while retaining scroll
+    */
+
+    .app-scrollbar-hidden {
+        scrollbar-width: none;
+    }
+
+    .app-scrollbar-hidden::-webkit-scrollbar {
+        display: none;
     }
 }

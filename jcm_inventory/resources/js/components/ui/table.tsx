@@ -9,9 +9,11 @@ const Table = React.forwardRef<
     return (
         <div
             className={cn(
+                'app-scrollbar-thin',
                 'relative block w-full min-w-0',
                 'max-w-full overflow-x-auto',
                 'overscroll-x-contain',
+                'pb-1',
             )}
         >
             <table

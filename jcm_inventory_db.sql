@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 14, 2026 at 10:40 AM
+-- Generation Time: Jul 15, 2026 at 10:40 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -49,7 +49,7 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `tenant_id`, `name`, `code`, `address`, `phone`, `email`, `is_main`, `is_active`, `created_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 'Main brach', 'MAIN', '123123', '09752475', 'branch@gmail.com', 1, 1, 1, '2026-07-10 03:20:38', '2026-07-10 03:20:38', NULL);
+(1, 1, 'Main brach', 'MAIN', '123123', '09752475', 'branch@gmail.com', 1, 1, 1, '2026-07-10 03:20:38', '2026-07-15 06:15:12', '2026-07-15 06:15:12');
 
 -- --------------------------------------------------------
 
@@ -257,13 +257,6 @@ CREATE TABLE `stock_movements` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ;
 
---
--- Dumping data for table `stock_movements`
---
-
-INSERT INTO `stock_movements` (`id`, `tenant_id`, `warehouse_id`, `product_id`, `movement_type`, `quantity`, `quantity_before`, `quantity_after`, `unit_cost`, `total_cost`, `average_cost_before`, `average_cost_after`, `reference_type`, `reference_id`, `reference_no`, `related_warehouse_id`, `reversal_of_movement_id`, `remarks`, `movement_date`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 1, 'opening_stock', 50.000, 0.000, 50.000, 10.0000, 500.00, NULL, NULL, 'opening_stock', NULL, 'OPEN-20260710150716-KURFIZ', NULL, NULL, NULL, '2026-07-10 15:07:16', 1, '2026-07-10 07:07:16', '2026-07-10 07:07:16');
-
 -- --------------------------------------------------------
 
 --
@@ -324,13 +317,6 @@ CREATE TABLE `warehouses` (
   `active_main_branch_id` bigint(20) UNSIGNED GENERATED ALWAYS AS (case when `is_main` = 1 and `is_active` = 1 and `deleted_at` is null then `branch_id` else NULL end) STORED
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
---
--- Dumping data for table `warehouses`
---
-
-INSERT INTO `warehouses` (`id`, `tenant_id`, `branch_id`, `name`, `code`, `description`, `address`, `contact_person`, `phone`, `is_main`, `is_active`, `created_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 1, '1', '1', '1', '1', '1', '1', 1, 1, 1, '2026-07-10 05:59:54', '2026-07-10 05:59:54', NULL);
-
 -- --------------------------------------------------------
 
 --
@@ -350,13 +336,6 @@ CREATE TABLE `warehouse_stocks` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ;
-
---
--- Dumping data for table `warehouse_stocks`
---
-
-INSERT INTO `warehouse_stocks` (`id`, `tenant_id`, `warehouse_id`, `product_id`, `quantity`, `reorder_level`, `max_stock_level`, `average_cost`, `last_movement_at`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 1, 50.000, 5.000, NULL, 10.0000, '2026-07-10 15:07:16', '2026-07-10 07:07:16', '2026-07-10 07:07:16');
 
 --
 -- Indexes for dumped tables

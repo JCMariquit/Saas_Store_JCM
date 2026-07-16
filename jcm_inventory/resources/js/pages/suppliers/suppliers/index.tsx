@@ -1,28 +1,61 @@
+import { ActionGroup } from '@/components/shared/action-group';
+import { AppPagination } from '@/components/shared/app-pagination';
+import { BooleanField } from '@/components/shared/boolean-field';
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import {
+    DataTable,
+    type DataTableColumn,
+} from '@/components/shared/data-table';
+import { EntityAvatar } from '@/components/shared/entity-avatar';
+import { EntityInfo } from '@/components/shared/entity-info';
+import { FilterBar } from '@/components/shared/filter-bar';
+import { FormDialog } from '@/components/shared/form-dialog';
+import { FormField } from '@/components/shared/form-field';
+import { FormSection } from '@/components/shared/form-section';
+import { IconButton } from '@/components/shared/icon-button';
+import { IconInput } from '@/components/shared/icon-input';
+import { MoneyInput } from '@/components/shared/money-input';
+import { PageContainer } from '@/components/shared/page-container';
+import { SearchInput } from '@/components/shared/search-input';
+import { SectionCard } from '@/components/shared/section-card';
+import { StatusBadge } from '@/components/shared/status-badge';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import {
     Banknote,
     CheckCircle2,
-    CircleUserRound,
+    CircleDollarSign,
     Hash,
-    LoaderCircle,
     Mail,
     MapPin,
     Pencil,
     Phone,
     Plus,
     ReceiptText,
-    Search,
+    RefreshCw,
+    ShieldCheck,
     Trash2,
     Truck,
     UserRound,
-    X,
     XCircle,
+    type LucideIcon,
 } from 'lucide-react';
 import {
     type FormEvent,
-    type ReactNode,
+    useEffect,
     useState,
 } from 'react';
 
@@ -112,9 +145,14 @@ type SupplierPageProps = {
     filters: SupplierFilters;
 };
 
+type SupplierMetricTone =
+    | 'amber'
+    | 'emerald'
+    | 'red';
+
 /*
 |--------------------------------------------------------------------------
-| Page Configuration
+| Configuration
 |--------------------------------------------------------------------------
 */
 
@@ -144,9 +182,11 @@ const emptySupplierForm: SupplierFormData = {
     is_active: true,
 };
 
+const ALL_VALUE = 'all';
+
 /*
 |--------------------------------------------------------------------------
-| Supplier Page
+| Page
 |--------------------------------------------------------------------------
 */
 
@@ -155,11 +195,20 @@ export default function SupplierIndex({
     summary,
     filters,
 }: SupplierPageProps) {
-    const [isModalOpen, setIsModalOpen] =
+    const [isDialogOpen, setIsDialogOpen] =
         useState(false);
 
     const [editingSupplier, setEditingSupplier] =
         useState<Supplier | null>(null);
+
+    const [statusProcessingId, setStatusProcessingId] =
+        useState<number | null>(null);
+
+    const [deleteTarget, setDeleteTarget] =
+        useState<Supplier | null>(null);
+
+    const [deleteProcessing, setDeleteProcessing] =
+        useState(false);
 
     const [search, setSearch] = useState(
         filters.search ?? '',
@@ -177,40 +226,64 @@ export default function SupplierIndex({
         ...emptySupplierForm,
     });
 
+    useEffect(() => {
+        setSearch(filters.search ?? '');
+        setStatus(filters.status ?? '');
+        setSort(filters.sort ?? 'latest');
+    }, [
+        filters.search,
+        filters.status,
+        filters.sort,
+    ]);
+
     /*
     |--------------------------------------------------------------------------
-    | Modal Actions
+    | Form dialog
     |--------------------------------------------------------------------------
     */
 
-    function resetModal(): void {
-        setIsModalOpen(false);
-        setEditingSupplier(null);
-
+    function resetSupplierForm(): void {
         form.clearErrors();
-
         form.setData({
             ...emptySupplierForm,
         });
     }
 
-    function openCreateModal(): void {
+    function resetAndCloseDialog(): void {
+        setIsDialogOpen(false);
         setEditingSupplier(null);
-
-        form.clearErrors();
-
-        form.setData({
-            ...emptySupplierForm,
-        });
-
-        setIsModalOpen(true);
+        resetSupplierForm();
     }
 
-    function openEditModal(
+    function closeDialog(): void {
+        if (form.processing) {
+            return;
+        }
+
+        resetAndCloseDialog();
+    }
+
+    function handleDialogOpenChange(
+        open: boolean,
+    ): void {
+        if (open) {
+            setIsDialogOpen(true);
+            return;
+        }
+
+        closeDialog();
+    }
+
+    function openCreateDialog(): void {
+        setEditingSupplier(null);
+        resetSupplierForm();
+        setIsDialogOpen(true);
+    }
+
+    function openEditDialog(
         supplier: Supplier,
     ): void {
         setEditingSupplier(supplier);
-
         form.clearErrors();
 
         form.setData({
@@ -235,22 +308,8 @@ export default function SupplierIndex({
             is_active: supplier.is_active,
         });
 
-        setIsModalOpen(true);
+        setIsDialogOpen(true);
     }
-
-    function closeModal(): void {
-        if (form.processing) {
-            return;
-        }
-
-        resetModal();
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Create and Update
-    |--------------------------------------------------------------------------
-    */
 
     function submitSupplier(
         event: FormEvent<HTMLFormElement>,
@@ -262,9 +321,7 @@ export default function SupplierIndex({
                 `/suppliers/${editingSupplier.id}`,
                 {
                     preserveScroll: true,
-                    onSuccess: () => {
-                        resetModal();
-                    },
+                    onSuccess: resetAndCloseDialog,
                 },
             );
 
@@ -273,15 +330,13 @@ export default function SupplierIndex({
 
         form.post('/suppliers', {
             preserveScroll: true,
-            onSuccess: () => {
-                resetModal();
-            },
+            onSuccess: resetAndCloseDialog,
         });
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Search and Filters
+    | Filters
     |--------------------------------------------------------------------------
     */
 
@@ -295,10 +350,7 @@ export default function SupplierIndex({
             {
                 search:
                     search.trim() || undefined,
-
-                status:
-                    status || undefined,
-
+                status: status || undefined,
                 sort:
                     sort !== 'latest'
                         ? sort
@@ -330,43 +382,385 @@ export default function SupplierIndex({
 
     /*
     |--------------------------------------------------------------------------
-    | Status and Delete
+    | Status and delete
     |--------------------------------------------------------------------------
     */
 
     function toggleStatus(
         supplier: Supplier,
     ): void {
+        if (statusProcessingId === supplier.id) {
+            return;
+        }
+
         router.patch(
             `/suppliers/${supplier.id}/status`,
             {
-                is_active:
-                    !supplier.is_active,
+                is_active: !supplier.is_active,
             },
             {
                 preserveScroll: true,
+                onStart: () =>
+                    setStatusProcessingId(
+                        supplier.id,
+                    ),
+                onFinish: () =>
+                    setStatusProcessingId(null),
             },
         );
     }
 
-    function deleteSupplier(
+    function requestDelete(
         supplier: Supplier,
     ): void {
-        const confirmed = window.confirm(
-            `Are you sure you want to delete "${supplier.name}"?`,
-        );
+        setDeleteTarget(supplier);
+    }
 
-        if (!confirmed) {
+    function deleteSupplier(): void {
+        if (
+            !deleteTarget ||
+            deleteProcessing
+        ) {
             return;
         }
 
         router.delete(
-            `/suppliers/${supplier.id}`,
+            `/suppliers/${deleteTarget.id}`,
             {
                 preserveScroll: true,
+                onStart: () =>
+                    setDeleteProcessing(true),
+                onSuccess: () =>
+                    setDeleteTarget(null),
+                onFinish: () =>
+                    setDeleteProcessing(false),
             },
         );
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Derived values
+    |--------------------------------------------------------------------------
+    */
+
+    const operationalPercentage =
+        summary.total > 0
+            ? Math.round(
+                  (summary.active /
+                      summary.total) *
+                      100,
+              )
+            : 0;
+
+    const inactivePercentage =
+        summary.total > 0
+            ? Math.max(
+                  0,
+                  100 - operationalPercentage,
+              )
+            : 0;
+
+    const hasActiveFilters = Boolean(
+        search ||
+            status ||
+            sort !== 'latest',
+    );
+
+    const networkStatusLabel =
+        summary.total === 0
+            ? 'No supplier partners'
+            : summary.inactive === 0
+              ? 'Partner network ready'
+              : `${summary.inactive} supplier${
+                    summary.inactive === 1
+                        ? ''
+                        : 's'
+                } inactive`;
+
+    const networkStatusClass =
+        summary.total === 0
+            ? 'border-slate-500/20 bg-slate-500/10 text-slate-300'
+            : summary.inactive === 0
+              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+              : 'border-amber-500/20 bg-amber-500/10 text-amber-300';
+
+    /*
+    |--------------------------------------------------------------------------
+    | Table columns
+    |--------------------------------------------------------------------------
+    */
+
+    const supplierColumns: DataTableColumn<Supplier>[] = [
+        {
+            key: 'supplier',
+            header: 'Supplier',
+            className: 'min-w-[250px]',
+            cell: (supplier) => (
+                <EntityInfo
+                    avatar={
+                        <EntityAvatar
+                            icon={Truck}
+                            className="border-amber-500/15 bg-amber-500/10 text-amber-400 group-hover:border-amber-500/25 group-hover:bg-amber-500/15"
+                        />
+                    }
+                    title={supplier.name}
+                    badges={
+                        <Badge
+                            variant="outline"
+                            className="h-5 gap-1 rounded-full border-amber-500/15 bg-amber-500/[0.06] px-2 font-mono text-[9px] font-semibold text-amber-300"
+                        >
+                            <Hash className="size-2.5" />
+                            {supplier.code}
+                        </Badge>
+                    }
+                    subtitle={
+                        supplier.tax_number ? (
+                            <>
+                                Tax / TIN:{' '}
+                                <span className="font-mono font-medium text-foreground/75">
+                                    {supplier.tax_number}
+                                </span>
+                            </>
+                        ) : (
+                            'No tax number provided'
+                        )
+                    }
+                    description={
+                        supplier.notes ?? undefined
+                    }
+                />
+            ),
+        },
+        {
+            key: 'contact-person',
+            header: 'Primary Contact',
+            className: 'min-w-[190px]',
+            cell: (supplier) => (
+                <div className="space-y-2">
+                    <div className="flex items-start gap-2.5">
+                        <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+                            <UserRound className="size-3.5" />
+                        </span>
+
+                        <div className="min-w-0">
+                            <p
+                                className={cn(
+                                    'max-w-[150px] truncate text-[12px] font-semibold',
+                                    !supplier.contact_person &&
+                                        'text-muted-foreground',
+                                )}
+                            >
+                                {supplier.contact_person ??
+                                    'Not provided'}
+                            </p>
+
+                            <p className="mt-1 max-w-[160px] truncate text-[9px] text-muted-foreground">
+                                {supplier.created_by
+                                    ? `Added by ${supplier.created_by.name}`
+                                    : 'Creator not recorded'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            key: 'communication',
+            header: 'Communication',
+            className: 'min-w-[220px]',
+            cell: (supplier) => (
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-[11px]">
+                        <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-400">
+                            <Phone className="size-3" />
+                        </span>
+
+                        <span
+                            className={cn(
+                                'max-w-[165px] truncate',
+                                supplier.phone
+                                    ? 'text-foreground/80'
+                                    : 'text-muted-foreground',
+                            )}
+                        >
+                            {supplier.phone ?? 'No phone'}
+                        </span>
+                    </div>
+
+                    {supplier.alternate_phone && (
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-slate-500/10 text-slate-400">
+                                <Phone className="size-3" />
+                            </span>
+
+                            <span className="max-w-[165px] truncate">
+                                {supplier.alternate_phone}
+                            </span>
+                        </div>
+                    )}
+
+                    <div className="flex items-center gap-2 text-[11px]">
+                        <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-blue-500/10 text-blue-400">
+                            <Mail className="size-3" />
+                        </span>
+
+                        <span
+                            className={cn(
+                                'max-w-[165px] truncate',
+                                supplier.email
+                                    ? 'text-foreground/80'
+                                    : 'text-muted-foreground',
+                            )}
+                        >
+                            {supplier.email ?? 'No email'}
+                        </span>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            key: 'location',
+            header: 'Business Location',
+            className: 'min-w-[230px]',
+            cell: (supplier) => (
+                <div className="flex max-w-[260px] items-start gap-2.5">
+                    <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-red-500/15 bg-red-500/10 text-red-400">
+                        <MapPin className="size-3.5" />
+                    </span>
+
+                    <div className="min-w-0">
+                        <p className="text-[9px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                            Supplier address
+                        </p>
+
+                        <p
+                            className={cn(
+                                'mt-1 line-clamp-3 text-[11px] leading-5',
+                                supplier.address
+                                    ? 'text-foreground/80'
+                                    : 'text-muted-foreground',
+                            )}
+                        >
+                            {supplier.address ??
+                                'No address provided'}
+                        </p>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            key: 'terms',
+            header: 'Commercial Terms',
+            className: 'min-w-[190px]',
+            cell: (supplier) => (
+                <div className="space-y-2.5">
+                    <div className="flex items-start gap-2">
+                        <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
+                            <ReceiptText className="size-3.5" />
+                        </span>
+
+                        <div className="min-w-0">
+                            <p className="text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
+                                Payment terms
+                            </p>
+
+                            <p
+                                className={cn(
+                                    'mt-1 max-w-[145px] truncate text-[11px] font-medium',
+                                    !supplier.payment_terms &&
+                                        'text-muted-foreground',
+                                )}
+                            >
+                                {supplier.payment_terms ??
+                                    'Not configured'}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                        <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
+                            <CircleDollarSign className="size-3.5" />
+                        </span>
+
+                        <div>
+                            <p className="text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
+                                Credit limit
+                            </p>
+
+                            <p className="mt-1 text-[12px] font-semibold tabular-nums text-emerald-400">
+                                {formatCurrency(
+                                    supplier.credit_limit,
+                                )}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            key: 'status',
+            header: 'Status',
+            className: 'min-w-[110px]',
+            cell: (supplier) => (
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={
+                        statusProcessingId ===
+                        supplier.id
+                    }
+                    onClick={() =>
+                        toggleStatus(supplier)
+                    }
+                    className="h-auto rounded-full p-0 disabled:opacity-60"
+                >
+                    <StatusBadge
+                        label={
+                            supplier.is_active
+                                ? 'Active'
+                                : 'Inactive'
+                        }
+                        variant={
+                            supplier.is_active
+                                ? 'success'
+                                : 'danger'
+                        }
+                    />
+                </Button>
+            ),
+        },
+        {
+            key: 'actions',
+            header: 'Actions',
+            headerClassName: 'text-right',
+            className: 'text-right',
+            cell: (supplier) => (
+                <ActionGroup>
+                    <IconButton
+                        label="Edit supplier"
+                        onClick={() =>
+                            openEditDialog(supplier)
+                        }
+                        className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
+                    >
+                        <Pencil className="size-3.5" />
+                    </IconButton>
+
+                    <IconButton
+                        label="Delete supplier"
+                        onClick={() =>
+                            requestDelete(supplier)
+                        }
+                        className="text-red-400 hover:bg-red-500/10 hover:text-red-400"
+                    >
+                        <Trash2 className="size-3.5" />
+                    </IconButton>
+                </ActionGroup>
+            ),
+        },
+    ];
 
     /*
     |--------------------------------------------------------------------------
@@ -378,1147 +772,738 @@ export default function SupplierIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Supplier Management" />
 
-            <div className="flex h-full flex-1 flex-col gap-5 rounded-xl p-4 md:p-6">
-                {/* Page Header */}
-                <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-primary">
-                            Procurement Management
-                        </p>
+            <PageContainer className="gap-4 md:gap-5">
+                {/* Supply partner overview */}
 
-                        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-                            Suppliers
-                        </h1>
+                <section className="min-w-0 overflow-hidden rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[0.07] via-card/70 to-card/40">
+                    <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-400">
+                                <Truck className="size-4" />
+                            </span>
 
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Manage supplier contact
-                            information, payment terms,
-                            and credit details.
-                        </p>
-                    </div>
+                            <div className="min-w-0">
+                                <p className="text-[11px] font-semibold text-foreground">
+                                    Supply Partner Network
+                                </p>
 
-                    <button
-                        type="button"
-                        onClick={openCreateModal}
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-                    >
-                        <Plus className="size-4" />
-
-                        Add Supplier
-                    </button>
-                </section>
-
-                {/* Summary Cards */}
-                <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    <SummaryCard
-                        title="Total Suppliers"
-                        value={summary.total}
-                        icon={
-                            <Truck className="size-5" />
-                        }
-                    />
-
-                    <SummaryCard
-                        title="Active Suppliers"
-                        value={summary.active}
-                        icon={
-                            <CheckCircle2 className="size-5" />
-                        }
-                    />
-
-                    <SummaryCard
-                        title="Inactive Suppliers"
-                        value={summary.inactive}
-                        icon={
-                            <XCircle className="size-5" />
-                        }
-                    />
-                </section>
-
-                {/* Supplier Table Card */}
-                <section className="border-sidebar-border/70 dark:border-sidebar-border overflow-hidden rounded-xl border bg-card">
-                    {/* Search and Filters */}
-                    <form
-                        onSubmit={applyFilters}
-                        className="flex flex-col gap-3 border-b p-4 xl:flex-row xl:items-center"
-                    >
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(event) =>
-                                    setSearch(
-                                        event.target
-                                            .value,
-                                    )
-                                }
-                                placeholder="Search supplier, code, contact, phone, email, or address..."
-                                className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                            />
-                        </div>
-
-                        <select
-                            value={status}
-                            onChange={(event) =>
-                                setStatus(
-                                    event.target.value,
-                                )
-                            }
-                            className="h-10 rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                        >
-                            <option value="">
-                                All statuses
-                            </option>
-
-                            <option value="active">
-                                Active
-                            </option>
-
-                            <option value="inactive">
-                                Inactive
-                            </option>
-                        </select>
-
-                        <select
-                            value={sort}
-                            onChange={(event) =>
-                                setSort(
-                                    event.target.value,
-                                )
-                            }
-                            className="h-10 rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                        >
-                            <option value="latest">
-                                Latest added
-                            </option>
-
-                            <option value="oldest">
-                                Oldest added
-                            </option>
-
-                            <option value="name_asc">
-                                Name A–Z
-                            </option>
-
-                            <option value="name_desc">
-                                Name Z–A
-                            </option>
-
-                            <option value="code_asc">
-                                Code A–Z
-                            </option>
-
-                            <option value="code_desc">
-                                Code Z–A
-                            </option>
-                        </select>
-
-                        <button
-                            type="submit"
-                            className="h-10 rounded-lg bg-secondary px-4 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80"
-                        >
-                            Apply Filters
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={resetFilters}
-                            className="h-10 rounded-lg border px-4 text-sm font-medium transition hover:bg-muted"
-                        >
-                            Reset
-                        </button>
-                    </form>
-
-                    {/* Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[1280px] text-left">
-                            <thead className="border-b bg-muted/40">
-                                <tr className="text-xs uppercase tracking-wide text-muted-foreground">
-                                    <th className="px-5 py-3 font-medium">
-                                        Supplier
-                                    </th>
-
-                                    <th className="px-5 py-3 font-medium">
-                                        Contact Person
-                                    </th>
-
-                                    <th className="px-5 py-3 font-medium">
-                                        Contact Details
-                                    </th>
-
-                                    <th className="px-5 py-3 font-medium">
-                                        Address
-                                    </th>
-
-                                    <th className="px-5 py-3 font-medium">
-                                        Terms and Credit
-                                    </th>
-
-                                    <th className="px-5 py-3 font-medium">
-                                        Status
-                                    </th>
-
-                                    <th className="px-5 py-3 text-right font-medium">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-
-                            <tbody className="divide-y">
-                                {suppliers.data.map(
-                                    (supplier) => (
-                                        <tr
-                                            key={
-                                                supplier.id
-                                            }
-                                            className="transition hover:bg-muted/30"
-                                        >
-                                            {/* Supplier Information */}
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-start gap-3">
-                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                                        <Truck className="size-5" />
-                                                    </div>
-
-                                                    <div className="min-w-0">
-                                                        <p className="max-w-[240px] truncate font-medium">
-                                                            {
-                                                                supplier.name
-                                                            }
-                                                        </p>
-
-                                                        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                            <Hash className="size-3" />
-
-                                                            {
-                                                                supplier.code
-                                                            }
-                                                        </p>
-
-                                                        {supplier.tax_number && (
-                                                            <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                                <ReceiptText className="size-3" />
-
-                                                                Tax:{' '}
-                                                                {
-                                                                    supplier.tax_number
-                                                                }
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            {/* Contact Person */}
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <CircleUserRound className="size-4 shrink-0 text-muted-foreground" />
-
-                                                    <span>
-                                                        {supplier.contact_person ??
-                                                            'Not provided'}
-                                                    </span>
-                                                </div>
-
-                                                {supplier.created_by && (
-                                                    <p className="mt-2 text-xs text-muted-foreground">
-                                                        Added by{' '}
-                                                        {
-                                                            supplier
-                                                                .created_by
-                                                                .name
-                                                        }
-                                                    </p>
-                                                )}
-                                            </td>
-
-                                            {/* Contact Details */}
-                                            <td className="px-5 py-4">
-                                                <div className="space-y-1.5">
-                                                    <p className="flex items-center gap-2 text-sm">
-                                                        <Phone className="size-3.5 shrink-0 text-muted-foreground" />
-
-                                                        <span>
-                                                            {supplier.phone ??
-                                                                'No phone'}
-                                                        </span>
-                                                    </p>
-
-                                                    {supplier.alternate_phone && (
-                                                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                            <Phone className="size-3.5 shrink-0" />
-
-                                                            <span>
-                                                                {
-                                                                    supplier.alternate_phone
-                                                                }
-                                                            </span>
-                                                        </p>
-                                                    )}
-
-                                                    <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                        <Mail className="size-3.5 shrink-0" />
-
-                                                        <span className="max-w-[220px] truncate">
-                                                            {supplier.email ??
-                                                                'No email'}
-                                                        </span>
-                                                    </p>
-                                                </div>
-                                            </td>
-
-                                            {/* Address */}
-                                            <td className="px-5 py-4">
-                                                <div className="flex max-w-[280px] items-start gap-2 text-sm">
-                                                    <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-
-                                                    <span className="line-clamp-3">
-                                                        {supplier.address ??
-                                                            'No address provided'}
-                                                    </span>
-                                                </div>
-                                            </td>
-
-                                            {/* Terms and Credit */}
-                                            <td className="px-5 py-4">
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <ReceiptText className="size-4 text-muted-foreground" />
-
-                                                        <span>
-                                                            {supplier.payment_terms ??
-                                                                'No terms'}
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <Banknote className="size-4 text-muted-foreground" />
-
-                                                        <span className="font-medium">
-                                                            {formatCurrency(
-                                                                supplier.credit_limit,
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            {/* Status */}
-                                            <td className="px-5 py-4">
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        toggleStatus(
-                                                            supplier,
-                                                        )
-                                                    }
-                                                    className={[
-                                                        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition',
-                                                        supplier.is_active
-                                                            ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20'
-                                                            : 'bg-slate-500/10 text-slate-500 hover:bg-slate-500/20',
-                                                    ].join(
-                                                        ' ',
-                                                    )}
-                                                >
-                                                    {supplier.is_active ? (
-                                                        <CheckCircle2 className="size-3.5" />
-                                                    ) : (
-                                                        <XCircle className="size-3.5" />
-                                                    )}
-
-                                                    {supplier.is_active
-                                                        ? 'Active'
-                                                        : 'Inactive'}
-                                                </button>
-                                            </td>
-
-                                            {/* Actions */}
-                                            <td className="px-5 py-4">
-                                                <div className="flex justify-end gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            openEditModal(
-                                                                supplier,
-                                                            )
-                                                        }
-                                                        title="Edit supplier"
-                                                        className="inline-flex size-9 items-center justify-center rounded-lg border transition hover:bg-muted"
-                                                    >
-                                                        <Pencil className="size-4" />
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            deleteSupplier(
-                                                                supplier,
-                                                            )
-                                                        }
-                                                        title="Delete supplier"
-                                                        className="inline-flex size-9 items-center justify-center rounded-lg border text-destructive transition hover:bg-destructive/10"
-                                                    >
-                                                        <Trash2 className="size-4" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ),
-                                )}
-
-                                {/* Empty State */}
-                                {suppliers.data.length ===
-                                    0 && (
-                                    <tr>
-                                        <td
-                                            colSpan={7}
-                                            className="px-5 py-16 text-center"
-                                        >
-                                            <Truck className="mx-auto size-12 text-muted-foreground/30" />
-
-                                            <h3 className="mt-3 font-medium">
-                                                No suppliers
-                                                found
-                                            </h3>
-
-                                            <p className="mt-1 text-sm text-muted-foreground">
-                                                Add your first
-                                                supplier to begin
-                                                creating purchase
-                                                orders.
-                                            </p>
-
-                                            <button
-                                                type="button"
-                                                onClick={
-                                                    openCreateModal
-                                                }
-                                                className="mt-4 inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
-                                            >
-                                                <Plus className="size-4" />
-
-                                                Add Supplier
-                                            </button>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination */}
-                    <SupplierPagination
-                        suppliers={suppliers}
-                    />
-                </section>
-            </div>
-
-            {/* Create and Edit Modal */}
-            {isModalOpen && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    onMouseDown={(event) => {
-                        if (
-                            event.target ===
-                            event.currentTarget
-                        ) {
-                            closeModal();
-                        }
-                    }}
-                >
-                    <div className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-2xl border bg-background shadow-2xl">
-                        {/* Modal Header */}
-                        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-background px-6 py-4">
-                            <div>
-                                <h2 className="text-lg font-semibold">
-                                    {editingSupplier
-                                        ? 'Edit Supplier'
-                                        : 'Add Supplier'}
-                                </h2>
-
-                                <p className="text-sm text-muted-foreground">
-                                    Enter the supplier
-                                    information below.
+                                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                    Supplier availability, commercial readiness, and procurement access.
                                 </p>
                             </div>
-
-                            <button
-                                type="button"
-                                onClick={closeModal}
-                                disabled={
-                                    form.processing
-                                }
-                                className="inline-flex size-9 items-center justify-center rounded-lg transition hover:bg-muted disabled:opacity-50"
-                            >
-                                <X className="size-5" />
-                            </button>
                         </div>
 
-                        {/* Supplier Form */}
-                        <form
-                            onSubmit={
-                                submitSupplier
-                            }
-                            className="space-y-6 p-6"
+                        <Badge
+                            variant="outline"
+                            className={cn(
+                                'h-6 w-fit shrink-0 rounded-full px-2.5 text-[9px] font-semibold',
+                                networkStatusClass,
+                            )}
                         >
-                            {/* Basic Information */}
-                            <FormSection
-                                title="Supplier Information"
-                                description="Basic identification details of the supplier."
-                                icon={
-                                    <Truck className="size-4" />
-                                }
-                            >
-                                <div className="grid gap-5 md:grid-cols-2">
-                                    <FormField
-                                        label="Supplier Name"
-                                        error={
-                                            form.errors
-                                                .name
-                                        }
-                                        required
-                                    >
-                                        <input
-                                            type="text"
-                                            value={
-                                                form.data
-                                                    .name
-                                            }
-                                            onChange={(
-                                                event,
-                                            ) =>
-                                                form.setData(
-                                                    'name',
-                                                    event
-                                                        .target
-                                                        .value,
-                                                )
-                                            }
-                                            placeholder="ABC Trading"
-                                            className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                        />
-                                    </FormField>
+                            {summary.total === 0 ? (
+                                <Truck className="mr-1 size-3" />
+                            ) : summary.inactive === 0 ? (
+                                <ShieldCheck className="mr-1 size-3" />
+                            ) : (
+                                <XCircle className="mr-1 size-3" />
+                            )}
 
-                                    <FormField
-                                        label="Supplier Code"
-                                        error={
-                                            form.errors
-                                                .code
-                                        }
-                                        hint="Leave blank to generate automatically."
-                                    >
-                                        <input
-                                            type="text"
-                                            value={
-                                                form.data
-                                                    .code
-                                            }
-                                            onChange={(
-                                                event,
-                                            ) =>
-                                                form.setData(
-                                                    'code',
-                                                    event.target.value.toUpperCase(),
-                                                )
-                                            }
-                                            placeholder="SUP-001"
-                                            className="h-10 w-full rounded-lg border bg-background px-3 text-sm uppercase outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                        />
-                                    </FormField>
-
-                                    <FormField
-                                        label="Contact Person"
-                                        error={
-                                            form.errors
-                                                .contact_person
-                                        }
-                                    >
-                                        <div className="relative">
-                                            <UserRound className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                                            <input
-                                                type="text"
-                                                value={
-                                                    form
-                                                        .data
-                                                        .contact_person
-                                                }
-                                                onChange={(
-                                                    event,
-                                                ) =>
-                                                    form.setData(
-                                                        'contact_person',
-                                                        event
-                                                            .target
-                                                            .value,
-                                                    )
-                                                }
-                                                placeholder="Juan Dela Cruz"
-                                                className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                            />
-                                        </div>
-                                    </FormField>
-
-                                    <FormField
-                                        label="Tax Number / TIN"
-                                        error={
-                                            form.errors
-                                                .tax_number
-                                        }
-                                    >
-                                        <div className="relative">
-                                            <ReceiptText className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                                            <input
-                                                type="text"
-                                                value={
-                                                    form
-                                                        .data
-                                                        .tax_number
-                                                }
-                                                onChange={(
-                                                    event,
-                                                ) =>
-                                                    form.setData(
-                                                        'tax_number',
-                                                        event
-                                                            .target
-                                                            .value,
-                                                    )
-                                                }
-                                                placeholder="000-000-000-000"
-                                                className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                            />
-                                        </div>
-                                    </FormField>
-                                </div>
-                            </FormSection>
-
-                            {/* Contact Information */}
-                            <FormSection
-                                title="Contact Information"
-                                description="Phone numbers, email, and business address."
-                                icon={
-                                    <Phone className="size-4" />
-                                }
-                            >
-                                <div className="grid gap-5 md:grid-cols-2">
-                                    <FormField
-                                        label="Primary Phone"
-                                        error={
-                                            form.errors
-                                                .phone
-                                        }
-                                    >
-                                        <div className="relative">
-                                            <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                                            <input
-                                                type="text"
-                                                value={
-                                                    form.data
-                                                        .phone
-                                                }
-                                                onChange={(
-                                                    event,
-                                                ) =>
-                                                    form.setData(
-                                                        'phone',
-                                                        event
-                                                            .target
-                                                            .value,
-                                                    )
-                                                }
-                                                placeholder="09XXXXXXXXX"
-                                                className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                            />
-                                        </div>
-                                    </FormField>
-
-                                    <FormField
-                                        label="Alternate Phone"
-                                        error={
-                                            form.errors
-                                                .alternate_phone
-                                        }
-                                    >
-                                        <div className="relative">
-                                            <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                                            <input
-                                                type="text"
-                                                value={
-                                                    form
-                                                        .data
-                                                        .alternate_phone
-                                                }
-                                                onChange={(
-                                                    event,
-                                                ) =>
-                                                    form.setData(
-                                                        'alternate_phone',
-                                                        event
-                                                            .target
-                                                            .value,
-                                                    )
-                                                }
-                                                placeholder="Optional alternate number"
-                                                className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                            />
-                                        </div>
-                                    </FormField>
-
-                                    <FormField
-                                        label="Email Address"
-                                        error={
-                                            form.errors
-                                                .email
-                                        }
-                                    >
-                                        <div className="relative">
-                                            <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-
-                                            <input
-                                                type="email"
-                                                value={
-                                                    form.data
-                                                        .email
-                                                }
-                                                onChange={(
-                                                    event,
-                                                ) =>
-                                                    form.setData(
-                                                        'email',
-                                                        event
-                                                            .target
-                                                            .value,
-                                                    )
-                                                }
-                                                placeholder="supplier@example.com"
-                                                className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                            />
-                                        </div>
-                                    </FormField>
-                                </div>
-
-                                <FormField
-                                    label="Business Address"
-                                    error={
-                                        form.errors
-                                            .address
-                                    }
-                                >
-                                    <textarea
-                                        rows={3}
-                                        value={
-                                            form.data
-                                                .address
-                                        }
-                                        onChange={(
-                                            event,
-                                        ) =>
-                                            form.setData(
-                                                'address',
-                                                event.target
-                                                    .value,
-                                            )
-                                        }
-                                        placeholder="Complete supplier business address"
-                                        className="w-full resize-none rounded-lg border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                    />
-                                </FormField>
-                            </FormSection>
-
-                            {/* Financial Information */}
-                            <FormSection
-                                title="Payment Information"
-                                description="Default purchasing terms and allowed credit limit."
-                                icon={
-                                    <Banknote className="size-4" />
-                                }
-                            >
-                                <div className="grid gap-5 md:grid-cols-2">
-                                    <FormField
-                                        label="Payment Terms"
-                                        error={
-                                            form.errors
-                                                .payment_terms
-                                        }
-                                    >
-                                        <input
-                                            type="text"
-                                            list="payment-terms-options"
-                                            value={
-                                                form
-                                                    .data
-                                                    .payment_terms
-                                            }
-                                            onChange={(
-                                                event,
-                                            ) =>
-                                                form.setData(
-                                                    'payment_terms',
-                                                    event
-                                                        .target
-                                                        .value,
-                                                )
-                                            }
-                                            placeholder="Example: Net 30"
-                                            className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                        />
-
-                                        <datalist id="payment-terms-options">
-                                            <option value="Cash on Delivery" />
-                                            <option value="Cash Before Delivery" />
-                                            <option value="Net 7" />
-                                            <option value="Net 15" />
-                                            <option value="Net 30" />
-                                            <option value="Net 45" />
-                                            <option value="Net 60" />
-                                        </datalist>
-                                    </FormField>
-
-                                    <FormField
-                                        label="Credit Limit"
-                                        error={
-                                            form.errors
-                                                .credit_limit
-                                        }
-                                    >
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                                                ₱
-                                            </span>
-
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                inputMode="decimal"
-                                                value={
-                                                    form
-                                                        .data
-                                                        .credit_limit
-                                                }
-                                                onChange={(
-                                                    event,
-                                                ) =>
-                                                    form.setData(
-                                                        'credit_limit',
-                                                        event
-                                                            .target
-                                                            .value,
-                                                    )
-                                                }
-                                                placeholder="0.00"
-                                                className="h-10 w-full rounded-lg border bg-background pl-8 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                            />
-                                        </div>
-                                    </FormField>
-                                </div>
-
-                                <FormField
-                                    label="Notes"
-                                    error={
-                                        form.errors.notes
-                                    }
-                                >
-                                    <textarea
-                                        rows={4}
-                                        value={
-                                            form.data.notes
-                                        }
-                                        onChange={(
-                                            event,
-                                        ) =>
-                                            form.setData(
-                                                'notes',
-                                                event.target
-                                                    .value,
-                                            )
-                                        }
-                                        placeholder="Additional supplier information, delivery instructions, or remarks"
-                                        className="w-full resize-none rounded-lg border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                    />
-                                </FormField>
-                            </FormSection>
-
-                            {/* Supplier Status */}
-                            <div className="rounded-xl border bg-muted/30 p-4">
-                                <label className="flex cursor-pointer items-start gap-3">
-                                    <input
-                                        type="checkbox"
-                                        checked={
-                                            form.data
-                                                .is_active
-                                        }
-                                        onChange={(
-                                            event,
-                                        ) =>
-                                            form.setData(
-                                                'is_active',
-                                                event.target
-                                                    .checked,
-                                            )
-                                        }
-                                        className="mt-1 size-4 rounded border"
-                                    />
-
-                                    <span>
-                                        <span className="block text-sm font-medium">
-                                            Active
-                                            Supplier
-                                        </span>
-
-                                        <span className="text-xs text-muted-foreground">
-                                            Allow this
-                                            supplier to be
-                                            selected in
-                                            purchase orders
-                                            and receiving
-                                            transactions.
-                                        </span>
-                                    </span>
-                                </label>
-
-                                {form.errors
-                                    .is_active && (
-                                    <p className="mt-2 text-sm text-destructive">
-                                        {
-                                            form.errors
-                                                .is_active
-                                        }
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Form Buttons */}
-                            <div className="flex justify-end gap-3 border-t pt-5">
-                                <button
-                                    type="button"
-                                    onClick={
-                                        closeModal
-                                    }
-                                    disabled={
-                                        form.processing
-                                    }
-                                    className="h-10 rounded-lg border px-4 text-sm font-medium transition hover:bg-muted disabled:opacity-50"
-                                >
-                                    Cancel
-                                </button>
-
-                                <button
-                                    type="submit"
-                                    disabled={
-                                        form.processing
-                                    }
-                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    {form.processing && (
-                                        <LoaderCircle className="size-4 animate-spin" />
-                                    )}
-
-                                    {editingSupplier
-                                        ? 'Save Changes'
-                                        : 'Create Supplier'}
-                                </button>
-                            </div>
-                        </form>
+                            {networkStatusLabel}
+                        </Badge>
                     </div>
-                </div>
-            )}
+
+                    <div className="grid min-w-0 lg:grid-cols-[minmax(300px,1.05fr)_minmax(0,1.95fr)]">
+                        <div className="relative overflow-hidden border-b border-border/60 p-4 lg:border-b-0 lg:border-r">
+                            <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-amber-500/10 blur-3xl" />
+                            <Truck className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-amber-400 opacity-[0.025]" />
+
+                            <div className="relative grid gap-4 sm:grid-cols-[64px_minmax(0,1fr)] sm:items-center">
+                                <div className="flex size-16 items-center justify-center rounded-2xl border border-amber-500/20 bg-amber-500/10 text-amber-400 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.04)]">
+                                    <Truck className="size-7" />
+                                </div>
+
+                                <div className="min-w-0">
+                                    <div className="flex items-end justify-between gap-4">
+                                        <div>
+                                            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-amber-300">
+                                                Procurement coverage
+                                            </p>
+
+                                            <p className="mt-2 text-[27px] font-semibold leading-none tracking-[-0.04em]">
+                                                {summary.active}
+
+                                                <span className="mx-1.5 text-base font-medium text-muted-foreground">
+                                                    /
+                                                </span>
+
+                                                {summary.total}
+                                            </p>
+                                        </div>
+
+                                        <div className="text-right">
+                                            <p className="text-lg font-semibold tabular-nums text-amber-400">
+                                                {operationalPercentage}%
+                                            </p>
+
+                                            <p className="mt-1 text-[8px] uppercase tracking-wider text-muted-foreground">
+                                                Available
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-background/60">
+                                        <div
+                                            className="h-full bg-emerald-400 transition-all duration-500"
+                                            style={{
+                                                width: `${operationalPercentage}%`,
+                                            }}
+                                        />
+
+                                        <div
+                                            className="h-full bg-red-400 transition-all duration-500"
+                                            style={{
+                                                width: `${inactivePercentage}%`,
+                                            }}
+                                        />
+                                    </div>
+
+                                    <p className="mt-2 text-[9px] leading-4 text-muted-foreground">
+                                        Active suppliers can be selected for purchasing and receiving workflows.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid min-w-0 sm:grid-cols-3">
+                            <SupplierNetworkMetric
+                                title="Registered Partners"
+                                value={summary.total}
+                                description="Supplier records"
+                                icon={Truck}
+                                tone="amber"
+                                className="border-b border-border/60 sm:border-b-0 sm:border-r"
+                            />
+
+                            <SupplierNetworkMetric
+                                title="Active Suppliers"
+                                value={summary.active}
+                                description="Ready for purchasing"
+                                icon={CheckCircle2}
+                                tone="emerald"
+                                className="border-b border-border/60 sm:border-b-0 sm:border-r"
+                            />
+
+                            <SupplierNetworkMetric
+                                title="Inactive Suppliers"
+                                value={summary.inactive}
+                                description="Unavailable partners"
+                                icon={XCircle}
+                                tone="red"
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                {/* Supplier directory */}
+
+                <SectionCard
+                    title="Supplier Directory"
+                    description="Browse supplier identity, communication details, business locations, payment terms, and operational status."
+                    actions={
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Badge
+                                variant="outline"
+                                className="h-7 rounded-full border-amber-500/15 bg-amber-500/[0.06] px-2.5 text-[10px] font-medium text-amber-300"
+                            >
+                                <Truck className="mr-1 size-3" />
+                                {suppliers.total} partner
+                                {suppliers.total === 1
+                                    ? ''
+                                    : 's'}
+                            </Badge>
+
+                            <Button
+                                type="button"
+                                onClick={openCreateDialog}
+                                className="h-9 rounded-lg px-3.5 text-xs"
+                            >
+                                <Plus className="size-3.5" />
+                                Add Supplier
+                            </Button>
+                        </div>
+                    }
+                >
+                    <FilterBar
+                        onSubmit={applyFilters}
+                        contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_170px_180px]"
+                        actions={
+                            <>
+                                <Button
+                                    type="submit"
+                                    variant="secondary"
+                                    className="h-10 px-4 text-sm"
+                                >
+                                    Apply Filters
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={resetFilters}
+                                    disabled={!hasActiveFilters}
+                                    className="h-10 px-3 text-sm"
+                                >
+                                    <RefreshCw className="size-3.5" />
+                                    Reset
+                                </Button>
+                            </>
+                        }
+                    >
+                        <SearchInput
+                            value={search}
+                            onChange={(event) =>
+                                setSearch(
+                                    event.target.value,
+                                )
+                            }
+                            onClear={() => setSearch('')}
+                            placeholder="Search supplier, code, contact, phone, email, or address..."
+                            className="sm:col-span-2 xl:col-span-1"
+                        />
+
+                        <Select
+                            value={status || ALL_VALUE}
+                            onValueChange={(value) =>
+                                setStatus(
+                                    value === ALL_VALUE
+                                        ? ''
+                                        : value,
+                                )
+                            }
+                        >
+                            <SelectTrigger className="h-10 w-full text-sm">
+                                <SelectValue placeholder="All statuses" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem value={ALL_VALUE}>
+                                    All statuses
+                                </SelectItem>
+                                <SelectItem value="active">
+                                    Active
+                                </SelectItem>
+                                <SelectItem value="inactive">
+                                    Inactive
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Select
+                            value={sort}
+                            onValueChange={setSort}
+                        >
+                            <SelectTrigger className="h-10 w-full text-sm">
+                                <SelectValue placeholder="Sort suppliers" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem value="latest">
+                                    Latest added
+                                </SelectItem>
+                                <SelectItem value="oldest">
+                                    Oldest added
+                                </SelectItem>
+                                <SelectItem value="name_asc">
+                                    Name A–Z
+                                </SelectItem>
+                                <SelectItem value="name_desc">
+                                    Name Z–A
+                                </SelectItem>
+                                <SelectItem value="code_asc">
+                                    Code A–Z
+                                </SelectItem>
+                                <SelectItem value="code_desc">
+                                    Code Z–A
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </FilterBar>
+
+                    <DataTable
+                        data={suppliers.data}
+                        columns={supplierColumns}
+                        getRowKey={(supplier) =>
+                            supplier.id
+                        }
+                        emptyIcon={Truck}
+                        emptyTitle="No suppliers found"
+                        emptyDescription="Adjust the current filters or register your first supplier partner."
+                        emptyAction={
+                            <Button
+                                type="button"
+                                onClick={openCreateDialog}
+                            >
+                                <Plus className="size-4" />
+                                Add Supplier
+                            </Button>
+                        }
+                        minWidth="1260px"
+                    />
+
+                    <AppPagination
+                        pagination={suppliers}
+                        itemLabel="suppliers"
+                    />
+                </SectionCard>
+            </PageContainer>
+
+            {/* Create and edit supplier */}
+
+            <FormDialog
+                open={isDialogOpen}
+                onOpenChange={handleDialogOpenChange}
+                title={
+                    editingSupplier
+                        ? 'Edit Supplier'
+                        : 'Add Supplier'
+                }
+                description={
+                    editingSupplier
+                        ? `Update the procurement profile for ${editingSupplier.name}.`
+                        : 'Register a supplier partner for purchasing and receiving operations.'
+                }
+                onSubmit={submitSupplier}
+                processing={form.processing}
+                submitText={
+                    editingSupplier
+                        ? 'Save Changes'
+                        : 'Create Supplier'
+                }
+                processingText={
+                    editingSupplier
+                        ? 'Saving Changes...'
+                        : 'Creating Supplier...'
+                }
+                maxWidth="max-w-4xl"
+            >
+                <FormSection
+                    title="Supplier Identity"
+                    description="Enter the business name, code, contact person, and tax information."
+                    icon={<Truck />}
+                >
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                            id="name"
+                            label="Supplier Name"
+                            error={form.errors.name}
+                            required
+                        >
+                            <Input
+                                id="name"
+                                type="text"
+                                value={form.data.name}
+                                disabled={form.processing}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'name',
+                                        event.target.value,
+                                    )
+                                }
+                                placeholder="ABC Trading"
+                                autoComplete="organization"
+                                autoFocus
+                            />
+                        </FormField>
+
+                        <FormField
+                            id="code"
+                            label="Supplier Code"
+                            description="Leave blank when the system should generate the code."
+                            error={form.errors.code}
+                        >
+                            <Input
+                                id="code"
+                                type="text"
+                                value={form.data.code}
+                                disabled={form.processing}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'code',
+                                        event.target.value.toUpperCase(),
+                                    )
+                                }
+                                placeholder="SUP-001"
+                                className="font-mono uppercase"
+                                autoComplete="off"
+                            />
+                        </FormField>
+
+                        <FormField
+                            id="contact_person"
+                            label="Contact Person"
+                            error={
+                                form.errors.contact_person
+                            }
+                        >
+                            <IconInput
+                                id="contact_person"
+                                icon={UserRound}
+                                type="text"
+                                value={
+                                    form.data.contact_person
+                                }
+                                disabled={form.processing}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'contact_person',
+                                        event.target.value,
+                                    )
+                                }
+                                placeholder="Juan Dela Cruz"
+                                autoComplete="name"
+                                iconClassName="group-focus-within:text-blue-400"
+                            />
+                        </FormField>
+
+                        <FormField
+                            id="tax_number"
+                            label="Tax Number / TIN"
+                            error={form.errors.tax_number}
+                        >
+                            <IconInput
+                                id="tax_number"
+                                icon={ReceiptText}
+                                type="text"
+                                value={form.data.tax_number}
+                                disabled={form.processing}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'tax_number',
+                                        event.target.value,
+                                    )
+                                }
+                                placeholder="000-000-000-000"
+                                autoComplete="off"
+                                iconClassName="group-focus-within:text-violet-400"
+                            />
+                        </FormField>
+                    </div>
+                </FormSection>
+
+                <FormSection
+                    title="Communication"
+                    description="Store the primary contact channels and supplier business location."
+                    icon={<Phone />}
+                >
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                            id="phone"
+                            label="Primary Phone"
+                            error={form.errors.phone}
+                        >
+                            <IconInput
+                                id="phone"
+                                icon={Phone}
+                                type="text"
+                                inputMode="tel"
+                                value={form.data.phone}
+                                disabled={form.processing}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'phone',
+                                        event.target.value,
+                                    )
+                                }
+                                placeholder="09XXXXXXXXX"
+                                autoComplete="tel"
+                                iconClassName="group-focus-within:text-emerald-400"
+                            />
+                        </FormField>
+
+                        <FormField
+                            id="alternate_phone"
+                            label="Alternate Phone"
+                            description="Optional secondary number."
+                            error={
+                                form.errors.alternate_phone
+                            }
+                        >
+                            <IconInput
+                                id="alternate_phone"
+                                icon={Phone}
+                                type="text"
+                                inputMode="tel"
+                                value={
+                                    form.data.alternate_phone
+                                }
+                                disabled={form.processing}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'alternate_phone',
+                                        event.target.value,
+                                    )
+                                }
+                                placeholder="Optional alternate number"
+                                autoComplete="tel"
+                            />
+                        </FormField>
+
+                        <FormField
+                            id="email"
+                            label="Email Address"
+                            error={form.errors.email}
+                        >
+                            <IconInput
+                                id="email"
+                                icon={Mail}
+                                type="email"
+                                value={form.data.email}
+                                disabled={form.processing}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'email',
+                                        event.target.value,
+                                    )
+                                }
+                                placeholder="supplier@example.com"
+                                autoComplete="email"
+                                iconClassName="group-focus-within:text-blue-400"
+                            />
+                        </FormField>
+                    </div>
+
+                    <FormField
+                        id="address"
+                        label="Business Address"
+                        error={form.errors.address}
+                    >
+                        <Textarea
+                            id="address"
+                            rows={3}
+                            value={form.data.address}
+                            disabled={form.processing}
+                            onChange={(event) =>
+                                form.setData(
+                                    'address',
+                                    event.target.value,
+                                )
+                            }
+                            placeholder="Complete supplier business address"
+                            className="resize-none"
+                        />
+                    </FormField>
+                </FormSection>
+
+                <FormSection
+                    title="Commercial Terms"
+                    description="Set the default purchasing terms, credit allowance, and internal notes."
+                    icon={<Banknote />}
+                >
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                            id="payment_terms"
+                            label="Payment Terms"
+                            error={form.errors.payment_terms}
+                        >
+                            <Input
+                                id="payment_terms"
+                                type="text"
+                                list="payment-terms-options"
+                                value={form.data.payment_terms}
+                                disabled={form.processing}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'payment_terms',
+                                        event.target.value,
+                                    )
+                                }
+                                placeholder="Example: Net 30"
+                                autoComplete="off"
+                            />
+
+                            <datalist id="payment-terms-options">
+                                <option value="Cash on Delivery" />
+                                <option value="Cash Before Delivery" />
+                                <option value="Net 7" />
+                                <option value="Net 15" />
+                                <option value="Net 30" />
+                                <option value="Net 45" />
+                                <option value="Net 60" />
+                            </datalist>
+                        </FormField>
+
+                        <FormField
+                            id="credit_limit"
+                            label="Credit Limit"
+                            error={form.errors.credit_limit}
+                        >
+                            <MoneyInput
+                                id="credit_limit"
+                                value={form.data.credit_limit}
+                                disabled={form.processing}
+                                onValueChange={(value) =>
+                                    form.setData(
+                                        'credit_limit',
+                                        value,
+                                    )
+                                }
+                                placeholder="0.00"
+                            />
+                        </FormField>
+                    </div>
+
+                    <FormField
+                        id="notes"
+                        label="Notes"
+                        description="Optional delivery instructions, commercial notes, or internal remarks."
+                        error={form.errors.notes}
+                    >
+                        <Textarea
+                            id="notes"
+                            rows={4}
+                            value={form.data.notes}
+                            disabled={form.processing}
+                            onChange={(event) =>
+                                form.setData(
+                                    'notes',
+                                    event.target.value,
+                                )
+                            }
+                            placeholder="Additional supplier information or delivery instructions"
+                            className="resize-none"
+                        />
+                    </FormField>
+                </FormSection>
+
+                <FormSection
+                    title="Procurement Availability"
+                    description="Control whether this supplier can be selected in purchasing workflows."
+                    icon={<ShieldCheck />}
+                >
+                    <BooleanField
+                        id="is_active"
+                        checked={form.data.is_active}
+                        disabled={form.processing}
+                        onCheckedChange={(checked) =>
+                            form.setData(
+                                'is_active',
+                                checked,
+                            )
+                        }
+                        label="Active Supplier"
+                        description="Active suppliers can be selected in purchase orders and receiving transactions."
+                        error={form.errors.is_active}
+                        className="border-emerald-500/15 bg-emerald-500/[0.035]"
+                    />
+                </FormSection>
+            </FormDialog>
+
+            {/* Delete supplier */}
+
+            <ConfirmDialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => {
+                    if (
+                        !open &&
+                        !deleteProcessing
+                    ) {
+                        setDeleteTarget(null);
+                    }
+                }}
+                title="Delete Supplier"
+                description={`Are you sure you want to delete "${deleteTarget?.name ?? 'this supplier'}"? The system may prevent deletion when the supplier is linked to purchasing records.`}
+                confirmText="Delete Supplier"
+                processing={deleteProcessing}
+                destructive
+                onConfirm={deleteSupplier}
+            />
         </AppLayout>
     );
 }
 
 /*
 |--------------------------------------------------------------------------
-| Summary Card
+| Supplier network metric
 |--------------------------------------------------------------------------
 */
 
-function SummaryCard({
+function SupplierNetworkMetric({
     title,
     value,
-    icon,
+    description,
+    icon: Icon,
+    tone,
+    className,
 }: {
     title: string;
     value: number;
-    icon: ReactNode;
+    description: string;
+    icon: LucideIcon;
+    tone: SupplierMetricTone;
+    className?: string;
 }) {
+    const toneStyles = {
+        amber: {
+            icon: 'border-amber-500/20 bg-amber-500/10 text-amber-400',
+            value: 'text-amber-400',
+            glow: 'bg-amber-500/10',
+        },
+        emerald: {
+            icon: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400',
+            value: 'text-emerald-400',
+            glow: 'bg-emerald-500/10',
+        },
+        red: {
+            icon: 'border-red-500/20 bg-red-500/10 text-red-400',
+            value: 'text-red-400',
+            glow: 'bg-red-500/10',
+        },
+    } as const;
+
+    const styles = toneStyles[tone];
+
     return (
-        <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border bg-card p-5">
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-sm text-muted-foreground">
+        <div
+            className={cn(
+                'group relative min-w-0 overflow-hidden px-4 py-3.5 transition-colors hover:bg-muted/[0.025]',
+                className,
+            )}
+        >
+            <div
+                className={cn(
+                    'pointer-events-none absolute -right-10 -top-10 size-24 rounded-full blur-2xl',
+                    styles.glow,
+                )}
+            />
+
+            <div className="relative flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
                         {title}
                     </p>
 
-                    <p className="mt-2 text-2xl font-semibold">
+                    <p
+                        className={cn(
+                            'mt-2 text-xl font-semibold leading-none tabular-nums',
+                            styles.value,
+                        )}
+                    >
                         {value}
                     </p>
-                </div>
 
-                <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    {icon}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| Form Section
-|--------------------------------------------------------------------------
-*/
-
-function FormSection({
-    title,
-    description,
-    icon,
-    children,
-}: {
-    title: string;
-    description: string;
-    icon: ReactNode;
-    children: ReactNode;
-}) {
-    return (
-        <section className="space-y-5">
-            <div className="flex items-start gap-3 border-b pb-3">
-                <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    {icon}
-                </div>
-
-                <div>
-                    <h3 className="text-sm font-semibold">
-                        {title}
-                    </h3>
-
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-1.5 truncate text-[9px] text-muted-foreground">
                         {description}
                     </p>
                 </div>
-            </div>
 
-            {children}
-        </section>
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| Form Field
-|--------------------------------------------------------------------------
-*/
-
-function FormField({
-    label,
-    error,
-    hint,
-    required = false,
-    children,
-}: {
-    label: string;
-    error?: string;
-    hint?: string;
-    required?: boolean;
-    children: ReactNode;
-}) {
-    return (
-        <label className="block space-y-2">
-            <span className="text-sm font-medium">
-                {label}
-
-                {required && (
-                    <span className="ml-1 text-destructive">
-                        *
-                    </span>
-                )}
-            </span>
-
-            {children}
-
-            {hint && !error && (
-                <span className="block text-xs text-muted-foreground">
-                    {hint}
+                <span
+                    className={cn(
+                        'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border',
+                        styles.icon,
+                    )}
+                >
+                    <Icon className="size-4" />
                 </span>
-            )}
-
-            {error && (
-                <span className="block text-xs text-destructive">
-                    {error}
-                </span>
-            )}
-        </label>
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| Pagination
-|--------------------------------------------------------------------------
-*/
-
-function SupplierPagination({
-    suppliers,
-}: {
-    suppliers: PaginatedSuppliers;
-}) {
-    if (suppliers.last_page <= 1) {
-        return null;
-    }
-
-    return (
-        <div className="flex flex-col gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-                Showing {suppliers.from ?? 0} to{' '}
-                {suppliers.to ?? 0} of{' '}
-                {suppliers.total} suppliers
-            </p>
-
-            <div className="flex flex-wrap gap-1">
-                {suppliers.links.map(
-                    (link, index) => (
-                        <button
-                            key={`${link.label}-${index}`}
-                            type="button"
-                            disabled={!link.url}
-                            onClick={() => {
-                                if (!link.url) {
-                                    return;
-                                }
-
-                                router.get(
-                                    link.url,
-                                    {},
-                                    {
-                                        preserveState:
-                                            true,
-                                        preserveScroll:
-                                            true,
-                                    },
-                                );
-                            }}
-                            className={[
-                                'min-w-9 rounded-lg border px-3 py-1.5 text-sm transition',
-                                link.active
-                                    ? 'border-primary bg-primary text-primary-foreground'
-                                    : 'bg-background hover:bg-muted',
-                                !link.url
-                                    ? 'cursor-not-allowed opacity-40'
-                                    : '',
-                            ].join(' ')}
-                            dangerouslySetInnerHTML={{
-                                __html: link.label,
-                            }}
-                        />
-                    ),
-                )}
             </div>
         </div>
     );
@@ -1526,7 +1511,7 @@ function SupplierPagination({
 
 /*
 |--------------------------------------------------------------------------
-| Currency Formatter
+| Formatting
 |--------------------------------------------------------------------------
 */
 
@@ -1535,14 +1520,12 @@ function formatCurrency(
 ): string {
     const amount = Number(value ?? 0);
 
-    if (!Number.isFinite(amount)) {
-        return '₱0.00';
-    }
-
     return new Intl.NumberFormat('en-PH', {
         style: 'currency',
         currency: 'PHP',
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-    }).format(amount);
+    }).format(
+        Number.isFinite(amount) ? amount : 0,
+    );
 }

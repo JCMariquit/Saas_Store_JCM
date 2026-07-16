@@ -51,13 +51,11 @@ import {
   RotateCcw,
   Send,
   ShieldCheck,
-  Sparkles,
   ShoppingCart,
   Trash2,
   Truck,
   UserRound,
   Warehouse,
-  XCircle,
   type LucideIcon,
 } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
@@ -262,7 +260,6 @@ type OrderActionTarget = {
   action: OrderAction;
 };
 
-type PipelineTone = "slate" | "amber" | "blue" | "violet" | "emerald" | "red";
 
 /*
 |--------------------------------------------------------------------------
@@ -682,7 +679,7 @@ export default function PurchaseOrderIndex({
 
   /*
     |--------------------------------------------------------------------------
-    | Derived dashboard values
+    | Derived procurement values
     |--------------------------------------------------------------------------
     */
 
@@ -692,75 +689,45 @@ export default function PurchaseOrderIndex({
     summary.approved +
     summary.partially_received;
 
-  const completedOrders = summary.received;
-
-  const activeShare =
+  const openShare =
     summary.total > 0 ? Math.round((openOrders / summary.total) * 100) : 0;
 
-  const completionRate =
+  const receivedShare =
     summary.total > 0
       ? Math.round((summary.received / summary.total) * 100)
       : 0;
 
-  const approvalRate =
+  const cancelledShare =
     summary.total > 0
-      ? Math.round(
-          ((summary.approved + summary.partially_received + summary.received) /
-            summary.total) *
-            100,
-        )
+      ? Math.round((summary.cancelled / summary.total) * 100)
       : 0;
 
-  const pipelineStages = [
-    {
-      key: "draft",
-      label: "Draft",
-      description: "Prepared but not submitted",
-      value: summary.draft,
-      icon: FilePenLine,
-      tone: "slate" as PipelineTone,
-    },
-    {
-      key: "pending",
-      label: "Pending",
-      description: "Waiting for approval",
-      value: summary.pending,
-      icon: Clock3,
-      tone: "amber" as PipelineTone,
-    },
-    {
-      key: "approved",
-      label: "Approved",
-      description: "Ready for supplier delivery",
-      value: summary.approved,
-      icon: CheckCircle2,
-      tone: "blue" as PipelineTone,
-    },
-    {
-      key: "partial",
-      label: "Receiving",
-      description: "Partially delivered to stock",
-      value: summary.partially_received,
-      icon: PackageOpen,
-      tone: "violet" as PipelineTone,
-    },
-    {
-      key: "received",
-      label: "Received",
-      description: "Fully received and completed",
-      value: summary.received,
-      icon: PackageCheck,
-      tone: "emerald" as PipelineTone,
-    },
-    {
-      key: "cancelled",
-      label: "Cancelled",
-      description: "Closed without receiving",
-      value: summary.cancelled,
-      icon: XCircle,
-      tone: "red" as PipelineTone,
-    },
-  ];
+  const hasActiveFilters = Boolean(
+    search.trim() ||
+      status ||
+      supplierId ||
+      warehouseId ||
+      dateFrom ||
+      dateTo,
+  );
+
+  const pipelineStatusLabel =
+    summary.total === 0
+      ? "No purchase orders"
+      : summary.pending > 0
+        ? `${formatNumber(summary.pending)} awaiting approval`
+        : summary.partially_received > 0
+          ? `${formatNumber(summary.partially_received)} in receiving`
+          : "Procurement workflow clear";
+
+  const pipelineStatusClass =
+    summary.total === 0
+      ? "border-slate-500/20 bg-slate-500/10 text-slate-300"
+      : summary.pending > 0
+        ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
+        : summary.partially_received > 0
+          ? "border-violet-500/20 bg-violet-500/10 text-violet-300"
+          : "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
 
   /*
     |--------------------------------------------------------------------------
@@ -778,7 +745,7 @@ export default function PurchaseOrderIndex({
           avatar={
             <EntityAvatar
               icon={ClipboardCheck}
-              className="border-blue-500/15 bg-blue-500/10 text-blue-400 group-hover:border-blue-500/25 group-hover:bg-blue-500/15"
+              className="border-amber-500/15 bg-amber-500/10 text-amber-400 group-hover:border-amber-500/25 group-hover:bg-amber-500/15"
             />
           }
           title={purchaseOrder.po_number}
@@ -813,7 +780,7 @@ export default function PurchaseOrderIndex({
       className: "min-w-[210px]",
       cell: (purchaseOrder) => (
         <div className="flex items-start gap-2.5">
-          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
+          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-amber-500/15 bg-amber-500/10 text-amber-400">
             <Truck className="size-4" />
           </span>
 
@@ -825,7 +792,7 @@ export default function PurchaseOrderIndex({
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <Badge
                 variant="outline"
-                className="h-5 rounded-md border-emerald-500/15 bg-emerald-500/[0.06] px-1.5 font-mono text-[9px] text-emerald-300"
+                className="h-5 rounded-md border-amber-500/15 bg-amber-500/[0.06] px-1.5 font-mono text-[9px] text-amber-300"
               >
                 {purchaseOrder.supplier.code ?? "NO CODE"}
               </Badge>
@@ -1079,202 +1046,158 @@ export default function PurchaseOrderIndex({
     <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Purchase Orders" />
 
-      <PageContainer className="gap-3.5 md:gap-4">
-        {/*
-                |--------------------------------------------------------------------------
-                | Procurement command board
-                |--------------------------------------------------------------------------
-                */}
+      <PageContainer className="gap-4 md:gap-5">
+        {/* Supplier procurement overview */}
 
-        <section className="relative min-w-0 overflow-hidden rounded-2xl border border-cyan-500/15 bg-card/75 shadow-sm">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_15%,rgba(34,211,238,0.08),transparent_30%),radial-gradient(circle_at_88%_20%,rgba(16,185,129,0.07),transparent_28%),linear-gradient(to_bottom_right,rgba(255,255,255,0.018),transparent_55%)]" />
-
-          <div className="relative flex flex-col gap-3 border-b border-border/60 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[0.07] via-card/70 to-card/40">
+          <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="relative flex size-10 shrink-0 items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-400 shadow-[0_0_24px_rgba(34,211,238,0.08)]">
-                <ShoppingCart className="size-4.5" />
-                <span className="absolute -right-1 -top-1 size-2 rounded-full border-2 border-card bg-emerald-400" />
-              </div>
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-400">
+                <ShoppingCart className="size-4" />
+              </span>
 
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-sm font-semibold tracking-tight">
-                    Procurement Command Board
-                  </h1>
-
-                  <Badge
-                    variant="outline"
-                    className="h-5 gap-1 rounded-full border-cyan-500/15 bg-cyan-500/[0.07] px-2 text-[9px] font-semibold text-cyan-300"
-                  >
-                    <Sparkles className="size-2.5" />
-                    LIVE PIPELINE
-                  </Badge>
-                </div>
+                <p className="text-[11px] font-semibold text-foreground">
+                  Supplier Order Pipeline
+                </p>
 
                 <p className="mt-0.5 text-[10px] text-muted-foreground">
-                  Approval flow, delivery readiness, and committed purchase
-                  value in one compact view.
+                  Purchase approvals, receiving progress, supplier commitments, and order value.
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge
-                variant="outline"
-                className="h-7 gap-1.5 rounded-full border-blue-500/15 bg-blue-500/10 px-3 text-[10px] text-blue-300"
-              >
-                <ClipboardCheck className="size-3" />
-                {formatNumber(summary.total)} orders
-              </Badge>
+            <Badge
+              variant="outline"
+              className={cn(
+                "h-6 w-fit shrink-0 rounded-full px-2.5 text-[9px] font-semibold",
+                pipelineStatusClass,
+              )}
+            >
+              {summary.total === 0 ? (
+                <ClipboardCheck className="mr-1 size-3" />
+              ) : summary.pending > 0 ? (
+                <Clock3 className="mr-1 size-3" />
+              ) : summary.partially_received > 0 ? (
+                <PackageOpen className="mr-1 size-3" />
+              ) : (
+                <ShieldCheck className="mr-1 size-3" />
+              )}
 
-              <Badge
-                variant="outline"
-                className="h-7 gap-1.5 rounded-full border-amber-500/15 bg-amber-500/10 px-3 text-[10px] text-amber-300"
-              >
-                <Clock3 className="size-3" />
-                {formatNumber(summary.pending)} awaiting approval
-              </Badge>
-
-              <Badge
-                variant="outline"
-                className="h-7 gap-1.5 rounded-full border-emerald-500/15 bg-emerald-500/10 px-3 text-[10px] text-emerald-300"
-              >
-                <PackageCheck className="size-3" />
-                {formatNumber(completedOrders)} received
-              </Badge>
-            </div>
+              {pipelineStatusLabel}
+            </Badge>
           </div>
 
-          <div className="relative grid min-w-0 xl:grid-cols-[240px_minmax(0,1fr)_270px]">
-            <div className="flex min-h-[178px] items-center gap-4 border-b border-border/60 p-4 xl:border-b-0 xl:border-r">
-              <CompletionDonut
-                value={completionRate}
-                completed={summary.received}
-                total={summary.total}
+          <div className="grid min-w-0 lg:grid-cols-[minmax(330px,1.08fr)_minmax(0,1.92fr)]">
+            <div className="relative overflow-hidden border-b border-border/60 p-4 lg:border-b-0 lg:border-r">
+              <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-amber-500/10 blur-3xl" />
+              <ShoppingCart className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-amber-400 opacity-[0.025]" />
+
+              <div className="relative grid gap-4 sm:grid-cols-[64px_minmax(0,1fr)] sm:items-center">
+                <div className="flex size-16 items-center justify-center rounded-2xl border border-amber-500/20 bg-amber-500/10 text-amber-400 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.04)]">
+                  <ShoppingCart className="size-7" />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-amber-300">
+                        Open workflow coverage
+                      </p>
+
+                      <p className="mt-2 text-[27px] font-semibold leading-none tracking-[-0.04em]">
+                        {formatNumber(openOrders)}
+
+                        <span className="mx-1.5 text-base font-medium text-muted-foreground">
+                          /
+                        </span>
+
+                        {formatNumber(summary.total)}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-lg font-semibold tabular-nums text-amber-400">
+                        {openShare}%
+                      </p>
+
+                      <p className="mt-1 text-[8px] uppercase tracking-wider text-muted-foreground">
+                        In workflow
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-background/60">
+                    <div
+                      className="h-full bg-amber-400 transition-all duration-500"
+                      style={{ width: `${openShare}%` }}
+                    />
+
+                    <div
+                      className="h-full bg-emerald-400 transition-all duration-500"
+                      style={{ width: `${receivedShare}%` }}
+                    />
+
+                    <div
+                      className="h-full bg-red-400 transition-all duration-500"
+                      style={{ width: `${cancelledShare}%` }}
+                    />
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[9px] text-muted-foreground">
+                    <span>
+                      {formatCurrency(summary.total_value)} committed value
+                    </span>
+
+                    <span>
+                      {formatNumber(suppliers.length)} supplier
+                      {suppliers.length === 1 ? "" : "s"} available
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid min-w-0 sm:grid-cols-2 xl:grid-cols-4">
+              <PurchaseOrderNetworkMetric
+                title="Purchase Orders"
+                value={summary.total}
+                description={`${formatNumber(summary.draft)} editable draft${summary.draft === 1 ? "" : "s"}`}
+                icon={ClipboardCheck}
+                tone="blue"
+                className="border-b border-border/60 sm:border-r xl:border-b-0"
               />
 
-              <div className="min-w-0 flex-1">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
-                  Fulfillment health
-                </p>
+              <PurchaseOrderNetworkMetric
+                title="Awaiting Approval"
+                value={summary.pending}
+                description="Requires procurement review"
+                icon={Clock3}
+                tone="amber"
+                className="border-b border-border/60 xl:border-b-0 xl:border-r"
+              />
 
-                <p className="mt-2 text-sm font-semibold">
-                  {completionRate >= 75
-                    ? "Strong completion"
-                    : completionRate >= 40
-                      ? "Orders progressing"
-                      : "Pipeline building"}
-                </p>
+              <PurchaseOrderNetworkMetric
+                title="In Receiving"
+                value={summary.partially_received}
+                description={`${formatNumber(summary.approved)} approved and ready`}
+                icon={PackageOpen}
+                tone="violet"
+                className="border-b border-border/60 sm:border-b-0 sm:border-r"
+              />
 
-                <p className="mt-1 text-[9px] leading-4 text-muted-foreground">
-                  {formatNumber(summary.received)} fully received from{" "}
-                  {formatNumber(summary.total)} purchase orders.
-                </p>
-
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="inline-flex size-6 items-center justify-center rounded-md bg-blue-500/10 text-blue-400">
-                    <ShieldCheck className="size-3" />
-                  </span>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2 text-[9px]">
-                      <span className="text-muted-foreground">
-                        Approval coverage
-                      </span>
-                      <span className="font-semibold tabular-nums text-blue-400">
-                        {approvalRate}%
-                      </span>
-                    </div>
-
-                    <div className="mt-1 h-1 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-blue-400"
-                        style={{ width: `${approvalRate}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid min-w-0 grid-cols-2 gap-px border-b border-border/60 bg-border/60 p-px sm:grid-cols-3 xl:border-b-0 xl:border-r">
-              {pipelineStages.map((stage, index) => (
-                <ProcurementStage
-                  key={stage.key}
-                  index={index}
-                  label={stage.label}
-                  description={stage.description}
-                  value={stage.value}
-                  total={summary.total}
-                  icon={stage.icon}
-                  tone={stage.tone}
-                />
-              ))}
-            </div>
-
-            <div className="relative min-h-[178px] overflow-hidden p-4">
-              <Banknote className="pointer-events-none absolute -bottom-6 -right-5 size-28 text-emerald-400 opacity-[0.035]" />
-
-              <div className="relative">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
-                      Committed procurement
-                    </p>
-
-                    <p className="mt-2 truncate text-xl font-semibold tabular-nums text-emerald-400">
-                      {formatCurrency(summary.total_value)}
-                    </p>
-                  </div>
-
-                  <span className="inline-flex size-8 items-center justify-center rounded-lg border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
-                    <CircleDollarSign className="size-4" />
-                  </span>
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 overflow-hidden rounded-xl border border-border/60 bg-background/35">
-                  <CommandMetric
-                    label="Open orders"
-                    value={formatNumber(openOrders)}
-                    detail={`${activeShare}% active share`}
-                    icon={ShoppingCart}
-                    tone="cyan"
-                  />
-
-                  <CommandMetric
-                    label="Supplier base"
-                    value={formatNumber(suppliers.length)}
-                    detail={`${formatNumber(warehouses.length)} warehouses`}
-                    icon={Truck}
-                    tone="emerald"
-                    last
-                  />
-                </div>
-
-                <div className="mt-3 flex items-center justify-between rounded-lg border border-violet-500/10 bg-violet-500/[0.055] px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex size-6 items-center justify-center rounded-md bg-violet-500/10 text-violet-400">
-                      <Boxes className="size-3" />
-                    </span>
-                    <span className="text-[9px] text-muted-foreground">
-                      Products ready for ordering
-                    </span>
-                  </div>
-
-                  <span className="text-xs font-semibold tabular-nums text-violet-400">
-                    {formatNumber(products.length)}
-                  </span>
-                </div>
-              </div>
+              <PurchaseOrderNetworkMetric
+                title="Received Orders"
+                value={summary.received}
+                description="Completed supplier deliveries"
+                icon={PackageCheck}
+                tone="emerald"
+              />
             </div>
           </div>
         </section>
 
-        {/*
-                |--------------------------------------------------------------------------
-                | Purchase order register
-                |--------------------------------------------------------------------------
-                */}
+        {/* Purchase order register */}
 
         <SectionCard
           title="Purchase Order Register"
@@ -1283,15 +1206,17 @@ export default function PurchaseOrderIndex({
             <div className="flex flex-wrap items-center gap-2">
               <Badge
                 variant="outline"
-                className="h-6 rounded-full border-blue-500/15 bg-blue-500/[0.06] px-2.5 text-[9px] font-semibold text-blue-300"
+                className="h-7 rounded-full border-amber-500/15 bg-amber-500/[0.06] px-2.5 text-[10px] font-medium text-amber-300"
               >
-                {formatNumber(purchase_orders.total)} records
+                <ClipboardCheck className="mr-1 size-3" />
+                {formatNumber(purchase_orders.total)} order
+                {purchase_orders.total === 1 ? "" : "s"}
               </Badge>
 
               <Button
                 type="button"
                 onClick={openCreateDialog}
-                className="h-9 rounded-lg px-3.5 text-xs shadow-[0_0_20px_rgba(34,211,238,0.08)]"
+                className="h-9 rounded-lg px-3.5 text-xs"
               >
                 <Plus className="size-3.5" />
                 New Purchase Order
@@ -1299,41 +1224,6 @@ export default function PurchaseOrderIndex({
             </div>
           }
         >
-          <div className="grid overflow-hidden rounded-xl border border-border/60 bg-muted/[0.018] sm:grid-cols-2 xl:grid-cols-4">
-            <RegisterSignal
-              label="Awaiting approval"
-              value={summary.pending}
-              detail="Requires review"
-              icon={Clock3}
-              tone="amber"
-            />
-
-            <RegisterSignal
-              label="Approved queue"
-              value={summary.approved}
-              detail="Ready for delivery"
-              icon={CheckCircle2}
-              tone="blue"
-            />
-
-            <RegisterSignal
-              label="In receiving"
-              value={summary.partially_received}
-              detail="Partially fulfilled"
-              icon={PackageOpen}
-              tone="violet"
-            />
-
-            <RegisterSignal
-              label="Warehouse coverage"
-              value={warehouses.length}
-              detail={`${suppliers.length} suppliers available`}
-              icon={Warehouse}
-              tone="emerald"
-              last
-            />
-          </div>
-
           <FilterBar
             onSubmit={applyFilters}
             contentClassName="grid w-full min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(240px,1fr)_155px_190px_190px_155px_155px]"
@@ -1351,6 +1241,7 @@ export default function PurchaseOrderIndex({
                   type="button"
                   variant="outline"
                   onClick={resetFilters}
+                  disabled={!hasActiveFilters}
                   className="h-10 px-3 text-sm"
                 >
                   <RotateCcw className="size-3.5" />
@@ -2004,340 +1895,92 @@ export default function PurchaseOrderIndex({
 
 /*
 |--------------------------------------------------------------------------
-| Procurement stage
+| Purchase order network metric
 |--------------------------------------------------------------------------
 */
 
-function CompletionDonut({
+function PurchaseOrderNetworkMetric({
+  title,
   value,
-  completed,
-  total,
-}: {
-  value: number;
-  completed: number;
-  total: number;
-}) {
-  const safeValue = Math.max(0, Math.min(100, value));
-
-  return (
-    <div className="relative flex size-[104px] shrink-0 items-center justify-center">
-      <div
-        className="absolute inset-0 rounded-full p-[8px] shadow-[0_0_28px_rgba(16,185,129,0.07)]"
-        style={{
-          background: `conic-gradient(rgb(52 211 153) ${safeValue}%, rgba(148,163,184,0.12) 0)`,
-        }}
-      >
-        <div className="size-full rounded-full border border-emerald-500/10 bg-card" />
-      </div>
-
-      <div className="relative text-center">
-        <p className="text-xl font-semibold leading-none tabular-nums text-emerald-400">
-          {safeValue}%
-        </p>
-        <p className="mt-1 text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-          Complete
-        </p>
-        <p className="mt-1 text-[8px] tabular-nums text-muted-foreground/75">
-          {formatNumber(completed)}/{formatNumber(total)}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function ProcurementStage({
-  index,
-  label,
   description,
-  value,
-  total,
   icon: Icon,
   tone,
+  className,
 }: {
-  index: number;
-  label: string;
+  title: string;
+  value: number | string;
   description: string;
-  value: number;
-  total: number;
   icon: LucideIcon;
-  tone: PipelineTone;
+  tone: "blue" | "amber" | "violet" | "emerald";
+  className?: string;
 }) {
-  const styles: Record<
-    PipelineTone,
-    {
-      icon: string;
-      value: string;
-      bar: string;
-      surface: string;
-      watermark: string;
-      stage: string;
-      status: string;
-    }
-  > = {
-    slate: {
-      icon: "border-slate-500/20 bg-slate-500/10 text-slate-300 shadow-[0_0_18px_rgba(148,163,184,0.06)]",
-      value: "text-slate-200",
-      bar: "bg-slate-400",
-      surface:
-        "bg-[linear-gradient(145deg,rgba(148,163,184,0.055),transparent_58%)] hover:bg-slate-500/[0.055]",
-      watermark: "text-slate-400",
-      stage: "border-slate-500/15 bg-slate-500/[0.07] text-slate-300",
-      status: "text-slate-300",
+  const toneStyles = {
+    blue: {
+      icon: "border-blue-500/20 bg-blue-500/10 text-blue-400",
+      value: "text-blue-400",
+      glow: "bg-blue-500/10",
     },
     amber: {
-      icon: "border-amber-500/20 bg-amber-500/10 text-amber-400 shadow-[0_0_18px_rgba(251,191,36,0.07)]",
+      icon: "border-amber-500/20 bg-amber-500/10 text-amber-400",
       value: "text-amber-400",
-      bar: "bg-amber-400",
-      surface:
-        "bg-[linear-gradient(145deg,rgba(251,191,36,0.065),transparent_58%)] hover:bg-amber-500/[0.055]",
-      watermark: "text-amber-400",
-      stage: "border-amber-500/15 bg-amber-500/[0.07] text-amber-300",
-      status: "text-amber-400",
-    },
-    blue: {
-      icon: "border-blue-500/20 bg-blue-500/10 text-blue-400 shadow-[0_0_18px_rgba(96,165,250,0.07)]",
-      value: "text-blue-400",
-      bar: "bg-blue-400",
-      surface:
-        "bg-[linear-gradient(145deg,rgba(96,165,250,0.065),transparent_58%)] hover:bg-blue-500/[0.055]",
-      watermark: "text-blue-400",
-      stage: "border-blue-500/15 bg-blue-500/[0.07] text-blue-300",
-      status: "text-blue-400",
+      glow: "bg-amber-500/10",
     },
     violet: {
-      icon: "border-violet-500/20 bg-violet-500/10 text-violet-400 shadow-[0_0_18px_rgba(167,139,250,0.07)]",
+      icon: "border-violet-500/20 bg-violet-500/10 text-violet-400",
       value: "text-violet-400",
-      bar: "bg-violet-400",
-      surface:
-        "bg-[linear-gradient(145deg,rgba(167,139,250,0.065),transparent_58%)] hover:bg-violet-500/[0.055]",
-      watermark: "text-violet-400",
-      stage: "border-violet-500/15 bg-violet-500/[0.07] text-violet-300",
-      status: "text-violet-400",
+      glow: "bg-violet-500/10",
     },
     emerald: {
-      icon: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.07)]",
+      icon: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
       value: "text-emerald-400",
-      bar: "bg-emerald-400",
-      surface:
-        "bg-[linear-gradient(145deg,rgba(52,211,153,0.065),transparent_58%)] hover:bg-emerald-500/[0.055]",
-      watermark: "text-emerald-400",
-      stage: "border-emerald-500/15 bg-emerald-500/[0.07] text-emerald-300",
-      status: "text-emerald-400",
+      glow: "bg-emerald-500/10",
     },
-    red: {
-      icon: "border-red-500/20 bg-red-500/10 text-red-400 shadow-[0_0_18px_rgba(248,113,113,0.07)]",
-      value: "text-red-400",
-      bar: "bg-red-400",
-      surface:
-        "bg-[linear-gradient(145deg,rgba(248,113,113,0.06),transparent_58%)] hover:bg-red-500/[0.055]",
-      watermark: "text-red-400",
-      stage: "border-red-500/15 bg-red-500/[0.07] text-red-300",
-      status: "text-red-400",
-    },
-  };
+  } as const;
 
-  const current = styles[tone];
-  const share = total > 0 ? Math.round((value / total) * 100) : 0;
+  const styles = toneStyles[tone];
 
   return (
     <div
       className={cn(
-        "group relative min-h-[118px] min-w-0 overflow-hidden bg-card/95 p-3.5 transition-all duration-200 hover:z-10 hover:-translate-y-px hover:shadow-lg",
-        current.surface,
+        "group relative min-w-0 overflow-hidden px-4 py-3.5 transition-colors hover:bg-muted/[0.025]",
+        className,
       )}
     >
-      <Icon
+      <div
         className={cn(
-          "pointer-events-none absolute -bottom-4 -right-3 size-16 opacity-[0.045] transition-all duration-300 group-hover:-translate-y-1 group-hover:scale-110 group-hover:opacity-[0.075]",
-          current.watermark,
+          "pointer-events-none absolute -right-10 -top-10 size-24 rounded-full blur-2xl",
+          styles.glow,
         )}
       />
 
       <div className="relative flex items-start justify-between gap-3">
-        <span
-          className={cn(
-            "inline-flex h-5 items-center rounded-full border px-2 font-mono text-[8px] font-semibold tracking-[0.08em]",
-            current.stage,
-          )}
-        >
-          STAGE {String(index + 1).padStart(2, "0")}
-        </span>
-
-        <span
-          className={cn(
-            "inline-flex size-7 shrink-0 items-center justify-center rounded-lg border transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:rotate-3",
-            current.icon,
-          )}
-        >
-          <Icon className="size-3.5" />
-        </span>
-      </div>
-
-      <div className="relative mt-3 flex items-end justify-between gap-3">
         <div className="min-w-0">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+            {title}
+          </p>
+
           <p
             className={cn(
-              "text-[22px] font-semibold leading-none tabular-nums",
-              current.value,
+              "mt-2 text-xl font-semibold leading-none tabular-nums",
+              styles.value,
             )}
           >
-            {formatNumber(value)}
+            {value}
           </p>
 
-          <p className="mt-1.5 truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-foreground/90">
-            {label}
+          <p className="mt-1.5 truncate text-[9px] text-muted-foreground">
+            {description}
           </p>
         </div>
 
         <span
           className={cn(
-            "shrink-0 text-[9px] font-semibold tabular-nums",
-            current.status,
-          )}
-        >
-          {share}%
-        </span>
-      </div>
-
-      <p className="relative mt-1 truncate text-[8px] text-muted-foreground">
-        {description}
-      </p>
-
-      <div className="relative mt-3">
-        <div className="h-1.5 overflow-hidden rounded-full bg-background/70 ring-1 ring-border/40">
-          <div
-            className={cn(
-              "h-full rounded-full transition-all duration-500",
-              current.bar,
-            )}
-            style={{
-              width: share > 0 ? `${Math.max(8, share)}%` : "0%",
-            }}
-          />
-        </div>
-
-        <div className="mt-1.5 flex items-center justify-between gap-2 text-[8px]">
-          <span className="text-muted-foreground/80">
-            {value > 0
-              ? `${formatNumber(value)} workflow record${value === 1 ? "" : "s"}`
-              : "No active records"}
-          </span>
-
-          <span className="font-medium tabular-nums text-muted-foreground">
-            of {formatNumber(total)}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CommandMetric({
-  label,
-  value,
-  detail,
-  icon: Icon,
-  tone,
-  last = false,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  icon: LucideIcon;
-  tone: "cyan" | "emerald";
-  last?: boolean;
-}) {
-  const styles =
-    tone === "cyan"
-      ? { icon: "bg-cyan-500/10 text-cyan-400", value: "text-cyan-400" }
-      : {
-          icon: "bg-emerald-500/10 text-emerald-400",
-          value: "text-emerald-400",
-        };
-
-  return (
-    <div className={cn("min-w-0 p-3", !last && "border-r border-border/60")}>
-      <div className="flex items-center gap-2">
-        <span
-          className={cn(
-            "inline-flex size-6 items-center justify-center rounded-md",
+            "inline-flex size-8 shrink-0 items-center justify-center rounded-lg border",
             styles.icon,
           )}
         >
-          <Icon className="size-3" />
+          <Icon className="size-4" />
         </span>
-        <span className="truncate text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-          {label}
-        </span>
-      </div>
-      <p
-        className={cn(
-          "mt-2 text-base font-semibold tabular-nums",
-          styles.value,
-        )}
-      >
-        {value}
-      </p>
-      <p className="mt-1 truncate text-[8px] text-muted-foreground">{detail}</p>
-    </div>
-  );
-}
-
-function RegisterSignal({
-  label,
-  value,
-  detail,
-  icon: Icon,
-  tone,
-  last = false,
-}: {
-  label: string;
-  value: number;
-  detail: string;
-  icon: LucideIcon;
-  tone: "amber" | "blue" | "violet" | "emerald";
-  last?: boolean;
-}) {
-  const styles = {
-    amber: { icon: "bg-amber-500/10 text-amber-400", value: "text-amber-400" },
-    blue: { icon: "bg-blue-500/10 text-blue-400", value: "text-blue-400" },
-    violet: {
-      icon: "bg-violet-500/10 text-violet-400",
-      value: "text-violet-400",
-    },
-    emerald: {
-      icon: "bg-emerald-500/10 text-emerald-400",
-      value: "text-emerald-400",
-    },
-  }[tone];
-
-  return (
-    <div
-      className={cn(
-        "flex min-w-0 items-center gap-3 border-b border-border/60 px-3 py-2.5 sm:[&:nth-child(odd)]:border-r xl:border-b-0 xl:border-r xl:[&:nth-child(odd)]:border-r",
-        last && "xl:border-r-0",
-      )}
-    >
-      <span
-        className={cn(
-          "inline-flex size-8 shrink-0 items-center justify-center rounded-lg",
-          styles.icon,
-        )}
-      >
-        <Icon className="size-3.5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <p className="truncate text-[9px] font-medium text-muted-foreground">
-            {label}
-          </p>
-          <p className={cn("text-sm font-semibold tabular-nums", styles.value)}>
-            {formatNumber(value)}
-          </p>
-        </div>
-        <p className="mt-0.5 truncate text-[8px] text-muted-foreground/75">
-          {detail}
-        </p>
       </div>
     </div>
   );

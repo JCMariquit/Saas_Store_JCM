@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 15, 2026 at 10:40 AM
+-- Generation Time: Jul 16, 2026 at 10:51 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -44,24 +44,23 @@ CREATE TABLE `account_role_sidebar_items` (
 --
 
 INSERT INTO `account_role_sidebar_items` (`id`, `account_owner_id`, `product_id`, `product_user_type_id`, `sidebar_item_id`, `is_enabled`, `assigned_by`, `created_at`, `updated_at`) VALUES
-(1, 1, 11, 1, 1, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
-(2, 1, 11, 1, 2, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
-(3, 1, 11, 1, 3, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
-(4, 1, 11, 1, 4, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
-(5, 1, 11, 1, 5, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
-(6, 1, 11, 1, 6, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
-(7, 1, 11, 1, 7, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
-(8, 1, 11, 1, 16, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
-(9, 1, 11, 1, 17, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
-(10, 1, 11, 1, 18, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
-(11, 1, 11, 1, 19, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
-(12, 1, 11, 1, 20, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
-(13, 1, 11, 1, 21, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
 (14, 1, 11, 5, 1, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
 (15, 1, 11, 5, 3, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
 (16, 1, 11, 5, 6, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
 (17, 1, 11, 5, 17, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
-(18, 1, 11, 5, 18, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40');
+(18, 1, 11, 5, 18, 1, 1, '2026-07-14 06:10:40', '2026-07-14 06:10:40'),
+(43, 1, 11, 1, 1, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25'),
+(44, 1, 11, 1, 3, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25'),
+(45, 1, 11, 1, 4, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25'),
+(46, 1, 11, 1, 5, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25'),
+(47, 1, 11, 1, 6, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25'),
+(48, 1, 11, 1, 7, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25'),
+(49, 1, 11, 1, 16, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25'),
+(50, 1, 11, 1, 17, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25'),
+(51, 1, 11, 1, 18, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25'),
+(52, 1, 11, 1, 19, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25'),
+(53, 1, 11, 1, 20, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25'),
+(54, 1, 11, 1, 21, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25');
 
 -- --------------------------------------------------------
 
@@ -88,7 +87,7 @@ CREATE TABLE `app_features` (
 
 INSERT INTO `app_features` (`id`, `product_id`, `feature_code`, `name`, `description`, `is_developer_ready`, `sort_order`, `status`, `created_at`, `updated_at`) VALUES
 (1, 11, 'dashboard', 'Dashboard', 'Main Inventory dashboard.', 1, 10, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
-(2, 11, 'inventory_overview', 'Inventory Overview', 'Inventory KPI and overview page.', 0, 20, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
+(2, 11, 'inventory_overview', 'Stock Overview', 'Inventory health, valuation, warehouse distribution, movement, and replenishment overview.', 1, 20, 'active', '2026-07-13 02:00:57', '2026-07-16 08:44:47'),
 (3, 11, 'categories', 'Categories', 'Inventory category management.', 1, 30, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
 (4, 11, 'products', 'Products', 'Inventory product management.', 1, 40, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
 (5, 11, 'stock_management', 'Stock Management', 'Current stock management.', 1, 50, 'active', '2026-07-13 02:00:57', '2026-07-13 02:11:28'),
@@ -423,13 +422,13 @@ CREATE TABLE `plan_features` (
 INSERT INTO `plan_features` (`id`, `plan_id`, `feature_id`, `is_enabled`, `limit_value`, `created_at`, `updated_at`) VALUES
 (1, 12, 3, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (2, 12, 1, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
-(3, 12, 2, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
+(3, 12, 2, 1, NULL, '2026-07-13 02:00:58', '2026-07-16 08:44:47'),
 (4, 12, 4, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (5, 12, 6, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (6, 12, 5, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (7, 12, 8, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (8, 13, 1, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
-(9, 13, 2, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
+(9, 13, 2, 1, NULL, '2026-07-13 02:00:58', '2026-07-16 08:44:47'),
 (10, 13, 3, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (11, 13, 4, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (12, 13, 5, 1, NULL, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
@@ -801,7 +800,7 @@ CREATE TABLE `sidebar_items` (
 
 INSERT INTO `sidebar_items` (`id`, `product_id`, `parent_id`, `feature_id`, `item_key`, `section_key`, `item_type`, `label`, `route_name`, `url_override`, `icon_key`, `badge`, `badge_id`, `sort_order`, `is_developer_ready`, `is_visible`, `status`, `created_at`, `updated_at`) VALUES
 (1, 11, NULL, 1, 'dashboard', 'overview', 'link', 'Main Dashboard', 'dashboard', '/dashboard', 'LayoutDashboard', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 04:50:39'),
-(2, 11, NULL, 2, 'inventory-overview', 'overview', 'link', 'Stock Overview', 'inventory.overview', '/inventory/overview', 'BarChart3', 'SOON', 8, 20, 0, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
+(2, 11, NULL, 2, 'inventory-overview', 'overview', 'link', 'Stock Overview', 'inventory.overview', '/inventory/overview', 'BarChart3', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-16 08:44:47'),
 (3, 11, NULL, NULL, 'inventory-group', 'management', 'group', 'Inventory', NULL, NULL, 'Boxes', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (4, 11, NULL, 9, 'branches', 'management', 'link', 'Branches', 'branches.index', '/branches', 'Building2', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (5, 11, NULL, 10, 'warehouses', 'management', 'link', 'Warehouse', 'warehouses.index', '/warehouses', 'Warehouse', 'DEV', 3, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
@@ -1367,7 +1366,7 @@ ALTER TABLE `user_types`
 -- AUTO_INCREMENT for table `account_role_sidebar_items`
 --
 ALTER TABLE `account_role_sidebar_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
 
 --
 -- AUTO_INCREMENT for table `app_features`

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 15, 2026 at 10:40 AM
+-- Generation Time: Jul 16, 2026 at 10:51 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -49,7 +49,7 @@ CREATE TABLE `branches` (
 --
 
 INSERT INTO `branches` (`id`, `tenant_id`, `name`, `code`, `address`, `phone`, `email`, `is_main`, `is_active`, `created_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 'Main brach', 'MAIN', '123123', '09752475', 'branch@gmail.com', 1, 1, 1, '2026-07-10 03:20:38', '2026-07-15 06:15:12', '2026-07-15 06:15:12');
+(3, 1, 'Main Branch', 'MAIN', 'Mogpog Marinduque', '09321654987', 'main@gmail.com', 1, 1, 1, '2026-07-16 01:12:59', '2026-07-16 01:12:59', NULL);
 
 -- --------------------------------------------------------
 
@@ -77,7 +77,8 @@ CREATE TABLE `categories` (
 --
 
 INSERT INTO `categories` (`id`, `tenant_id`, `parent_id`, `name`, `slug`, `description`, `sort_order`, `is_active`, `created_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, NULL, '1', '1', '1', 4, 1, 1, '2026-07-10 06:00:11', '2026-07-10 06:00:11', NULL);
+(1, 1, NULL, '1', '1', '1', 4, 1, 1, '2026-07-10 06:00:11', '2026-07-10 06:00:11', NULL),
+(2, 1, NULL, 'Soap', 'soap', NULL, 0, 1, 1, '2026-07-16 01:14:18', '2026-07-16 01:14:18', NULL);
 
 -- --------------------------------------------------------
 
@@ -112,7 +113,8 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `tenant_id`, `category_id`, `name`, `slug`, `sku`, `barcode`, `description`, `image_path`, `unit`, `cost_price`, `selling_price`, `wholesale_price`, `stock_tracking`, `is_active`, `created_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 1, 'qw', 'qw', 'QW', 'qw', '0', NULL, 'pcs', 10.0000, 50.00, 40.00, 'tracked', 1, 1, '2026-07-10 06:13:07', '2026-07-10 06:13:07', NULL);
+(1, 1, 1, 'qw', 'qw', 'QW', 'qw', '0', NULL, 'pcs', 10.0000, 50.00, 40.00, 'tracked', 1, 1, '2026-07-10 06:13:07', '2026-07-10 06:13:07', NULL),
+(2, 1, 2, 'Safeguard', 'safeguard', 'QW1', NULL, NULL, NULL, 'pcs', 25.0000, 52.00, NULL, 'tracked', 1, 1, '2026-07-16 01:14:47', '2026-07-16 01:14:47', NULL);
 
 -- --------------------------------------------------------
 
@@ -257,6 +259,13 @@ CREATE TABLE `stock_movements` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ;
 
+--
+-- Dumping data for table `stock_movements`
+--
+
+INSERT INTO `stock_movements` (`id`, `tenant_id`, `warehouse_id`, `product_id`, `movement_type`, `quantity`, `quantity_before`, `quantity_after`, `unit_cost`, `total_cost`, `average_cost_before`, `average_cost_after`, `reference_type`, `reference_id`, `reference_no`, `related_warehouse_id`, `reversal_of_movement_id`, `remarks`, `movement_date`, `created_by`, `created_at`, `updated_at`) VALUES
+(2, 1, 2, 2, 'opening_stock', 50.000, 0.000, 50.000, 25.0000, 1250.00, NULL, NULL, 'opening_stock', NULL, 'OPEN-20260716091506-KN1VI1', NULL, NULL, NULL, '2026-07-16 09:15:06', 1, '2026-07-16 01:15:06', '2026-07-16 01:15:06');
+
 -- --------------------------------------------------------
 
 --
@@ -317,6 +326,13 @@ CREATE TABLE `warehouses` (
   `active_main_branch_id` bigint(20) UNSIGNED GENERATED ALWAYS AS (case when `is_main` = 1 and `is_active` = 1 and `deleted_at` is null then `branch_id` else NULL end) STORED
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `warehouses`
+--
+
+INSERT INTO `warehouses` (`id`, `tenant_id`, `branch_id`, `name`, `code`, `description`, `address`, `contact_person`, `phone`, `is_main`, `is_active`, `created_by`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(2, 1, 3, 'main Warehouse', 'WH1', 'qwerty', 'qwerty', 'qwerty', '09123456789', 1, 1, 1, '2026-07-16 01:13:39', '2026-07-16 01:13:39', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -336,6 +352,13 @@ CREATE TABLE `warehouse_stocks` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ;
+
+--
+-- Dumping data for table `warehouse_stocks`
+--
+
+INSERT INTO `warehouse_stocks` (`id`, `tenant_id`, `warehouse_id`, `product_id`, `quantity`, `reorder_level`, `max_stock_level`, `average_cost`, `last_movement_at`, `created_at`, `updated_at`) VALUES
+(2, 1, 2, 2, 50.000, 5.000, NULL, 25.0000, '2026-07-16 09:15:06', '2026-07-16 01:15:06', '2026-07-16 01:15:06');
 
 --
 -- Indexes for dumped tables
@@ -513,13 +536,13 @@ ALTER TABLE `warehouse_stocks`
 -- AUTO_INCREMENT for table `branches`
 --
 ALTER TABLE `branches`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -567,7 +590,7 @@ ALTER TABLE `suppliers`
 -- AUTO_INCREMENT for table `warehouses`
 --
 ALTER TABLE `warehouses`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `warehouse_stocks`

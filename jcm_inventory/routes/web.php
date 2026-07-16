@@ -2,14 +2,17 @@
 
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ReceivingController;
 use App\Http\Controllers\RoleAccessController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\StockMovementController;
+use App\Http\Controllers\StockOverviewController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TeamMemberController;
+use App\Http\Controllers\TeamOverviewController;
 use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -19,9 +22,10 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('dashboard');
-    })
+    Route::get(
+        '/dashboard',
+        [DashboardController::class, 'index']
+    )
         ->middleware('feature:dashboard')
         ->name('dashboard');
 
@@ -74,11 +78,10 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('inventory')
         ->name('inventory.')
         ->group(function () {
-            Route::get('/overview', function () {
-                return Inertia::render(
-                    'inventory/overview/index'
-                );
-            })
+            Route::get(
+                '/overview',
+                [StockOverviewController::class, 'index']
+            )
                 ->middleware(
                     'feature:inventory_overview'
                 )
@@ -284,6 +287,13 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('team')
         ->name('team.')
         ->group(function () {
+            Route::get(
+                '/overview',
+                [TeamOverviewController::class, 'index']
+            )
+                ->middleware('feature:team_overview')
+                ->name('overview');
+
             Route::prefix('members')
                 ->name('members.')
                 ->middleware(

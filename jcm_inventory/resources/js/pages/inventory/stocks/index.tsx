@@ -14,15 +14,12 @@ import { EntityInfo } from '@/components/shared/entity-info';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { FormField } from '@/components/shared/form-field';
 import { FormSection } from '@/components/shared/form-section';
-import { HighlightStatCard } from '@/components/shared/highlight-stat-card';
 import { IconButton } from '@/components/shared/icon-button';
 import { MoneyInput } from '@/components/shared/money-input';
 import { NumberInput } from '@/components/shared/number-input';
 import { PageContainer } from '@/components/shared/page-container';
-import { PageHeader } from '@/components/shared/page-header';
 import { SearchInput } from '@/components/shared/search-input';
 import { SectionCard } from '@/components/shared/section-card';
-import { StatCard } from '@/components/shared/stat-card';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,6 +33,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import {
     Head,
@@ -49,6 +47,7 @@ import {
     ArrowUpRight,
     Boxes,
     Building2,
+    CheckCircle2,
     CircleDollarSign,
     ClipboardPenLine,
     Layers3,
@@ -59,6 +58,7 @@ import {
     Trash2,
     TriangleAlert,
     Warehouse as WarehouseIcon,
+    type LucideIcon,
 } from 'lucide-react';
 import {
     type FormEvent,
@@ -247,6 +247,12 @@ type DrawerType =
     | 'adjust'
     | 'transfer'
     | null;
+
+type StockMetricTone =
+    | 'blue'
+    | 'violet'
+    | 'amber'
+    | 'red';
 
 /*
 |--------------------------------------------------------------------------
@@ -788,7 +794,7 @@ export default function StockIndex({
                         avatar={
                             <EntityAvatar
                                 icon={Package2}
-                                className="border-blue-500/15 bg-blue-500/10 text-blue-400 group-hover:border-blue-500/25 group-hover:bg-blue-500/15"
+                                className="border-violet-500/15 bg-violet-500/10 text-violet-400 group-hover:border-violet-500/25 group-hover:bg-violet-500/15"
                             />
                         }
                         title={
@@ -819,7 +825,7 @@ export default function StockIndex({
                 cell: (stock) => (
                     <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
-                            <span className="inline-flex size-7 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
+                            <span className="inline-flex size-7 items-center justify-center rounded-lg border border-cyan-500/15 bg-cyan-500/10 text-cyan-400">
                                 <WarehouseIcon className="size-3.5" />
                             </span>
 
@@ -833,7 +839,7 @@ export default function StockIndex({
                                 ?.is_main && (
                                 <Badge
                                     variant="outline"
-                                    className="h-5 rounded-full border-violet-500/20 bg-violet-500/10 px-2 text-[9px] text-violet-300"
+                                    className="h-5 gap-1 rounded-full border-amber-500/20 bg-amber-500/10 px-2 text-[9px] font-semibold text-amber-300"
                                 >
                                     MAIN
                                 </Badge>
@@ -1060,44 +1066,94 @@ export default function StockIndex({
             },
         ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | Derived overview values
+    |--------------------------------------------------------------------------
+    */
+
+    const attentionRecords = Math.min(
+        summary.records,
+        summary.low_stock +
+            summary.out_of_stock,
+    );
+
+    const healthyRecords = Math.max(
+        0,
+        summary.records - attentionRecords,
+    );
+
+    const healthyPercentage =
+        summary.records > 0
+            ? Math.round(
+                  (healthyRecords /
+                      summary.records) *
+                      100,
+              )
+            : 0;
+
+    const lowStockPercentage =
+        summary.records > 0
+            ? Math.round(
+                  (summary.low_stock /
+                      summary.records) *
+                      100,
+              )
+            : 0;
+
+    const outOfStockPercentage =
+        summary.records > 0
+            ? Math.max(
+                  0,
+                  Math.min(
+                      100,
+                      100 -
+                          healthyPercentage -
+                          lowStockPercentage,
+                  ),
+              )
+            : 0;
+
+    const hasActiveFilters = Boolean(
+        search ||
+            status ||
+            branchId ||
+            warehouseId ||
+            categoryId,
+    );
+
+    const inventoryHealthLabel =
+        summary.records === 0
+            ? 'No stock positions'
+            : summary.out_of_stock > 0
+              ? `${summary.out_of_stock} out of stock`
+              : summary.low_stock > 0
+                ? `${summary.low_stock} low stock`
+                : 'Inventory healthy';
+
+    const inventoryHealthClass =
+        summary.records === 0
+            ? 'border-slate-500/20 bg-slate-500/10 text-slate-300'
+            : summary.out_of_stock > 0
+              ? 'border-red-500/20 bg-red-500/10 text-red-300'
+              : summary.low_stock > 0
+                ? 'border-amber-500/20 bg-amber-500/10 text-amber-300'
+                : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300';
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Stock Management" />
 
-            <PageContainer className="min-w-0 max-w-full overflow-x-hidden">
-                <PageHeader
-                    variant="accent"
-                    eyebrow="Inventory Control"
-                    eyebrowIcon={<Boxes />}
-                    title="Stock Management"
-                    description="Monitor product quantities, warehouse availability, stock thresholds, adjustments, and transfers from one place."
-                    actions={
-                        <Button
-                            type="button"
-                            disabled={
-                                !requirementsComplete
-                            }
-                            onClick={
-                                openCreateDrawer
-                            }
-                            className="h-10 rounded-xl px-4 text-sm"
-                        >
-                            <Plus className="size-4" />
-                            Add Stock Record
-                        </Button>
-                    }
-                />
-
+            <PageContainer className="min-w-0 max-w-full gap-4 overflow-x-hidden md:gap-5">
                 {!requirementsComplete && (
                     <CalloutCard
                         tone="warning"
                         icon={TriangleAlert}
                         title="Complete your inventory setup"
-                        description="An active warehouse and an active stock-tracked product are required before adding stock records."
+                        description="An active warehouse and an active stock-tracked product are required before creating an inventory position."
                         actions={
                             <>
-                                {warehouses.length ===
-                                    0 && (
+                                {warehouses.length === 0 && (
                                     <Button
                                         asChild
                                         type="button"
@@ -1110,8 +1166,7 @@ export default function StockIndex({
                                     </Button>
                                 )}
 
-                                {products.length ===
-                                    0 && (
+                                {products.length === 0 && (
                                     <Button
                                         asChild
                                         type="button"
@@ -1128,82 +1183,248 @@ export default function StockIndex({
                     />
                 )}
 
-                <section className="grid min-w-0 max-w-full gap-3 2xl:grid-cols-[minmax(300px,1.05fr)_minmax(0,2fr)]">
-                    <HighlightStatCard
-                        title="Total Inventory Value"
-                        value={formatCurrency(
-                            summary.inventory_value,
-                        )}
-                        description="Based on current quantity and average acquisition cost."
-                        icon={
-                            <CircleDollarSign />
-                        }
-                        tone="emerald"
-                        badge={
+                {/* Inventory control board */}
+
+                <section className="min-w-0 overflow-hidden rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.075] via-card/70 to-card/40">
+                    <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+                                <Boxes className="size-4" />
+                            </span>
+
+                            <div className="min-w-0">
+                                <p className="text-[12px] font-semibold text-foreground">
+                                    Inventory Control Board
+                                </p>
+
+                                <p className="mt-0.5 text-[9px] text-muted-foreground">
+                                    Live stock value, quantity, replenishment exposure, and warehouse position health.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
                             <Badge
                                 variant="outline"
-                                className="border-emerald-500/20 bg-emerald-500/10 text-[10px] text-emerald-300"
+                                className={cn(
+                                    'h-7 w-fit gap-1.5 rounded-full px-2.5 text-[9px] font-semibold',
+                                    inventoryHealthClass,
+                                )}
                             >
-                                Current valuation
+                                {summary.records === 0 ? (
+                                    <Layers3 className="size-3" />
+                                ) : summary.low_stock === 0 &&
+                                  summary.out_of_stock === 0 ? (
+                                    <CheckCircle2 className="size-3" />
+                                ) : (
+                                    <TriangleAlert className="size-3" />
+                                )}
+
+                                {inventoryHealthLabel}
                             </Badge>
-                        }
-                    />
 
-                    <div className="grid min-w-0 max-w-full gap-3 sm:grid-cols-2">
-                        <StatCard
-                            title="Stock Records"
-                            value={formatNumber(
-                                summary.records,
-                            )}
-                            icon={<Layers3 />}
-                            iconTone="blue"
-                            description="Product and warehouse pairs"
-                        />
+                            <Button
+                                type="button"
+                                disabled={!requirementsComplete}
+                                onClick={openCreateDrawer}
+                                className="h-9 rounded-lg px-3.5 text-xs"
+                            >
+                                <Plus className="size-3.5" />
+                                Set Opening Stock
+                            </Button>
+                        </div>
+                    </div>
 
-                        <StatCard
-                            title="Total Quantity"
-                            value={formatQuantity(
-                                summary.total_quantity,
-                            )}
-                            icon={<Boxes />}
-                            iconTone="violet"
-                            description="Combined available units"
-                        />
+                    <div className="grid min-w-0 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
+                        <div className="relative overflow-hidden border-b border-border/60 p-4 xl:border-b-0 xl:border-r md:p-5">
+                            <div className="pointer-events-none absolute -left-16 -top-20 size-52 rounded-full bg-emerald-500/10 blur-3xl" />
+                            <CircleDollarSign className="pointer-events-none absolute -bottom-10 -right-6 size-36 text-emerald-400 opacity-[0.025]" />
 
-                        <StatCard
-                            title="Low Stock"
-                            value={formatNumber(
-                                summary.low_stock,
-                            )}
-                            icon={
-                                <TriangleAlert />
-                            }
-                            iconTone="amber"
-                            description="Needs replenishment"
-                        />
+                            <div className="relative">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                    <div>
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-emerald-300">
+                                            Current Inventory Valuation
+                                        </p>
 
-                        <StatCard
-                            title="Out of Stock"
-                            value={formatNumber(
-                                summary.out_of_stock,
-                            )}
-                            icon={
-                                <ArrowDownRight />
-                            }
-                            iconTone="red"
-                            description="No available quantity"
-                        />
+                                        <p className="mt-3 text-[30px] font-semibold leading-none tracking-[-0.045em] tabular-nums text-emerald-400 sm:text-[34px]">
+                                            {formatCurrency(
+                                                summary.inventory_value,
+                                            )}
+                                        </p>
+
+                                        <p className="mt-2 max-w-xl text-[9px] leading-4 text-muted-foreground">
+                                            Based on available quantity and the current weighted average acquisition cost of every stock position.
+                                        </p>
+                                    </div>
+
+                                    <div className="grid min-w-[210px] grid-cols-2 gap-2">
+                                        <div className="rounded-xl border border-violet-500/15 bg-violet-500/[0.045] px-3 py-2.5">
+                                            <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-violet-300">
+                                                Quantity
+                                            </p>
+                                            <p className="mt-1.5 text-[15px] font-semibold tabular-nums">
+                                                {formatQuantity(
+                                                    summary.total_quantity,
+                                                )}
+                                            </p>
+                                            <p className="mt-1 text-[8px] text-muted-foreground">
+                                                Available units
+                                            </p>
+                                        </div>
+
+                                        <div className="rounded-xl border border-blue-500/15 bg-blue-500/[0.045] px-3 py-2.5">
+                                            <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-blue-300">
+                                                Positions
+                                            </p>
+                                            <p className="mt-1.5 text-[15px] font-semibold tabular-nums">
+                                                {formatNumber(
+                                                    summary.records,
+                                                )}
+                                            </p>
+                                            <p className="mt-1 text-[8px] text-muted-foreground">
+                                                Product-location pairs
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-5 rounded-xl border border-border/60 bg-background/35 p-3.5">
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                            <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                                Stock Health Distribution
+                                            </p>
+                                            <p className="mt-1 text-[9px] text-muted-foreground">
+                                                Healthy positions versus replenishment and availability risks.
+                                            </p>
+                                        </div>
+
+                                        <span className="text-sm font-semibold tabular-nums text-emerald-400">
+                                            {healthyPercentage}% healthy
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-muted">
+                                        <div
+                                            className="h-full bg-emerald-400 transition-all duration-500"
+                                            style={{
+                                                width: `${healthyPercentage}%`,
+                                            }}
+                                        />
+                                        <div
+                                            className="h-full bg-amber-400 transition-all duration-500"
+                                            style={{
+                                                width: `${lowStockPercentage}%`,
+                                            }}
+                                        />
+                                        <div
+                                            className="h-full bg-red-400 transition-all duration-500"
+                                            style={{
+                                                width: `${outOfStockPercentage}%`,
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[9px]">
+                                        <span className="inline-flex items-center gap-1.5 text-emerald-400">
+                                            <span className="size-1.5 rounded-full bg-emerald-400" />
+                                            {healthyRecords} healthy
+                                        </span>
+
+                                        <span className="inline-flex items-center gap-1.5 text-amber-400">
+                                            <span className="size-1.5 rounded-full bg-amber-400" />
+                                            {summary.low_stock} low stock
+                                        </span>
+
+                                        <span className="inline-flex items-center gap-1.5 text-red-400">
+                                            <span className="size-1.5 rounded-full bg-red-400" />
+                                            {summary.out_of_stock} unavailable
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid min-w-0 grid-cols-2">
+                            <StockControlMetric
+                                title="Inventory Positions"
+                                value={formatNumber(
+                                    summary.records,
+                                )}
+                                description="Product and warehouse pairs"
+                                icon={Layers3}
+                                tone="blue"
+                                className="border-b border-r border-border/60"
+                            />
+
+                            <StockControlMetric
+                                title="Available Quantity"
+                                value={formatQuantity(
+                                    summary.total_quantity,
+                                )}
+                                description="Combined units on hand"
+                                icon={Boxes}
+                                tone="violet"
+                                className="border-b border-border/60"
+                            />
+
+                            <StockControlMetric
+                                title="Low Stock"
+                                value={formatNumber(
+                                    summary.low_stock,
+                                )}
+                                description="Below replenishment threshold"
+                                icon={TriangleAlert}
+                                tone="amber"
+                                className="border-r border-border/60"
+                            />
+
+                            <StockControlMetric
+                                title="Out of Stock"
+                                value={formatNumber(
+                                    summary.out_of_stock,
+                                )}
+                                description="No quantity available"
+                                icon={ArrowDownRight}
+                                tone="red"
+                            />
+                        </div>
                     </div>
                 </section>
 
+                {/* Inventory position directory */}
+
                 <SectionCard
-                    title="Stock Records"
-                    description="Search and filter inventory records by product, location, category, and stock status."
+                    title="Inventory Positions"
+                    description="Search product-location balances, thresholds, valuation, movement activity, and stock condition."
                     className="min-w-0 max-w-full"
+                    actions={
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Badge
+                                variant="outline"
+                                className="h-7 rounded-full border-blue-500/15 bg-blue-500/[0.06] px-2.5 text-[10px] font-medium text-blue-300"
+                            >
+                                <Layers3 className="mr-1 size-3" />
+                                {stocks.total} position
+                                {stocks.total === 1 ? '' : 's'}
+                            </Badge>
+
+                            <Button
+                                type="button"
+                                disabled={!requirementsComplete}
+                                onClick={openCreateDrawer}
+                                className="h-9 rounded-lg px-3.5 text-xs"
+                            >
+                                <Plus className="size-3.5" />
+                                Set Opening Stock
+                            </Button>
+                        </div>
+                    }
                 >
                     <FilterBar
                         onSubmit={applyFilters}
-                        contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(220px,1fr)_repeat(4,minmax(120px,0.65fr))]"
+                        contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(240px,1fr)_repeat(4,minmax(130px,0.62fr))]"
                         actions={
                             <>
                                 <Button
@@ -1217,9 +1438,8 @@ export default function StockIndex({
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={
-                                        resetFilters
-                                    }
+                                    onClick={resetFilters}
+                                    disabled={!hasActiveFilters}
                                     className="h-10 px-3 text-sm"
                                 >
                                     <RefreshCw className="size-3.5" />
@@ -1232,28 +1452,19 @@ export default function StockIndex({
                             value={search}
                             onChange={(event) =>
                                 setSearch(
-                                    event.target
-                                        .value,
+                                    event.target.value,
                                 )
                             }
-                            onClear={() =>
-                                setSearch('')
-                            }
-                            placeholder="Search product, SKU, barcode, warehouse..."
+                            onClear={() => setSearch('')}
+                            placeholder="Search product, SKU, barcode, warehouse, or branch..."
                             className="sm:col-span-2 xl:col-span-3 2xl:col-span-1"
                         />
 
                         <Select
-                            value={
-                                branchId ||
-                                ALL_VALUE
-                            }
-                            onValueChange={(
-                                value,
-                            ) =>
+                            value={branchId || ALL_VALUE}
+                            onValueChange={(value) =>
                                 handleBranchChange(
-                                    value ===
-                                        ALL_VALUE
+                                    value === ALL_VALUE
                                         ? ''
                                         : value,
                                 )
@@ -1264,42 +1475,31 @@ export default function StockIndex({
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem
-                                    value={
-                                        ALL_VALUE
-                                    }
-                                >
+                                <SelectItem value={ALL_VALUE}>
                                     All branches
                                 </SelectItem>
 
-                                {branches.map(
-                                    (branch) => (
-                                        <SelectItem
-                                            key={
-                                                branch.id
-                                            }
-                                            value={String(
-                                                branch.id,
-                                            )}
-                                        >
-                                            {branch.name}
-                                        </SelectItem>
-                                    ),
-                                )}
+                                {branches.map((branch) => (
+                                    <SelectItem
+                                        key={branch.id}
+                                        value={String(
+                                            branch.id,
+                                        )}
+                                    >
+                                        {branch.name}
+                                        {branch.is_main
+                                            ? ' — Main'
+                                            : ''}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
 
                         <Select
-                            value={
-                                warehouseId ||
-                                ALL_VALUE
-                            }
-                            onValueChange={(
-                                value,
-                            ) =>
+                            value={warehouseId || ALL_VALUE}
+                            onValueChange={(value) =>
                                 setWarehouseId(
-                                    value ===
-                                        ALL_VALUE
+                                    value === ALL_VALUE
                                         ? ''
                                         : value,
                                 )
@@ -1310,27 +1510,22 @@ export default function StockIndex({
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem
-                                    value={
-                                        ALL_VALUE
-                                    }
-                                >
+                                <SelectItem value={ALL_VALUE}>
                                     All warehouses
                                 </SelectItem>
 
                                 {filteredWarehouses.map(
                                     (warehouse) => (
                                         <SelectItem
-                                            key={
-                                                warehouse.id
-                                            }
+                                            key={warehouse.id}
                                             value={String(
                                                 warehouse.id,
                                             )}
                                         >
-                                            {
-                                                warehouse.name
-                                            }
+                                            {warehouse.name}
+                                            {warehouse.is_main
+                                                ? ' — Main'
+                                                : ''}
                                         </SelectItem>
                                     ),
                                 )}
@@ -1338,16 +1533,10 @@ export default function StockIndex({
                         </Select>
 
                         <Select
-                            value={
-                                categoryId ||
-                                ALL_VALUE
-                            }
-                            onValueChange={(
-                                value,
-                            ) =>
+                            value={categoryId || ALL_VALUE}
+                            onValueChange={(value) =>
                                 setCategoryId(
-                                    value ===
-                                        ALL_VALUE
+                                    value === ALL_VALUE
                                         ? ''
                                         : value,
                                 )
@@ -1358,20 +1547,14 @@ export default function StockIndex({
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem
-                                    value={
-                                        ALL_VALUE
-                                    }
-                                >
+                                <SelectItem value={ALL_VALUE}>
                                     All categories
                                 </SelectItem>
 
                                 {categories.map(
                                     (category) => (
                                         <SelectItem
-                                            key={
-                                                category.id
-                                            }
+                                            key={category.id}
                                             value={String(
                                                 category.id,
                                             )}
@@ -1387,32 +1570,22 @@ export default function StockIndex({
                         </Select>
 
                         <Select
-                            value={
-                                status ||
-                                ALL_VALUE
-                            }
-                            onValueChange={(
-                                value,
-                            ) =>
+                            value={status || ALL_VALUE}
+                            onValueChange={(value) =>
                                 setStatus(
-                                    value ===
-                                        ALL_VALUE
+                                    value === ALL_VALUE
                                         ? ''
                                         : value,
                                 )
                             }
                         >
                             <SelectTrigger className="h-10 w-full text-sm">
-                                <SelectValue placeholder="All statuses" />
+                                <SelectValue placeholder="All conditions" />
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem
-                                    value={
-                                        ALL_VALUE
-                                    }
-                                >
-                                    All statuses
+                                <SelectItem value={ALL_VALUE}>
+                                    All conditions
                                 </SelectItem>
 
                                 <SelectItem value="in_stock">
@@ -1435,38 +1608,38 @@ export default function StockIndex({
                         columns={stockColumns}
                         getRowKey={(stock) => stock.id}
                         emptyIcon={Boxes}
-                        emptyTitle="No stock records found"
-                        emptyDescription="No inventory records matched your filters. Adjust the filters or add a new stock record."
+                        emptyTitle="No inventory positions found"
+                        emptyDescription="No product-location balances matched the current filters. Reset the filters or create an opening stock position."
                         emptyAction={
                             <div className="flex flex-wrap justify-center gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={resetFilters}
-                                >
-                                    <RefreshCw className="size-4" />
-                                    Reset Filters
-                                </Button>
+                                {hasActiveFilters && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={resetFilters}
+                                    >
+                                        <RefreshCw className="size-4" />
+                                        Reset Filters
+                                    </Button>
+                                )}
 
                                 {requirementsComplete && (
                                     <Button
                                         type="button"
-                                        onClick={
-                                            openCreateDrawer
-                                        }
+                                        onClick={openCreateDrawer}
                                     >
                                         <Plus className="size-4" />
-                                        Add Stock
+                                        Set Opening Stock
                                     </Button>
                                 )}
                             </div>
                         }
-                        minWidth="1080px"
+                        minWidth="1180px"
                     />
 
                     <AppPagination
                         pagination={stocks}
-                        itemLabel="stock records"
+                        itemLabel="inventory positions"
                     />
                 </SectionCard>
             </PageContainer>
@@ -1480,8 +1653,8 @@ export default function StockIndex({
                         closeDrawer();
                     }
                 }}
-                title="Add Stock Record"
-                description="Connect a tracked product to a warehouse and enter its opening inventory."
+                title="Set Opening Stock"
+                description="Create the first inventory position for a tracked product at a warehouse."
                 processing={createForm.processing}
             >
                 <form
@@ -1830,8 +2003,8 @@ export default function StockIndex({
                             createForm.processing
                         }
                         onCancel={closeDrawer}
-                        submitLabel="Create Stock Record"
-                        processingLabel="Creating Stock..."
+                        submitLabel="Create Stock Position"
+                        processingLabel="Creating Position..."
                     />
                 </form>
             </AppDrawer>
@@ -2584,6 +2757,100 @@ export default function StockIndex({
 | Helpers
 |--------------------------------------------------------------------------
 */
+
+function StockControlMetric({
+    title,
+    value,
+    description,
+    icon: Icon,
+    tone,
+    className,
+}: {
+    title: string;
+    value: string;
+    description: string;
+    icon: LucideIcon;
+    tone: StockMetricTone;
+    className?: string;
+}) {
+    const toneStyles: Record<
+        StockMetricTone,
+        {
+            icon: string;
+            value: string;
+            glow: string;
+        }
+    > = {
+        blue: {
+            icon: 'border-blue-500/20 bg-blue-500/10 text-blue-400',
+            value: 'text-blue-400',
+            glow: 'bg-blue-500/10',
+        },
+        violet: {
+            icon: 'border-violet-500/20 bg-violet-500/10 text-violet-400',
+            value: 'text-violet-400',
+            glow: 'bg-violet-500/10',
+        },
+        amber: {
+            icon: 'border-amber-500/20 bg-amber-500/10 text-amber-400',
+            value: 'text-amber-400',
+            glow: 'bg-amber-500/10',
+        },
+        red: {
+            icon: 'border-red-500/20 bg-red-500/10 text-red-400',
+            value: 'text-red-400',
+            glow: 'bg-red-500/10',
+        },
+    };
+
+    const styles = toneStyles[tone];
+
+    return (
+        <div
+            className={cn(
+                'group relative min-w-0 overflow-hidden p-4 transition-colors hover:bg-muted/[0.025]',
+                className,
+            )}
+        >
+            <div
+                className={cn(
+                    'pointer-events-none absolute -bottom-12 -right-12 size-28 rounded-full blur-3xl',
+                    styles.glow,
+                )}
+            />
+
+            <div className="relative flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                        {title}
+                    </p>
+
+                    <p
+                        className={cn(
+                            'mt-2 text-xl font-semibold leading-none tabular-nums',
+                            styles.value,
+                        )}
+                    >
+                        {value}
+                    </p>
+
+                    <p className="mt-2 text-[9px] leading-4 text-muted-foreground">
+                        {description}
+                    </p>
+                </div>
+
+                <span
+                    className={cn(
+                        'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border',
+                        styles.icon,
+                    )}
+                >
+                    <Icon className="size-4" />
+                </span>
+            </div>
+        </div>
+    );
+}
 
 function getStockStatus(
     stock: WarehouseStock,

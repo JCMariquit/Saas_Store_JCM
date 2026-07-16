@@ -11,13 +11,11 @@ import { EntityInfo } from '@/components/shared/entity-info';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { FormDialog } from '@/components/shared/form-dialog';
 import { FormField } from '@/components/shared/form-field';
+import { FormSection } from '@/components/shared/form-section';
 import { IconButton } from '@/components/shared/icon-button';
 import { PageContainer } from '@/components/shared/page-container';
-import { PageHeader } from '@/components/shared/page-header';
 import { SearchInput } from '@/components/shared/search-input';
 import { SectionCard } from '@/components/shared/section-card';
-import { StatCard } from '@/components/shared/stat-card';
-import { StatsGrid } from '@/components/shared/stats-grid';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,25 +29,35 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import {
     CheckCircle2,
+    CircleGauge,
     Folder,
     FolderTree,
     Layers3,
     Package2,
     Pencil,
     Plus,
+    RefreshCw,
     Tags,
     Trash2,
     XCircle,
+    type LucideIcon,
 } from 'lucide-react';
 import {
     type FormEvent,
     useEffect,
     useState,
 } from 'react';
+
+/*
+|--------------------------------------------------------------------------
+| Types
+|--------------------------------------------------------------------------
+*/
 
 type ParentCategory = {
     id: number;
@@ -130,6 +138,17 @@ type CategoryPageProps = {
     filters: CategoryFilters;
 };
 
+type CategoryMetricTone =
+    | 'blue'
+    | 'cyan'
+    | 'violet';
+
+/*
+|--------------------------------------------------------------------------
+| Configuration
+|--------------------------------------------------------------------------
+*/
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
@@ -156,6 +175,12 @@ const emptyCategoryForm: CategoryFormData = {
 const ALL_VALUE = 'all';
 const ROOT_VALUE = 'root';
 
+/*
+|--------------------------------------------------------------------------
+| Page
+|--------------------------------------------------------------------------
+*/
+
 export default function CategoryIndex({
     categories,
     parentCategories,
@@ -174,10 +199,8 @@ export default function CategoryIndex({
     const [deleteProcessing, setDeleteProcessing] =
         useState(false);
 
-    const [
-        statusProcessingId,
-        setStatusProcessingId,
-    ] = useState<number | null>(null);
+    const [statusProcessingId, setStatusProcessingId] =
+        useState<number | null>(null);
 
     const [search, setSearch] = useState(
         filters.search ?? '',
@@ -204,9 +227,14 @@ export default function CategoryIndex({
         filters.parent_id,
     ]);
 
+    /*
+    |--------------------------------------------------------------------------
+    | Form dialog
+    |--------------------------------------------------------------------------
+    */
+
     function resetCategoryForm(): void {
         form.clearErrors();
-
         form.setData({
             ...emptyCategoryForm,
         });
@@ -285,6 +313,12 @@ export default function CategoryIndex({
         });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Filters
+    |--------------------------------------------------------------------------
+    */
+
     function applyFilters(
         event: FormEvent<HTMLFormElement>,
     ): void {
@@ -322,6 +356,12 @@ export default function CategoryIndex({
             },
         );
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Status and delete actions
+    |--------------------------------------------------------------------------
+    */
 
     function toggleStatus(
         category: Category,
@@ -378,6 +418,12 @@ export default function CategoryIndex({
         );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Derived values
+    |--------------------------------------------------------------------------
+    */
+
     const availableParentCategories =
         parentCategories.filter(
             (category) =>
@@ -385,12 +431,85 @@ export default function CategoryIndex({
                 editingCategory?.id,
         );
 
+    const nestedCategories = Math.max(
+        0,
+        summary.total - summary.root,
+    );
+
+    const activePercentage =
+        summary.total > 0
+            ? Math.round(
+                  (summary.active /
+                      summary.total) *
+                      100,
+              )
+            : 0;
+
+    const inactivePercentage =
+        summary.total > 0
+            ? Math.max(
+                  0,
+                  100 - activePercentage,
+              )
+            : 0;
+
+    const rootPercentage =
+        summary.total > 0
+            ? Math.round(
+                  (summary.root /
+                      summary.total) *
+                      100,
+              )
+            : 0;
+
+    const nestedPercentage =
+        summary.total > 0
+            ? Math.max(
+                  0,
+                  100 - rootPercentage,
+              )
+            : 0;
+
+    const hasActiveFilters = Boolean(
+        search || status || parentFilter,
+    );
+
+    const deleteHasRelations = Boolean(
+        deleteTarget &&
+            (deleteTarget.products_count > 0 ||
+                deleteTarget.children_count > 0),
+    );
+
+    const catalogHealthLabel =
+        summary.total === 0
+            ? 'Catalog structure empty'
+            : summary.inactive === 0
+              ? 'Catalog structure healthy'
+              : `${summary.inactive} categor${
+                    summary.inactive === 1
+                        ? 'y'
+                        : 'ies'
+                } inactive`;
+
+    const catalogHealthClass =
+        summary.total === 0
+            ? 'border-slate-500/20 bg-slate-500/10 text-slate-300'
+            : summary.inactive === 0
+              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+              : 'border-amber-500/20 bg-amber-500/10 text-amber-300';
+
+    /*
+    |--------------------------------------------------------------------------
+    | Table columns
+    |--------------------------------------------------------------------------
+    */
+
     const categoryColumns: DataTableColumn<Category>[] =
         [
             {
                 key: 'category',
                 header: 'Category',
-                className: 'min-w-[290px]',
+                className: 'min-w-[300px]',
                 cell: (category) => (
                     <EntityInfo
                         avatar={
@@ -400,102 +519,131 @@ export default function CategoryIndex({
                                         ? Folder
                                         : FolderTree
                                 }
+                                className={
+                                    category.parent_id
+                                        ? 'border-violet-500/15 bg-violet-500/10 text-violet-400 group-hover:border-violet-500/25 group-hover:bg-violet-500/15'
+                                        : 'border-blue-500/15 bg-blue-500/10 text-blue-400 group-hover:border-blue-500/25 group-hover:bg-blue-500/15'
+                                }
                             />
                         }
                         title={category.name}
                         badges={
-                            !category.parent_id ? (
-                                <Badge
-                                    variant="outline"
-                                    className="h-5 rounded-full border-blue-500/20 bg-blue-500/10 px-2 text-[9px] font-semibold text-blue-400"
-                                >
-                                    ROOT
-                                </Badge>
-                            ) : undefined
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    'h-5 rounded-full px-2 text-[9px] font-semibold',
+                                    category.parent_id
+                                        ? 'border-violet-500/15 bg-violet-500/[0.06] text-violet-400'
+                                        : 'border-blue-500/20 bg-blue-500/10 text-blue-400',
+                                )}
+                            >
+                                {category.parent_id
+                                    ? 'CHILD'
+                                    : 'ROOT'}
+                            </Badge>
                         }
                         subtitle={
                             <>
                                 Slug:{' '}
-                                <span className="font-medium text-foreground/70">
+                                <span className="font-mono font-semibold text-foreground/75">
                                     {category.slug}
                                 </span>
                             </>
                         }
                         description={
                             category.description ??
-                            undefined
+                            'No category description'
                         }
                     />
                 ),
             },
             {
-                key: 'parent',
-                header: 'Parent Category',
-                className: 'min-w-[170px]',
+                key: 'hierarchy',
+                header: 'Catalog Hierarchy',
+                className: 'min-w-[230px]',
                 cell: (category) =>
                     category.parent ? (
-                        <div className="flex items-center gap-2 text-[13px]">
-                            <Folder className="size-3.5 shrink-0 text-muted-foreground" />
-
-                            <span className="truncate">
-                                {
-                                    category
-                                        .parent
-                                        .name
-                                }
+                        <div className="flex items-start gap-2.5">
+                            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
+                                <Layers3 className="size-4" />
                             </span>
+
+                            <div className="min-w-0">
+                                <p className="text-[9px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                                    Nested under
+                                </p>
+
+                                <p className="mt-1 max-w-[175px] truncate text-[12px] font-semibold text-foreground/85">
+                                    {category.parent.name}
+                                </p>
+
+                                <p className="mt-1 max-w-[175px] truncate font-mono text-[9px] text-violet-400/80">
+                                    {category.parent.slug}
+                                    {' / '}
+                                    {category.slug}
+                                </p>
+                            </div>
                         </div>
                     ) : (
-                        <span className="text-[13px] text-muted-foreground">
-                            No parent
-                        </span>
+                        <div className="flex items-start gap-2.5">
+                            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+                                <FolderTree className="size-4" />
+                            </span>
+
+                            <div className="min-w-0">
+                                <p className="text-[9px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                                    Top-level group
+                                </p>
+
+                                <p className="mt-1 text-[12px] font-semibold text-foreground/85">
+                                    Root category
+                                </p>
+
+                                <p className="mt-1 text-[9px] text-muted-foreground">
+                                    No parent assignment
+                                </p>
+                            </div>
+                        </div>
                     ),
             },
             {
-                key: 'products',
-                header: 'Products',
+                key: 'catalog-usage',
+                header: 'Catalog Usage',
+                className: 'min-w-[190px]',
                 cell: (category) => (
-                    <Badge
-                        variant="outline"
-                        className="h-7 gap-1.5 rounded-full border-amber-500/15 bg-amber-500/10 px-2.5 text-[10px] font-medium text-amber-300"
-                    >
-                        <span className="inline-flex size-4 items-center justify-center rounded-full bg-amber-500/15 text-amber-300">
-                            <Package2 className="size-2.5" />
-                        </span>
-                        {category.products_count}
-                    </Badge>
-                ),
-            },
-            {
-                key: 'subcategories',
-                header: 'Subcategories',
-                cell: (category) => (
-                    <Badge
-                        variant="outline"
-                        className="h-7 gap-1.5 rounded-full border-violet-500/15 bg-violet-500/10 px-2.5 text-[10px] font-medium text-violet-300"
-                    >
-                        <span className="inline-flex size-4 items-center justify-center rounded-full bg-violet-500/15 text-violet-300">
-                            <Layers3 className="size-2.5" />
-                        </span>
-                        {category.children_count}
-                    </Badge>
+                    <CategoryUsage
+                        products={
+                            category.products_count
+                        }
+                        children={
+                            category.children_count
+                        }
+                    />
                 ),
             },
             {
                 key: 'sort-order',
-                header: 'Sort Order',
+                header: 'Display Order',
+                className: 'min-w-[120px]',
                 cell: (category) => (
-                    <Badge
-                        variant="outline"
-                        className="h-6 min-w-8 justify-center rounded-full border-border/70 bg-muted/30 px-2 text-[10px] font-medium text-foreground"
-                    >
-                        {category.sort_order}
-                    </Badge>
+                    <div className="space-y-1.5">
+                        <Badge
+                            variant="outline"
+                            className="h-7 min-w-10 justify-center rounded-full border-border/70 bg-muted/25 px-2.5 font-mono text-[11px] font-semibold text-foreground"
+                        >
+                            #{category.sort_order}
+                        </Badge>
+
+                        <p className="text-[9px] text-muted-foreground">
+                            Lower displays first
+                        </p>
+                    </div>
                 ),
             },
             {
                 key: 'status',
-                header: 'Status',
+                header: 'Availability',
+                className: 'min-w-[120px]',
                 cell: (category) => (
                     <Button
                         type="button"
@@ -506,9 +654,7 @@ export default function CategoryIndex({
                             category.id
                         }
                         onClick={() =>
-                            toggleStatus(
-                                category,
-                            )
+                            toggleStatus(category)
                         }
                         className="h-auto rounded-full p-0 disabled:opacity-60"
                     >
@@ -521,7 +667,7 @@ export default function CategoryIndex({
                             variant={
                                 category.is_active
                                     ? 'success'
-                                    : 'neutral'
+                                    : 'danger'
                             }
                         />
                     </Button>
@@ -530,8 +676,7 @@ export default function CategoryIndex({
             {
                 key: 'actions',
                 header: 'Actions',
-                headerClassName:
-                    'text-right',
+                headerClassName: 'text-right',
                 className: 'text-right',
                 cell: (category) => (
                     <ActionGroup>
@@ -542,6 +687,7 @@ export default function CategoryIndex({
                                     category,
                                 )
                             }
+                            className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
                         >
                             <Pencil className="size-3.5" />
                         </IconButton>
@@ -570,74 +716,344 @@ export default function CategoryIndex({
             },
         ];
 
-    const deleteHasRelations =
-        Boolean(
-            deleteTarget &&
-                (deleteTarget.products_count > 0 ||
-                    deleteTarget.children_count >
-                        0),
-        );
+    /*
+    |--------------------------------------------------------------------------
+    | Render
+    |--------------------------------------------------------------------------
+    */
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Categories" />
 
-            <PageContainer>
-                <PageHeader
-                    eyebrow="Inventory Management"
-                    title="Categories"
-                    description="Organize products using main categories and subcategories."
-                    actions={
-                        <Button
-                            type="button"
-                            onClick={
-                                openCreateDialog
-                            }
-                            className="h-10 rounded-xl px-4 text-sm"
+            <PageContainer className="gap-4 md:gap-5">
+                {/* Catalog structure board */}
+
+                <section className="min-w-0 overflow-hidden rounded-2xl border border-blue-500/15 bg-gradient-to-br from-blue-500/[0.075] via-card/70 to-card/40">
+                    <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400">
+                                <FolderTree className="size-4" />
+                            </span>
+
+                            <div className="min-w-0">
+                                <p className="text-[11px] font-semibold text-foreground">
+                                    Catalog Structure Board
+                                </p>
+
+                                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                    Category availability, hierarchy balance, and product-group organization.
+                                </p>
+                            </div>
+                        </div>
+
+                        <Badge
+                            variant="outline"
+                            className={cn(
+                                'h-6 w-fit shrink-0 gap-1.5 rounded-full px-2.5 text-[9px] font-semibold',
+                                catalogHealthClass,
+                            )}
                         >
-                            <Plus className="size-4" />
-                            Add Category
-                        </Button>
+                            {summary.total === 0 ? (
+                                <Tags className="size-3" />
+                            ) : summary.inactive === 0 ? (
+                                <CheckCircle2 className="size-3" />
+                            ) : (
+                                <XCircle className="size-3" />
+                            )}
+
+                            {catalogHealthLabel}
+                        </Badge>
+                    </div>
+
+                    <div className="grid min-w-0 xl:grid-cols-[minmax(320px,1.05fr)_minmax(0,1.95fr)]">
+                        {/* Primary catalog coverage */}
+
+                        <div className="relative overflow-hidden border-b border-border/60 p-4 xl:border-b-0 xl:border-r md:p-5">
+                            <div className="pointer-events-none absolute -left-16 -top-20 size-52 rounded-full bg-blue-500/10 blur-3xl" />
+                            <FolderTree className="pointer-events-none absolute -bottom-8 -right-5 size-32 text-blue-400 opacity-[0.022]" />
+
+                            <div className="relative">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-blue-300">
+                                            Active catalog coverage
+                                        </p>
+
+                                        <div className="mt-3 flex items-center gap-3">
+                                            <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400">
+                                                <CircleGauge className="size-5" />
+                                            </span>
+
+                                            <div>
+                                                <p className="text-[28px] font-semibold leading-none tracking-[-0.04em] tabular-nums">
+                                                    {summary.active}
+
+                                                    <span className="mx-1.5 text-base font-medium text-muted-foreground">
+                                                        /
+                                                    </span>
+
+                                                    {summary.total}
+                                                </p>
+
+                                                <p className="mt-1.5 text-[9px] text-muted-foreground">
+                                                    Categories ready for product assignment
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-right">
+                                        <p className="text-xl font-semibold tabular-nums text-blue-400">
+                                            {activePercentage}%
+                                        </p>
+
+                                        <p className="mt-1 text-[8px] uppercase tracking-wider text-muted-foreground">
+                                            Available
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-5">
+                                    <div className="flex items-center justify-between gap-3 text-[9px] font-medium">
+                                        <span className="inline-flex items-center gap-1.5 text-emerald-400">
+                                            <span className="size-1.5 rounded-full bg-emerald-400" />
+                                            {summary.active} active
+                                        </span>
+
+                                        <span className="inline-flex items-center gap-1.5 text-red-400">
+                                            {summary.inactive} inactive
+                                            <span className="size-1.5 rounded-full bg-red-400" />
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-muted">
+                                        <div
+                                            className="h-full bg-emerald-400 transition-all duration-500"
+                                            style={{
+                                                width: `${activePercentage}%`,
+                                            }}
+                                        />
+
+                                        <div
+                                            className="h-full bg-red-400 transition-all duration-500"
+                                            style={{
+                                                width: `${inactivePercentage}%`,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 rounded-xl border border-border/60 bg-background/40 px-3 py-2.5">
+                                    <div className="flex items-center gap-2.5">
+                                        <span
+                                            className={cn(
+                                                'inline-flex size-7 shrink-0 items-center justify-center rounded-lg',
+                                                summary.total === 0
+                                                    ? 'bg-slate-500/10 text-slate-400'
+                                                    : summary.inactive === 0
+                                                      ? 'bg-emerald-500/10 text-emerald-400'
+                                                      : 'bg-amber-500/10 text-amber-400',
+                                            )}
+                                        >
+                                            {summary.total === 0 ? (
+                                                <Tags className="size-3.5" />
+                                            ) : summary.inactive === 0 ? (
+                                                <CheckCircle2 className="size-3.5" />
+                                            ) : (
+                                                <XCircle className="size-3.5" />
+                                            )}
+                                        </span>
+
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] font-semibold text-foreground/85">
+                                                {summary.total === 0
+                                                    ? 'Create the first catalog group'
+                                                    : summary.inactive === 0
+                                                      ? 'All category groups are available'
+                                                      : 'Catalog availability needs review'}
+                                            </p>
+
+                                            <p className="mt-0.5 text-[9px] text-muted-foreground">
+                                                {summary.total === 0
+                                                    ? 'Root categories establish the main product organization.'
+                                                    : summary.inactive === 0
+                                                      ? 'Products can use every registered category.'
+                                                      : `${summary.inactive} inactive categor${
+                                                            summary.inactive === 1
+                                                                ? 'y is'
+                                                                : 'ies are'
+                                                        } unavailable for assignment.`}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Structure snapshots and distribution */}
+
+                        <div className="min-w-0">
+                            <div className="grid min-w-0 sm:grid-cols-3">
+                                <CategorySnapshot
+                                    title="Total Categories"
+                                    value={summary.total}
+                                    description="Registered catalog groups"
+                                    icon={Tags}
+                                    tone="blue"
+                                    className="border-b border-border/60 sm:border-r"
+                                />
+
+                                <CategorySnapshot
+                                    title="Root Groups"
+                                    value={summary.root}
+                                    description="Top-level categories"
+                                    icon={FolderTree}
+                                    tone="violet"
+                                    className="border-b border-border/60 sm:border-r"
+                                />
+
+                                <CategorySnapshot
+                                    title="Subcategories"
+                                    value={nestedCategories}
+                                    description="Nested catalog groups"
+                                    icon={Layers3}
+                                    tone="cyan"
+                                    className="border-b border-border/60"
+                                />
+                            </div>
+
+                            <div className="grid min-w-0 md:grid-cols-2">
+                                <div className="border-b border-border/60 p-4 md:border-b-0 md:border-r">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="text-[10px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                                Structure distribution
+                                            </p>
+
+                                            <p className="mt-1 text-[10px] text-muted-foreground">
+                                                Root groups versus nested categories
+                                            </p>
+                                        </div>
+
+                                        <span className="text-sm font-semibold tabular-nums text-violet-400">
+                                            {summary.root}/{summary.total}
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-4 flex h-2 overflow-hidden rounded-full bg-muted">
+                                        <div
+                                            className="h-full bg-violet-400 transition-all duration-500"
+                                            style={{
+                                                width: `${rootPercentage}%`,
+                                            }}
+                                        />
+
+                                        <div
+                                            className="h-full bg-cyan-400 transition-all duration-500"
+                                            style={{
+                                                width: `${nestedPercentage}%`,
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[9px]">
+                                        <span className="inline-flex items-center gap-1.5 text-violet-400">
+                                            <span className="size-1.5 rounded-full bg-violet-400" />
+                                            {summary.root} root
+                                        </span>
+
+                                        <span className="inline-flex items-center gap-1.5 text-cyan-400">
+                                            <span className="size-1.5 rounded-full bg-cyan-400" />
+                                            {nestedCategories} nested
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div>
+                                            <p className="text-[10px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                                Hierarchy readiness
+                                            </p>
+
+                                            <p className="mt-1 text-[10px] text-muted-foreground">
+                                                Catalog organization at a glance
+                                            </p>
+                                        </div>
+
+                                        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+                                            <FolderTree className="size-4" />
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-4 rounded-xl border border-blue-500/10 bg-blue-500/[0.035] px-3 py-2.5">
+                                        <div className="flex items-center gap-2.5">
+                                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
+                                                <Layers3 className="size-4" />
+                                            </span>
+
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] font-semibold text-foreground/85">
+                                                    {summary.total === 0
+                                                        ? 'No category hierarchy yet'
+                                                        : nestedCategories === 0
+                                                          ? 'Flat catalog structure'
+                                                          : 'Nested catalog structure active'}
+                                                </p>
+
+                                                <p className="mt-0.5 text-[9px] text-muted-foreground">
+                                                    {summary.total === 0
+                                                        ? 'Add a root category to begin organizing products.'
+                                                        : nestedCategories === 0
+                                                          ? 'All categories currently sit at the root level.'
+                                                          : `${nestedCategories} subcategor${
+                                                                nestedCategories === 1
+                                                                    ? 'y is'
+                                                                    : 'ies are'
+                                                            } grouped under parent categories.`}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Category directory */}
+
+                <SectionCard
+                    title="Category Directory"
+                    description="Manage catalog groups, parent relationships, product usage, display order, and availability."
+                    actions={
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Badge
+                                variant="outline"
+                                className="h-7 rounded-full border-blue-500/15 bg-blue-500/[0.06] px-2.5 text-[10px] font-medium text-blue-300"
+                            >
+                                <Tags className="mr-1 size-3" />
+                                {categories.total}{' '}
+                                categor{categories.total === 1
+                                    ? 'y'
+                                    : 'ies'}
+                            </Badge>
+
+                            <Button
+                                type="button"
+                                onClick={openCreateDialog}
+                                className="h-9 rounded-lg px-3.5 text-xs"
+                            >
+                                <Plus className="size-3.5" />
+                                Add Category
+                            </Button>
+                        </div>
                     }
-                />
-
-                <StatsGrid>
-                    <StatCard
-                        title="Total Categories"
-                        value={summary.total}
-                        icon={<Tags />}
-                        iconTone="blue"
-                        description="All category records"
-                    />
-
-                    <StatCard
-                        title="Active Categories"
-                        value={summary.active}
-                        icon={<CheckCircle2 />}
-                        iconTone="emerald"
-                        description="Available for products"
-                    />
-
-                    <StatCard
-                        title="Root Categories"
-                        value={summary.root}
-                        icon={<FolderTree />}
-                        iconTone="violet"
-                        description="Main category groups"
-                    />
-
-                    <StatCard
-                        title="Inactive Categories"
-                        value={summary.inactive}
-                        icon={<XCircle />}
-                        iconTone="red"
-                        description="Currently unavailable"
-                    />
-                </StatsGrid>
-
-                <SectionCard>
+                >
                     <FilterBar
                         onSubmit={applyFilters}
+                        contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_230px_170px]"
                         actions={
                             <>
                                 <Button
@@ -651,11 +1067,11 @@ export default function CategoryIndex({
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={
-                                        resetFilters
-                                    }
-                                    className="h-10 px-4 text-sm"
+                                    onClick={resetFilters}
+                                    disabled={!hasActiveFilters}
+                                    className="h-10 px-3 text-sm"
                                 >
+                                    <RefreshCw className="size-3.5" />
                                     Reset
                                 </Button>
                             </>
@@ -665,15 +1081,14 @@ export default function CategoryIndex({
                             value={search}
                             onChange={(event) =>
                                 setSearch(
-                                    event.target
-                                        .value,
+                                    event.target.value,
                                 )
                             }
                             onClear={() =>
                                 setSearch('')
                             }
                             placeholder="Search category name, slug, or description..."
-                            className="xl:min-w-[280px]"
+                            className="sm:col-span-2 xl:col-span-1"
                         />
 
                         <Select
@@ -681,34 +1096,27 @@ export default function CategoryIndex({
                                 parentFilter ||
                                 ALL_VALUE
                             }
-                            onValueChange={(
-                                value,
-                            ) =>
+                            onValueChange={(value) =>
                                 setParentFilter(
-                                    value ===
-                                        ALL_VALUE
+                                    value === ALL_VALUE
                                         ? ''
                                         : value,
                                 )
                             }
                         >
-                            <SelectTrigger className="h-10 w-full text-sm xl:w-[210px]">
+                            <SelectTrigger className="h-10 w-full text-sm">
                                 <SelectValue placeholder="All category levels" />
                             </SelectTrigger>
 
                             <SelectContent>
                                 <SelectItem
-                                    value={
-                                        ALL_VALUE
-                                    }
+                                    value={ALL_VALUE}
                                 >
                                     All category levels
                                 </SelectItem>
 
                                 <SelectItem
-                                    value={
-                                        ROOT_VALUE
-                                    }
+                                    value={ROOT_VALUE}
                                 >
                                     Root categories only
                                 </SelectItem>
@@ -723,11 +1131,8 @@ export default function CategoryIndex({
                                                 category.id,
                                             )}
                                         >
-                                            Subcategories
-                                            of{' '}
-                                            {
-                                                category.name
-                                            }
+                                            Children of{' '}
+                                            {category.name}
                                         </SelectItem>
                                     ),
                                 )}
@@ -736,29 +1141,23 @@ export default function CategoryIndex({
 
                         <Select
                             value={
-                                status ||
-                                ALL_VALUE
+                                status || ALL_VALUE
                             }
-                            onValueChange={(
-                                value,
-                            ) =>
+                            onValueChange={(value) =>
                                 setStatus(
-                                    value ===
-                                        ALL_VALUE
+                                    value === ALL_VALUE
                                         ? ''
                                         : value,
                                 )
                             }
                         >
-                            <SelectTrigger className="h-10 w-full text-sm xl:w-[160px]">
+                            <SelectTrigger className="h-10 w-full text-sm">
                                 <SelectValue placeholder="All statuses" />
                             </SelectTrigger>
 
                             <SelectContent>
                                 <SelectItem
-                                    value={
-                                        ALL_VALUE
-                                    }
+                                    value={ALL_VALUE}
                                 >
                                     All statuses
                                 </SelectItem>
@@ -782,19 +1181,17 @@ export default function CategoryIndex({
                         }
                         emptyIcon={Tags}
                         emptyTitle="No categories found"
-                        emptyDescription="Try adjusting your filters or create your first product category."
+                        emptyDescription="Adjust the current filters or create the first category in your product catalog."
                         emptyAction={
                             <Button
                                 type="button"
-                                onClick={
-                                    openCreateDialog
-                                }
+                                onClick={openCreateDialog}
                             >
-                                <Plus />
+                                <Plus className="size-4" />
                                 Add Category
                             </Button>
                         }
-                        minWidth="1020px"
+                        minWidth="1060px"
                     />
 
                     <AppPagination
@@ -803,6 +1200,8 @@ export default function CategoryIndex({
                     />
                 </SectionCard>
             </PageContainer>
+
+            {/* Create and edit form */}
 
             <FormDialog
                 open={isDialogOpen}
@@ -816,8 +1215,8 @@ export default function CategoryIndex({
                 }
                 description={
                     editingCategory
-                        ? `Update the information for ${editingCategory.name}.`
-                        : 'Enter the category information below.'
+                        ? `Update the catalog structure and availability for ${editingCategory.name}.`
+                        : 'Create a root category or place a new category under an existing catalog group.'
                 }
                 onSubmit={submitCategory}
                 processing={form.processing}
@@ -833,70 +1232,117 @@ export default function CategoryIndex({
                 }
                 maxWidth="max-w-2xl"
             >
-                <FormField
-                    id="parent_id"
-                    label="Parent Category"
-                    description="Leave this as a root category when it does not belong under another category."
-                    error={
-                        form.errors.parent_id
-                    }
+                <FormSection
+                    title="Catalog Placement"
+                    description="Choose where this category belongs and control its display priority."
+                    icon={<FolderTree />}
                 >
-                    <Select
-                        value={
-                            form.data.parent_id ||
-                            ROOT_VALUE
-                        }
-                        disabled={form.processing}
-                        onValueChange={(value) =>
-                            form.setData(
-                                'parent_id',
-                                value ===
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                            id="parent_id"
+                            label="Parent Category"
+                            description="Leave this as root when it is a main catalog group."
+                            error={
+                                form.errors.parent_id
+                            }
+                        >
+                            <Select
+                                value={
+                                    form.data
+                                        .parent_id ||
                                     ROOT_VALUE
-                                    ? ''
-                                    : value,
-                            )
-                        }
-                    >
-                        <SelectTrigger id="parent_id">
-                            <SelectValue placeholder="Select a parent category" />
-                        </SelectTrigger>
-
-                        <SelectContent>
-                            <SelectItem
-                                value={ROOT_VALUE}
+                                }
+                                disabled={
+                                    form.processing
+                                }
+                                onValueChange={(value) =>
+                                    form.setData(
+                                        'parent_id',
+                                        value ===
+                                            ROOT_VALUE
+                                            ? ''
+                                            : value,
+                                    )
+                                }
                             >
-                                No parent — root
-                                category
-                            </SelectItem>
+                                <SelectTrigger id="parent_id">
+                                    <SelectValue placeholder="Select a parent category" />
+                                </SelectTrigger>
 
-                            {availableParentCategories.map(
-                                (category) => (
+                                <SelectContent>
                                     <SelectItem
-                                        key={
-                                            category.id
+                                        value={
+                                            ROOT_VALUE
                                         }
-                                        value={String(
-                                            category.id,
-                                        )}
                                     >
-                                        {category.name}
-                                        {!category.is_active
-                                            ? ' — Inactive'
-                                            : ''}
+                                        No parent — root category
                                     </SelectItem>
-                                ),
-                            )}
-                        </SelectContent>
-                    </Select>
-                </FormField>
 
-                <div className="grid gap-5 md:grid-cols-2">
+                                    {availableParentCategories.map(
+                                        (category) => (
+                                            <SelectItem
+                                                key={
+                                                    category.id
+                                                }
+                                                value={String(
+                                                    category.id,
+                                                )}
+                                            >
+                                                {category.name}
+                                                {!category.is_active
+                                                    ? ' — Inactive'
+                                                    : ''}
+                                            </SelectItem>
+                                        ),
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </FormField>
+
+                        <FormField
+                            id="sort_order"
+                            label="Display Order"
+                            description="Lower numbers appear first."
+                            error={
+                                form.errors
+                                    .sort_order
+                            }
+                            required
+                        >
+                            <Input
+                                id="sort_order"
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={
+                                    form.data
+                                        .sort_order
+                                }
+                                disabled={
+                                    form.processing
+                                }
+                                onChange={(event) =>
+                                    form.setData(
+                                        'sort_order',
+                                        event.target
+                                            .value,
+                                    )
+                                }
+                                placeholder="0"
+                            />
+                        </FormField>
+                    </div>
+                </FormSection>
+
+                <FormSection
+                    title="Category Identity"
+                    description="Enter the name and optional internal description for this catalog group."
+                    icon={<Tags />}
+                >
                     <FormField
                         id="name"
                         label="Category Name"
-                        error={
-                            form.errors.name
-                        }
+                        error={form.errors.name}
                         required
                     >
                         <Input
@@ -909,8 +1355,7 @@ export default function CategoryIndex({
                             onChange={(event) =>
                                 form.setData(
                                     'name',
-                                    event.target
-                                        .value,
+                                    event.target.value,
                                 )
                             }
                             placeholder="Beverages"
@@ -920,91 +1365,74 @@ export default function CategoryIndex({
                     </FormField>
 
                     <FormField
-                        id="sort_order"
-                        label="Sort Order"
-                        description="Lower numbers appear first."
+                        id="description"
+                        label="Description"
+                        description="Optional description used to explain the purpose of this category."
                         error={
-                            form.errors
-                                .sort_order
+                            form.errors.description
                         }
-                        required
                     >
-                        <Input
-                            id="sort_order"
-                            type="number"
-                            min="0"
-                            step="1"
+                        <Textarea
+                            id="description"
+                            rows={4}
                             value={
-                                form.data
-                                    .sort_order
+                                form.data.description
                             }
                             disabled={
                                 form.processing
                             }
                             onChange={(event) =>
                                 form.setData(
-                                    'sort_order',
-                                    event.target
-                                        .value,
+                                    'description',
+                                    event.target.value,
                                 )
                             }
-                            placeholder="0"
+                            placeholder="Optional category description"
+                            className="resize-none"
                         />
                     </FormField>
-                </div>
+                </FormSection>
 
-                <FormField
-                    id="description"
-                    label="Description"
-                    description="Optional internal description for this category."
-                    error={
-                        form.errors.description
-                    }
+                <FormSection
+                    title="Catalog Availability"
+                    description="Control whether products may use this category."
+                    icon={<CheckCircle2 />}
                 >
-                    <Textarea
-                        id="description"
-                        rows={4}
-                        value={
-                            form.data.description
+                    <BooleanField
+                        id="is_active"
+                        checked={
+                            form.data.is_active
                         }
-                        disabled={form.processing}
-                        onChange={(event) =>
+                        disabled={
+                            form.processing
+                        }
+                        onCheckedChange={(
+                            checked,
+                        ) =>
                             form.setData(
-                                'description',
-                                event.target.value,
+                                'is_active',
+                                checked,
                             )
                         }
-                        placeholder="Optional category description"
-                        className="resize-none"
+                        label="Active Category"
+                        description="Active categories are available when assigning or updating products."
+                        error={
+                            form.errors.is_active
+                        }
+                        className="border-emerald-500/15 bg-emerald-500/[0.035]"
                     />
-                </FormField>
-
-                <BooleanField
-                    id="is_active"
-                    checked={
-                        form.data.is_active
-                    }
-                    disabled={form.processing}
-                    onCheckedChange={(
-                        checked,
-                    ) =>
-                        form.setData(
-                            'is_active',
-                            checked,
-                        )
-                    }
-                    label="Active Category"
-                    description="Active categories can be assigned to products."
-                    error={
-                        form.errors.is_active
-                    }
-                />
+                </FormSection>
             </FormDialog>
+
+            {/* Delete confirmation */}
 
             <ConfirmDialog
                 open={deleteTarget !== null}
                 onOpenChange={(open) => {
-                    if (!open) {
+                    if (
+                        !open &&
+                        !deleteProcessing
+                    ) {
                         setDeleteTarget(null);
                     }
                 }}
@@ -1020,5 +1448,140 @@ export default function CategoryIndex({
                 onConfirm={deleteCategory}
             />
         </AppLayout>
+    );
+}
+
+/*
+|--------------------------------------------------------------------------
+| Local presentation helpers
+|--------------------------------------------------------------------------
+*/
+
+function CategorySnapshot({
+    title,
+    value,
+    description,
+    icon: Icon,
+    tone,
+    className,
+}: {
+    title: string;
+    value: number;
+    description: string;
+    icon: LucideIcon;
+    tone: CategoryMetricTone;
+    className?: string;
+}) {
+    const toneStyles: Record<
+        CategoryMetricTone,
+        {
+            icon: string;
+            value: string;
+            glow: string;
+        }
+    > = {
+        blue: {
+            icon: 'border-blue-500/20 bg-blue-500/10 text-blue-400',
+            value: 'text-blue-400',
+            glow: 'bg-blue-500/10',
+        },
+        cyan: {
+            icon: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-400',
+            value: 'text-cyan-400',
+            glow: 'bg-cyan-500/10',
+        },
+        violet: {
+            icon: 'border-violet-500/20 bg-violet-500/10 text-violet-400',
+            value: 'text-violet-400',
+            glow: 'bg-violet-500/10',
+        },
+    };
+
+    const styles = toneStyles[tone];
+
+    return (
+        <div
+            className={cn(
+                'group relative min-w-0 overflow-hidden px-4 py-3.5 transition-colors hover:bg-muted/[0.025]',
+                className,
+            )}
+        >
+            <div
+                className={cn(
+                    'pointer-events-none absolute -right-10 -top-10 size-24 rounded-full blur-2xl',
+                    styles.glow,
+                )}
+            />
+
+            <div className="relative flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                        {title}
+                    </p>
+
+                    <p
+                        className={cn(
+                            'mt-2 text-xl font-semibold leading-none tabular-nums',
+                            styles.value,
+                        )}
+                    >
+                        {value}
+                    </p>
+
+                    <p className="mt-1.5 truncate text-[9px] text-muted-foreground">
+                        {description}
+                    </p>
+                </div>
+
+                <span
+                    className={cn(
+                        'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border',
+                        styles.icon,
+                    )}
+                >
+                    <Icon className="size-4" />
+                </span>
+            </div>
+        </div>
+    );
+}
+
+function CategoryUsage({
+    products,
+    children,
+}: {
+    products: number;
+    children: number;
+}) {
+    return (
+        <div className="grid grid-cols-2 gap-2">
+            <div className="min-w-0 rounded-lg border border-amber-500/15 bg-amber-500/[0.045] px-2.5 py-2">
+                <div className="flex items-center gap-1.5">
+                    <Package2 className="size-3 text-amber-400" />
+
+                    <span className="text-[12px] font-semibold tabular-nums text-foreground">
+                        {products}
+                    </span>
+                </div>
+
+                <p className="mt-1 truncate text-[8px] text-muted-foreground">
+                    Products
+                </p>
+            </div>
+
+            <div className="min-w-0 rounded-lg border border-violet-500/15 bg-violet-500/[0.045] px-2.5 py-2">
+                <div className="flex items-center gap-1.5">
+                    <Layers3 className="size-3 text-violet-400" />
+
+                    <span className="text-[12px] font-semibold tabular-nums text-foreground">
+                        {children}
+                    </span>
+                </div>
+
+                <p className="mt-1 truncate text-[8px] text-muted-foreground">
+                    Children
+                </p>
+            </div>
+        </div>
     );
 }

@@ -14,11 +14,8 @@ import { FormField } from '@/components/shared/form-field';
 import { IconButton } from '@/components/shared/icon-button';
 import { MoneyInput } from '@/components/shared/money-input';
 import { PageContainer } from '@/components/shared/page-container';
-import { PageHeader } from '@/components/shared/page-header';
 import { SearchInput } from '@/components/shared/search-input';
 import { SectionCard } from '@/components/shared/section-card';
-import { StatCard } from '@/components/shared/stat-card';
-import { StatsGrid } from '@/components/shared/stats-grid';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,19 +29,23 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import {
+    Activity,
     Barcode,
     Boxes,
     CheckCircle2,
     Package2,
     Pencil,
     Plus,
+    RefreshCw,
     Tags,
     Trash2,
     Warehouse,
     XCircle,
+    type LucideIcon,
 } from 'lucide-react';
 import {
     type FormEvent,
@@ -153,6 +154,12 @@ type ProductPageProps = {
     summary: ProductSummary;
     filters: ProductFilters;
 };
+
+type ProductMetricTone =
+    | 'blue'
+    | 'cyan'
+    | 'violet'
+    | 'amber';
 
 /*
 |--------------------------------------------------------------------------
@@ -504,178 +511,224 @@ export default function ProductIndex({
     |--------------------------------------------------------------------------
     */
 
-    const productColumns: DataTableColumn<Product>[] =
-        [
-            {
-                key: 'product',
-                header: 'Product',
-                className: 'min-w-[270px]',
-                cell: (product) => (
-                    <EntityInfo
-                        avatar={
-                            <EntityAvatar
-                                icon={Package2}
-                                className="border-blue-500/15 bg-blue-500/10 text-blue-400 group-hover:border-blue-500/25 group-hover:bg-blue-500/15"
-                            />
-                        }
-                        title={product.name}
-                        subtitle={
-                            <>
-                                Unit:{' '}
-                                <span className="font-semibold text-foreground/70">
-                                    {product.unit}
-                                </span>
-                            </>
-                        }
-                        description={
-                            product.description ??
-                            undefined
-                        }
-                    />
-                ),
-            },
-            {
-                key: 'category',
-                header: 'Category',
-                className: 'min-w-[165px]',
-                cell: (product) =>
-                    product.category ? (
-                        <Badge
-                            variant="outline"
-                            className="h-7 gap-1.5 rounded-full border-blue-500/15 bg-blue-500/10 px-2.5 text-[10px] font-medium text-blue-300"
-                        >
-                            <span className="inline-flex size-4 items-center justify-center rounded-full bg-blue-500/15 text-blue-300">
-                                <Tags className="size-2.5" />
-                            </span>
-
-                            <span className="max-w-28 truncate">
-                                {
-                                    product.category
-                                        .name
-                                }
-                            </span>
-                        </Badge>
-                    ) : (
-                        <StatusBadge
-                            label="Uncategorized"
-                            variant="neutral"
-                            showIcon={false}
+    const productColumns: DataTableColumn<Product>[] = [
+        {
+            key: 'product',
+            header: 'Product',
+            className: 'min-w-[285px]',
+            cell: (product) => (
+                <EntityInfo
+                    avatar={
+                        <EntityAvatar
+                            icon={Package2}
+                            className="border-violet-500/15 bg-violet-500/10 text-violet-400 group-hover:border-violet-500/25 group-hover:bg-violet-500/15"
                         />
-                    ),
-            },
-            {
-                key: 'identification',
-                header: 'Identification',
-                className: 'min-w-[180px]',
-                cell: (product) => (
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-[11px]">
-                            <span className="w-12 text-muted-foreground">
-                                SKU
+                    }
+                    title={product.name}
+                    badges={
+                        product.stock_tracking === 'tracked' ? (
+                            <Badge
+                                variant="outline"
+                                className="h-5 gap-1 rounded-full border-violet-500/15 bg-violet-500/[0.06] px-2 text-[9px] font-semibold text-violet-300"
+                            >
+                                <Boxes className="size-2.5" />
+                                TRACKED
+                            </Badge>
+                        ) : undefined
+                    }
+                    subtitle={
+                        <>
+                            Unit:{' '}
+                            <span className="font-mono font-semibold text-foreground/75">
+                                {product.unit}
                             </span>
+                        </>
+                    }
+                    description={
+                        product.description ??
+                        'No product description provided'
+                    }
+                />
+            ),
+        },
+        {
+            key: 'catalog',
+            header: 'Catalog Placement',
+            className: 'min-w-[190px]',
+            cell: (product) =>
+                product.category ? (
+                    <div className="flex items-start gap-2.5">
+                        <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+                            <Tags className="size-4" />
+                        </span>
 
-                            <span className="font-mono font-medium text-foreground/80">
-                                {product.sku ?? '—'}
-                            </span>
+                        <div className="min-w-0">
+                            <p className="max-w-[145px] truncate text-[12px] font-semibold text-foreground/85">
+                                {product.category.name}
+                            </p>
+
+                            <p className="mt-1 max-w-[145px] truncate font-mono text-[9px] text-blue-400/80">
+                                {product.category.slug}
+                            </p>
+
+                            <p
+                                className={cn(
+                                    'mt-1.5 text-[9px] font-medium',
+                                    product.category.is_active
+                                        ? 'text-emerald-400'
+                                        : 'text-amber-400',
+                                )}
+                            >
+                                {product.category.is_active
+                                    ? 'Available category'
+                                    : 'Inactive category'}
+                            </p>
                         </div>
+                    </div>
+                ) : (
+                    <div className="flex items-start gap-2.5">
+                        <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-slate-500/15 bg-slate-500/[0.06] text-slate-400">
+                            <Tags className="size-4" />
+                        </span>
 
-                        <div className="flex items-center gap-2 text-[11px]">
-                            <span className="flex w-12 items-center gap-1 text-muted-foreground">
-                                <Barcode className="size-3" />
-                                Code
-                            </span>
-
-                            <span className="font-mono text-foreground/70">
-                                {product.barcode ??
-                                    '—'}
-                            </span>
+                        <div>
+                            <p className="text-[11px] font-semibold text-slate-300">
+                                Uncategorized
+                            </p>
+                            <p className="mt-1 text-[9px] text-muted-foreground">
+                                No catalog group assigned
+                            </p>
                         </div>
                     </div>
                 ),
-            },
-            {
-                key: 'pricing',
-                header: 'Pricing',
-                className: 'min-w-[170px]',
-                cell: (product) => (
-                    <div className="space-y-1">
-                        <p className="text-[13px] font-semibold tabular-nums text-emerald-400">
+        },
+        {
+            key: 'identification',
+            header: 'Identification',
+            className: 'min-w-[210px]',
+            cell: (product) => (
+                <div className="space-y-2">
+                    <ProductIdentifier
+                        label="SKU"
+                        value={product.sku}
+                        icon={Package2}
+                        tone="blue"
+                    />
+
+                    <ProductIdentifier
+                        label="Barcode"
+                        value={product.barcode}
+                        icon={Barcode}
+                        tone="cyan"
+                    />
+                </div>
+            ),
+        },
+        {
+            key: 'pricing',
+            header: 'Commercial Profile',
+            className: 'min-w-[190px]',
+            cell: (product) => (
+                <div className="space-y-2">
+                    <div>
+                        <p className="text-[9px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                            Selling price
+                        </p>
+                        <p className="mt-1 text-[14px] font-semibold tabular-nums text-emerald-400">
                             {formatCurrency(
                                 product.selling_price,
                             )}
                         </p>
+                    </div>
 
-                        <p className="text-[10px] tabular-nums text-muted-foreground">
-                            Cost:{' '}
-                            <span className="text-foreground/70">
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-lg border border-border/60 bg-background/35 px-2.5 py-2">
+                            <p className="text-[8px] uppercase tracking-wider text-muted-foreground">
+                                Cost
+                            </p>
+                            <p className="mt-1 truncate text-[10px] font-semibold tabular-nums text-foreground/80">
                                 {formatCurrency(
                                     product.cost_price,
                                 )}
-                            </span>
-                        </p>
-
-                        {product.wholesale_price !==
-                            null && (
-                            <p className="text-[10px] tabular-nums text-muted-foreground">
-                                Wholesale:{' '}
-                                <span className="text-foreground/70">
-                                    {formatCurrency(
-                                        product.wholesale_price,
-                                    )}
-                                </span>
-                            </p>
-                        )}
-                    </div>
-                ),
-            },
-            {
-                key: 'stock',
-                header: 'Total Stock',
-                className: 'min-w-[155px]',
-                cell: (product) =>
-                    product.stock_tracking ===
-                    'tracked' ? (
-                        <div className="space-y-1.5">
-                            <Badge
-                                variant="outline"
-                                className="h-7 gap-1.5 rounded-full border-amber-500/15 bg-amber-500/10 px-2.5 text-[10px] font-medium text-amber-300"
-                            >
-                                <span className="inline-flex size-4 items-center justify-center rounded-full bg-amber-500/15 text-amber-300">
-                                    <Warehouse className="size-2.5" />
-                                </span>
-
-                                <span className="font-semibold tabular-nums">
-                                    {formatQuantity(
-                                        product.total_stock,
-                                    )}
-                                </span>
-
-                                <span className="text-amber-300/70">
-                                    {product.unit}
-                                </span>
-                            </Badge>
-
-                            <p className="text-[10px] text-muted-foreground">
-                                {
-                                    product.warehouse_stocks_count
-                                }{' '}
-                                warehouse record
-                                {product.warehouse_stocks_count ===
-                                1
-                                    ? ''
-                                    : 's'}
                             </p>
                         </div>
-                    ) : (
-                        <span className="text-[11px] text-muted-foreground">
-                            Not stock tracked
-                        </span>
-                    ),
-            },
-            {
-                key: 'tracking',
-                header: 'Tracking',
-                cell: (product) => (
+
+                        <div className="rounded-lg border border-border/60 bg-background/35 px-2.5 py-2">
+                            <p className="text-[8px] uppercase tracking-wider text-muted-foreground">
+                                Wholesale
+                            </p>
+                            <p className="mt-1 truncate text-[10px] font-semibold tabular-nums text-foreground/80">
+                                {product.wholesale_price !==
+                                null
+                                    ? formatCurrency(
+                                          product.wholesale_price,
+                                      )
+                                    : '—'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            key: 'inventory',
+            header: 'Inventory Position',
+            className: 'min-w-[190px]',
+            cell: (product) =>
+                product.stock_tracking === 'tracked' ? (
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2.5">
+                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-amber-500/15 bg-amber-500/10 text-amber-400">
+                                <Warehouse className="size-4" />
+                            </span>
+
+                            <div>
+                                <p className="text-[14px] font-semibold tabular-nums text-amber-400">
+                                    {formatQuantity(
+                                        product.total_stock,
+                                    )}{' '}
+                                    <span className="text-[9px] font-medium text-amber-300/70">
+                                        {product.unit}
+                                    </span>
+                                </p>
+                                <p className="mt-0.5 text-[9px] text-muted-foreground">
+                                    Total available stock
+                                </p>
+                            </div>
+                        </div>
+
+                        <Badge
+                            variant="outline"
+                            className="h-6 rounded-full border-blue-500/15 bg-blue-500/[0.055] px-2.5 text-[9px] font-medium text-blue-300"
+                        >
+                            <Warehouse className="mr-1 size-3" />
+                            {product.warehouse_stocks_count}{' '}
+                            warehouse record
+                            {product.warehouse_stocks_count === 1
+                                ? ''
+                                : 's'}
+                        </Badge>
+                    </div>
+                ) : (
+                    <div className="rounded-xl border border-amber-500/15 bg-amber-500/[0.04] px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                            <Boxes className="size-3.5 text-amber-400" />
+                            <p className="text-[10px] font-semibold text-amber-300">
+                                Quantity not tracked
+                            </p>
+                        </div>
+                        <p className="mt-1.5 text-[9px] leading-4 text-muted-foreground">
+                            Product is excluded from warehouse balances.
+                        </p>
+                    </div>
+                ),
+        },
+        {
+            key: 'configuration',
+            header: 'Configuration',
+            className: 'min-w-[145px]',
+            cell: (product) => (
+                <div className="space-y-2">
                     <StatusBadge
                         label={
                             product.stock_tracking ===
@@ -691,12 +744,7 @@ export default function ProductIndex({
                         }
                         icon={Boxes}
                     />
-                ),
-            },
-            {
-                key: 'status',
-                header: 'Status',
-                cell: (product) => (
+
                     <Button
                         type="button"
                         variant="ghost"
@@ -723,49 +771,52 @@ export default function ProductIndex({
                             }
                         />
                     </Button>
-                ),
-            },
-            {
-                key: 'actions',
-                header: 'Actions',
-                headerClassName:
-                    'text-right',
-                className: 'text-right',
-                cell: (product) => (
-                    <ActionGroup>
-                        <IconButton
-                            label="Edit product"
-                            onClick={() =>
-                                openEditDialog(
-                                    product,
-                                )
-                            }
-                        >
-                            <Pencil className="size-3.5" />
-                        </IconButton>
+                </div>
+            ),
+        },
+        {
+            key: 'actions',
+            header: 'Actions',
+            headerClassName: 'text-right',
+            className: 'text-right',
+            cell: (product) => (
+                <ActionGroup>
+                    <IconButton
+                        label="Edit product"
+                        onClick={() =>
+                            openEditDialog(product)
+                        }
+                        className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
+                    >
+                        <Pencil className="size-3.5" />
+                    </IconButton>
 
-                        <IconButton
-                            label={
-                                product.warehouse_stocks_count >
-                                    0 ||
-                                product.stock_movements_count >
-                                    0
-                                    ? 'Product has stock history'
-                                    : 'Delete product'
-                            }
-                            onClick={() =>
-                                requestDelete(
-                                    product,
-                                )
-                            }
-                            className="text-red-400 hover:bg-red-500/10 hover:text-red-400"
-                        >
-                            <Trash2 className="size-3.5" />
-                        </IconButton>
-                    </ActionGroup>
-                ),
-            },
-        ];
+                    <IconButton
+                        label={
+                            product.warehouse_stocks_count >
+                                0 ||
+                            product.stock_movements_count >
+                                0
+                                ? 'Product has stock history'
+                                : 'Delete product'
+                        }
+                        onClick={() =>
+                            requestDelete(product)
+                        }
+                        className="text-red-400 hover:bg-red-500/10 hover:text-red-400"
+                    >
+                        <Trash2 className="size-3.5" />
+                    </IconButton>
+                </ActionGroup>
+            ),
+        },
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Derived values
+    |--------------------------------------------------------------------------
+    */
 
     const deleteHasRelations = Boolean(
         deleteTarget &&
@@ -775,66 +826,280 @@ export default function ProductIndex({
                     0),
     );
 
+    const inactiveProducts = Math.max(
+        0,
+        summary.total - summary.active,
+    );
+
+    const activePercentage =
+        summary.total > 0
+            ? Math.round(
+                  (summary.active / summary.total) *
+                      100,
+              )
+            : 0;
+
+    const trackedPercentage =
+        summary.total > 0
+            ? Math.round(
+                  (summary.tracked / summary.total) *
+                      100,
+              )
+            : 0;
+
+    const notTrackedPercentage =
+        summary.total > 0
+            ? Math.max(0, 100 - trackedPercentage)
+            : 0;
+
+    const activeCategoryCount = categories.filter(
+        (category) => category.is_active,
+    ).length;
+
+    const hasActiveFilters = Boolean(
+        search ||
+            status ||
+            categoryId ||
+            stockTracking,
+    );
+
+    const catalogHealthLabel =
+        summary.total === 0
+            ? 'No products configured'
+            : inactiveProducts === 0
+              ? 'Catalog operational'
+              : `${inactiveProducts} inactive product${inactiveProducts === 1 ? '' : 's'}`;
+
+    const catalogHealthClass =
+        summary.total === 0
+            ? 'border-slate-500/20 bg-slate-500/10 text-slate-300'
+            : inactiveProducts === 0
+              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+              : 'border-amber-500/20 bg-amber-500/10 text-amber-300';
+
+    /*
+    |--------------------------------------------------------------------------
+    | Render
+    |--------------------------------------------------------------------------
+    */
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Products" />
 
-            <PageContainer>
-                <PageHeader
-                    eyebrow="Inventory Management"
-                    title="Products"
-                    description="Manage product information, pricing, categories, and stock tracking."
-                    actions={
-                        <Button
-                            type="button"
-                            onClick={
-                                openCreateDialog
-                            }
-                            className="h-10 rounded-xl px-4 text-sm"
+            <PageContainer className="gap-4 md:gap-5">
+                {/* Product catalog control board */}
+
+                <section className="min-w-0 overflow-hidden rounded-2xl border border-violet-500/15 bg-gradient-to-br from-violet-500/[0.075] via-card/70 to-card/40">
+                    <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-400">
+                                <Package2 className="size-4" />
+                            </span>
+
+                            <div className="min-w-0">
+                                <p className="text-[11px] font-semibold text-foreground">
+                                    Product Catalog Control Board
+                                </p>
+
+                                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                    Catalog availability, stock-tracking coverage, and product configuration readiness.
+                                </p>
+                            </div>
+                        </div>
+
+                        <Badge
+                            variant="outline"
+                            className={cn(
+                                'h-6 w-fit shrink-0 gap-1.5 rounded-full px-2.5 text-[9px] font-semibold',
+                                catalogHealthClass,
+                            )}
                         >
-                            <Plus className="size-4" />
-                            Add Product
-                        </Button>
+                            {summary.total === 0 ? (
+                                <Package2 className="size-3" />
+                            ) : inactiveProducts === 0 ? (
+                                <CheckCircle2 className="size-3" />
+                            ) : (
+                                <XCircle className="size-3" />
+                            )}
+
+                            {catalogHealthLabel}
+                        </Badge>
+                    </div>
+
+                    <div className="grid min-w-0 xl:grid-cols-[minmax(340px,1.15fr)_minmax(0,1.85fr)]">
+                        <div className="relative overflow-hidden border-b border-border/60 p-4 xl:border-b-0 xl:border-r md:p-5">
+                            <div className="pointer-events-none absolute -left-16 -top-20 size-52 rounded-full bg-violet-500/10 blur-3xl" />
+                            <Package2 className="pointer-events-none absolute -bottom-8 -right-5 size-32 text-violet-400 opacity-[0.022]" />
+
+                            <div className="relative">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                                    <div>
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-violet-300">
+                                            Active Catalog Coverage
+                                        </p>
+
+                                        <div className="mt-2 flex items-center gap-2.5">
+                                            <span className="inline-flex size-10 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-400">
+                                                <CheckCircle2 className="size-4.5" />
+                                            </span>
+
+                                            <div>
+                                                <p className="text-[27px] font-semibold leading-none tracking-[-0.04em] tabular-nums">
+                                                    {summary.active}
+                                                    <span className="mx-1.5 text-base font-medium text-muted-foreground">
+                                                        /
+                                                    </span>
+                                                    {summary.total}
+                                                </p>
+
+                                                <p className="mt-1 text-[9px] text-muted-foreground">
+                                                    Products available for inventory operations
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-left sm:text-right">
+                                        <p className="text-xl font-semibold tabular-nums text-violet-400">
+                                            {activePercentage}%
+                                        </p>
+                                        <p className="mt-1 text-[8px] uppercase tracking-wider text-muted-foreground">
+                                            Active
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 h-2 overflow-hidden rounded-full bg-background/60">
+                                    <div
+                                        className="h-full rounded-full bg-violet-400 transition-all duration-500"
+                                        style={{
+                                            width: `${activePercentage}%`,
+                                        }}
+                                    />
+                                </div>
+
+                                <div className="mt-4 rounded-xl border border-border/60 bg-background/35 px-3 py-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+                                                <Activity className="size-4" />
+                                            </span>
+
+                                            <div>
+                                                <p className="text-[10px] font-semibold text-foreground/85">
+                                                    Stock-tracking coverage
+                                                </p>
+                                                <p className="mt-0.5 text-[9px] text-muted-foreground">
+                                                    Quantity monitoring across the catalog
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <span className="text-sm font-semibold tabular-nums text-blue-400">
+                                            {trackedPercentage}%
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-muted">
+                                        <div
+                                            className="h-full bg-blue-400 transition-all duration-500"
+                                            style={{
+                                                width: `${trackedPercentage}%`,
+                                            }}
+                                        />
+                                        <div
+                                            className="h-full bg-amber-400 transition-all duration-500"
+                                            style={{
+                                                width: `${notTrackedPercentage}%`,
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-[9px]">
+                                        <span className="inline-flex items-center gap-1.5 text-blue-400">
+                                            <span className="size-1.5 rounded-full bg-blue-400" />
+                                            {summary.tracked} tracked
+                                        </span>
+
+                                        <span className="inline-flex items-center gap-1.5 text-amber-400">
+                                            <span className="size-1.5 rounded-full bg-amber-400" />
+                                            {summary.not_tracked} not tracked
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid min-w-0 sm:grid-cols-2">
+                            <ProductSnapshot
+                                title="Total Products"
+                                value={summary.total}
+                                description="Registered catalog items"
+                                icon={Package2}
+                                tone="violet"
+                                className="border-b border-r border-border/60"
+                            />
+
+                            <ProductSnapshot
+                                title="Category Options"
+                                value={categories.length}
+                                description={`${activeCategoryCount} active group${activeCategoryCount === 1 ? '' : 's'}`}
+                                icon={Tags}
+                                tone="cyan"
+                                className="border-b border-border/60"
+                            />
+
+                            <ProductSnapshot
+                                title="Stock Tracked"
+                                value={summary.tracked}
+                                description="Warehouse quantity monitored"
+                                icon={Boxes}
+                                tone="blue"
+                                className="border-r border-border/60"
+                            />
+
+                            <ProductSnapshot
+                                title="Not Tracked"
+                                value={summary.not_tracked}
+                                description="Excluded from stock balances"
+                                icon={XCircle}
+                                tone="amber"
+                            />
+                        </div>
+                    </div>
+                </section>
+
+                {/* Product directory */}
+
+                <SectionCard
+                    title="Product Directory"
+                    description="Browse product identity, catalog placement, pricing, stock position, and operational configuration."
+                    actions={
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Badge
+                                variant="outline"
+                                className="h-7 rounded-full border-violet-500/15 bg-violet-500/[0.06] px-2.5 text-[10px] font-medium text-violet-300"
+                            >
+                                <Package2 className="mr-1 size-3" />
+                                {products.total} item
+                                {products.total === 1 ? '' : 's'}
+                            </Badge>
+
+                            <Button
+                                type="button"
+                                onClick={openCreateDialog}
+                                className="h-9 rounded-lg px-3.5 text-xs"
+                            >
+                                <Plus className="size-3.5" />
+                                Add Product
+                            </Button>
+                        </div>
                     }
-                />
-
-                <StatsGrid>
-                    <StatCard
-                        title="Total Products"
-                        value={summary.total}
-                        icon={<Package2 />}
-                        iconTone="blue"
-                        description="All product records"
-                    />
-
-                    <StatCard
-                        title="Active Products"
-                        value={summary.active}
-                        icon={<CheckCircle2 />}
-                        iconTone="emerald"
-                        description="Available for inventory"
-                    />
-
-                    <StatCard
-                        title="Stock Tracked"
-                        value={summary.tracked}
-                        icon={<Boxes />}
-                        iconTone="violet"
-                        description="Quantity monitored"
-                    />
-
-                    <StatCard
-                        title="Not Tracked"
-                        value={summary.not_tracked}
-                        icon={<XCircle />}
-                        iconTone="amber"
-                        description="Without stock quantity"
-                    />
-                </StatsGrid>
-
-                <SectionCard>
+                >
                     <FilterBar
                         onSubmit={applyFilters}
+                        contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_190px_170px_150px]"
                         actions={
                             <>
                                 <Button
@@ -848,11 +1113,11 @@ export default function ProductIndex({
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={
-                                        resetFilters
-                                    }
-                                    className="h-10 px-4 text-sm"
+                                    onClick={resetFilters}
+                                    disabled={!hasActiveFilters}
+                                    className="h-10 px-3 text-sm"
                                 >
+                                    <RefreshCw className="size-3.5" />
                                     Reset
                                 </Button>
                             </>
@@ -862,52 +1127,41 @@ export default function ProductIndex({
                             value={search}
                             onChange={(event) =>
                                 setSearch(
-                                    event.target
-                                        .value,
+                                    event.target.value,
                                 )
                             }
                             onClear={() =>
                                 setSearch('')
                             }
                             placeholder="Search product name, SKU, or barcode..."
-                            className="xl:min-w-[260px]"
+                            className="sm:col-span-2 xl:col-span-1"
                         />
 
                         <Select
                             value={
-                                categoryId ||
-                                ALL_VALUE
+                                categoryId || ALL_VALUE
                             }
-                            onValueChange={(
-                                value,
-                            ) =>
+                            onValueChange={(value) =>
                                 setCategoryId(
-                                    value ===
-                                        ALL_VALUE
+                                    value === ALL_VALUE
                                         ? ''
                                         : value,
                                 )
                             }
                         >
-                            <SelectTrigger className="h-10 w-full text-sm xl:w-[190px]">
+                            <SelectTrigger className="h-10 w-full text-sm">
                                 <SelectValue placeholder="All categories" />
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem
-                                    value={
-                                        ALL_VALUE
-                                    }
-                                >
+                                <SelectItem value={ALL_VALUE}>
                                     All categories
                                 </SelectItem>
 
                                 {categories.map(
                                     (category) => (
                                         <SelectItem
-                                            key={
-                                                category.id
-                                            }
+                                            key={category.id}
                                             value={String(
                                                 category.id,
                                             )}
@@ -930,34 +1184,25 @@ export default function ProductIndex({
                                 stockTracking ||
                                 ALL_VALUE
                             }
-                            onValueChange={(
-                                value,
-                            ) =>
+                            onValueChange={(value) =>
                                 setStockTracking(
-                                    value ===
-                                        ALL_VALUE
+                                    value === ALL_VALUE
                                         ? ''
                                         : value,
                                 )
                             }
                         >
-                            <SelectTrigger className="h-10 w-full text-sm xl:w-[170px]">
+                            <SelectTrigger className="h-10 w-full text-sm">
                                 <SelectValue placeholder="All tracking" />
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem
-                                    value={
-                                        ALL_VALUE
-                                    }
-                                >
+                                <SelectItem value={ALL_VALUE}>
                                     All tracking types
                                 </SelectItem>
-
                                 <SelectItem value="tracked">
                                     Stock tracked
                                 </SelectItem>
-
                                 <SelectItem value="not_tracked">
                                     Not tracked
                                 </SelectItem>
@@ -965,38 +1210,26 @@ export default function ProductIndex({
                         </Select>
 
                         <Select
-                            value={
-                                status ||
-                                ALL_VALUE
-                            }
-                            onValueChange={(
-                                value,
-                            ) =>
+                            value={status || ALL_VALUE}
+                            onValueChange={(value) =>
                                 setStatus(
-                                    value ===
-                                        ALL_VALUE
+                                    value === ALL_VALUE
                                         ? ''
                                         : value,
                                 )
                             }
                         >
-                            <SelectTrigger className="h-10 w-full text-sm xl:w-[145px]">
+                            <SelectTrigger className="h-10 w-full text-sm">
                                 <SelectValue placeholder="All statuses" />
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem
-                                    value={
-                                        ALL_VALUE
-                                    }
-                                >
+                                <SelectItem value={ALL_VALUE}>
                                     All statuses
                                 </SelectItem>
-
                                 <SelectItem value="active">
                                     Active
                                 </SelectItem>
-
                                 <SelectItem value="inactive">
                                     Inactive
                                 </SelectItem>
@@ -1016,15 +1249,13 @@ export default function ProductIndex({
                         emptyAction={
                             <Button
                                 type="button"
-                                onClick={
-                                    openCreateDialog
-                                }
+                                onClick={openCreateDialog}
                             >
                                 <Plus className="size-4" />
                                 Add Product
                             </Button>
                         }
-                        minWidth="1280px"
+                        minWidth="1320px"
                     />
 
                     <AppPagination
@@ -1474,6 +1705,143 @@ export default function ProductIndex({
                 onConfirm={deleteProduct}
             />
         </AppLayout>
+    );
+}
+
+/*
+|--------------------------------------------------------------------------
+| Local presentation helpers
+|--------------------------------------------------------------------------
+*/
+
+function ProductSnapshot({
+    title,
+    value,
+    description,
+    icon: Icon,
+    tone,
+    className,
+}: {
+    title: string;
+    value: number;
+    description: string;
+    icon: LucideIcon;
+    tone: ProductMetricTone;
+    className?: string;
+}) {
+    const toneStyles: Record<
+        ProductMetricTone,
+        {
+            icon: string;
+            value: string;
+            glow: string;
+        }
+    > = {
+        blue: {
+            icon: 'border-blue-500/20 bg-blue-500/10 text-blue-400',
+            value: 'text-blue-400',
+            glow: 'bg-blue-500/10',
+        },
+        cyan: {
+            icon: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-400',
+            value: 'text-cyan-400',
+            glow: 'bg-cyan-500/10',
+        },
+        violet: {
+            icon: 'border-violet-500/20 bg-violet-500/10 text-violet-400',
+            value: 'text-violet-400',
+            glow: 'bg-violet-500/10',
+        },
+        amber: {
+            icon: 'border-amber-500/20 bg-amber-500/10 text-amber-400',
+            value: 'text-amber-400',
+            glow: 'bg-amber-500/10',
+        },
+    };
+
+    const styles = toneStyles[tone];
+
+    return (
+        <div
+            className={cn(
+                'group relative min-w-0 overflow-hidden p-4 transition-colors hover:bg-muted/[0.025]',
+                className,
+            )}
+        >
+            <div
+                className={cn(
+                    'pointer-events-none absolute -bottom-12 -right-12 size-28 rounded-full blur-3xl',
+                    styles.glow,
+                )}
+            />
+
+            <div className="relative flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                        {title}
+                    </p>
+
+                    <p
+                        className={cn(
+                            'mt-2 text-xl font-semibold leading-none tabular-nums',
+                            styles.value,
+                        )}
+                    >
+                        {value}
+                    </p>
+
+                    <p className="mt-2 truncate text-[9px] text-muted-foreground">
+                        {description}
+                    </p>
+                </div>
+
+                <span
+                    className={cn(
+                        'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border',
+                        styles.icon,
+                    )}
+                >
+                    <Icon className="size-4" />
+                </span>
+            </div>
+        </div>
+    );
+}
+
+function ProductIdentifier({
+    label,
+    value,
+    icon: Icon,
+    tone,
+}: {
+    label: string;
+    value: string | null;
+    icon: LucideIcon;
+    tone: 'blue' | 'cyan';
+}) {
+    const style =
+        tone === 'blue'
+            ? 'border-blue-500/15 bg-blue-500/[0.045] text-blue-400'
+            : 'border-cyan-500/15 bg-cyan-500/[0.045] text-cyan-400';
+
+    return (
+        <div
+            className={cn(
+                'flex min-w-0 items-center gap-2.5 rounded-lg border px-2.5 py-2',
+                style,
+            )}
+        >
+            <Icon className="size-3.5 shrink-0" />
+
+            <div className="min-w-0">
+                <p className="text-[8px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {label}
+                </p>
+                <p className="mt-0.5 truncate font-mono text-[10px] font-semibold text-foreground/80">
+                    {value ?? 'Not assigned'}
+                </p>
+            </div>
+        </div>
     );
 }
 

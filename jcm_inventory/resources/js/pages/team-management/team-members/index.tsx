@@ -1,7 +1,38 @@
+import { ActionGroup } from '@/components/shared/action-group';
+import { AppPagination } from '@/components/shared/app-pagination';
+import { CalloutCard } from '@/components/shared/callout-card';
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import {
+    DataTable,
+    type DataTableColumn,
+} from '@/components/shared/data-table';
+import { EntityInfo } from '@/components/shared/entity-info';
+import { FilterBar } from '@/components/shared/filter-bar';
+import { FormDialog } from '@/components/shared/form-dialog';
+import { FormField } from '@/components/shared/form-field';
+import { FormSection } from '@/components/shared/form-section';
+import { IconButton } from '@/components/shared/icon-button';
+import { PageContainer } from '@/components/shared/page-container';
+import { SearchInput } from '@/components/shared/search-input';
+import { SectionCard } from '@/components/shared/section-card';
+import { StatusBadge } from '@/components/shared/status-badge';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import {
+    AlertTriangle,
+    BadgeCheck,
     Building2,
     CheckCircle2,
     CircleUserRound,
@@ -9,24 +40,30 @@ import {
     Eye,
     EyeOff,
     KeyRound,
-    LoaderCircle,
     Mail,
     Plus,
     Power,
     PowerOff,
-    Search,
+    RefreshCw,
     ShieldCheck,
+    Sparkles,
     Trash2,
     UserCog,
     Users,
     UserX,
-    X,
+    type LucideIcon,
 } from 'lucide-react';
 import {
     type FormEvent,
-    type ReactNode,
+    useEffect,
     useState,
 } from 'react';
+
+/*
+|--------------------------------------------------------------------------
+| Types
+|--------------------------------------------------------------------------
+*/
 
 type TeamMemberRole = {
     id: number;
@@ -138,6 +175,21 @@ type TeamMembersPageProps = {
     filters: TeamFilters;
 };
 
+type MemberAction = 'activate' | 'deactivate' | 'remove';
+
+type MemberActionTarget = {
+    member: TeamMember;
+    action: MemberAction;
+};
+
+type TeamMetricTone = 'emerald' | 'violet' | 'blue' | 'amber';
+
+/*
+|--------------------------------------------------------------------------
+| Configuration
+|--------------------------------------------------------------------------
+*/
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
@@ -152,6 +204,9 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/team/members',
     },
 ];
+
+const ALL_VALUE = 'all';
+const NONE_VALUE = 'none';
 
 function emptyMemberForm(): MemberFormData {
     return {
@@ -170,6 +225,12 @@ function emptyPasswordForm(): PasswordFormData {
         password_confirmation: '',
     };
 }
+
+/*
+|--------------------------------------------------------------------------
+| Page
+|--------------------------------------------------------------------------
+*/
 
 export default function TeamMembersIndex({
     members,
@@ -194,7 +255,7 @@ export default function TeamMembersIndex({
         filters.branch_id ?? '',
     );
 
-    const [isMemberModalOpen, setIsMemberModalOpen] =
+    const [isMemberDialogOpen, setIsMemberDialogOpen] =
         useState(false);
 
     const [editingMember, setEditingMember] =
@@ -206,8 +267,10 @@ export default function TeamMembersIndex({
     const [showPassword, setShowPassword] =
         useState(false);
 
-    const [showPasswordConfirmation, setShowPasswordConfirmation] =
-        useState(false);
+    const [
+        showPasswordConfirmation,
+        setShowPasswordConfirmation,
+    ] = useState(false);
 
     const [showResetPassword, setShowResetPassword] =
         useState(false);
@@ -220,6 +283,9 @@ export default function TeamMembersIndex({
     const [processingMemberId, setProcessingMemberId] =
         useState<number | null>(null);
 
+    const [actionTarget, setActionTarget] =
+        useState<MemberActionTarget | null>(null);
+
     const memberForm = useForm<MemberFormData>(
         emptyMemberForm(),
     );
@@ -228,7 +294,37 @@ export default function TeamMembersIndex({
         emptyPasswordForm(),
     );
 
-    function openCreateModal(): void {
+    useEffect(() => {
+        setSearch(filters.search ?? '');
+        setStatus(filters.status ?? '');
+        setRoleId(
+            filters.product_user_type_id ?? '',
+        );
+        setBranchId(filters.branch_id ?? '');
+    }, [
+        filters.search,
+        filters.status,
+        filters.product_user_type_id,
+        filters.branch_id,
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Member dialog
+    |--------------------------------------------------------------------------
+    */
+
+    function resetMemberDialog(): void {
+        setIsMemberDialogOpen(false);
+        setEditingMember(null);
+        setShowPassword(false);
+        setShowPasswordConfirmation(false);
+
+        memberForm.clearErrors();
+        memberForm.setData(emptyMemberForm());
+    }
+
+    function openCreateDialog(): void {
         setEditingMember(null);
         setShowPassword(false);
         setShowPasswordConfirmation(false);
@@ -236,10 +332,12 @@ export default function TeamMembersIndex({
         memberForm.clearErrors();
         memberForm.setData(emptyMemberForm());
 
-        setIsMemberModalOpen(true);
+        setIsMemberDialogOpen(true);
     }
 
-    function openEditModal(member: TeamMember): void {
+    function openEditDialog(
+        member: TeamMember,
+    ): void {
         setEditingMember(member);
         setShowPassword(false);
         setShowPasswordConfirmation(false);
@@ -259,21 +357,26 @@ export default function TeamMembersIndex({
             password_confirmation: '',
         });
 
-        setIsMemberModalOpen(true);
+        setIsMemberDialogOpen(true);
     }
 
-    function closeMemberModal(): void {
+    function closeMemberDialog(): void {
         if (memberForm.processing) {
             return;
         }
 
-        setIsMemberModalOpen(false);
-        setEditingMember(null);
-        setShowPassword(false);
-        setShowPasswordConfirmation(false);
+        resetMemberDialog();
+    }
 
-        memberForm.clearErrors();
-        memberForm.setData(emptyMemberForm());
+    function handleMemberDialogChange(
+        open: boolean,
+    ): void {
+        if (open) {
+            setIsMemberDialogOpen(true);
+            return;
+        }
+
+        closeMemberDialog();
     }
 
     function submitMember(
@@ -286,10 +389,7 @@ export default function TeamMembersIndex({
                 `/team/members/${editingMember.id}`,
                 {
                     preserveScroll: true,
-
-                    onSuccess: () => {
-                        closeMemberModal();
-                    },
+                    onSuccess: resetMemberDialog,
                 },
             );
 
@@ -298,14 +398,17 @@ export default function TeamMembersIndex({
 
         memberForm.post('/team/members', {
             preserveScroll: true,
-
-            onSuccess: () => {
-                closeMemberModal();
-            },
+            onSuccess: resetMemberDialog,
         });
     }
 
-    function openResetPasswordModal(
+    /*
+    |--------------------------------------------------------------------------
+    | Reset password
+    |--------------------------------------------------------------------------
+    */
+
+    function openResetPasswordDialog(
         member: TeamMember,
     ): void {
         setResettingMember(member);
@@ -316,7 +419,7 @@ export default function TeamMembersIndex({
         passwordForm.setData(emptyPasswordForm());
     }
 
-    function closeResetPasswordModal(): void {
+    function closeResetPasswordDialog(): void {
         if (passwordForm.processing) {
             return;
         }
@@ -327,6 +430,16 @@ export default function TeamMembersIndex({
 
         passwordForm.clearErrors();
         passwordForm.setData(emptyPasswordForm());
+    }
+
+    function handleResetPasswordDialogChange(
+        open: boolean,
+    ): void {
+        if (open) {
+            return;
+        }
+
+        closeResetPasswordDialog();
     }
 
     function submitResetPassword(
@@ -342,70 +455,80 @@ export default function TeamMembersIndex({
             `/team/members/${resettingMember.id}/reset-password`,
             {
                 preserveScroll: true,
-
-                onSuccess: () => {
-                    closeResetPasswordModal();
-                },
+                onSuccess: closeResetPasswordDialog,
             },
         );
     }
 
-    function updateMemberStatus(
+    /*
+    |--------------------------------------------------------------------------
+    | Member actions
+    |--------------------------------------------------------------------------
+    */
+
+    function requestStatusAction(
         member: TeamMember,
     ): void {
-        const nextStatus = !member.is_active;
+        setActionTarget({
+            member,
+            action: member.is_active
+                ? 'deactivate'
+                : 'activate',
+        });
+    }
 
-        const confirmed = window.confirm(
-            nextStatus
-                ? `Activate ${member.name}'s account?`
-                : `Deactivate ${member.name}'s account? They will no longer be able to access the inventory system.`,
-        );
+    function requestRemoveMember(
+        member: TeamMember,
+    ): void {
+        setActionTarget({
+            member,
+            action: 'remove',
+        });
+    }
 
-        if (!confirmed) {
+    function executeMemberAction(): void {
+        if (
+            !actionTarget ||
+            processingMemberId !== null
+        ) {
             return;
         }
 
+        const { member, action } = actionTarget;
+
         setProcessingMemberId(member.id);
+
+        const options = {
+            preserveScroll: true,
+            onSuccess: () =>
+                setActionTarget(null),
+            onFinish: () =>
+                setProcessingMemberId(null),
+        };
+
+        if (action === 'remove') {
+            router.delete(
+                `/team/members/${member.id}`,
+                options,
+            );
+
+            return;
+        }
 
         router.patch(
             `/team/members/${member.id}/status`,
             {
-                is_active: nextStatus,
+                is_active: action === 'activate',
             },
-            {
-                preserveScroll: true,
-
-                onFinish: () => {
-                    setProcessingMemberId(null);
-                },
-            },
+            options,
         );
     }
 
-    function removeMember(
-        member: TeamMember,
-    ): void {
-        const confirmed = window.confirm(
-            `Remove ${member.name} from Team Management? Their inventory access will be removed.`,
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
-        setProcessingMemberId(member.id);
-
-        router.delete(
-            `/team/members/${member.id}`,
-            {
-                preserveScroll: true,
-
-                onFinish: () => {
-                    setProcessingMemberId(null);
-                },
-            },
-        );
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | Filters
+    |--------------------------------------------------------------------------
+    */
 
     function applyFilters(
         event: FormEvent<HTMLFormElement>,
@@ -417,13 +540,9 @@ export default function TeamMembersIndex({
             {
                 search:
                     search.trim() || undefined,
-
-                status:
-                    status || undefined,
-
+                status: status || undefined,
                 product_user_type_id:
                     roleId || undefined,
-
                 branch_id:
                     branchId || undefined,
             },
@@ -452,1162 +571,1549 @@ export default function TeamMembersIndex({
         );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Derived values
+    |--------------------------------------------------------------------------
+    */
+
+    const setupReady =
+        roles.length > 0 &&
+        branches.length > 0;
+
+    const activePercentage =
+        summary.total > 0
+            ? Math.round(
+                  (summary.active /
+                      summary.total) *
+                      100,
+              )
+            : 0;
+
+    const inactivePercentage =
+        summary.total > 0
+            ? Math.round(
+                  (summary.inactive /
+                      summary.total) *
+                      100,
+              )
+            : 0;
+
+    const managerShare =
+        summary.total > 0
+            ? Math.round(
+                  (summary.managers /
+                      summary.total) *
+                      100,
+              )
+            : 0;
+
+    const hasActiveFilters = Boolean(
+        search.trim() ||
+            status ||
+            roleId ||
+            branchId,
+    );
+
+    const workforceStatusLabel =
+        summary.total === 0
+            ? 'No team accounts'
+            : summary.inactive === 0
+              ? 'All accounts active'
+              : `${summary.inactive} access restriction${
+                    summary.inactive === 1
+                        ? ''
+                        : 's'
+                }`;
+
+    const actionDialog =
+        getMemberActionDialog(actionTarget);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Table columns
+    |--------------------------------------------------------------------------
+    */
+
+    const columns: DataTableColumn<TeamMember>[] =
+        [
+            {
+                key: 'member',
+                header: 'Team Member',
+                className: 'min-w-[260px]',
+                cell: (member) => (
+                    <EntityInfo
+                        avatar={
+                            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-[11px] font-semibold text-violet-300">
+                                {memberInitials(
+                                    member.name,
+                                )}
+                            </span>
+                        }
+                        title={member.name}
+                        badges={
+                            member.email_verified_at ? (
+                                <Badge
+                                    variant="outline"
+                                    className="h-5 gap-1 rounded-full border-emerald-500/15 bg-emerald-500/[0.06] px-1.5 text-[8px] font-semibold text-emerald-300"
+                                >
+                                    <BadgeCheck className="size-2.5" />
+                                    VERIFIED
+                                </Badge>
+                            ) : (
+                                <Badge
+                                    variant="outline"
+                                    className="h-5 rounded-full border-amber-500/15 bg-amber-500/[0.06] px-1.5 text-[8px] font-semibold text-amber-300"
+                                >
+                                    UNVERIFIED
+                                </Badge>
+                            )
+                        }
+                        subtitle={
+                            <span className="inline-flex max-w-[210px] items-center gap-1.5 truncate">
+                                <Mail className="size-3 text-blue-400" />
+                                {member.email}
+                            </span>
+                        }
+                        description={
+                            member.created_by.name
+                                ? `Added by ${member.created_by.name}`
+                                : 'Creator not recorded'
+                        }
+                    />
+                ),
+            },
+            {
+                key: 'role',
+                header: 'Role Profile',
+                className: 'min-w-[170px]',
+                cell: (member) => (
+                    <div className="space-y-2">
+                        <MemberRoleBadge
+                            role={member.role}
+                        />
+
+                        <p className="text-[9px] text-muted-foreground">
+                            {member.role.code.toLowerCase() ===
+                            'manager'
+                                ? 'Management-level operations'
+                                : 'Assigned operational access'}
+                        </p>
+                    </div>
+                ),
+            },
+            {
+                key: 'branch',
+                header: 'Branch Assignment',
+                className: 'min-w-[215px]',
+                cell: (member) =>
+                    member.branch ? (
+                        <div className="flex items-start gap-2.5">
+                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+                                <Building2 className="size-4" />
+                            </span>
+
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <p className="max-w-[150px] truncate text-[12px] font-semibold">
+                                        {member.branch.name}
+                                    </p>
+
+                                    {member.branch.is_main && (
+                                        <Badge
+                                            variant="outline"
+                                            className="h-5 rounded-full border-blue-500/15 bg-blue-500/[0.06] px-1.5 text-[8px] text-blue-300"
+                                        >
+                                            MAIN
+                                        </Badge>
+                                    )}
+                                </div>
+
+                                <p className="mt-1 font-mono text-[9px] text-muted-foreground">
+                                    {member.branch.code}
+                                </p>
+
+                                {!member.branch.is_active && (
+                                    <p className="mt-1 text-[9px] text-amber-400">
+                                        Branch is inactive
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <span className="text-[11px] text-muted-foreground">
+                            Not assigned
+                        </span>
+                    ),
+            },
+            {
+                key: 'health',
+                header: 'Account Health',
+                className: 'min-w-[180px]',
+                cell: (member) => (
+                    <div className="space-y-2">
+                        <StatusBadge
+                            label={
+                                member.is_active
+                                    ? 'Active'
+                                    : 'Inactive'
+                            }
+                            variant={
+                                member.is_active
+                                    ? 'success'
+                                    : 'danger'
+                            }
+                        />
+
+                        <div className="space-y-1 text-[9px] text-muted-foreground">
+                            <p>
+                                {member.account_is_active
+                                    ? 'Login account enabled'
+                                    : 'Login account disabled'}
+                            </p>
+
+                            <p>
+                                {member.email_verified_at
+                                    ? 'Email identity verified'
+                                    : 'Email verification pending'}
+                            </p>
+                        </div>
+                    </div>
+                ),
+            },
+            {
+                key: 'joined',
+                header: 'Date Added',
+                className: 'min-w-[150px]',
+                cell: (member) => (
+                    <div>
+                        <p className="text-[11px] font-medium">
+                            {formatDate(
+                                member.joined_at ??
+                                    member.created_at,
+                            )}
+                        </p>
+
+                        <p className="mt-1 text-[9px] text-muted-foreground">
+                            Team onboarding
+                        </p>
+                    </div>
+                ),
+            },
+            {
+                key: 'actions',
+                header: 'Actions',
+                headerClassName:
+                    'text-right',
+                className: 'text-right',
+                cell: (member) => {
+                    const isProcessing =
+                        processingMemberId ===
+                        member.id;
+
+                    return (
+                        <ActionGroup>
+                            <IconButton
+                                label="Edit team member"
+                                disabled={isProcessing}
+                                onClick={() =>
+                                    openEditDialog(
+                                        member,
+                                    )
+                                }
+                                className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
+                            >
+                                <Edit3 className="size-3.5" />
+                            </IconButton>
+
+                            <IconButton
+                                label="Reset password"
+                                disabled={isProcessing}
+                                onClick={() =>
+                                    openResetPasswordDialog(
+                                        member,
+                                    )
+                                }
+                                className="text-violet-400 hover:bg-violet-500/10 hover:text-violet-400"
+                            >
+                                <KeyRound className="size-3.5" />
+                            </IconButton>
+
+                            <IconButton
+                                label={
+                                    member.is_active
+                                        ? 'Deactivate account'
+                                        : 'Activate account'
+                                }
+                                disabled={isProcessing}
+                                onClick={() =>
+                                    requestStatusAction(
+                                        member,
+                                    )
+                                }
+                                className={cn(
+                                    member.is_active
+                                        ? 'text-amber-400 hover:bg-amber-500/10 hover:text-amber-400'
+                                        : 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400',
+                                )}
+                            >
+                                {isProcessing ? (
+                                    <RefreshCw className="size-3.5 animate-spin" />
+                                ) : member.is_active ? (
+                                    <PowerOff className="size-3.5" />
+                                ) : (
+                                    <Power className="size-3.5" />
+                                )}
+                            </IconButton>
+
+                            <IconButton
+                                label="Remove team member"
+                                disabled={isProcessing}
+                                onClick={() =>
+                                    requestRemoveMember(
+                                        member,
+                                    )
+                                }
+                                className="text-red-400 hover:bg-red-500/10 hover:text-red-400"
+                            >
+                                <Trash2 className="size-3.5" />
+                            </IconButton>
+                        </ActionGroup>
+                    );
+                },
+            },
+        ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Render
+    |--------------------------------------------------------------------------
+    */
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Team Members" />
 
-            <div className="flex h-full flex-1 flex-col gap-5 rounded-xl p-4 md:p-6">
-                <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-primary">
-                            Team Management
-                        </p>
+            <PageContainer className="gap-4 md:gap-5">
+                {/* Team operations board */}
 
-                        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-                            Team Members
-                        </h1>
+                <section className="relative min-w-0 overflow-hidden rounded-2xl border border-violet-500/15 bg-card/75 shadow-sm">
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_10%,rgba(139,92,246,0.10),transparent_30%),radial-gradient(circle_at_88%_18%,rgba(59,130,246,0.08),transparent_27%),linear-gradient(to_bottom_right,rgba(255,255,255,0.018),transparent_55%)]" />
 
-                        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                            Create and manage manager and staff
-                            accounts, assign their branch, update
-                            their role, reset passwords, and control
-                            account access.
-                        </p>
+                    <div className="relative flex flex-col gap-3 border-b border-border/60 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <div className="relative flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-400 shadow-[0_0_24px_rgba(139,92,246,0.09)]">
+                                <Users className="size-4.5" />
+
+                                <span className="absolute -right-1 -top-1 size-2 rounded-full border-2 border-card bg-emerald-400" />
+                            </div>
+
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <h1 className="text-sm font-semibold tracking-tight">
+                                        Team Operations Control
+                                    </h1>
+
+                                    <Badge
+                                        variant="outline"
+                                        className="h-5 gap-1 rounded-full border-violet-500/15 bg-violet-500/[0.07] px-2 text-[9px] font-semibold text-violet-300"
+                                    >
+                                        <Sparkles className="size-2.5" />
+                                        WORKFORCE GOVERNANCE
+                                    </Badge>
+                                </div>
+
+                                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                    Manage account readiness, role assignments, branch coverage, and team access.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Badge
+                                variant="outline"
+                                className="h-7 gap-1.5 rounded-full border-blue-500/15 bg-blue-500/10 px-3 text-[10px] text-blue-300"
+                            >
+                                <Users className="size-3" />
+                                {summary.total} account
+                                {summary.total === 1
+                                    ? ''
+                                    : 's'}
+                            </Badge>
+
+                            <Badge
+                                variant="outline"
+                                className="h-7 gap-1.5 rounded-full border-violet-500/15 bg-violet-500/10 px-3 text-[10px] text-violet-300"
+                            >
+                                <ShieldCheck className="size-3" />
+                                {roles.length} role
+                                {roles.length === 1
+                                    ? ''
+                                    : 's'}
+                            </Badge>
+
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    'h-7 gap-1.5 rounded-full px-3 text-[10px]',
+                                    setupReady
+                                        ? 'border-emerald-500/15 bg-emerald-500/10 text-emerald-300'
+                                        : 'border-amber-500/15 bg-amber-500/10 text-amber-300',
+                                )}
+                            >
+                                {setupReady ? (
+                                    <CheckCircle2 className="size-3" />
+                                ) : (
+                                    <AlertTriangle className="size-3" />
+                                )}
+
+                                {setupReady
+                                    ? `${branches.length} active branch${
+                                          branches.length ===
+                                          1
+                                              ? ''
+                                              : 'es'
+                                      }`
+                                    : 'Setup required'}
+                            </Badge>
+                        </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={openCreateModal}
-                        disabled={
-                            roles.length === 0 ||
-                            branches.length === 0
-                        }
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        <Plus className="size-4" />
+                    <div className="relative grid min-w-0 xl:grid-cols-[280px_400px_minmax(0,1fr)]">
+                        <div className="border-b border-border/60 p-4 xl:border-b-0 xl:border-r">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+                                        Workforce profile
+                                    </p>
 
-                        Add Team Member
-                    </button>
-                </section>
+                                    <p className="mt-2 text-lg font-semibold">
+                                        {summary.active}{' '}
+                                        active accounts
+                                    </p>
 
-                {(roles.length === 0 ||
-                    branches.length === 0) && (
-                    <section className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-                        <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                            Team member creation is currently
-                            unavailable.
-                        </p>
+                                    <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-muted-foreground">
+                                        Manager and staff accounts currently available for inventory operations.
+                                    </p>
+                                </div>
 
-                        <p className="mt-1 text-xs text-amber-700/80 dark:text-amber-400/80">
-                            {roles.length === 0
-                                ? 'No assignable Manager or Staff role is configured.'
-                                : 'Create at least one active branch before adding a team member.'}
-                        </p>
-                    </section>
-                )}
+                                <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-400">
+                                    <Users className="size-4" />
+                                </span>
+                            </div>
 
-                <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <SummaryCard
-                        title="Total Members"
-                        value={summary.total}
-                        description={`${summary.inactive} inactive`}
-                        icon={
-                            <Users className="size-5" />
-                        }
-                    />
+                            <div className="mt-4">
+                                <div className="flex items-center justify-between gap-3 text-[9px]">
+                                    <span className="text-muted-foreground">
+                                        Account availability
+                                    </span>
 
-                    <SummaryCard
-                        title="Active Accounts"
-                        value={summary.active}
-                        description="Can access inventory"
-                        icon={
-                            <CheckCircle2 className="size-5" />
-                        }
-                    />
+                                    <span className="font-semibold tabular-nums text-violet-400">
+                                        {activePercentage}%
+                                    </span>
+                                </div>
 
-                    <SummaryCard
-                        title="Managers"
-                        value={summary.managers}
-                        description="Management accounts"
-                        icon={
-                            <UserCog className="size-5" />
-                        }
-                    />
+                                <div className="mt-1.5 flex h-1.5 overflow-hidden rounded-full bg-muted">
+                                    <div
+                                        className="h-full bg-emerald-400 transition-all duration-500"
+                                        style={{
+                                            width: `${activePercentage}%`,
+                                        }}
+                                    />
 
-                    <SummaryCard
-                        title="Staff"
-                        value={summary.staff}
-                        description="Staff accounts"
-                        icon={
-                            <CircleUserRound className="size-5" />
-                        }
-                    />
-                </section>
+                                    <div
+                                        className="h-full bg-red-400 transition-all duration-500"
+                                        style={{
+                                            width: `${inactivePercentage}%`,
+                                        }}
+                                    />
+                                </div>
 
-                <section className="border-sidebar-border/70 dark:border-sidebar-border overflow-hidden rounded-xl border bg-card">
-                    <form
-                        onSubmit={applyFilters}
-                        className="grid gap-3 border-b p-4 md:grid-cols-2 xl:grid-cols-[minmax(250px,1fr)_180px_200px_220px_auto_auto]"
-                    >
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                                <div className="mt-3 flex items-center justify-between rounded-lg border border-border/60 bg-background/35 px-3 py-2">
+                                    <span className="text-[9px] text-muted-foreground">
+                                        Restricted accounts
+                                    </span>
 
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(event) =>
-                                    setSearch(
-                                        event.target.value,
-                                    )
-                                }
-                                placeholder="Search name, email, or role..."
-                                className="h-10 w-full rounded-lg border bg-background pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                                    <span className="text-xs font-semibold tabular-nums">
+                                        {summary.inactive}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 grid-rows-2 gap-px border-b border-border/60 bg-border/60 p-px xl:border-b-0 xl:border-r">
+                            <TeamMetric
+                                label="Active accounts"
+                                value={String(
+                                    summary.active,
+                                )}
+                                detail="Operational access"
+                                icon={CheckCircle2}
+                                tone="emerald"
+                            />
+
+                            <TeamMetric
+                                label="Managers"
+                                value={String(
+                                    summary.managers,
+                                )}
+                                detail={`${managerShare}% of team`}
+                                icon={UserCog}
+                                tone="violet"
+                            />
+
+                            <TeamMetric
+                                label="Staff"
+                                value={String(
+                                    summary.staff,
+                                )}
+                                detail="Operational users"
+                                icon={CircleUserRound}
+                                tone="blue"
+                            />
+
+                            <TeamMetric
+                                label="Branches"
+                                value={String(
+                                    branches.length,
+                                )}
+                                detail="Assignment options"
+                                icon={Building2}
+                                tone="amber"
                             />
                         </div>
 
-                        <select
-                            value={status}
-                            onChange={(event) =>
-                                setStatus(
-                                    event.target.value,
-                                )
-                            }
-                            className="h-10 rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                        >
-                            <option value="">
-                                All statuses
-                            </option>
+                        <div className="p-4">
+                            <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+                                Workforce signals
+                            </p>
 
-                            <option value="active">
-                                Active
-                            </option>
+                            <div className="mt-3 space-y-2">
+                                <TeamSignal
+                                    icon={ShieldCheck}
+                                    title={
+                                        summary.inactive ===
+                                        0
+                                            ? 'Access synchronized'
+                                            : 'Access restrictions'
+                                    }
+                                    description={
+                                        summary.inactive ===
+                                        0
+                                            ? 'All registered team accounts are available.'
+                                            : `${summary.inactive} account${
+                                                  summary.inactive ===
+                                                  1
+                                                      ? ''
+                                                      : 's'
+                                              } currently cannot access inventory.`
+                                    }
+                                    tone={
+                                        summary.inactive ===
+                                        0
+                                            ? 'emerald'
+                                            : 'amber'
+                                    }
+                                />
 
-                            <option value="inactive">
-                                Inactive
-                            </option>
-                        </select>
+                                <TeamSignal
+                                    icon={UserCog}
+                                    title="Role composition"
+                                    description={`${summary.managers} manager and ${summary.staff} staff account${
+                                        summary.staff === 1
+                                            ? ''
+                                            : 's'
+                                    } configured.`}
+                                    tone="violet"
+                                />
 
-                        <select
-                            value={roleId}
-                            onChange={(event) =>
-                                setRoleId(
-                                    event.target.value,
-                                )
-                            }
-                            className="h-10 rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                        >
-                            <option value="">
-                                All roles
-                            </option>
-
-                            {roles.map((role) => (
-                                <option
-                                    key={role.id}
-                                    value={role.id}
-                                >
-                                    {role.name}
-                                </option>
-                            ))}
-                        </select>
-
-                        <select
-                            value={branchId}
-                            onChange={(event) =>
-                                setBranchId(
-                                    event.target.value,
-                                )
-                            }
-                            className="h-10 rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                        >
-                            <option value="">
-                                All branches
-                            </option>
-
-                            {branches.map((branch) => (
-                                <option
-                                    key={branch.id}
-                                    value={branch.id}
-                                >
-                                    {branch.name}
-                                    {branch.is_main
-                                        ? ' — Main'
-                                        : ''}
-                                </option>
-                            ))}
-                        </select>
-
-                        <button
-                            type="submit"
-                            className="h-10 rounded-lg bg-secondary px-4 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80"
-                        >
-                            Apply
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={resetFilters}
-                            className="h-10 rounded-lg border px-4 text-sm font-medium transition hover:bg-muted"
-                        >
-                            Reset
-                        </button>
-                    </form>
-
-                    <div className="overflow-x-auto">
-                        <table className="w-full min-w-[1150px] text-left">
-                            <thead className="border-b bg-muted/40">
-                                <tr className="text-xs uppercase tracking-wide text-muted-foreground">
-                                    <th className="px-5 py-3 font-medium">
-                                        Team Member
-                                    </th>
-
-                                    <th className="px-5 py-3 font-medium">
-                                        Role
-                                    </th>
-
-                                    <th className="px-5 py-3 font-medium">
-                                        Assigned Branch
-                                    </th>
-
-                                    <th className="px-5 py-3 font-medium">
-                                        Status
-                                    </th>
-
-                                    <th className="px-5 py-3 font-medium">
-                                        Date Added
-                                    </th>
-
-                                    <th className="px-5 py-3 text-right font-medium">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-
-                            <tbody className="divide-y">
-                                {members.data.map((member) => {
-                                    const isProcessing =
-                                        processingMemberId ===
-                                        member.id;
-
-                                    return (
-                                        <tr
-                                            key={member.id}
-                                            className="transition hover:bg-muted/30"
-                                        >
-                                            <td className="px-5 py-4">
-                                                <div className="flex items-start gap-3">
-                                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
-                                                        {memberInitials(
-                                                            member.name,
-                                                        )}
-                                                    </div>
-
-                                                    <div className="min-w-0">
-                                                        <p className="truncate font-medium">
-                                                            {
-                                                                member.name
-                                                            }
-                                                        </p>
-
-                                                        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                            <Mail className="size-3.5" />
-
-                                                            {
-                                                                member.email
-                                                            }
-                                                        </p>
-
-                                                        {!member.email_verified_at && (
-                                                            <p className="mt-1 text-xs text-amber-600">
-                                                                Email not
-                                                                verified
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </td>
-
-                                            <td className="px-5 py-4">
-                                                <RoleBadge
-                                                    role={
-                                                        member.role
-                                                    }
-                                                />
-                                            </td>
-
-                                            <td className="px-5 py-4">
-                                                {member.branch ? (
-                                                    <div>
-                                                        <p className="flex items-center gap-2 text-sm font-medium">
-                                                            <Building2 className="size-4 text-muted-foreground" />
-
-                                                            {
-                                                                member
-                                                                    .branch
-                                                                    .name
-                                                            }
-                                                        </p>
-
-                                                        <p className="mt-1 text-xs text-muted-foreground">
-                                                            {
-                                                                member
-                                                                    .branch
-                                                                    .code
-                                                            }
-
-                                                            {member
-                                                                .branch
-                                                                .is_main
-                                                                ? ' · Main branch'
-                                                                : ''}
-                                                        </p>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-sm text-muted-foreground">
-                                                        Not assigned
-                                                    </span>
-                                                )}
-                                            </td>
-
-                                            <td className="px-5 py-4">
-                                                <StatusBadge
-                                                    active={
-                                                        member.is_active
-                                                    }
-                                                />
-
-                                                {member.access_status ===
-                                                    'inactive' && (
-                                                    <p className="mt-1 text-xs text-muted-foreground">
-                                                        Inventory
-                                                        access disabled
-                                                    </p>
-                                                )}
-                                            </td>
-
-                                            <td className="px-5 py-4">
-                                                <p className="text-sm">
-                                                    {formatDate(
-                                                        member.joined_at ??
-                                                            member.created_at,
-                                                    )}
-                                                </p>
-
-                                                {member.created_by
-                                                    .name && (
-                                                    <p className="mt-1 text-xs text-muted-foreground">
-                                                        Added by{' '}
-                                                        {
-                                                            member
-                                                                .created_by
-                                                                .name
-                                                        }
-                                                    </p>
-                                                )}
-                                            </td>
-
-                                            <td className="px-5 py-4">
-                                                <div className="flex justify-end gap-2">
-                                                    <ActionButton
-                                                        title="Edit team member"
-                                                        disabled={
-                                                            isProcessing
-                                                        }
-                                                        onClick={() =>
-                                                            openEditModal(
-                                                                member,
-                                                            )
-                                                        }
-                                                    >
-                                                        <Edit3 className="size-4" />
-                                                    </ActionButton>
-
-                                                    <ActionButton
-                                                        title="Reset password"
-                                                        disabled={
-                                                            isProcessing
-                                                        }
-                                                        onClick={() =>
-                                                            openResetPasswordModal(
-                                                                member,
-                                                            )
-                                                        }
-                                                    >
-                                                        <KeyRound className="size-4" />
-                                                    </ActionButton>
-
-                                                    <ActionButton
-                                                        title={
-                                                            member.is_active
-                                                                ? 'Deactivate account'
-                                                                : 'Activate account'
-                                                        }
-                                                        disabled={
-                                                            isProcessing
-                                                        }
-                                                        destructive={
-                                                            member.is_active
-                                                        }
-                                                        onClick={() =>
-                                                            updateMemberStatus(
-                                                                member,
-                                                            )
-                                                        }
-                                                    >
-                                                        {isProcessing ? (
-                                                            <LoaderCircle className="size-4 animate-spin" />
-                                                        ) : member.is_active ? (
-                                                            <PowerOff className="size-4" />
-                                                        ) : (
-                                                            <Power className="size-4" />
-                                                        )}
-                                                    </ActionButton>
-
-                                                    <ActionButton
-                                                        title="Remove team member"
-                                                        destructive
-                                                        disabled={
-                                                            isProcessing
-                                                        }
-                                                        onClick={() =>
-                                                            removeMember(
-                                                                member,
-                                                            )
-                                                        }
-                                                    >
-                                                        <Trash2 className="size-4" />
-                                                    </ActionButton>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-
-                                {members.data.length === 0 && (
-                                    <tr>
-                                        <td
-                                            colSpan={6}
-                                            className="px-5 py-16 text-center"
-                                        >
-                                            <UserX className="mx-auto size-12 text-muted-foreground/30" />
-
-                                            <h3 className="mt-3 font-medium">
-                                                No team members
-                                                found
-                                            </h3>
-
-                                            <p className="mt-1 text-sm text-muted-foreground">
-                                                Add your manager or
-                                                staff accounts to
-                                                begin managing your
-                                                team.
-                                            </p>
-
-                                            {roles.length > 0 &&
-                                                branches.length >
-                                                    0 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={
-                                                            openCreateModal
-                                                        }
-                                                        className="mt-4 inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
-                                                    >
-                                                        <Plus className="size-4" />
-
-                                                        Add Team
-                                                        Member
-                                                    </button>
-                                                )}
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <MemberPagination members={members} />
-                </section>
-            </div>
-
-            {isMemberModalOpen && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    onMouseDown={(event) => {
-                        if (
-                            event.target ===
-                            event.currentTarget
-                        ) {
-                            closeMemberModal();
-                        }
-                    }}
-                >
-                    <div className="max-h-[94vh] w-full max-w-3xl overflow-y-auto rounded-2xl border bg-background shadow-2xl">
-                        <div className="sticky top-0 z-20 flex items-center justify-between border-b bg-background px-6 py-4">
-                            <div>
-                                <h2 className="text-lg font-semibold">
-                                    {editingMember
-                                        ? 'Edit Team Member'
-                                        : 'Add Team Member'}
-                                </h2>
-
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                    {editingMember
-                                        ? 'Update the account information, assigned role, and branch.'
-                                        : 'Create a manager or staff login account for your inventory system.'}
-                                </p>
+                                <TeamSignal
+                                    icon={
+                                        setupReady
+                                            ? CheckCircle2
+                                            : AlertTriangle
+                                    }
+                                    title={
+                                        setupReady
+                                            ? 'Creation ready'
+                                            : 'Setup incomplete'
+                                    }
+                                    description={
+                                        setupReady
+                                            ? 'Roles and branches are available for new accounts.'
+                                            : roles.length ===
+                                                0
+                                              ? 'Configure Manager or Staff roles first.'
+                                              : 'Create an active branch before adding members.'
+                                    }
+                                    tone={
+                                        setupReady
+                                            ? 'blue'
+                                            : 'amber'
+                                    }
+                                />
                             </div>
+                        </div>
+                    </div>
+                </section>
 
-                            <button
+                {!setupReady && (
+                    <CalloutCard
+                        tone="warning"
+                        icon={AlertTriangle}
+                        title="Team member creation is unavailable"
+                        description={
+                            roles.length === 0
+                                ? 'No assignable Manager or Staff role is configured.'
+                                : 'Create at least one active branch before adding a team member.'
+                        }
+                    />
+                )}
+
+                {/* Team directory */}
+
+                <SectionCard
+                    title="Team Member Directory"
+                    description="Manage account identity, assigned roles, branch coverage, credentials, and operational access."
+                    actions={
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Badge
+                                variant="outline"
+                                className={cn(
+                                    'h-7 rounded-full px-2.5 text-[10px] font-medium',
+                                    summary.inactive === 0
+                                        ? 'border-emerald-500/15 bg-emerald-500/[0.06] text-emerald-300'
+                                        : 'border-amber-500/15 bg-amber-500/[0.06] text-amber-300',
+                                )}
+                            >
+                                <Users className="mr-1 size-3" />
+
+                                {workforceStatusLabel}
+                            </Badge>
+
+                            <Button
                                 type="button"
-                                onClick={closeMemberModal}
+                                disabled={!setupReady}
+                                onClick={openCreateDialog}
+                                className="h-9 rounded-lg px-3.5 text-xs"
+                            >
+                                <Plus className="size-3.5" />
+                                Add Team Member
+                            </Button>
+                        </div>
+                    }
+                >
+                    <FilterBar
+                        onSubmit={applyFilters}
+                        contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_160px_190px_210px]"
+                        actions={
+                            <>
+                                <Button
+                                    type="submit"
+                                    variant="secondary"
+                                    className="h-10 px-4 text-sm"
+                                >
+                                    Apply Filters
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={
+                                        !hasActiveFilters
+                                    }
+                                    onClick={resetFilters}
+                                    className="h-10 px-3 text-sm"
+                                >
+                                    <RefreshCw className="size-3.5" />
+                                    Reset
+                                </Button>
+                            </>
+                        }
+                    >
+                        <SearchInput
+                            value={search}
+                            onChange={(event) =>
+                                setSearch(
+                                    event.target.value,
+                                )
+                            }
+                            onClear={() =>
+                                setSearch('')
+                            }
+                            placeholder="Search name, email, or role..."
+                            className="sm:col-span-2 xl:col-span-1"
+                        />
+
+                        <Select
+                            value={
+                                status || ALL_VALUE
+                            }
+                            onValueChange={(value) =>
+                                setStatus(
+                                    value ===
+                                        ALL_VALUE
+                                        ? ''
+                                        : value,
+                                )
+                            }
+                        >
+                            <SelectTrigger className="h-10 w-full text-sm">
+                                <SelectValue placeholder="All statuses" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem
+                                    value={ALL_VALUE}
+                                >
+                                    All statuses
+                                </SelectItem>
+
+                                <SelectItem value="active">
+                                    Active
+                                </SelectItem>
+
+                                <SelectItem value="inactive">
+                                    Inactive
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Select
+                            value={
+                                roleId || ALL_VALUE
+                            }
+                            onValueChange={(value) =>
+                                setRoleId(
+                                    value ===
+                                        ALL_VALUE
+                                        ? ''
+                                        : value,
+                                )
+                            }
+                        >
+                            <SelectTrigger className="h-10 w-full text-sm">
+                                <SelectValue placeholder="All roles" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem
+                                    value={ALL_VALUE}
+                                >
+                                    All roles
+                                </SelectItem>
+
+                                {roles.map((role) => (
+                                    <SelectItem
+                                        key={role.id}
+                                        value={String(
+                                            role.id,
+                                        )}
+                                    >
+                                        {role.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <Select
+                            value={
+                                branchId ||
+                                ALL_VALUE
+                            }
+                            onValueChange={(value) =>
+                                setBranchId(
+                                    value ===
+                                        ALL_VALUE
+                                        ? ''
+                                        : value,
+                                )
+                            }
+                        >
+                            <SelectTrigger className="h-10 w-full text-sm">
+                                <SelectValue placeholder="All branches" />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                                <SelectItem
+                                    value={ALL_VALUE}
+                                >
+                                    All branches
+                                </SelectItem>
+
+                                {branches.map(
+                                    (branch) => (
+                                        <SelectItem
+                                            key={
+                                                branch.id
+                                            }
+                                            value={String(
+                                                branch.id,
+                                            )}
+                                        >
+                                            {branch.name}
+                                            {branch.is_main
+                                                ? ' — Main'
+                                                : ''}
+                                        </SelectItem>
+                                    ),
+                                )}
+                            </SelectContent>
+                        </Select>
+                    </FilterBar>
+
+                    <DataTable
+                        data={members.data}
+                        columns={columns}
+                        getRowKey={(member) =>
+                            member.id
+                        }
+                        emptyIcon={UserX}
+                        emptyTitle="No team members found"
+                        emptyDescription="No team accounts matched the current filters. Reset the filters or add a new member."
+                        emptyAction={
+                            <div className="flex flex-wrap justify-center gap-2">
+                                {hasActiveFilters && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={
+                                            resetFilters
+                                        }
+                                    >
+                                        <RefreshCw className="size-4" />
+                                        Reset Filters
+                                    </Button>
+                                )}
+
+                                {setupReady && (
+                                    <Button
+                                        type="button"
+                                        onClick={
+                                            openCreateDialog
+                                        }
+                                    >
+                                        <Plus className="size-4" />
+                                        Add Team Member
+                                    </Button>
+                                )}
+                            </div>
+                        }
+                        minWidth="1180px"
+                    />
+
+                    <AppPagination
+                        pagination={members}
+                        itemLabel="team members"
+                    />
+                </SectionCard>
+            </PageContainer>
+
+            {/* Create or edit member */}
+
+            <FormDialog
+                open={isMemberDialogOpen}
+                onOpenChange={
+                    handleMemberDialogChange
+                }
+                title={
+                    editingMember
+                        ? 'Edit Team Member'
+                        : 'Add Team Member'
+                }
+                description={
+                    editingMember
+                        ? `Update the account, role, and branch assignment for ${editingMember.name}.`
+                        : 'Create a Manager or Staff login account for inventory operations.'
+                }
+                onSubmit={submitMember}
+                processing={
+                    memberForm.processing
+                }
+                submitText={
+                    editingMember
+                        ? 'Save Changes'
+                        : 'Create Account'
+                }
+                processingText={
+                    editingMember
+                        ? 'Saving Changes...'
+                        : 'Creating Account...'
+                }
+                maxWidth="max-w-3xl"
+            >
+                <FormSection
+                    title="Account Identity"
+                    description="Enter the member name and login email address."
+                    icon={<CircleUserRound />}
+                >
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                            id="member_name"
+                            label="Full Name"
+                            error={
+                                memberForm.errors.name
+                            }
+                            required
+                        >
+                            <Input
+                                id="member_name"
+                                type="text"
+                                value={
+                                    memberForm.data.name
+                                }
                                 disabled={
                                     memberForm.processing
                                 }
-                                className="inline-flex size-9 items-center justify-center rounded-lg transition hover:bg-muted disabled:opacity-50"
-                            >
-                                <X className="size-5" />
-                            </button>
-                        </div>
+                                onChange={(event) =>
+                                    memberForm.setData(
+                                        'name',
+                                        event.target.value,
+                                    )
+                                }
+                                placeholder="Enter full name"
+                                autoComplete="name"
+                                autoFocus
+                            />
+                        </FormField>
 
-                        <form
-                            onSubmit={submitMember}
-                            className="space-y-6 p-6"
+                        <FormField
+                            id="member_email"
+                            label="Email Address"
+                            error={
+                                memberForm.errors
+                                    .email
+                            }
+                            required
                         >
-                            <FormSection
-                                title="Account Information"
-                                description="Basic information used for signing in."
-                                icon={
-                                    <CircleUserRound className="size-4" />
+                            <Input
+                                id="member_email"
+                                type="email"
+                                value={
+                                    memberForm.data.email
                                 }
-                            >
-                                <div className="grid gap-5 md:grid-cols-2">
-                                    <FormField
-                                        label="Full Name"
-                                        error={
-                                            memberForm.errors
-                                                .name
-                                        }
-                                        required
-                                    >
-                                        <input
-                                            type="text"
-                                            value={
-                                                memberForm.data
-                                                    .name
-                                            }
-                                            onChange={(
-                                                event,
-                                            ) =>
-                                                memberForm.setData(
-                                                    'name',
-                                                    event
-                                                        .target
-                                                        .value,
-                                                )
-                                            }
-                                            placeholder="Enter full name"
-                                            autoComplete="name"
-                                            className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                        />
-                                    </FormField>
-
-                                    <FormField
-                                        label="Email Address"
-                                        error={
-                                            memberForm.errors
-                                                .email
-                                        }
-                                        required
-                                    >
-                                        <input
-                                            type="email"
-                                            value={
-                                                memberForm.data
-                                                    .email
-                                            }
-                                            onChange={(
-                                                event,
-                                            ) =>
-                                                memberForm.setData(
-                                                    'email',
-                                                    event
-                                                        .target
-                                                        .value,
-                                                )
-                                            }
-                                            placeholder="staff@example.com"
-                                            autoComplete="email"
-                                            className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                        />
-                                    </FormField>
-                                </div>
-                            </FormSection>
-
-                            <FormSection
-                                title="Assignment"
-                                description="Assign the member's role and operating branch."
-                                icon={
-                                    <ShieldCheck className="size-4" />
+                                disabled={
+                                    memberForm.processing
                                 }
-                            >
-                                <div className="grid gap-5 md:grid-cols-2">
-                                    <FormField
-                                        label="Team Role"
-                                        error={
-                                            memberForm.errors
-                                                .product_user_type_id
-                                        }
-                                        required
-                                    >
-                                        <select
-                                            value={
-                                                memberForm.data
-                                                    .product_user_type_id
-                                            }
-                                            onChange={(
-                                                event,
-                                            ) =>
-                                                memberForm.setData(
-                                                    'product_user_type_id',
-                                                    event
-                                                        .target
-                                                        .value,
-                                                )
-                                            }
-                                            className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                        >
-                                            <option value="">
-                                                Select role
-                                            </option>
-
-                                            {roles.map(
-                                                (role) => (
-                                                    <option
-                                                        key={
-                                                            role.id
-                                                        }
-                                                        value={
-                                                            role.id
-                                                        }
-                                                    >
-                                                        {
-                                                            role.name
-                                                        }
-                                                    </option>
-                                                ),
-                                            )}
-                                        </select>
-
-                                        {memberForm.data
-                                            .product_user_type_id && (
-                                            <RoleDescription
-                                                role={roles.find(
-                                                    (role) =>
-                                                        String(
-                                                            role.id,
-                                                        ) ===
-                                                        memberForm
-                                                            .data
-                                                            .product_user_type_id,
-                                                )}
-                                            />
-                                        )}
-                                    </FormField>
-
-                                    <FormField
-                                        label="Assigned Branch"
-                                        error={
-                                            memberForm.errors
-                                                .branch_id
-                                        }
-                                        required
-                                    >
-                                        <select
-                                            value={
-                                                memberForm.data
-                                                    .branch_id
-                                            }
-                                            onChange={(
-                                                event,
-                                            ) =>
-                                                memberForm.setData(
-                                                    'branch_id',
-                                                    event
-                                                        .target
-                                                        .value,
-                                                )
-                                            }
-                                            className="h-10 w-full rounded-lg border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-                                        >
-                                            <option value="">
-                                                Select branch
-                                            </option>
-
-                                            {branches.map(
-                                                (branch) => (
-                                                    <option
-                                                        key={
-                                                            branch.id
-                                                        }
-                                                        value={
-                                                            branch.id
-                                                        }
-                                                    >
-                                                        {
-                                                            branch.name
-                                                        }{' '}
-                                                        (
-                                                        {
-                                                            branch.code
-                                                        }
-                                                        )
-                                                        {branch.is_main
-                                                            ? ' — Main'
-                                                            : ''}
-                                                    </option>
-                                                ),
-                                            )}
-                                        </select>
-                                    </FormField>
-                                </div>
-                            </FormSection>
-
-                            <FormSection
-                                title={
-                                    editingMember
-                                        ? 'Change Password'
-                                        : 'Temporary Password'
+                                onChange={(event) =>
+                                    memberForm.setData(
+                                        'email',
+                                        event.target.value,
+                                    )
                                 }
-                                description={
-                                    editingMember
-                                        ? 'Leave both fields blank to keep the current password.'
-                                        : 'Create the temporary password the team member will use to sign in.'
-                                }
-                                icon={
-                                    <KeyRound className="size-4" />
-                                }
-                            >
-                                <div className="grid gap-5 md:grid-cols-2">
-                                    <FormField
-                                        label={
-                                            editingMember
-                                                ? 'New Password'
-                                                : 'Password'
-                                        }
-                                        error={
-                                            memberForm.errors
-                                                .password
-                                        }
-                                        required={
-                                            !editingMember
-                                        }
-                                    >
-                                        <PasswordInput
-                                            value={
-                                                memberForm.data
-                                                    .password
-                                            }
-                                            show={
-                                                showPassword
-                                            }
-                                            autoComplete={
-                                                editingMember
-                                                    ? 'new-password'
-                                                    : 'new-password'
-                                            }
-                                            placeholder="Minimum 8 characters"
-                                            onToggle={() =>
-                                                setShowPassword(
-                                                    (
-                                                        current,
-                                                    ) =>
-                                                        !current,
-                                                )
-                                            }
-                                            onChange={(
-                                                value,
-                                            ) =>
-                                                memberForm.setData(
-                                                    'password',
-                                                    value,
-                                                )
-                                            }
-                                        />
-                                    </FormField>
-
-                                    <FormField
-                                        label="Confirm Password"
-                                        error={
-                                            memberForm.errors
-                                                .password_confirmation
-                                        }
-                                        required={
-                                            !editingMember
-                                        }
-                                    >
-                                        <PasswordInput
-                                            value={
-                                                memberForm.data
-                                                    .password_confirmation
-                                            }
-                                            show={
-                                                showPasswordConfirmation
-                                            }
-                                            autoComplete="new-password"
-                                            placeholder="Repeat password"
-                                            onToggle={() =>
-                                                setShowPasswordConfirmation(
-                                                    (
-                                                        current,
-                                                    ) =>
-                                                        !current,
-                                                )
-                                            }
-                                            onChange={(
-                                                value,
-                                            ) =>
-                                                memberForm.setData(
-                                                    'password_confirmation',
-                                                    value,
-                                                )
-                                            }
-                                        />
-                                    </FormField>
-                                </div>
-                            </FormSection>
-
-                            <div className="flex justify-end gap-3 border-t pt-5">
-                                <button
-                                    type="button"
-                                    onClick={closeMemberModal}
-                                    disabled={
-                                        memberForm.processing
-                                    }
-                                    className="h-10 rounded-lg border px-4 text-sm font-medium transition hover:bg-muted disabled:opacity-50"
-                                >
-                                    Cancel
-                                </button>
-
-                                <button
-                                    type="submit"
-                                    disabled={
-                                        memberForm.processing
-                                    }
-                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    {memberForm.processing && (
-                                        <LoaderCircle className="size-4 animate-spin" />
-                                    )}
-
-                                    {editingMember
-                                        ? 'Save Changes'
-                                        : 'Create Account'}
-                                </button>
-                            </div>
-                        </form>
+                                placeholder="staff@example.com"
+                                autoComplete="email"
+                            />
+                        </FormField>
                     </div>
-                </div>
-            )}
+                </FormSection>
 
-            {resettingMember && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-                    onMouseDown={(event) => {
-                        if (
-                            event.target ===
-                            event.currentTarget
-                        ) {
-                            closeResetPasswordModal();
-                        }
-                    }}
+                <FormSection
+                    title="Operational Assignment"
+                    description="Assign the role policy and branch where this account will operate."
+                    icon={<ShieldCheck />}
                 >
-                    <div className="w-full max-w-lg rounded-2xl border bg-background shadow-2xl">
-                        <div className="flex items-center justify-between border-b px-6 py-4">
-                            <div>
-                                <h2 className="text-lg font-semibold">
-                                    Reset Password
-                                </h2>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                            id="product_user_type_id"
+                            label="Team Role"
+                            error={
+                                memberForm.errors
+                                    .product_user_type_id
+                            }
+                            required
+                        >
+                            <Select
+                                value={
+                                    memberForm.data
+                                        .product_user_type_id ||
+                                    NONE_VALUE
+                                }
+                                disabled={
+                                    memberForm.processing
+                                }
+                                onValueChange={(value) =>
+                                    memberForm.setData(
+                                        'product_user_type_id',
+                                        value ===
+                                            NONE_VALUE
+                                            ? ''
+                                            : value,
+                                    )
+                                }
+                            >
+                                <SelectTrigger
+                                    id="product_user_type_id"
+                                    className="w-full"
+                                >
+                                    <SelectValue placeholder="Select role" />
+                                </SelectTrigger>
 
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                    Set a new password for{' '}
-                                    <span className="font-medium text-foreground">
-                                        {resettingMember.name}
-                                    </span>
-                                    .
+                                <SelectContent>
+                                    <SelectItem
+                                        value={NONE_VALUE}
+                                    >
+                                        Select role
+                                    </SelectItem>
+
+                                    {roles.map(
+                                        (role) => (
+                                            <SelectItem
+                                                key={
+                                                    role.id
+                                                }
+                                                value={String(
+                                                    role.id,
+                                                )}
+                                            >
+                                                {
+                                                    role.name
+                                                }
+                                            </SelectItem>
+                                        ),
+                                    )}
+                                </SelectContent>
+                            </Select>
+
+                            <RoleDescription
+                                role={roles.find(
+                                    (role) =>
+                                        String(
+                                            role.id,
+                                        ) ===
+                                        memberForm.data
+                                            .product_user_type_id,
+                                )}
+                            />
+                        </FormField>
+
+                        <FormField
+                            id="branch_id"
+                            label="Assigned Branch"
+                            error={
+                                memberForm.errors
+                                    .branch_id
+                            }
+                            required
+                        >
+                            <Select
+                                value={
+                                    memberForm.data
+                                        .branch_id ||
+                                    NONE_VALUE
+                                }
+                                disabled={
+                                    memberForm.processing
+                                }
+                                onValueChange={(value) =>
+                                    memberForm.setData(
+                                        'branch_id',
+                                        value ===
+                                            NONE_VALUE
+                                            ? ''
+                                            : value,
+                                    )
+                                }
+                            >
+                                <SelectTrigger
+                                    id="branch_id"
+                                    className="w-full"
+                                >
+                                    <SelectValue placeholder="Select branch" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    <SelectItem
+                                        value={NONE_VALUE}
+                                    >
+                                        Select branch
+                                    </SelectItem>
+
+                                    {branches.map(
+                                        (branch) => (
+                                            <SelectItem
+                                                key={
+                                                    branch.id
+                                                }
+                                                value={String(
+                                                    branch.id,
+                                                )}
+                                            >
+                                                {
+                                                    branch.name
+                                                }{' '}
+                                                (
+                                                {
+                                                    branch.code
+                                                }
+                                                )
+                                                {branch.is_main
+                                                    ? ' — Main'
+                                                    : ''}
+                                            </SelectItem>
+                                        ),
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        </FormField>
+                    </div>
+                </FormSection>
+
+                <FormSection
+                    title={
+                        editingMember
+                            ? 'Credential Update'
+                            : 'Temporary Credentials'
+                    }
+                    description={
+                        editingMember
+                            ? 'Leave both password fields blank to retain the current password.'
+                            : 'Create the temporary password the member will use to sign in.'
+                    }
+                    icon={<KeyRound />}
+                >
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                            id="member_password"
+                            label={
+                                editingMember
+                                    ? 'New Password'
+                                    : 'Password'
+                            }
+                            error={
+                                memberForm.errors
+                                    .password
+                            }
+                            required={
+                                !editingMember
+                            }
+                        >
+                            <PasswordField
+                                id="member_password"
+                                value={
+                                    memberForm.data
+                                        .password
+                                }
+                                show={showPassword}
+                                disabled={
+                                    memberForm.processing
+                                }
+                                placeholder="Minimum 8 characters"
+                                autoComplete="new-password"
+                                onToggle={() =>
+                                    setShowPassword(
+                                        (current) =>
+                                            !current,
+                                    )
+                                }
+                                onChange={(value) =>
+                                    memberForm.setData(
+                                        'password',
+                                        value,
+                                    )
+                                }
+                            />
+                        </FormField>
+
+                        <FormField
+                            id="member_password_confirmation"
+                            label="Confirm Password"
+                            error={
+                                memberForm.errors
+                                    .password_confirmation
+                            }
+                            required={
+                                !editingMember
+                            }
+                        >
+                            <PasswordField
+                                id="member_password_confirmation"
+                                value={
+                                    memberForm.data
+                                        .password_confirmation
+                                }
+                                show={
+                                    showPasswordConfirmation
+                                }
+                                disabled={
+                                    memberForm.processing
+                                }
+                                placeholder="Repeat password"
+                                autoComplete="new-password"
+                                onToggle={() =>
+                                    setShowPasswordConfirmation(
+                                        (current) =>
+                                            !current,
+                                    )
+                                }
+                                onChange={(value) =>
+                                    memberForm.setData(
+                                        'password_confirmation',
+                                        value,
+                                    )
+                                }
+                            />
+                        </FormField>
+                    </div>
+                </FormSection>
+            </FormDialog>
+
+            {/* Reset password */}
+
+            <FormDialog
+                open={resettingMember !== null}
+                onOpenChange={
+                    handleResetPasswordDialogChange
+                }
+                title="Reset Password"
+                description={`Set a new password for ${resettingMember?.name ?? 'this team member'}.`}
+                onSubmit={
+                    submitResetPassword
+                }
+                processing={
+                    passwordForm.processing
+                }
+                submitText="Reset Password"
+                processingText="Resetting Password..."
+                maxWidth="max-w-lg"
+            >
+                {resettingMember && (
+                    <section className="rounded-xl border border-violet-500/10 bg-violet-500/[0.045] p-4">
+                        <div className="flex items-center gap-3">
+                            <span className="inline-flex size-10 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-[11px] font-semibold text-violet-300">
+                                {memberInitials(
+                                    resettingMember.name,
+                                )}
+                            </span>
+
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold">
+                                    {
+                                        resettingMember.name
+                                    }
+                                </p>
+
+                                <p className="mt-1 truncate text-[10px] text-muted-foreground">
+                                    {
+                                        resettingMember.email
+                                    }
                                 </p>
                             </div>
+                        </div>
+                    </section>
+                )}
 
-                            <button
-                                type="button"
-                                onClick={
-                                    closeResetPasswordModal
+                <FormSection
+                    title="New Credentials"
+                    description="The new password becomes active immediately after saving."
+                    icon={<KeyRound />}
+                >
+                    <div className="grid gap-4">
+                        <FormField
+                            id="reset_password"
+                            label="New Password"
+                            error={
+                                passwordForm.errors
+                                    .password
+                            }
+                            required
+                        >
+                            <PasswordField
+                                id="reset_password"
+                                value={
+                                    passwordForm.data
+                                        .password
+                                }
+                                show={
+                                    showResetPassword
                                 }
                                 disabled={
                                     passwordForm.processing
                                 }
-                                className="inline-flex size-9 items-center justify-center rounded-lg transition hover:bg-muted disabled:opacity-50"
-                            >
-                                <X className="size-5" />
-                            </button>
-                        </div>
-
-                        <form
-                            onSubmit={submitResetPassword}
-                            className="space-y-5 p-6"
-                        >
-                            <FormField
-                                label="New Password"
-                                error={
-                                    passwordForm.errors
-                                        .password
+                                placeholder="Minimum 8 characters"
+                                autoComplete="new-password"
+                                onToggle={() =>
+                                    setShowResetPassword(
+                                        (current) =>
+                                            !current,
+                                    )
                                 }
-                                required
-                            >
-                                <PasswordInput
-                                    value={
-                                        passwordForm.data
-                                            .password
-                                    }
-                                    show={
-                                        showResetPassword
-                                    }
-                                    autoComplete="new-password"
-                                    placeholder="Minimum 8 characters"
-                                    onToggle={() =>
-                                        setShowResetPassword(
-                                            (current) =>
-                                                !current,
-                                        )
-                                    }
-                                    onChange={(value) =>
-                                        passwordForm.setData(
-                                            'password',
-                                            value,
-                                        )
-                                    }
-                                />
-                            </FormField>
+                                onChange={(value) =>
+                                    passwordForm.setData(
+                                        'password',
+                                        value,
+                                    )
+                                }
+                            />
+                        </FormField>
 
-                            <FormField
-                                label="Confirm New Password"
-                                error={
-                                    passwordForm.errors
+                        <FormField
+                            id="reset_password_confirmation"
+                            label="Confirm New Password"
+                            error={
+                                passwordForm.errors
+                                    .password_confirmation
+                            }
+                            required
+                        >
+                            <PasswordField
+                                id="reset_password_confirmation"
+                                value={
+                                    passwordForm.data
                                         .password_confirmation
                                 }
-                                required
-                            >
-                                <PasswordInput
-                                    value={
-                                        passwordForm.data
-                                            .password_confirmation
-                                    }
-                                    show={
-                                        showResetPasswordConfirmation
-                                    }
-                                    autoComplete="new-password"
-                                    placeholder="Repeat new password"
-                                    onToggle={() =>
-                                        setShowResetPasswordConfirmation(
-                                            (current) =>
-                                                !current,
-                                        )
-                                    }
-                                    onChange={(value) =>
-                                        passwordForm.setData(
-                                            'password_confirmation',
-                                            value,
-                                        )
-                                    }
-                                />
-                            </FormField>
-
-                            <div className="flex justify-end gap-3 border-t pt-5">
-                                <button
-                                    type="button"
-                                    onClick={
-                                        closeResetPasswordModal
-                                    }
-                                    disabled={
-                                        passwordForm.processing
-                                    }
-                                    className="h-10 rounded-lg border px-4 text-sm font-medium transition hover:bg-muted disabled:opacity-50"
-                                >
-                                    Cancel
-                                </button>
-
-                                <button
-                                    type="submit"
-                                    disabled={
-                                        passwordForm.processing
-                                    }
-                                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                                >
-                                    {passwordForm.processing ? (
-                                        <LoaderCircle className="size-4 animate-spin" />
-                                    ) : (
-                                        <KeyRound className="size-4" />
-                                    )}
-
-                                    Reset Password
-                                </button>
-                            </div>
-                        </form>
+                                show={
+                                    showResetPasswordConfirmation
+                                }
+                                disabled={
+                                    passwordForm.processing
+                                }
+                                placeholder="Repeat new password"
+                                autoComplete="new-password"
+                                onToggle={() =>
+                                    setShowResetPasswordConfirmation(
+                                        (current) =>
+                                            !current,
+                                    )
+                                }
+                                onChange={(value) =>
+                                    passwordForm.setData(
+                                        'password_confirmation',
+                                        value,
+                                    )
+                                }
+                            />
+                        </FormField>
                     </div>
-                </div>
-            )}
+                </FormSection>
+            </FormDialog>
+
+            {/* Status or remove confirmation */}
+
+            <ConfirmDialog
+                open={actionTarget !== null}
+                onOpenChange={(open) => {
+                    if (
+                        !open &&
+                        processingMemberId ===
+                            null
+                    ) {
+                        setActionTarget(null);
+                    }
+                }}
+                title={actionDialog.title}
+                description={
+                    actionDialog.description
+                }
+                confirmText={
+                    actionDialog.confirmText
+                }
+                processing={
+                    processingMemberId !== null
+                }
+                destructive={
+                    actionDialog.destructive
+                }
+                onConfirm={executeMemberAction}
+            />
         </AppLayout>
     );
 }
 
-function SummaryCard({
-    title,
-    value,
-    description,
-    icon,
-}: {
-    title: string;
-    value: ReactNode;
-    description: string;
-    icon: ReactNode;
-}) {
-    return (
-        <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border bg-card p-5">
-            <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                    <p className="text-sm text-muted-foreground">
-                        {title}
-                    </p>
+/*
+|--------------------------------------------------------------------------
+| Team overview helpers
+|--------------------------------------------------------------------------
+*/
 
-                    <p className="mt-2 text-2xl font-semibold">
-                        {value}
-                    </p>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                        {description}
-                    </p>
-                </div>
-
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    {icon}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function FormSection({
-    title,
-    description,
-    icon,
-    children,
-}: {
-    title: string;
-    description: string;
-    icon: ReactNode;
-    children: ReactNode;
-}) {
-    return (
-        <section className="space-y-5">
-            <div className="flex items-start gap-3 border-b pb-3">
-                <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    {icon}
-                </div>
-
-                <div>
-                    <h3 className="text-sm font-semibold">
-                        {title}
-                    </h3>
-
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                        {description}
-                    </p>
-                </div>
-            </div>
-
-            {children}
-        </section>
-    );
-}
-
-function FormField({
+function TeamMetric({
     label,
-    error,
-    required = false,
-    children,
+    value,
+    detail,
+    icon: Icon,
+    tone,
 }: {
     label: string;
-    error?: string;
-    required?: boolean;
-    children: ReactNode;
+    value: string;
+    detail: string;
+    icon: LucideIcon;
+    tone: TeamMetricTone;
 }) {
+    const toneMap: Record<
+        TeamMetricTone,
+        {
+            shell: string;
+            icon: string;
+            value: string;
+        }
+    > = {
+        emerald: {
+            shell: 'bg-emerald-500/[0.025]',
+            icon: 'border-emerald-500/15 bg-emerald-500/10 text-emerald-400',
+            value: 'text-emerald-400',
+        },
+        violet: {
+            shell: 'bg-violet-500/[0.025]',
+            icon: 'border-violet-500/15 bg-violet-500/10 text-violet-400',
+            value: 'text-violet-400',
+        },
+        blue: {
+            shell: 'bg-blue-500/[0.025]',
+            icon: 'border-blue-500/15 bg-blue-500/10 text-blue-400',
+            value: 'text-blue-400',
+        },
+        amber: {
+            shell: 'bg-amber-500/[0.025]',
+            icon: 'border-amber-500/15 bg-amber-500/10 text-amber-400',
+            value: 'text-amber-400',
+        },
+    };
+
+    const styles = toneMap[tone];
+
     return (
-        <label className="block space-y-2">
-            <span className="text-sm font-medium">
-                {label}
-
-                {required && (
-                    <span className="ml-1 text-destructive">
-                        *
-                    </span>
-                )}
-            </span>
-
-            {children}
-
-            {error && (
-                <span className="block text-xs text-destructive">
-                    {error}
-                </span>
+        <div
+            className={cn(
+                'relative flex min-h-[92px] min-w-0 items-center justify-between gap-4 overflow-hidden p-4',
+                styles.shell,
             )}
-        </label>
+        >
+            <Icon className="pointer-events-none absolute -bottom-4 -right-3 size-20 opacity-[0.035]" />
+
+            <div className="relative flex min-w-0 items-center gap-3">
+                <span
+                    className={cn(
+                        'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border',
+                        styles.icon,
+                    )}
+                >
+                    <Icon className="size-3.5" />
+                </span>
+
+                <div className="min-w-0">
+                    <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        {label}
+                    </p>
+
+                    <p className="mt-1 truncate text-[8px] text-muted-foreground">
+                        {detail}
+                    </p>
+                </div>
+            </div>
+
+            <p
+                className={cn(
+                    'relative shrink-0 text-2xl font-semibold leading-none tabular-nums',
+                    styles.value,
+                )}
+            >
+                {value}
+            </p>
+        </div>
     );
 }
 
-function PasswordInput({
-    value,
-    show,
-    placeholder,
-    autoComplete,
-    onChange,
-    onToggle,
+function TeamSignal({
+    icon: Icon,
+    title,
+    description,
+    tone,
 }: {
-    value: string;
-    show: boolean;
-    placeholder: string;
-    autoComplete: string;
-    onChange: (value: string) => void;
-    onToggle: () => void;
+    icon: LucideIcon;
+    title: string;
+    description: string;
+    tone: TeamMetricTone;
 }) {
-    return (
-        <div className="relative">
-            <input
-                type={show ? 'text' : 'password'}
-                value={value}
-                onChange={(event) =>
-                    onChange(event.target.value)
-                }
-                placeholder={placeholder}
-                autoComplete={autoComplete}
-                className="h-10 w-full rounded-lg border bg-background px-3 pr-10 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
-            />
+    const toneMap: Record<
+        TeamMetricTone,
+        {
+            shell: string;
+            icon: string;
+        }
+    > = {
+        emerald: {
+            shell: 'border-emerald-500/15 bg-emerald-500/[0.055]',
+            icon: 'bg-emerald-500/10 text-emerald-400',
+        },
+        violet: {
+            shell: 'border-violet-500/15 bg-violet-500/[0.055]',
+            icon: 'bg-violet-500/10 text-violet-400',
+        },
+        blue: {
+            shell: 'border-blue-500/15 bg-blue-500/[0.055]',
+            icon: 'bg-blue-500/10 text-blue-400',
+        },
+        amber: {
+            shell: 'border-amber-500/15 bg-amber-500/[0.055]',
+            icon: 'bg-amber-500/10 text-amber-400',
+        },
+    };
 
-            <button
-                type="button"
-                onClick={onToggle}
-                title={
-                    show
-                        ? 'Hide password'
-                        : 'Show password'
-                }
-                className="absolute right-1 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            >
-                {show ? (
-                    <EyeOff className="size-4" />
-                ) : (
-                    <Eye className="size-4" />
-                )}
-            </button>
+    const styles = toneMap[tone];
+
+    return (
+        <div
+            className={cn(
+                'rounded-lg border px-3 py-2.5',
+                styles.shell,
+            )}
+        >
+            <div className="flex items-start gap-2.5">
+                <span
+                    className={cn(
+                        'inline-flex size-7 shrink-0 items-center justify-center rounded-lg',
+                        styles.icon,
+                    )}
+                >
+                    <Icon className="size-3.5" />
+                </span>
+
+                <div className="min-w-0">
+                    <p className="text-[10px] font-semibold">
+                        {title}
+                    </p>
+
+                    <p className="mt-0.5 line-clamp-2 text-[8px] leading-3.5 text-muted-foreground">
+                        {description}
+                    </p>
+                </div>
+            </div>
         </div>
+    );
+}
+
+/*
+|--------------------------------------------------------------------------
+| Member helpers
+|--------------------------------------------------------------------------
+*/
+
+function MemberRoleBadge({
+    role,
+}: {
+    role: TeamMemberRole;
+}) {
+    const isManager =
+        role.code.toLowerCase() === 'manager';
+
+    return (
+        <Badge
+            variant="outline"
+            className={cn(
+                'h-6 gap-1.5 rounded-full px-2.5 text-[9px] font-medium',
+                isManager
+                    ? 'border-violet-500/15 bg-violet-500/10 text-violet-300'
+                    : 'border-blue-500/15 bg-blue-500/10 text-blue-300',
+            )}
+        >
+            {isManager ? (
+                <UserCog className="size-3" />
+            ) : (
+                <CircleUserRound className="size-3" />
+            )}
+
+            {role.name}
+        </Badge>
     );
 }
 
@@ -1621,153 +2127,118 @@ function RoleDescription({
     }
 
     return (
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
             {role.description}
         </p>
     );
 }
 
-function RoleBadge({
-    role,
+function PasswordField({
+    id,
+    value,
+    show,
+    disabled,
+    placeholder,
+    autoComplete,
+    onChange,
+    onToggle,
 }: {
-    role: TeamMemberRole;
-}) {
-    const isManager =
-        role.code.toLowerCase() === 'manager';
-
-    return (
-        <span
-            className={[
-                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
-                isManager
-                    ? 'bg-violet-500/10 text-violet-600'
-                    : 'bg-blue-500/10 text-blue-600',
-            ].join(' ')}
-        >
-            {isManager ? (
-                <UserCog className="size-3.5" />
-            ) : (
-                <CircleUserRound className="size-3.5" />
-            )}
-
-            {role.name}
-        </span>
-    );
-}
-
-function StatusBadge({
-    active,
-}: {
-    active: boolean;
+    id: string;
+    value: string;
+    show: boolean;
+    disabled: boolean;
+    placeholder: string;
+    autoComplete: string;
+    onChange: (value: string) => void;
+    onToggle: () => void;
 }) {
     return (
-        <span
-            className={[
-                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
-                active
-                    ? 'bg-emerald-500/10 text-emerald-600'
-                    : 'bg-red-500/10 text-red-600',
-            ].join(' ')}
-        >
-            {active ? (
-                <CheckCircle2 className="size-3.5" />
-            ) : (
-                <PowerOff className="size-3.5" />
-            )}
+        <div className="relative">
+            <Input
+                id={id}
+                type={show ? 'text' : 'password'}
+                value={value}
+                disabled={disabled}
+                onChange={(event) =>
+                    onChange(event.target.value)
+                }
+                placeholder={placeholder}
+                autoComplete={autoComplete}
+                className="pr-10"
+            />
 
-            {active ? 'Active' : 'Inactive'}
-        </span>
-    );
-}
-
-function ActionButton({
-    title,
-    destructive = false,
-    disabled = false,
-    onClick,
-    children,
-}: {
-    title: string;
-    destructive?: boolean;
-    disabled?: boolean;
-    onClick: () => void;
-    children: ReactNode;
-}) {
-    return (
-        <button
-            type="button"
-            title={title}
-            disabled={disabled}
-            onClick={onClick}
-            className={[
-                'inline-flex size-9 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-50',
-                destructive
-                    ? 'text-destructive hover:bg-destructive/10'
-                    : 'hover:bg-muted',
-            ].join(' ')}
-        >
-            {children}
-        </button>
-    );
-}
-
-function MemberPagination({
-    members,
-}: {
-    members: PaginatedMembers;
-}) {
-    if (members.last_page <= 1) {
-        return null;
-    }
-
-    return (
-        <div className="flex flex-col gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-                Showing {members.from ?? 0} to{' '}
-                {members.to ?? 0} of {members.total}{' '}
-                team members
-            </p>
-
-            <div className="flex flex-wrap gap-1">
-                {members.links.map((link, index) => (
-                    <button
-                        key={`${link.label}-${index}`}
-                        type="button"
-                        disabled={!link.url}
-                        onClick={() => {
-                            if (!link.url) {
-                                return;
-                            }
-
-                            router.get(
-                                link.url,
-                                {},
-                                {
-                                    preserveState: true,
-                                    preserveScroll: true,
-                                },
-                            );
-                        }}
-                        className={[
-                            'min-w-9 rounded-lg border px-3 py-1.5 text-sm transition',
-                            link.active
-                                ? 'border-primary bg-primary text-primary-foreground'
-                                : 'bg-background hover:bg-muted',
-                            !link.url
-                                ? 'cursor-not-allowed opacity-40'
-                                : '',
-                        ].join(' ')}
-                        dangerouslySetInnerHTML={{
-                            __html: link.label,
-                        }}
-                    />
-                ))}
-            </div>
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                disabled={disabled}
+                onClick={onToggle}
+                title={
+                    show
+                        ? 'Hide password'
+                        : 'Show password'
+                }
+                className="absolute right-1 top-1/2 size-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+                {show ? (
+                    <EyeOff className="size-4" />
+                ) : (
+                    <Eye className="size-4" />
+                )}
+            </Button>
         </div>
     );
 }
 
-function memberInitials(name: string): string {
+function getMemberActionDialog(
+    target: MemberActionTarget | null,
+): {
+    title: string;
+    description: string;
+    confirmText: string;
+    destructive: boolean;
+} {
+    if (!target) {
+        return {
+            title: 'Update Team Member',
+            description:
+                'Confirm the requested account action.',
+            confirmText: 'Continue',
+            destructive: false,
+        };
+    }
+
+    const { member, action } = target;
+
+    if (action === 'activate') {
+        return {
+            title: 'Activate Team Member',
+            description: `Activate ${member.name}'s inventory access? The account will be allowed to sign in based on its assigned role and branch.`,
+            confirmText: 'Activate Account',
+            destructive: false,
+        };
+    }
+
+    if (action === 'deactivate') {
+        return {
+            title: 'Deactivate Team Member',
+            description: `Deactivate ${member.name}'s inventory access? The account will no longer be able to use the inventory system until reactivated.`,
+            confirmText: 'Deactivate Account',
+            destructive: true,
+        };
+    }
+
+    return {
+        title: 'Remove Team Member',
+        description: `Remove ${member.name} from Team Management? Their inventory product access will be removed. The server may prevent removal when related operational records must be retained.`,
+        confirmText: 'Remove Member',
+        destructive: true,
+    };
+}
+
+function memberInitials(
+    name: string,
+): string {
     const parts = name
         .trim()
         .split(/\s+/)
@@ -1783,7 +2254,9 @@ function memberInitials(name: string): string {
             .toUpperCase();
     }
 
-    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    return `${parts[0][0]}${
+        parts[parts.length - 1][0]
+    }`.toUpperCase();
 }
 
 function formatDate(

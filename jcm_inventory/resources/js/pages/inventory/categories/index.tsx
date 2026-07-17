@@ -139,9 +139,9 @@ type CategoryPageProps = {
 };
 
 type CategoryMetricTone =
-    | 'blue'
-    | 'cyan'
-    | 'violet';
+    | 'emerald'
+    | 'teal'
+    | 'lime';
 
 /*
 |--------------------------------------------------------------------------
@@ -521,8 +521,8 @@ export default function CategoryIndex({
                                 }
                                 className={
                                     category.parent_id
-                                        ? 'border-violet-500/15 bg-violet-500/10 text-violet-400 group-hover:border-violet-500/25 group-hover:bg-violet-500/15'
-                                        : 'border-blue-500/15 bg-blue-500/10 text-blue-400 group-hover:border-blue-500/25 group-hover:bg-blue-500/15'
+                                        ? 'border-teal-500/15 bg-teal-500/10 text-teal-400 group-hover:border-teal-500/25 group-hover:bg-teal-500/15'
+                                        : 'border-emerald-500/15 bg-emerald-500/10 text-emerald-400 group-hover:border-emerald-500/25 group-hover:bg-emerald-500/15'
                                 }
                             />
                         }
@@ -533,8 +533,8 @@ export default function CategoryIndex({
                                 className={cn(
                                     'h-5 rounded-full px-2 text-[9px] font-semibold',
                                     category.parent_id
-                                        ? 'border-violet-500/15 bg-violet-500/[0.06] text-violet-400'
-                                        : 'border-blue-500/20 bg-blue-500/10 text-blue-400',
+                                        ? 'border-teal-500/15 bg-teal-500/[0.06] text-teal-400'
+                                        : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400',
                                 )}
                             >
                                 {category.parent_id
@@ -564,7 +564,7 @@ export default function CategoryIndex({
                 cell: (category) =>
                     category.parent ? (
                         <div className="flex items-start gap-2.5">
-                            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
+                            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-teal-500/15 bg-teal-500/10 text-teal-400">
                                 <Layers3 className="size-4" />
                             </span>
 
@@ -577,7 +577,7 @@ export default function CategoryIndex({
                                     {category.parent.name}
                                 </p>
 
-                                <p className="mt-1 max-w-[175px] truncate font-mono text-[9px] text-violet-400/80">
+                                <p className="mt-1 max-w-[175px] truncate font-mono text-[9px] text-teal-400/80">
                                     {category.parent.slug}
                                     {' / '}
                                     {category.slug}
@@ -586,7 +586,7 @@ export default function CategoryIndex({
                         </div>
                     ) : (
                         <div className="flex items-start gap-2.5">
-                            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+                            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
                                 <FolderTree className="size-4" />
                             </span>
 
@@ -687,7 +687,7 @@ export default function CategoryIndex({
                                     category,
                                 )
                             }
-                            className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
+                            className="text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400"
                         >
                             <Pencil className="size-3.5" />
                         </IconButton>
@@ -729,10 +729,10 @@ export default function CategoryIndex({
             <PageContainer className="gap-4 md:gap-5">
                 {/* Catalog structure board */}
 
-                <section className="min-w-0 overflow-hidden rounded-2xl border border-blue-500/15 bg-gradient-to-br from-blue-500/[0.075] via-card/70 to-card/40">
+                <section className="min-w-0 overflow-hidden rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.075] via-card/70 to-card/40">
                     <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
                                 <FolderTree className="size-4" />
                             </span>
 
@@ -770,18 +770,18 @@ export default function CategoryIndex({
                         {/* Primary catalog coverage */}
 
                         <div className="relative overflow-hidden border-b border-border/60 p-4 xl:border-b-0 xl:border-r md:p-5">
-                            <div className="pointer-events-none absolute -left-16 -top-20 size-52 rounded-full bg-blue-500/10 blur-3xl" />
-                            <FolderTree className="pointer-events-none absolute -bottom-8 -right-5 size-32 text-blue-400 opacity-[0.022]" />
+                            <div className="pointer-events-none absolute -left-16 -top-20 size-52 rounded-full bg-emerald-500/10 blur-3xl" />
+                            <FolderTree className="pointer-events-none absolute -bottom-8 -right-5 size-32 text-emerald-400 opacity-[0.022]" />
 
                             <div className="relative">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-blue-300">
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-emerald-300">
                                             Active catalog coverage
                                         </p>
 
                                         <div className="mt-3 flex items-center gap-3">
-                                            <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400">
+                                            <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
                                                 <CircleGauge className="size-5" />
                                             </span>
 
@@ -804,7 +804,7 @@ export default function CategoryIndex({
                                     </div>
 
                                     <div className="text-right">
-                                        <p className="text-xl font-semibold tabular-nums text-blue-400">
+                                        <p className="text-xl font-semibold tabular-nums text-emerald-400">
                                             {activePercentage}%
                                         </p>
 
@@ -900,7 +900,7 @@ export default function CategoryIndex({
                                     value={summary.total}
                                     description="Registered catalog groups"
                                     icon={Tags}
-                                    tone="blue"
+                                    tone="emerald"
                                     className="border-b border-border/60 sm:border-r"
                                 />
 
@@ -909,7 +909,7 @@ export default function CategoryIndex({
                                     value={summary.root}
                                     description="Top-level categories"
                                     icon={FolderTree}
-                                    tone="violet"
+                                    tone="teal"
                                     className="border-b border-border/60 sm:border-r"
                                 />
 
@@ -918,7 +918,7 @@ export default function CategoryIndex({
                                     value={nestedCategories}
                                     description="Nested catalog groups"
                                     icon={Layers3}
-                                    tone="cyan"
+                                    tone="lime"
                                     className="border-b border-border/60"
                                 />
                             </div>
@@ -936,21 +936,21 @@ export default function CategoryIndex({
                                             </p>
                                         </div>
 
-                                        <span className="text-sm font-semibold tabular-nums text-violet-400">
+                                        <span className="text-sm font-semibold tabular-nums text-teal-400">
                                             {summary.root}/{summary.total}
                                         </span>
                                     </div>
 
                                     <div className="mt-4 flex h-2 overflow-hidden rounded-full bg-muted">
                                         <div
-                                            className="h-full bg-violet-400 transition-all duration-500"
+                                            className="h-full bg-teal-400 transition-all duration-500"
                                             style={{
                                                 width: `${rootPercentage}%`,
                                             }}
                                         />
 
                                         <div
-                                            className="h-full bg-cyan-400 transition-all duration-500"
+                                            className="h-full bg-lime-400 transition-all duration-500"
                                             style={{
                                                 width: `${nestedPercentage}%`,
                                             }}
@@ -958,13 +958,13 @@ export default function CategoryIndex({
                                     </div>
 
                                     <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[9px]">
-                                        <span className="inline-flex items-center gap-1.5 text-violet-400">
-                                            <span className="size-1.5 rounded-full bg-violet-400" />
+                                        <span className="inline-flex items-center gap-1.5 text-teal-400">
+                                            <span className="size-1.5 rounded-full bg-teal-400" />
                                             {summary.root} root
                                         </span>
 
-                                        <span className="inline-flex items-center gap-1.5 text-cyan-400">
-                                            <span className="size-1.5 rounded-full bg-cyan-400" />
+                                        <span className="inline-flex items-center gap-1.5 text-lime-400">
+                                            <span className="size-1.5 rounded-full bg-lime-400" />
                                             {nestedCategories} nested
                                         </span>
                                     </div>
@@ -982,14 +982,14 @@ export default function CategoryIndex({
                                             </p>
                                         </div>
 
-                                        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+                                        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
                                             <FolderTree className="size-4" />
                                         </span>
                                     </div>
 
-                                    <div className="mt-4 rounded-xl border border-blue-500/10 bg-blue-500/[0.035] px-3 py-2.5">
+                                    <div className="mt-4 rounded-xl border border-emerald-500/10 bg-emerald-500/[0.035] px-3 py-2.5">
                                         <div className="flex items-center gap-2.5">
-                                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
+                                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
                                                 <Layers3 className="size-4" />
                                             </span>
 
@@ -1031,7 +1031,7 @@ export default function CategoryIndex({
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge
                                 variant="outline"
-                                className="h-7 rounded-full border-blue-500/15 bg-blue-500/[0.06] px-2.5 text-[10px] font-medium text-blue-300"
+                                className="h-7 rounded-full border-emerald-500/15 bg-emerald-500/[0.06] px-2.5 text-[10px] font-medium text-emerald-300"
                             >
                                 <Tags className="mr-1 size-3" />
                                 {categories.total}{' '}
@@ -1480,20 +1480,20 @@ function CategorySnapshot({
             glow: string;
         }
     > = {
-        blue: {
-            icon: 'border-blue-500/20 bg-blue-500/10 text-blue-400',
-            value: 'text-blue-400',
-            glow: 'bg-blue-500/10',
+        emerald: {
+            icon: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400',
+            value: 'text-emerald-400',
+            glow: 'bg-emerald-500/10',
         },
-        cyan: {
-            icon: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-400',
-            value: 'text-cyan-400',
-            glow: 'bg-cyan-500/10',
+        lime: {
+            icon: 'border-lime-500/20 bg-lime-500/10 text-lime-400',
+            value: 'text-lime-400',
+            glow: 'bg-lime-500/10',
         },
-        violet: {
-            icon: 'border-violet-500/20 bg-violet-500/10 text-violet-400',
-            value: 'text-violet-400',
-            glow: 'bg-violet-500/10',
+        teal: {
+            icon: 'border-teal-500/20 bg-teal-500/10 text-teal-400',
+            value: 'text-teal-400',
+            glow: 'bg-teal-500/10',
         },
     };
 
@@ -1569,9 +1569,9 @@ function CategoryUsage({
                 </p>
             </div>
 
-            <div className="min-w-0 rounded-lg border border-violet-500/15 bg-violet-500/[0.045] px-2.5 py-2">
+            <div className="min-w-0 rounded-lg border border-teal-500/15 bg-teal-500/[0.045] px-2.5 py-2">
                 <div className="flex items-center gap-1.5">
-                    <Layers3 className="size-3 text-violet-400" />
+                    <Layers3 className="size-3 text-teal-400" />
 
                     <span className="text-[12px] font-semibold tabular-nums text-foreground">
                         {children}

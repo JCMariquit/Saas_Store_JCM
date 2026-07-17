@@ -156,9 +156,9 @@ type ProductPageProps = {
 };
 
 type ProductMetricTone =
-    | 'blue'
-    | 'cyan'
-    | 'violet'
+    | 'emerald'
+    | 'teal'
+    | 'lime'
     | 'amber';
 
 /*
@@ -521,7 +521,7 @@ export default function ProductIndex({
                     avatar={
                         <EntityAvatar
                             icon={Package2}
-                            className="border-violet-500/15 bg-violet-500/10 text-violet-400 group-hover:border-violet-500/25 group-hover:bg-violet-500/15"
+                            className="border-emerald-500/15 bg-emerald-500/10 text-emerald-400 group-hover:border-emerald-500/25 group-hover:bg-emerald-500/15"
                         />
                     }
                     title={product.name}
@@ -529,7 +529,7 @@ export default function ProductIndex({
                         product.stock_tracking === 'tracked' ? (
                             <Badge
                                 variant="outline"
-                                className="h-5 gap-1 rounded-full border-violet-500/15 bg-violet-500/[0.06] px-2 text-[9px] font-semibold text-violet-300"
+                                className="h-5 gap-1 rounded-full border-teal-500/15 bg-teal-500/[0.06] px-2 text-[9px] font-semibold text-teal-300"
                             >
                                 <Boxes className="size-2.5" />
                                 TRACKED
@@ -558,7 +558,7 @@ export default function ProductIndex({
             cell: (product) =>
                 product.category ? (
                     <div className="flex items-start gap-2.5">
-                        <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+                        <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-teal-500/15 bg-teal-500/10 text-teal-400">
                             <Tags className="size-4" />
                         </span>
 
@@ -567,7 +567,7 @@ export default function ProductIndex({
                                 {product.category.name}
                             </p>
 
-                            <p className="mt-1 max-w-[145px] truncate font-mono text-[9px] text-blue-400/80">
+                            <p className="mt-1 max-w-[145px] truncate font-mono text-[9px] text-teal-400/80">
                                 {product.category.slug}
                             </p>
 
@@ -612,14 +612,14 @@ export default function ProductIndex({
                         label="SKU"
                         value={product.sku}
                         icon={Package2}
-                        tone="blue"
+                        tone="emerald"
                     />
 
                     <ProductIdentifier
                         label="Barcode"
                         value={product.barcode}
                         icon={Barcode}
-                        tone="cyan"
+                        tone="lime"
                     />
                 </div>
             ),
@@ -699,7 +699,7 @@ export default function ProductIndex({
 
                         <Badge
                             variant="outline"
-                            className="h-6 rounded-full border-blue-500/15 bg-blue-500/[0.055] px-2.5 text-[9px] font-medium text-blue-300"
+                            className="h-6 rounded-full border-emerald-500/15 bg-emerald-500/[0.055] px-2.5 text-[9px] font-medium text-emerald-300"
                         >
                             <Warehouse className="mr-1 size-3" />
                             {product.warehouse_stocks_count}{' '}
@@ -786,7 +786,7 @@ export default function ProductIndex({
                         onClick={() =>
                             openEditDialog(product)
                         }
-                        className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
+                        className="text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400"
                     >
                         <Pencil className="size-3.5" />
                     </IconButton>
@@ -890,10 +890,10 @@ export default function ProductIndex({
             <PageContainer className="gap-4 md:gap-5">
                 {/* Product catalog control board */}
 
-                <section className="min-w-0 overflow-hidden rounded-2xl border border-violet-500/15 bg-gradient-to-br from-violet-500/[0.075] via-card/70 to-card/40">
+                <section className="min-w-0 overflow-hidden rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.075] via-card/70 to-card/40">
                     <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-400">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
                                 <Package2 className="size-4" />
                             </span>
 
@@ -929,18 +929,18 @@ export default function ProductIndex({
 
                     <div className="grid min-w-0 xl:grid-cols-[minmax(340px,1.15fr)_minmax(0,1.85fr)]">
                         <div className="relative overflow-hidden border-b border-border/60 p-4 xl:border-b-0 xl:border-r md:p-5">
-                            <div className="pointer-events-none absolute -left-16 -top-20 size-52 rounded-full bg-violet-500/10 blur-3xl" />
-                            <Package2 className="pointer-events-none absolute -bottom-8 -right-5 size-32 text-violet-400 opacity-[0.022]" />
+                            <div className="pointer-events-none absolute -left-16 -top-20 size-52 rounded-full bg-emerald-500/10 blur-3xl" />
+                            <Package2 className="pointer-events-none absolute -bottom-8 -right-5 size-32 text-emerald-400 opacity-[0.022]" />
 
                             <div className="relative">
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                                     <div>
-                                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-violet-300">
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-emerald-300">
                                             Active Catalog Coverage
                                         </p>
 
                                         <div className="mt-2 flex items-center gap-2.5">
-                                            <span className="inline-flex size-10 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-400">
+                                            <span className="inline-flex size-10 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
                                                 <CheckCircle2 className="size-4.5" />
                                             </span>
 
@@ -961,7 +961,7 @@ export default function ProductIndex({
                                     </div>
 
                                     <div className="text-left sm:text-right">
-                                        <p className="text-xl font-semibold tabular-nums text-violet-400">
+                                        <p className="text-xl font-semibold tabular-nums text-emerald-400">
                                             {activePercentage}%
                                         </p>
                                         <p className="mt-1 text-[8px] uppercase tracking-wider text-muted-foreground">
@@ -972,7 +972,7 @@ export default function ProductIndex({
 
                                 <div className="mt-4 h-2 overflow-hidden rounded-full bg-background/60">
                                     <div
-                                        className="h-full rounded-full bg-violet-400 transition-all duration-500"
+                                        className="h-full rounded-full bg-emerald-400 transition-all duration-500"
                                         style={{
                                             width: `${activePercentage}%`,
                                         }}
@@ -982,7 +982,7 @@ export default function ProductIndex({
                                 <div className="mt-4 rounded-xl border border-border/60 bg-background/35 px-3 py-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="flex items-center gap-2.5">
-                                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+                                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
                                                 <Activity className="size-4" />
                                             </span>
 
@@ -996,14 +996,14 @@ export default function ProductIndex({
                                             </div>
                                         </div>
 
-                                        <span className="text-sm font-semibold tabular-nums text-blue-400">
+                                        <span className="text-sm font-semibold tabular-nums text-teal-400">
                                             {trackedPercentage}%
                                         </span>
                                     </div>
 
                                     <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-muted">
                                         <div
-                                            className="h-full bg-blue-400 transition-all duration-500"
+                                            className="h-full bg-teal-400 transition-all duration-500"
                                             style={{
                                                 width: `${trackedPercentage}%`,
                                             }}
@@ -1017,8 +1017,8 @@ export default function ProductIndex({
                                     </div>
 
                                     <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-[9px]">
-                                        <span className="inline-flex items-center gap-1.5 text-blue-400">
-                                            <span className="size-1.5 rounded-full bg-blue-400" />
+                                        <span className="inline-flex items-center gap-1.5 text-teal-400">
+                                            <span className="size-1.5 rounded-full bg-teal-400" />
                                             {summary.tracked} tracked
                                         </span>
 
@@ -1037,7 +1037,7 @@ export default function ProductIndex({
                                 value={summary.total}
                                 description="Registered catalog items"
                                 icon={Package2}
-                                tone="violet"
+                                tone="teal"
                                 className="border-b border-r border-border/60"
                             />
 
@@ -1046,7 +1046,7 @@ export default function ProductIndex({
                                 value={categories.length}
                                 description={`${activeCategoryCount} active group${activeCategoryCount === 1 ? '' : 's'}`}
                                 icon={Tags}
-                                tone="cyan"
+                                tone="lime"
                                 className="border-b border-border/60"
                             />
 
@@ -1055,7 +1055,7 @@ export default function ProductIndex({
                                 value={summary.tracked}
                                 description="Warehouse quantity monitored"
                                 icon={Boxes}
-                                tone="blue"
+                                tone="emerald"
                                 className="border-r border-border/60"
                             />
 
@@ -1079,7 +1079,7 @@ export default function ProductIndex({
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge
                                 variant="outline"
-                                className="h-7 rounded-full border-violet-500/15 bg-violet-500/[0.06] px-2.5 text-[10px] font-medium text-violet-300"
+                                className="h-7 rounded-full border-emerald-500/15 bg-emerald-500/[0.06] px-2.5 text-[10px] font-medium text-emerald-300"
                             >
                                 <Package2 className="mr-1 size-3" />
                                 {products.total} item
@@ -1425,7 +1425,7 @@ export default function ProductIndex({
                         }
                     >
                         <div className="group relative">
-                            <Barcode className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-blue-400" />
+                            <Barcode className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-emerald-400" />
 
                             <Input
                                 id="barcode"
@@ -1737,20 +1737,20 @@ function ProductSnapshot({
             glow: string;
         }
     > = {
-        blue: {
-            icon: 'border-blue-500/20 bg-blue-500/10 text-blue-400',
-            value: 'text-blue-400',
-            glow: 'bg-blue-500/10',
+        emerald: {
+            icon: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400',
+            value: 'text-emerald-400',
+            glow: 'bg-emerald-500/10',
         },
-        cyan: {
-            icon: 'border-cyan-500/20 bg-cyan-500/10 text-cyan-400',
-            value: 'text-cyan-400',
-            glow: 'bg-cyan-500/10',
+        lime: {
+            icon: 'border-lime-500/20 bg-lime-500/10 text-lime-400',
+            value: 'text-lime-400',
+            glow: 'bg-lime-500/10',
         },
-        violet: {
-            icon: 'border-violet-500/20 bg-violet-500/10 text-violet-400',
-            value: 'text-violet-400',
-            glow: 'bg-violet-500/10',
+        teal: {
+            icon: 'border-teal-500/20 bg-teal-500/10 text-teal-400',
+            value: 'text-teal-400',
+            glow: 'bg-teal-500/10',
         },
         amber: {
             icon: 'border-amber-500/20 bg-amber-500/10 text-amber-400',
@@ -1817,12 +1817,12 @@ function ProductIdentifier({
     label: string;
     value: string | null;
     icon: LucideIcon;
-    tone: 'blue' | 'cyan';
+    tone: 'emerald' | 'lime';
 }) {
     const style =
-        tone === 'blue'
-            ? 'border-blue-500/15 bg-blue-500/[0.045] text-blue-400'
-            : 'border-cyan-500/15 bg-cyan-500/[0.045] text-cyan-400';
+        tone === 'emerald'
+            ? 'border-emerald-500/15 bg-emerald-500/[0.045] text-emerald-400'
+            : 'border-lime-500/15 bg-lime-500/[0.045] text-lime-400';
 
     return (
         <div

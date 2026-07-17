@@ -5,6 +5,7 @@ import {
     Activity,
     AlertTriangle,
     ArrowDownRight,
+    ArrowRight,
     ArrowUpRight,
     BarChart3,
     Boxes,
@@ -15,18 +16,38 @@ import {
     CircleDollarSign,
     ClipboardList,
     Clock3,
+    Database,
     Layers3,
     PackageCheck,
+    PackagePlus,
     RefreshCw,
     ShoppingCart,
+    Sparkles,
     Truck,
     Warehouse,
     type LucideIcon,
 } from 'lucide-react';
-import { type ReactNode, useMemo } from 'react';
+import {
+    type ReactNode,
+    useId,
+    useMemo,
+} from 'react';
 
 type RangeKey = '7d' | '30d' | '90d';
-type Tone = 'emerald' | 'blue' | 'violet' | 'amber' | 'red' | 'cyan';
+type Tone =
+    | 'emerald'
+    | 'blue'
+    | 'violet'
+    | 'amber'
+    | 'red'
+    | 'cyan';
+
+type StatusTone =
+    | 'neutral'
+    | 'emerald'
+    | 'blue'
+    | 'amber'
+    | 'red';
 
 type DashboardProps = {
     filters: {
@@ -106,6 +127,11 @@ type MovementItem = {
     occurredAt: string;
 };
 
+type Point = {
+    x: number;
+    y: number;
+};
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
@@ -139,15 +165,33 @@ export default function Dashboard({
     lowStockAlerts,
     recentMovements,
 }: DashboardProps) {
-    const maxFlow = useMemo(() => {
-        return Math.max(
-            ...inventoryFlow.flatMap((item) => [
-                item.stockIn,
-                item.stockOut,
-            ]),
-            1,
-        );
-    }, [inventoryFlow]);
+    const flowTotals = useMemo(
+        () =>
+            inventoryFlow.reduce(
+                (totals, point) => ({
+                    stockIn:
+                        totals.stockIn + point.stockIn,
+                    stockOut:
+                        totals.stockOut + point.stockOut,
+                }),
+                {
+                    stockIn: 0,
+                    stockOut: 0,
+                },
+            ),
+        [inventoryFlow],
+    );
+
+    const hasFlowActivity =
+        flowTotals.stockIn > 0 ||
+        flowTotals.stockOut > 0;
+
+    const hasOperationalData =
+        summary.inventoryPositions > 0 ||
+        summary.receivedValue > 0 ||
+        summary.purchaseOrders > 0 ||
+        hasFlowActivity ||
+        recentMovements.length > 0;
 
     function changeRange(range: RangeKey): void {
         router.get(
@@ -176,105 +220,196 @@ export default function Dashboard({
                     range={filters.range}
                     periodLabel={period.label}
                     context={context}
+                    hasOperationalData={
+                        hasOperationalData
+                    }
                     onRangeChange={changeRange}
                 />
 
                 <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <MetricCard
                         label="Received Inventory"
-                        value={formatCurrency(summary.receivedValue)}
-                        change={summary.receivedValueChange}
+                        value={formatCurrency(
+                            summary.receivedValue,
+                        )}
                         description="Posted receipt value"
                         icon={CircleDollarSign}
                         tone="cyan"
+                        change={
+                            summary.receivedValue > 0
+                                ? summary.receivedValueChange
+                                : null
+                        }
+                        statusLabel={
+                            summary.receivedValue > 0
+                                ? 'Current period'
+                                : 'No receipts yet'
+                        }
+                        statusTone={
+                            summary.receivedValue > 0
+                                ? 'blue'
+                                : 'neutral'
+                        }
+                        sparkValues={inventoryFlow.map(
+                            (point) => point.stockIn,
+                        )}
                     />
 
                     <MetricCard
                         label="Inventory Value"
-                        value={formatCurrency(summary.inventoryValue)}
-                        change={null}
-                        neutralLabel={`${formatNumber(
-                            summary.inventoryPositions,
-                        )} positions`}
+                        value={formatCurrency(
+                            summary.inventoryValue,
+                        )}
                         description={`${formatQuantity(
                             summary.totalQuantity,
                         )} available units`}
                         icon={Boxes}
                         tone="blue"
+                        change={null}
+                        statusLabel={
+                            summary.inventoryPositions > 0
+                                ? `${formatNumber(
+                                      summary.inventoryPositions,
+                                  )} positions`
+                                : 'Awaiting stock'
+                        }
+                        statusTone={
+                            summary.inventoryPositions > 0
+                                ? 'blue'
+                                : 'neutral'
+                        }
+                        sparkValues={buildInventoryPulse(
+                            inventoryFlow,
+                        )}
                     />
 
                     <MetricCard
                         label="Purchase Orders"
-                        value={formatNumber(summary.purchaseOrders)}
-                        change={summary.purchaseOrdersChange}
+                        value={formatNumber(
+                            summary.purchaseOrders,
+                        )}
                         description="Created in selected period"
                         icon={ClipboardList}
                         tone="violet"
+                        change={
+                            summary.purchaseOrders > 0
+                                ? summary.purchaseOrdersChange
+                                : null
+                        }
+                        statusLabel={
+                            summary.purchaseOrders > 0
+                                ? 'Procurement active'
+                                : 'No orders yet'
+                        }
+                        statusTone={
+                            summary.purchaseOrders > 0
+                                ? 'blue'
+                                : 'neutral'
+                        }
+                        sparkValues={procurementPipeline.map(
+                            (stage) => stage.count,
+                        )}
                     />
 
                     <MetricCard
                         label="Stock Alerts"
-                        value={formatNumber(summary.stockAlerts)}
-                        change={null}
-                        neutralLabel={`${formatNumber(
-                            summary.criticalAlerts,
-                        )} critical`}
+                        value={formatNumber(
+                            summary.stockAlerts,
+                        )}
                         description="Low and out-of-stock positions"
                         icon={AlertTriangle}
                         tone="amber"
+                        change={null}
+                        statusLabel={
+                            summary.inventoryPositions <= 0
+                                ? 'Awaiting stock'
+                                : summary.stockAlerts <= 0
+                                  ? 'All clear'
+                                  : `${formatNumber(
+                                        summary.criticalAlerts,
+                                    )} critical`
+                        }
+                        statusTone={
+                            summary.inventoryPositions <= 0
+                                ? 'neutral'
+                                : summary.stockAlerts <= 0
+                                  ? 'emerald'
+                                  : summary.criticalAlerts > 0
+                                    ? 'red'
+                                    : 'amber'
+                        }
+                        sparkValues={[
+                            summary.stockAlerts,
+                            summary.criticalAlerts,
+                            summary.stockAlerts,
+                            summary.criticalAlerts,
+                            summary.stockAlerts,
+                        ]}
                     />
                 </section>
 
-                <section className="grid min-w-0 gap-3 md:gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.75fr)]">
+                <section className="grid min-w-0 gap-3 md:gap-4 xl:grid-cols-[minmax(0,1.68fr)_minmax(300px,0.72fr)]">
                     <ChartCard
                         title="Inventory Flow"
-                        description="Stock received versus stock released across the selected period."
+                        description="Movement volume and direction across the selected reporting period."
                         icon={BarChart3}
-                        badge={`${formatQuantity(
-                            inventoryFlow.reduce(
-                                (sum, point) =>
-                                    sum +
-                                    point.stockIn +
-                                    point.stockOut,
-                                0,
-                            ),
-                        )} recorded units`}
+                        badge={
+                            hasFlowActivity
+                                ? `${formatQuantity(
+                                      flowTotals.stockIn +
+                                          flowTotals.stockOut,
+                                  )} recorded units`
+                                : 'Chart ready'
+                        }
+                        accent="blue"
                     >
                         <InventoryFlowChart
                             points={inventoryFlow}
-                            maxValue={maxFlow}
+                            totals={flowTotals}
                         />
                     </ChartCard>
 
                     <ChartCard
                         title="Stock Health"
-                        description="Availability profile across tracked inventory positions."
+                        description="Availability readiness across tracked inventory positions."
                         icon={Activity}
-                        badge={`${formatNumber(
-                            stockHealth.total,
-                        )} positions`}
+                        badge={
+                            stockHealth.total > 0
+                                ? `${formatNumber(
+                                      stockHealth.total,
+                                  )} positions`
+                                : 'Awaiting stock'
+                        }
+                        accent="cyan"
                     >
-                        <StockHealthDonut health={stockHealth} />
+                        <StockHealthGauge
+                            health={stockHealth}
+                        />
                     </ChartCard>
                 </section>
 
-                <section className="grid min-w-0 gap-3 md:gap-4 xl:grid-cols-[minmax(300px,0.85fr)_minmax(0,1.35fr)]">
+                <section className="grid min-w-0 gap-3 md:gap-4 xl:grid-cols-[minmax(300px,0.82fr)_minmax(0,1.38fr)]">
                     <ChartCard
                         title="Inventory by Category"
-                        description="Distribution of current inventory value."
+                        description="Cost-value contribution of stocked product categories."
                         icon={Layers3}
-                        badge={`${formatNumber(
-                            categoryDistribution.length,
-                        )} groups`}
+                        badge={
+                            categoryDistribution.length > 0
+                                ? `${formatNumber(
+                                      categoryDistribution.length,
+                                  )} groups`
+                                : 'Distribution ready'
+                        }
+                        accent="cyan"
                     >
-                        <CategoryPieChart
+                        <CategoryDistribution
                             slices={categoryDistribution}
                         />
                     </ChartCard>
 
                     <ChartCard
                         title="Procurement Pipeline"
-                        description="Current purchase-order workload from draft to completion."
+                        description="Order progression from preparation through completed receiving."
                         icon={Truck}
                         badge={`${formatNumber(
                             procurementPipeline.reduce(
@@ -283,8 +418,9 @@ export default function Dashboard({
                                 0,
                             ),
                         )} orders`}
+                        accent="violet"
                     >
-                        <ProcurementPipeline
+                        <ProcurementFlow
                             stages={procurementPipeline}
                         />
                     </ChartCard>
@@ -292,26 +428,53 @@ export default function Dashboard({
 
                 <section className="grid min-w-0 gap-3 md:gap-4 xl:grid-cols-2">
                     <DashboardPanel
-                        title="Low Stock Alerts"
-                        description="Products that have reached or fallen below their reorder level."
+                        title="Low Stock Priorities"
+                        description="Products requiring replenishment attention."
                         icon={AlertTriangle}
                         actionLabel="Open Stock Management"
                         href="/inventory/stocks"
+                        accent="amber"
                     >
                         {lowStockAlerts.length > 0 ? (
                             <div className="divide-y divide-border/50">
-                                {lowStockAlerts.map((alert) => (
-                                    <StockAlertRow
-                                        key={alert.id}
-                                        alert={alert}
-                                    />
-                                ))}
+                                {lowStockAlerts.map(
+                                    (alert) => (
+                                        <StockAlertRow
+                                            key={alert.id}
+                                            alert={alert}
+                                        />
+                                    ),
+                                )}
                             </div>
                         ) : (
-                            <PanelEmptyState
-                                icon={CheckCircle2}
-                                title="Stock levels are healthy"
-                                description="No tracked inventory position is currently at or below its reorder level."
+                            <OperationalEmptyState
+                                icon={
+                                    summary.inventoryPositions > 0
+                                        ? CheckCircle2
+                                        : PackagePlus
+                                }
+                                title={
+                                    summary.inventoryPositions > 0
+                                        ? 'No replenishment issues'
+                                        : 'Stock monitoring is ready'
+                                }
+                                description={
+                                    summary.inventoryPositions > 0
+                                        ? 'All tracked stock positions are currently above their reorder thresholds.'
+                                        : 'Add tracked stock and reorder levels to activate automatic replenishment priorities.'
+                                }
+                                href="/inventory/stocks"
+                                actionLabel={
+                                    summary.inventoryPositions > 0
+                                        ? 'Review stock'
+                                        : 'Add inventory stock'
+                                }
+                                tone={
+                                    summary.inventoryPositions > 0
+                                        ? 'emerald'
+                                        : 'blue'
+                                }
+                                pattern="bars"
                             />
                         )}
                     </DashboardPanel>
@@ -322,6 +485,7 @@ export default function Dashboard({
                         icon={RefreshCw}
                         actionLabel="View Stock Movements"
                         href="/stock-movements"
+                        accent="blue"
                     >
                         {recentMovements.length > 0 ? (
                             <div className="divide-y divide-border/50">
@@ -335,10 +499,14 @@ export default function Dashboard({
                                 )}
                             </div>
                         ) : (
-                            <PanelEmptyState
-                                icon={RefreshCw}
-                                title="No stock activity yet"
-                                description="Receiving, adjustments, transfers, and other movements will appear here."
+                            <OperationalEmptyState
+                                icon={Database}
+                                title="Activity timeline is ready"
+                                description="Receiving, adjustments, transfers, and releases will automatically appear here."
+                                href="/inventory/stocks"
+                                actionLabel="Record stock activity"
+                                tone="blue"
+                                pattern="timeline"
                             />
                         )}
                     </DashboardPanel>
@@ -352,24 +520,34 @@ function DashboardHeader({
     range,
     periodLabel,
     context,
+    hasOperationalData,
     onRangeChange,
 }: {
     range: RangeKey;
     periodLabel: string;
     context: DashboardProps['context'];
+    hasOperationalData: boolean;
     onRangeChange: (range: RangeKey) => void;
 }) {
     return (
-        <section className="relative overflow-hidden rounded-2xl border border-blue-500/15 bg-card/75 shadow-[0_10px_35px_rgba(37,99,235,0.06)]">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_12%,rgba(59,130,246,0.11),transparent_30%),radial-gradient(circle_at_92%_18%,rgba(34,211,238,0.075),transparent_28%)]" />
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent" />
+        <section className="relative overflow-hidden rounded-2xl border border-blue-500/15 bg-card/75 shadow-[0_12px_40px_rgba(37,99,235,0.06)]">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_12%,rgba(59,130,246,0.12),transparent_30%),radial-gradient(circle_at_92%_18%,rgba(34,211,238,0.08),transparent_28%)]" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/55 to-transparent" />
 
             <div className="relative flex flex-col gap-3 p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-start gap-3">
-                    <span className="relative inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400">
-                        <DashboardGlyph className="size-5" />
+                    <span className="relative inline-flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400">
+                        <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.12),transparent_48%)]" />
+                        <DashboardGlyph className="relative size-5" />
 
-                        <span className="absolute -right-1 -top-1 size-2 rounded-full border-2 border-card bg-cyan-400" />
+                        <span
+                            className={[
+                                'absolute -right-1 -top-1 size-2.5 rounded-full border-2 border-card',
+                                hasOperationalData
+                                    ? 'bg-cyan-400'
+                                    : 'bg-blue-400',
+                            ].join(' ')}
+                        />
                     </span>
 
                     <div className="min-w-0">
@@ -378,8 +556,23 @@ function DashboardHeader({
                                 Inventory Operations Dashboard
                             </h1>
 
-                            <span className="inline-flex h-5 items-center rounded-full border border-blue-500/20 bg-blue-500/[0.07] px-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-blue-300">
-                                Live Data
+                            <span
+                                className={[
+                                    'inline-flex h-5 items-center gap-1.5 rounded-full border px-2 text-[9px] font-semibold uppercase tracking-[0.12em]',
+                                    hasOperationalData
+                                        ? 'border-cyan-500/20 bg-cyan-500/[0.07] text-cyan-300'
+                                        : 'border-blue-500/20 bg-blue-500/[0.07] text-blue-300',
+                                ].join(' ')}
+                            >
+                                {hasOperationalData ? (
+                                    <Activity className="size-2.5" />
+                                ) : (
+                                    <Sparkles className="size-2.5" />
+                                )}
+
+                                {hasOperationalData
+                                    ? 'Live Operations'
+                                    : 'System Ready'}
                             </span>
                         </div>
 
@@ -407,7 +600,7 @@ function DashboardHeader({
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <div className="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-500/[0.03] px-3 py-2">
+                    <div className="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-500/[0.035] px-3 py-2">
                         <CalendarDays className="size-3.5 text-blue-400" />
 
                         <div>
@@ -421,7 +614,7 @@ function DashboardHeader({
                         </div>
                     </div>
 
-                    <div className="inline-flex rounded-xl border border-blue-500/10 bg-blue-500/[0.03] p-1">
+                    <div className="inline-flex rounded-xl border border-blue-500/10 bg-blue-500/[0.035] p-1">
                         {(
                             [
                                 ['7d', '7D'],
@@ -470,57 +663,68 @@ function ContextPill({
 function MetricCard({
     label,
     value,
-    change,
-    neutralLabel,
     description,
     icon: Icon,
     tone,
+    change,
+    statusLabel,
+    statusTone,
+    sparkValues,
 }: {
     label: string;
     value: string;
-    change: number | null;
-    neutralLabel?: string;
     description: string;
     icon: LucideIcon;
     tone: Tone;
+    change: number | null;
+    statusLabel: string;
+    statusTone: StatusTone;
+    sparkValues: number[];
 }) {
     const toneMap: Record<
         Tone,
         {
             icon: string;
             value: string;
-            surface: string;
+            glow: string;
+            line: string;
         }
     > = {
         emerald: {
             icon: 'border-emerald-500/15 bg-emerald-500/10 text-emerald-400',
             value: 'text-emerald-400',
-            surface: 'hover:border-emerald-500/15',
+            glow: 'from-emerald-500/[0.07]',
+            line: 'text-emerald-400',
         },
         blue: {
             icon: 'border-blue-500/15 bg-blue-500/10 text-blue-400',
             value: 'text-blue-400',
-            surface: 'hover:border-blue-500/15',
+            glow: 'from-blue-500/[0.075]',
+            line: 'text-blue-400',
         },
         violet: {
             icon: 'border-violet-500/15 bg-violet-500/10 text-violet-400',
             value: 'text-violet-400',
-            surface: 'hover:border-violet-500/15',
+            glow: 'from-violet-500/[0.075]',
+            line: 'text-violet-400',
         },
         amber: {
             icon: 'border-amber-500/15 bg-amber-500/10 text-amber-400',
             value: 'text-amber-400',
-            surface: 'hover:border-amber-500/15',
+            glow: 'from-amber-500/[0.075]',
+            line: 'text-amber-400',
         },
         red: {
             icon: 'border-red-500/15 bg-red-500/10 text-red-400',
             value: 'text-red-400',
-            surface: 'hover:border-red-500/15',
+            glow: 'from-red-500/[0.075]',
+            line: 'text-red-400',
         },
         cyan: {
             icon: 'border-cyan-500/15 bg-cyan-500/10 text-cyan-400',
             value: 'text-cyan-400',
-            surface: 'hover:border-cyan-500/15',
+            glow: 'from-cyan-500/[0.075]',
+            line: 'text-cyan-400',
         },
     };
 
@@ -528,13 +732,22 @@ function MetricCard({
     const positive = (change ?? 0) >= 0;
 
     return (
-        <article
-            className={[
-                'group relative overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-3.5 transition sm:p-4',
-                styles.surface,
-            ].join(' ')}
-        >
-            <div className="flex items-start justify-between gap-3">
+        <article className="group relative min-h-[134px] overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-3.5 transition hover:border-blue-500/15 sm:p-4">
+            <div
+                className={[
+                    'pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t to-transparent opacity-80',
+                    styles.glow,
+                ].join(' ')}
+            />
+
+            <div className="pointer-events-none absolute -bottom-2 right-2 h-12 w-[42%] opacity-60">
+                <MetricSparkline
+                    values={sparkValues}
+                    toneClass={styles.line}
+                />
+            </div>
+
+            <div className="relative flex items-start justify-between gap-3">
                 <div className="min-w-0">
                     <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                         {label}
@@ -552,7 +765,7 @@ function MetricCard({
 
                 <span
                     className={[
-                        'inline-flex size-9 shrink-0 items-center justify-center rounded-xl border',
+                        'inline-flex size-9 shrink-0 items-center justify-center rounded-xl border shadow-sm',
                         styles.icon,
                     ].join(' ')}
                 >
@@ -560,7 +773,7 @@ function MetricCard({
                 </span>
             </div>
 
-            <div className="mt-4 flex items-end justify-between gap-3">
+            <div className="relative mt-4 flex items-end justify-between gap-3">
                 <p className="truncate text-[10px] text-muted-foreground">
                     {description}
                 </p>
@@ -583,12 +796,132 @@ function MetricCard({
                         {Math.abs(change).toFixed(1)}%
                     </span>
                 ) : (
-                    <span className="inline-flex shrink-0 rounded-full border border-border/60 bg-background/45 px-2 py-1 text-[9px] font-semibold text-muted-foreground">
-                        {neutralLabel ?? 'Live total'}
-                    </span>
+                    <StatusPill
+                        label={statusLabel}
+                        tone={statusTone}
+                    />
                 )}
             </div>
         </article>
+    );
+}
+
+function MetricSparkline({
+    values,
+    toneClass,
+}: {
+    values: number[];
+    toneClass: string;
+}) {
+    const normalized = values.length >= 2
+        ? values
+        : [0, 0, 0, 0, 0];
+
+    const hasValues = normalized.some(
+        (value) => value > 0,
+    );
+
+    const max = Math.max(...normalized, 1);
+    const points = normalized.map((value, index) => ({
+        x:
+            normalized.length <= 1
+                ? 0
+                : (index / (normalized.length - 1)) *
+                  138,
+        y: 38 - (value / max) * 30,
+    }));
+
+    if (!hasValues) {
+        return (
+            <svg
+                viewBox="0 0 140 40"
+                className="size-full"
+                aria-hidden="true"
+            >
+                <path
+                    d="M 4 27 H 136"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.2"
+                    strokeDasharray="4 5"
+                    className="text-muted-foreground/25"
+                />
+
+                {[18, 52, 86, 120].map((x) => (
+                    <circle
+                        key={x}
+                        cx={x}
+                        cy="27"
+                        r="2"
+                        fill="currentColor"
+                        className="text-blue-400/25"
+                    />
+                ))}
+            </svg>
+        );
+    }
+
+    return (
+        <svg
+            viewBox="0 0 140 40"
+            className={[
+                'size-full',
+                toneClass,
+            ].join(' ')}
+            aria-hidden="true"
+        >
+            <path
+                d={createSmoothPath(points)}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                opacity="0.55"
+            />
+
+            <circle
+                cx={points[points.length - 1].x}
+                cy={points[points.length - 1].y}
+                r="2.5"
+                fill="currentColor"
+                opacity="0.85"
+            />
+        </svg>
+    );
+}
+
+function StatusPill({
+    label,
+    tone,
+}: {
+    label: string;
+    tone: StatusTone;
+}) {
+    const toneClass: Record<
+        StatusTone,
+        string
+    > = {
+        neutral:
+            'border-border/60 bg-background/45 text-muted-foreground',
+        emerald:
+            'border-emerald-500/15 bg-emerald-500/10 text-emerald-400',
+        blue:
+            'border-blue-500/15 bg-blue-500/10 text-blue-300',
+        amber:
+            'border-amber-500/15 bg-amber-500/10 text-amber-400',
+        red:
+            'border-red-500/15 bg-red-500/10 text-red-400',
+    };
+
+    return (
+        <span
+            className={[
+                'inline-flex shrink-0 items-center rounded-full border px-2 py-1 text-[8px] font-semibold',
+                toneClass[tone],
+            ].join(' ')}
+        >
+            {label}
+        </span>
     );
 }
 
@@ -597,19 +930,51 @@ function ChartCard({
     description,
     icon: Icon,
     badge,
+    accent,
     children,
 }: {
     title: string;
     description: string;
     icon: LucideIcon;
     badge: string;
+    accent: 'blue' | 'cyan' | 'violet';
     children: ReactNode;
 }) {
+    const accentMap = {
+        blue: {
+            icon: 'border-blue-500/15 bg-blue-500/[0.06] text-blue-400',
+            badge: 'border-blue-500/10 bg-blue-500/[0.035] text-blue-300/80',
+            line: 'via-blue-400/45',
+        },
+        cyan: {
+            icon: 'border-cyan-500/15 bg-cyan-500/[0.06] text-cyan-400',
+            badge: 'border-cyan-500/10 bg-cyan-500/[0.035] text-cyan-300/80',
+            line: 'via-cyan-400/45',
+        },
+        violet: {
+            icon: 'border-violet-500/15 bg-violet-500/[0.06] text-violet-400',
+            badge: 'border-violet-500/10 bg-violet-500/[0.035] text-violet-300/80',
+            line: 'via-violet-400/45',
+        },
+    }[accent];
+
     return (
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-border/60 bg-card/70">
-            <div className="flex flex-col gap-2.5 border-b border-border/60 px-3.5 py-2.5 sm:flex-row sm:px-4 sm:py-3 sm:items-center sm:justify-between">
+        <section className="relative min-w-0 overflow-hidden rounded-2xl border border-border/60 bg-card/70">
+            <div
+                className={[
+                    'pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent',
+                    accentMap.line,
+                ].join(' ')}
+            />
+
+            <div className="flex flex-col gap-2.5 border-b border-border/60 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
                 <div className="flex min-w-0 items-start gap-3">
-                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/15 bg-blue-500/[0.055] text-blue-400">
+                    <span
+                        className={[
+                            'inline-flex size-9 shrink-0 items-center justify-center rounded-xl border',
+                            accentMap.icon,
+                        ].join(' ')}
+                    >
                         <Icon className="size-4" />
                     </span>
 
@@ -624,280 +989,727 @@ function ChartCard({
                     </div>
                 </div>
 
-                <span className="inline-flex h-6 shrink-0 items-center rounded-full border border-blue-500/10 bg-blue-500/[0.035] px-2.5 text-[9px] font-medium text-blue-300/80">
+                <span
+                    className={[
+                        'inline-flex h-6 shrink-0 items-center rounded-full border px-2.5 text-[9px] font-medium',
+                        accentMap.badge,
+                    ].join(' ')}
+                >
                     {badge}
                 </span>
             </div>
 
-            <div className="p-3.5 sm:p-4">{children}</div>
+            <div className="p-3.5 sm:p-4">
+                {children}
+            </div>
         </section>
     );
 }
 
 function InventoryFlowChart({
     points,
-    maxValue,
+    totals,
 }: {
     points: FlowPoint[];
-    maxValue: number;
+    totals: {
+        stockIn: number;
+        stockOut: number;
+    };
 }) {
+    const rawId = useId();
+    const id = rawId.replace(/:/g, '');
+    const hasData =
+        totals.stockIn > 0 ||
+        totals.stockOut > 0;
+
+    const chart = useMemo(() => {
+        const width = 760;
+        const height = 236;
+        const padding = {
+            top: 20,
+            right: 18,
+            bottom: 36,
+            left: 44,
+        };
+        const plotWidth =
+            width - padding.left - padding.right;
+        const plotHeight =
+            height - padding.top - padding.bottom;
+        const maxValue = Math.max(
+            ...points.flatMap((point) => [
+                point.stockIn,
+                point.stockOut,
+            ]),
+            1,
+        );
+        const scaledMax = maxValue * 1.12;
+
+        const xFor = (index: number): number =>
+            points.length <= 1
+                ? padding.left + plotWidth / 2
+                : padding.left +
+                  (index / (points.length - 1)) *
+                      plotWidth;
+
+        const yFor = (value: number): number =>
+            padding.top +
+            plotHeight -
+            (value / scaledMax) * plotHeight;
+
+        const stockInPoints = points.map(
+            (point, index) => ({
+                x: xFor(index),
+                y: yFor(point.stockIn),
+            }),
+        );
+
+        const stockOutPoints = points.map(
+            (point, index) => ({
+                x: xFor(index),
+                y: yFor(point.stockOut),
+            }),
+        );
+
+        return {
+            width,
+            height,
+            padding,
+            plotWidth,
+            plotHeight,
+            scaledMax,
+            stockInPoints,
+            stockOutPoints,
+            stockInPath:
+                createSmoothPath(stockInPoints),
+            stockOutPath:
+                createSmoothPath(stockOutPoints),
+            stockInArea:
+                createAreaPath(
+                    stockInPoints,
+                    padding.top + plotHeight,
+                ),
+            stockOutArea:
+                createAreaPath(
+                    stockOutPoints,
+                    padding.top + plotHeight,
+                ),
+        };
+    }, [points]);
+
+    const net =
+        totals.stockIn - totals.stockOut;
+
     return (
         <div>
-            <div className="flex items-center gap-4 text-[9px] text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-cyan-400" />
-                    Stock In
-                </span>
+            <div className="grid gap-2 sm:grid-cols-3">
+                <FlowSummary
+                    label="Stock In"
+                    value={formatQuantity(
+                        totals.stockIn,
+                    )}
+                    tone="cyan"
+                />
 
-                <span className="inline-flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-blue-400" />
-                    Stock Out
-                </span>
+                <FlowSummary
+                    label="Stock Out"
+                    value={formatQuantity(
+                        totals.stockOut,
+                    )}
+                    tone="blue"
+                />
+
+                <FlowSummary
+                    label="Net Movement"
+                    value={`${net >= 0 ? '+' : ''}${formatQuantity(
+                        net,
+                    )}`}
+                    tone={
+                        net >= 0
+                            ? 'emerald'
+                            : 'amber'
+                    }
+                />
             </div>
 
-            <div className="mt-4 grid h-[190px] grid-cols-[34px_minmax(0,1fr)] gap-2.5 sm:h-[210px] sm:grid-cols-[38px_minmax(0,1fr)] sm:gap-3">
-                <div className="flex flex-col justify-between pb-6 text-right text-[8px] tabular-nums text-muted-foreground">
-                    <span>{formatCompact(maxValue)}</span>
-                    <span>{formatCompact(maxValue * 0.75)}</span>
-                    <span>{formatCompact(maxValue * 0.5)}</span>
-                    <span>{formatCompact(maxValue * 0.25)}</span>
-                    <span>0</span>
-                </div>
+            <div className="relative mt-3 overflow-hidden rounded-xl border border-border/50 bg-background/25">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(59,130,246,0.08),transparent_55%)]" />
 
-                <div className="relative min-w-0">
-                    <div className="pointer-events-none absolute inset-x-0 top-0 flex h-[164px] flex-col justify-between sm:h-[184px]">
-                        {[0, 1, 2, 3, 4].map((line) => (
-                            <span
-                                key={line}
-                                className="block border-t border-dashed border-border/50"
+                <svg
+                    viewBox={`0 0 ${chart.width} ${chart.height}`}
+                    className="relative h-[210px] w-full sm:h-[230px]"
+                    role="img"
+                    aria-label="Inventory stock-in and stock-out trend"
+                >
+                    <defs>
+                        <linearGradient
+                            id={`stock-in-${id}`}
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                        >
+                            <stop
+                                offset="0%"
+                                stopColor="rgb(34 211 238)"
+                                stopOpacity="0.22"
                             />
-                        ))}
-                    </div>
+                            <stop
+                                offset="100%"
+                                stopColor="rgb(34 211 238)"
+                                stopOpacity="0"
+                            />
+                        </linearGradient>
 
-                    <div
-                        className="relative grid h-full items-end gap-3"
-                        style={{
-                            gridTemplateColumns: `repeat(${Math.max(
-                                points.length,
-                                1,
-                            )}, minmax(0, 1fr))`,
-                        }}
-                    >
-                        {points.map((point) => (
-                            <div
-                                key={point.label}
-                                className="flex h-full min-w-0 flex-col justify-end"
+                        <linearGradient
+                            id={`stock-out-${id}`}
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                        >
+                            <stop
+                                offset="0%"
+                                stopColor="rgb(96 165 250)"
+                                stopOpacity="0.18"
+                            />
+                            <stop
+                                offset="100%"
+                                stopColor="rgb(96 165 250)"
+                                stopOpacity="0"
+                            />
+                        </linearGradient>
+
+                        <filter
+                            id={`glow-${id}`}
+                            x="-20%"
+                            y="-20%"
+                            width="140%"
+                            height="140%"
+                        >
+                            <feGaussianBlur
+                                stdDeviation="3"
+                                result="blur"
+                            />
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+
+                    {[0, 1, 2, 3, 4].map(
+                        (line) => {
+                            const y =
+                                chart.padding.top +
+                                (line / 4) *
+                                    chart.plotHeight;
+                            const value =
+                                chart.scaledMax *
+                                (1 - line / 4);
+
+                            return (
+                                <g key={line}>
+                                    <line
+                                        x1={
+                                            chart.padding.left
+                                        }
+                                        x2={
+                                            chart.width -
+                                            chart.padding.right
+                                        }
+                                        y1={y}
+                                        y2={y}
+                                        stroke="currentColor"
+                                        strokeWidth="1"
+                                        strokeDasharray="4 7"
+                                        className="text-border/55"
+                                    />
+
+                                    <text
+                                        x={
+                                            chart.padding.left -
+                                            9
+                                        }
+                                        y={y + 3}
+                                        textAnchor="end"
+                                        fill="currentColor"
+                                        className="text-[9px] text-muted-foreground"
+                                    >
+                                        {formatCompact(
+                                            value,
+                                        )}
+                                    </text>
+                                </g>
+                            );
+                        },
+                    )}
+
+                    {points.map((point, index) => {
+                        const x =
+                            points.length <= 1
+                                ? chart.padding.left +
+                                  chart.plotWidth /
+                                      2
+                                : chart.padding.left +
+                                  (index /
+                                      (points.length -
+                                          1)) *
+                                      chart.plotWidth;
+
+                        return (
+                            <text
+                                key={`${point.label}-${index}`}
+                                x={x}
+                                y={
+                                    chart.height -
+                                    12
+                                }
+                                textAnchor="middle"
+                                fill="currentColor"
+                                className="text-[9px] font-medium text-muted-foreground"
                             >
-                                <div className="flex h-[164px] items-end justify-center gap-1 sm:h-[184px] sm:gap-1.5">
-                                    <Bar
-                                        value={point.stockIn}
-                                        maxValue={maxValue}
-                                        className="bg-cyan-400/85"
-                                        label={`Stock in ${formatQuantity(
-                                            point.stockIn,
-                                        )}`}
-                                    />
+                                {point.label}
+                            </text>
+                        );
+                    })}
 
-                                    <Bar
-                                        value={point.stockOut}
-                                        maxValue={maxValue}
-                                        className="bg-blue-400/80"
-                                        label={`Stock out ${formatQuantity(
-                                            point.stockOut,
-                                        )}`}
-                                    />
-                                </div>
+                    {hasData ? (
+                        <>
+                            <path
+                                d={chart.stockOutArea}
+                                fill={`url(#stock-out-${id})`}
+                            />
 
-                                <p className="mt-2 truncate text-center text-[9px] font-medium text-muted-foreground">
-                                    {point.label}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
+                            <path
+                                d={chart.stockInArea}
+                                fill={`url(#stock-in-${id})`}
+                            />
+
+                            <path
+                                d={chart.stockOutPath}
+                                fill="none"
+                                stroke="rgb(96 165 250)"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+
+                            <path
+                                d={chart.stockInPath}
+                                fill="none"
+                                stroke="rgb(34 211 238)"
+                                strokeWidth="2.7"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                filter={`url(#glow-${id})`}
+                            />
+
+                            {chart.stockInPoints.map(
+                                (point, index) => (
+                                    <g
+                                        key={`in-${index}`}
+                                    >
+                                        <circle
+                                            cx={point.x}
+                                            cy={point.y}
+                                            r="4"
+                                            fill="rgb(10 16 24)"
+                                            stroke="rgb(34 211 238)"
+                                            strokeWidth="2"
+                                        >
+                                            <title>
+                                                {`${
+                                                    points[index]
+                                                        .label
+                                                }: ${formatQuantity(
+                                                    points[
+                                                        index
+                                                    ].stockIn,
+                                                )} stock in`}
+                                            </title>
+                                        </circle>
+                                    </g>
+                                ),
+                            )}
+
+                            {chart.stockOutPoints.map(
+                                (point, index) => (
+                                    <circle
+                                        key={`out-${index}`}
+                                        cx={point.x}
+                                        cy={point.y}
+                                        r="3.5"
+                                        fill="rgb(10 16 24)"
+                                        stroke="rgb(96 165 250)"
+                                        strokeWidth="2"
+                                    >
+                                        <title>
+                                            {`${
+                                                points[index]
+                                                    .label
+                                            }: ${formatQuantity(
+                                                points[index]
+                                                    .stockOut,
+                                            )} stock out`}
+                                        </title>
+                                    </circle>
+                                ),
+                            )}
+                        </>
+                    ) : (
+                        <ChartReadyState
+                            width={chart.width}
+                            height={chart.height}
+                            paddingLeft={
+                                chart.padding.left
+                            }
+                            paddingRight={
+                                chart.padding.right
+                            }
+                        />
+                    )}
+                </svg>
+
+                <div className="absolute bottom-2 right-3 flex items-center gap-3 text-[8px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                        <span className="size-1.5 rounded-full bg-cyan-400" />
+                        Stock In
+                    </span>
+
+                    <span className="inline-flex items-center gap-1.5">
+                        <span className="size-1.5 rounded-full bg-blue-400" />
+                        Stock Out
+                    </span>
                 </div>
             </div>
         </div>
     );
 }
 
-function Bar({
-    value,
-    maxValue,
-    className,
+function FlowSummary({
     label,
+    value,
+    tone,
 }: {
-    value: number;
-    maxValue: number;
-    className: string;
     label: string;
+    value: string;
+    tone:
+        | 'cyan'
+        | 'blue'
+        | 'emerald'
+        | 'amber';
 }) {
-    const height =
-        value <= 0
-            ? 0
-            : Math.max((value / maxValue) * 100, 3);
+    const toneClass = {
+        cyan: 'text-cyan-400',
+        blue: 'text-blue-400',
+        emerald: 'text-emerald-400',
+        amber: 'text-amber-400',
+    }[tone];
 
     return (
-        <div
-            title={label}
-            className={[
-                'w-full max-w-5 rounded-t-md transition-all duration-500 hover:opacity-100',
-                className,
-            ].join(' ')}
-            style={{ height: `${height}%` }}
-        />
+        <div className="rounded-lg border border-border/50 bg-background/30 px-3 py-2">
+            <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                {label}
+            </p>
+
+            <p
+                className={[
+                    'mt-1 text-sm font-semibold tabular-nums',
+                    toneClass,
+                ].join(' ')}
+            >
+                {value}
+            </p>
+        </div>
     );
 }
 
-function StockHealthDonut({
+function ChartReadyState({
+    width,
+    height,
+    paddingLeft,
+    paddingRight,
+}: {
+    width: number;
+    height: number;
+    paddingLeft: number;
+    paddingRight: number;
+}) {
+    const baselineY = height - 58;
+    const nodeCount = 6;
+    const availableWidth =
+        width - paddingLeft - paddingRight;
+
+    return (
+        <g>
+            <path
+                d={`M ${paddingLeft} ${baselineY} H ${
+                    width - paddingRight
+                }`}
+                fill="none"
+                stroke="rgb(96 165 250)"
+                strokeWidth="1.5"
+                strokeDasharray="5 8"
+                opacity="0.35"
+            />
+
+            {Array.from({
+                length: nodeCount,
+            }).map((_, index) => {
+                const x =
+                    paddingLeft +
+                    (index / (nodeCount - 1)) *
+                        availableWidth;
+
+                return (
+                    <g key={index}>
+                        <circle
+                            cx={x}
+                            cy={baselineY}
+                            r="5"
+                            fill="rgb(59 130 246)"
+                            opacity="0.12"
+                        />
+
+                        <circle
+                            cx={x}
+                            cy={baselineY}
+                            r="2"
+                            fill="rgb(34 211 238)"
+                            opacity="0.45"
+                        />
+                    </g>
+                );
+            })}
+
+            <g
+                transform={`translate(${
+                    width / 2
+                } ${height / 2 - 16})`}
+            >
+                <rect
+                    x="-118"
+                    y="-31"
+                    width="236"
+                    height="62"
+                    rx="14"
+                    fill="rgb(12 18 28)"
+                    fillOpacity="0.88"
+                    stroke="rgb(59 130 246)"
+                    strokeOpacity="0.18"
+                />
+
+                <circle
+                    cx="-84"
+                    cy="0"
+                    r="14"
+                    fill="rgb(59 130 246)"
+                    fillOpacity="0.12"
+                />
+
+                <path
+                    d="M -91 3 L -86 -2 L -81 1 L -75 -7"
+                    fill="none"
+                    stroke="rgb(34 211 238)"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+
+                <text
+                    x="-58"
+                    y="-3"
+                    fill="rgb(226 232 240)"
+                    fontSize="11"
+                    fontWeight="600"
+                >
+                    Movement chart ready
+                </text>
+
+                <text
+                    x="-58"
+                    y="13"
+                    fill="rgb(148 163 184)"
+                    fontSize="8.5"
+                >
+                    Activity will plot automatically
+                </text>
+            </g>
+        </g>
+    );
+}
+
+function StockHealthGauge({
     health,
 }: {
     health: DashboardProps['stockHealth'];
 }) {
     const total = Math.max(health.total, 1);
-    const healthyPercentage = (health.healthy / total) * 100;
-    const lowPercentage = (health.lowStock / total) * 100;
-    const outPercentage = (health.outOfStock / total) * 100;
+    const healthy =
+        (health.healthy / total) * 100;
+    const low =
+        (health.lowStock / total) * 100;
+    const out =
+        (health.outOfStock / total) * 100;
+    const hasData = health.total > 0;
 
-    const radius = 54;
-    const circumference = 2 * Math.PI * radius;
-    const healthyLength =
-        (healthyPercentage / 100) * circumference;
-    const lowLength =
-        (lowPercentage / 100) * circumference;
-    const outLength =
-        (outPercentage / 100) * circumference;
+    const ringBackground = hasData
+        ? `conic-gradient(
+            rgb(52 211 153) 0% ${healthy}%,
+            rgb(251 191 36) ${healthy}% ${
+              healthy + low
+          }%,
+            rgb(248 113 113) ${
+                healthy + low
+            }% 100%
+        )`
+        : `conic-gradient(
+            from 210deg,
+            rgba(59,130,246,0.62),
+            rgba(34,211,238,0.20),
+            rgba(59,130,246,0.62)
+        )`;
 
     return (
-        <div className="grid items-center gap-4 sm:grid-cols-[150px_minmax(0,1fr)] xl:grid-cols-1 2xl:grid-cols-[150px_minmax(0,1fr)]">
-            <div className="relative mx-auto size-[145px] sm:size-[150px]">
-                <svg
-                    viewBox="0 0 140 140"
-                    className="size-full -rotate-90"
-                    aria-label="Stock health donut chart"
-                >
-                    <circle
-                        cx="70"
-                        cy="70"
-                        r={radius}
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="14"
-                        className="text-muted/70"
-                    />
+        <div className="flex min-h-[286px] flex-col justify-center">
+            <div className="relative mx-auto size-[168px]">
+                <div
+                    className={[
+                        'absolute inset-0 rounded-full',
+                        hasData
+                            ? 'shadow-[0_0_28px_rgba(52,211,153,0.10)]'
+                            : 'shadow-[0_0_30px_rgba(59,130,246,0.12)]',
+                    ].join(' ')}
+                    style={{
+                        background: ringBackground,
+                    }}
+                />
 
-                    {health.total > 0 && (
-                        <>
-                            <circle
-                                cx="70"
-                                cy="70"
-                                r={radius}
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="14"
-                                strokeLinecap="round"
-                                strokeDasharray={`${healthyLength} ${
-                                    circumference -
-                                    healthyLength
-                                }`}
-                                className="text-emerald-400"
-                            />
+                <div className="absolute inset-[11px] rounded-full border border-border/60 bg-card" />
+                <div className="absolute inset-[20px] rounded-full border border-dashed border-blue-500/15" />
 
-                            <circle
-                                cx="70"
-                                cy="70"
-                                r={radius}
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="14"
-                                strokeLinecap="round"
-                                strokeDasharray={`${lowLength} ${
-                                    circumference - lowLength
-                                }`}
-                                strokeDashoffset={
-                                    -healthyLength
-                                }
-                                className="text-amber-400"
-                            />
-
-                            <circle
-                                cx="70"
-                                cy="70"
-                                r={radius}
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="14"
-                                strokeLinecap="round"
-                                strokeDasharray={`${outLength} ${
-                                    circumference - outLength
-                                }`}
-                                strokeDashoffset={
-                                    -(
-                                        healthyLength +
-                                        lowLength
-                                    )
-                                }
-                                className="text-red-400"
-                            />
-                        </>
-                    )}
-                </svg>
-
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <p className="text-2xl font-semibold tabular-nums">
-                        {health.total > 0
-                            ? `${Math.round(
-                                  healthyPercentage,
-                              )}%`
-                            : '0%'}
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <p className="text-3xl font-semibold tabular-nums">
+                        {hasData
+                            ? `${Math.round(healthy)}%`
+                            : '—'}
                     </p>
 
-                    <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
-                        Healthy
+                    <p className="mt-1 text-[8px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        {hasData
+                            ? 'Healthy Stock'
+                            : 'Awaiting Stock'}
                     </p>
+
+                    <span
+                        className={[
+                            'mt-2 inline-flex rounded-full border px-2 py-1 text-[8px] font-medium',
+                            hasData
+                                ? 'border-emerald-500/15 bg-emerald-500/10 text-emerald-400'
+                                : 'border-blue-500/15 bg-blue-500/10 text-blue-300',
+                        ].join(' ')}
+                    >
+                        {hasData
+                            ? `${formatNumber(
+                                  health.total,
+                              )} tracked positions`
+                            : 'Monitoring ready'}
+                    </span>
                 </div>
             </div>
 
-            <div className="space-y-3">
-                <LegendRow
-                    label="Healthy Stock"
-                    value={formatNumber(health.healthy)}
+            <div className="mt-4 grid gap-2">
+                <HealthRow
+                    label="Healthy"
+                    value={health.healthy}
                     description="Above reorder level"
-                    dotClassName="bg-emerald-400"
+                    tone="emerald"
                 />
 
-                <LegendRow
+                <HealthRow
                     label="Low Stock"
-                    value={formatNumber(health.lowStock)}
+                    value={health.lowStock}
                     description="At or below threshold"
-                    dotClassName="bg-amber-400"
+                    tone="amber"
                 />
 
-                <LegendRow
+                <HealthRow
                     label="Out of Stock"
-                    value={formatNumber(
-                        health.outOfStock,
-                    )}
+                    value={health.outOfStock}
                     description="No available quantity"
-                    dotClassName="bg-red-400"
+                    tone="red"
                 />
             </div>
         </div>
     );
 }
 
-function CategoryPieChart({
+function HealthRow({
+    label,
+    value,
+    description,
+    tone,
+}: {
+    label: string;
+    value: number;
+    description: string;
+    tone: 'emerald' | 'amber' | 'red';
+}) {
+    const toneMap = {
+        emerald: {
+            dot: 'bg-emerald-400',
+            value: 'text-emerald-400',
+        },
+        amber: {
+            dot: 'bg-amber-400',
+            value: 'text-amber-400',
+        },
+        red: {
+            dot: 'bg-red-400',
+            value: 'text-red-400',
+        },
+    }[tone];
+
+    return (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-background/30 px-3 py-2.5">
+            <div className="flex min-w-0 items-center gap-2.5">
+                <span
+                    className={[
+                        'size-2.5 shrink-0 rounded-full shadow-sm',
+                        toneMap.dot,
+                    ].join(' ')}
+                />
+
+                <div className="min-w-0">
+                    <p className="truncate text-[10px] font-medium">
+                        {label}
+                    </p>
+
+                    <p className="mt-0.5 truncate text-[8px] text-muted-foreground">
+                        {description}
+                    </p>
+                </div>
+            </div>
+
+            <span
+                className={[
+                    'text-xs font-semibold tabular-nums',
+                    toneMap.value,
+                ].join(' ')}
+            >
+                {formatNumber(value)}
+            </span>
+        </div>
+    );
+}
+
+function CategoryDistribution({
     slices,
 }: {
     slices: CategorySlice[];
 }) {
     if (slices.length === 0) {
-        return (
-            <PanelEmptyState
-                icon={Layers3}
-                title="No category value yet"
-                description="Inventory value distribution will appear after stock is added to tracked products."
-            />
-        );
+        return <CategoryReadyState />;
     }
 
     const gradientStops: string[] = [];
@@ -907,20 +1719,28 @@ function CategoryPieChart({
         const nextStop =
             index === slices.length - 1
                 ? 100
-                : currentStop + slice.percentage;
+                : currentStop +
+                  slice.percentage;
 
         gradientStops.push(
-            `${categoryColors[index % categoryColors.length]} ${currentStop}% ${nextStop}%`,
+            `${categoryColors[
+                index % categoryColors.length
+            ]} ${currentStop}% ${nextStop}%`,
         );
 
         currentStop = nextStop;
     });
 
+    const totalValue = slices.reduce(
+        (sum, slice) => sum + slice.value,
+        0,
+    );
+
     return (
-        <div className="grid items-center gap-4 sm:grid-cols-[145px_minmax(0,1fr)]">
-            <div className="relative mx-auto size-[140px] sm:size-[145px]">
+        <div className="grid items-center gap-5 sm:grid-cols-[160px_minmax(0,1fr)]">
+            <div className="relative mx-auto size-[154px]">
                 <div
-                    className="size-full rounded-full"
+                    className="absolute inset-0 rounded-full shadow-[0_0_26px_rgba(59,130,246,0.10)]"
                     style={{
                         background: `conic-gradient(${gradientStops.join(
                             ', ',
@@ -928,50 +1748,70 @@ function CategoryPieChart({
                     }}
                 />
 
-                <div className="absolute inset-[26%] flex items-center justify-center rounded-full border border-border/60 bg-card">
-                    <div className="text-center">
-                        <p className="text-lg font-semibold tabular-nums">
+                <div className="absolute inset-[13px] rounded-full border border-border/60 bg-card" />
+                <div className="absolute inset-[23px] flex items-center justify-center rounded-full border border-dashed border-blue-500/15">
+                    <div className="max-w-[86px] text-center">
+                        <p className="truncate text-sm font-semibold tabular-nums">
                             {formatCurrency(
-                                slices.reduce(
-                                    (sum, slice) =>
-                                        sum + slice.value,
-                                    0,
-                                ),
+                                totalValue,
                             )}
                         </p>
 
-                        <p className="mt-1 text-[8px] uppercase tracking-wider text-muted-foreground">
-                            Total Value
+                        <p className="mt-1 text-[7px] uppercase tracking-[0.13em] text-muted-foreground">
+                            Stock Value
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
                 {slices.map((slice, index) => (
                     <div
                         key={slice.label}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/35 px-3 py-2.5"
+                        className="rounded-lg border border-border/50 bg-background/30 px-3 py-2.5"
                     >
-                        <span className="inline-flex min-w-0 items-center gap-2">
-                            <span
+                        <div className="flex items-center justify-between gap-3">
+                            <span className="inline-flex min-w-0 items-center gap-2">
+                                <span
+                                    className={[
+                                        'size-2.5 shrink-0 rounded-full',
+                                        categoryDots[
+                                            index %
+                                                categoryDots.length
+                                        ],
+                                    ].join(' ')}
+                                />
+
+                                <span className="truncate text-[10px] font-medium">
+                                    {slice.label}
+                                </span>
+                            </span>
+
+                            <span className="text-[10px] font-semibold tabular-nums">
+                                {slice.percentage.toFixed(
+                                    1,
+                                )}
+                                %
+                            </span>
+                        </div>
+
+                        <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
+                            <div
                                 className={[
-                                    'size-2.5 shrink-0 rounded-full',
+                                    'h-full rounded-full',
                                     categoryDots[
                                         index %
                                             categoryDots.length
                                     ],
                                 ].join(' ')}
+                                style={{
+                                    width: `${Math.max(
+                                        slice.percentage,
+                                        2,
+                                    )}%`,
+                                }}
                             />
-
-                            <span className="truncate text-[10px] font-medium">
-                                {slice.label}
-                            </span>
-                        </span>
-
-                        <span className="text-[10px] font-semibold tabular-nums">
-                            {slice.percentage.toFixed(1)}%
-                        </span>
+                        </div>
                     </div>
                 ))}
             </div>
@@ -979,11 +1819,86 @@ function CategoryPieChart({
     );
 }
 
-function ProcurementPipeline({
+function CategoryReadyState() {
+    const steps = [
+        {
+            label: 'Create categories',
+            href: '/inventory/categories',
+            icon: Layers3,
+        },
+        {
+            label: 'Add products',
+            href: '/inventory/products',
+            icon: Boxes,
+        },
+        {
+            label: 'Receive stock',
+            href: '/suppliers/receiving',
+            icon: PackagePlus,
+        },
+    ];
+
+    return (
+        <div className="grid min-h-[230px] items-center gap-5 sm:grid-cols-[150px_minmax(0,1fr)]">
+            <div className="relative mx-auto size-[142px]">
+                <div className="absolute inset-0 rounded-full bg-[conic-gradient(from_220deg,rgba(59,130,246,0.52),rgba(34,211,238,0.12),rgba(139,92,246,0.28),rgba(59,130,246,0.52))] shadow-[0_0_28px_rgba(59,130,246,0.10)]" />
+                <div className="absolute inset-[12px] rounded-full border border-border/60 bg-card" />
+                <div className="absolute inset-[23px] flex flex-col items-center justify-center rounded-full border border-dashed border-blue-500/20 text-center">
+                    <Layers3 className="size-5 text-blue-400" />
+                    <p className="mt-2 text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Mix Ready
+                    </p>
+                </div>
+            </div>
+
+            <div>
+                <p className="text-sm font-semibold">
+                    Category intelligence is ready
+                </p>
+
+                <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                    Stock value will automatically form
+                    this distribution once inventory is
+                    assigned to product categories.
+                </p>
+
+                <div className="mt-3 space-y-2">
+                    {steps.map(
+                        ({
+                            label,
+                            href,
+                            icon: Icon,
+                        }) => (
+                            <Link
+                                key={label}
+                                href={href}
+                                prefetch
+                                className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/30 px-3 py-2 text-[9px] text-muted-foreground transition hover:border-blue-500/15 hover:bg-blue-500/[0.04] hover:text-blue-300"
+                            >
+                                <span className="inline-flex items-center gap-2">
+                                    <Icon className="size-3.5 text-blue-400" />
+                                    {label}
+                                </span>
+
+                                <ArrowRight className="size-3" />
+                            </Link>
+                        ),
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ProcurementFlow({
     stages,
 }: {
     stages: PipelineStage[];
 }) {
+    const total = stages.reduce(
+        (sum, stage) => sum + stage.count,
+        0,
+    );
     const maxCount = Math.max(
         ...stages.map((stage) => stage.count),
         1,
@@ -993,83 +1908,153 @@ function ProcurementPipeline({
         string,
         {
             bar: string;
+            shell: string;
             icon: LucideIcon;
+            index: string;
         }
     > = {
         draft: {
             bar: 'bg-slate-400',
+            shell: 'border-slate-500/15 bg-slate-500/[0.05] text-slate-300',
             icon: ClipboardList,
+            index: '01',
         },
         pending: {
             bar: 'bg-amber-400',
+            shell: 'border-amber-500/15 bg-amber-500/[0.05] text-amber-400',
             icon: Clock3,
+            index: '02',
         },
         approved: {
             bar: 'bg-blue-400',
+            shell: 'border-blue-500/15 bg-blue-500/[0.05] text-blue-400',
             icon: CheckCircle2,
+            index: '03',
         },
         partially_received: {
             bar: 'bg-violet-400',
+            shell: 'border-violet-500/15 bg-violet-500/[0.05] text-violet-400',
             icon: Truck,
+            index: '04',
         },
         received: {
             bar: 'bg-emerald-400',
+            shell: 'border-emerald-500/15 bg-emerald-500/[0.05] text-emerald-400',
             icon: PackageCheck,
+            index: '05',
         },
         cancelled: {
             bar: 'bg-red-400',
+            shell: 'border-red-500/15 bg-red-500/[0.05] text-red-400',
             icon: AlertTriangle,
+            index: '06',
         },
     };
 
     return (
-        <div className="space-y-3">
-            {stages.map((stage) => {
-                const style =
-                    stageStyles[stage.key] ??
-                    stageStyles.draft;
-                const Icon = style.icon;
-                const width =
-                    stage.count > 0
-                        ? Math.max(
-                              (stage.count / maxCount) * 100,
-                              5,
-                          )
-                        : 0;
+        <div>
+            <div className="flex flex-col gap-3 rounded-xl border border-violet-500/10 bg-violet-500/[0.025] p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        Current Pipeline
+                    </p>
 
-                return (
-                    <div
-                        key={stage.key}
-                        className="grid items-center gap-2.5 rounded-xl border border-border/50 bg-background/35 px-3 py-2.5 sm:grid-cols-[140px_minmax(0,1fr)_40px]"
-                    >
-                        <div className="flex min-w-0 items-center gap-2.5">
-                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-card text-muted-foreground">
-                                <Icon className="size-3.5" />
-                            </span>
+                    <p className="mt-1 text-sm font-semibold">
+                        {total > 0
+                            ? `${formatNumber(
+                                  total,
+                              )} orders in progress`
+                            : 'Procurement workflow ready'}
+                    </p>
+                </div>
 
-                            <span className="truncate text-[10px] font-medium">
-                                {stage.label}
-                            </span>
-                        </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/15 bg-violet-500/[0.06] px-2.5 py-1 text-[9px] font-medium text-violet-300">
+                    <Truck className="size-3" />
+                    {total > 0
+                        ? 'Live workload'
+                        : 'No active orders'}
+                </span>
+            </div>
 
-                        <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                            <div
-                                className={[
-                                    'h-full rounded-full transition-all duration-500',
-                                    style.bar,
-                                ].join(' ')}
-                                style={{
-                                    width: `${width}%`,
-                                }}
-                            />
-                        </div>
+            <div className="relative mt-3 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="pointer-events-none absolute left-6 right-6 top-[28px] hidden h-px bg-gradient-to-r from-slate-400/20 via-violet-400/30 to-emerald-400/20 xl:block" />
 
-                        <span className="text-right text-xs font-semibold tabular-nums">
-                            {formatNumber(stage.count)}
-                        </span>
-                    </div>
-                );
-            })}
+                {stages.map((stage) => {
+                    const style =
+                        stageStyles[stage.key] ??
+                        stageStyles.draft;
+                    const Icon = style.icon;
+                    const percentage =
+                        total > 0
+                            ? (stage.count / total) *
+                              100
+                            : 0;
+                    const relativeWidth =
+                        stage.count > 0
+                            ? Math.max(
+                                  (stage.count /
+                                      maxCount) *
+                                      100,
+                                  6,
+                              )
+                            : 0;
+
+                    return (
+                        <article
+                            key={stage.key}
+                            className="relative overflow-hidden rounded-xl border border-border/50 bg-background/30 p-3"
+                        >
+                            <div className="flex items-start justify-between gap-3">
+                                <span
+                                    className={[
+                                        'relative z-10 inline-flex size-9 items-center justify-center rounded-xl border',
+                                        style.shell,
+                                    ].join(' ')}
+                                >
+                                    <Icon className="size-4" />
+                                </span>
+
+                                <span className="font-mono text-[8px] text-muted-foreground/50">
+                                    {style.index}
+                                </span>
+                            </div>
+
+                            <div className="mt-3 flex items-end justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="truncate text-[10px] font-medium">
+                                        {stage.label}
+                                    </p>
+
+                                    <p className="mt-0.5 text-[8px] text-muted-foreground">
+                                        {percentage.toFixed(
+                                            0,
+                                        )}
+                                        % of pipeline
+                                    </p>
+                                </div>
+
+                                <p className="text-xl font-semibold tabular-nums">
+                                    {formatNumber(
+                                        stage.count,
+                                    )}
+                                </p>
+                            </div>
+
+                            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
+                                <div
+                                    className={[
+                                        'h-full rounded-full transition-all duration-500',
+                                        style.bar,
+                                    ].join(' ')}
+                                    style={{
+                                        width: `${relativeWidth}%`,
+                                    }}
+                                />
+                            </div>
+                        </article>
+                    );
+                })}
+            </div>
         </div>
     );
 }
@@ -1080,6 +2065,7 @@ function DashboardPanel({
     icon: Icon,
     actionLabel,
     href,
+    accent,
     children,
 }: {
     title: string;
@@ -1087,13 +2073,39 @@ function DashboardPanel({
     icon: LucideIcon;
     actionLabel: string;
     href: string;
+    accent: 'blue' | 'amber';
     children: ReactNode;
 }) {
+    const accentMap = {
+        blue: {
+            icon: 'border-blue-500/15 bg-blue-500/[0.055] text-blue-400',
+            action: 'border-blue-500/15 bg-blue-500/[0.045] text-blue-300 hover:bg-blue-500/10 hover:text-blue-200',
+            line: 'via-blue-400/40',
+        },
+        amber: {
+            icon: 'border-amber-500/15 bg-amber-500/[0.055] text-amber-400',
+            action: 'border-amber-500/15 bg-amber-500/[0.045] text-amber-300 hover:bg-amber-500/10 hover:text-amber-200',
+            line: 'via-amber-400/40',
+        },
+    }[accent];
+
     return (
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-border/60 bg-card/70">
-            <div className="flex flex-col gap-2.5 border-b border-border/60 px-3.5 py-2.5 sm:flex-row sm:px-4 sm:py-3 sm:items-center sm:justify-between">
+        <section className="relative min-w-0 overflow-hidden rounded-2xl border border-border/60 bg-card/70">
+            <div
+                className={[
+                    'pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent to-transparent',
+                    accentMap.line,
+                ].join(' ')}
+            />
+
+            <div className="flex flex-col gap-2.5 border-b border-border/60 px-3.5 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3">
                 <div className="flex min-w-0 items-start gap-3">
-                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/15 bg-blue-500/[0.055] text-blue-400">
+                    <span
+                        className={[
+                            'inline-flex size-9 shrink-0 items-center justify-center rounded-xl border',
+                            accentMap.icon,
+                        ].join(' ')}
+                    >
                         <Icon className="size-4" />
                     </span>
 
@@ -1111,7 +2123,10 @@ function DashboardPanel({
                 <Link
                     href={href}
                     prefetch
-                    className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-blue-500/15 bg-blue-500/[0.045] px-2.5 text-[9px] font-semibold text-blue-300 transition hover:bg-blue-500/10 hover:text-blue-200"
+                    className={[
+                        'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[9px] font-semibold transition',
+                        accentMap.action,
+                    ].join(' ')}
                 >
                     {actionLabel}
                     <ChevronRight className="size-3" />
@@ -1123,12 +2138,125 @@ function DashboardPanel({
     );
 }
 
+function OperationalEmptyState({
+    icon: Icon,
+    title,
+    description,
+    href,
+    actionLabel,
+    tone,
+    pattern,
+}: {
+    icon: LucideIcon;
+    title: string;
+    description: string;
+    href: string;
+    actionLabel: string;
+    tone: 'blue' | 'emerald';
+    pattern: 'bars' | 'timeline';
+}) {
+    const toneMap = {
+        blue: {
+            icon: 'border-blue-500/15 bg-blue-500/[0.06] text-blue-400',
+            button: 'border-blue-500/15 bg-blue-500/[0.055] text-blue-300 hover:bg-blue-500/10',
+            accent: 'bg-blue-400/40',
+        },
+        emerald: {
+            icon: 'border-emerald-500/15 bg-emerald-500/[0.06] text-emerald-400',
+            button: 'border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-300 hover:bg-emerald-500/10',
+            accent: 'bg-emerald-400/40',
+        },
+    }[tone];
+
+    return (
+        <div className="relative min-h-[220px] overflow-hidden px-5 py-6">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_110%,rgba(59,130,246,0.06),transparent_58%)]" />
+
+            <div className="relative mx-auto max-w-md text-center">
+                <span
+                    className={[
+                        'inline-flex size-11 items-center justify-center rounded-xl border shadow-sm',
+                        toneMap.icon,
+                    ].join(' ')}
+                >
+                    <Icon className="size-5" />
+                </span>
+
+                <p className="mt-3 text-sm font-semibold">
+                    {title}
+                </p>
+
+                <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                    {description}
+                </p>
+
+                <Link
+                    href={href}
+                    prefetch
+                    className={[
+                        'mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-[9px] font-semibold transition',
+                        toneMap.button,
+                    ].join(' ')}
+                >
+                    {actionLabel}
+                    <ArrowRight className="size-3" />
+                </Link>
+            </div>
+
+            <div className="relative mx-auto mt-5 max-w-lg">
+                {pattern === 'bars' ? (
+                    <div className="flex h-12 items-end justify-center gap-2 rounded-xl border border-border/40 bg-background/20 px-4 py-2">
+                        {[22, 38, 30, 48, 36, 54, 42].map(
+                            (height, index) => (
+                                <span
+                                    key={index}
+                                    className={[
+                                        'w-5 rounded-t-sm',
+                                        toneMap.accent,
+                                    ].join(' ')}
+                                    style={{
+                                        height: `${height}%`,
+                                        opacity:
+                                            0.18 +
+                                            index * 0.035,
+                                    }}
+                                />
+                            ),
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {[0, 1, 2].map((row) => (
+                            <div
+                                key={row}
+                                className="flex items-center gap-3 rounded-lg border border-border/40 bg-background/20 px-3 py-2"
+                            >
+                                <span
+                                    className={[
+                                        'size-2 rounded-full',
+                                        toneMap.accent,
+                                    ].join(' ')}
+                                />
+
+                                <span className="h-1.5 flex-1 rounded-full bg-muted/70" />
+
+                                <span className="h-1.5 w-12 rounded-full bg-muted/50" />
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 function StockAlertRow({
     alert,
 }: {
     alert: AlertItem;
 }) {
-    const critical = alert.severity === 'critical';
+    const critical =
+        alert.severity === 'critical';
 
     return (
         <article className="flex items-center gap-3 px-3.5 py-3 transition hover:bg-muted/[0.025] sm:px-4">
@@ -1157,7 +2285,9 @@ function StockAlertRow({
                                 : 'bg-amber-500/10 text-amber-400',
                         ].join(' ')}
                     >
-                        {critical ? 'Critical' : 'Low'}
+                        {critical
+                            ? 'Critical'
+                            : 'Low'}
                     </span>
                 </div>
 
@@ -1181,7 +2311,9 @@ function StockAlertRow({
 
                 <p className="mt-1 text-[8px] text-muted-foreground">
                     Reorder at{' '}
-                    {formatQuantity(alert.reorderLevel)}
+                    {formatQuantity(
+                        alert.reorderLevel,
+                    )}
                 </p>
             </div>
         </article>
@@ -1265,7 +2397,9 @@ function MovementRow({
                     ].join(' ')}
                 >
                     {prefix}
-                    {formatQuantity(movement.quantity)}
+                    {formatQuantity(
+                        movement.quantity,
+                    )}
                 </p>
 
                 <p className="mt-1 text-[8px] text-muted-foreground">
@@ -1275,71 +2409,6 @@ function MovementRow({
                 </p>
             </div>
         </article>
-    );
-}
-
-function LegendRow({
-    label,
-    value,
-    description,
-    dotClassName,
-}: {
-    label: string;
-    value: string;
-    description: string;
-    dotClassName: string;
-}) {
-    return (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-background/35 px-3 py-2.5">
-            <div className="flex min-w-0 items-center gap-2.5">
-                <span
-                    className={[
-                        'size-2.5 shrink-0 rounded-full',
-                        dotClassName,
-                    ].join(' ')}
-                />
-
-                <div className="min-w-0">
-                    <p className="truncate text-[10px] font-medium">
-                        {label}
-                    </p>
-
-                    <p className="mt-0.5 truncate text-[8px] text-muted-foreground">
-                        {description}
-                    </p>
-                </div>
-            </div>
-
-            <span className="text-xs font-semibold tabular-nums">
-                {value}
-            </span>
-        </div>
-    );
-}
-
-function PanelEmptyState({
-    icon: Icon,
-    title,
-    description,
-}: {
-    icon: LucideIcon;
-    title: string;
-    description: string;
-}) {
-    return (
-        <div className="flex min-h-[160px] flex-col items-center justify-center px-5 py-8 text-center">
-            <span className="inline-flex size-11 items-center justify-center rounded-xl border border-blue-500/15 bg-blue-500/[0.05] text-blue-400">
-                <Icon className="size-5" />
-            </span>
-
-            <p className="mt-3 text-sm font-semibold">
-                {title}
-            </p>
-
-            <p className="mt-1 max-w-sm text-[10px] leading-5 text-muted-foreground">
-                {description}
-            </p>
-        </div>
     );
 }
 
@@ -1359,12 +2428,107 @@ function DashboardGlyph({
             className={className}
             aria-hidden="true"
         >
-            <rect x="3" y="3" width="7" height="8" rx="2" />
-            <rect x="14" y="3" width="7" height="5" rx="2" />
-            <rect x="14" y="12" width="7" height="9" rx="2" />
-            <rect x="3" y="15" width="7" height="6" rx="2" />
+            <rect
+                x="3"
+                y="3"
+                width="7"
+                height="8"
+                rx="2"
+            />
+            <rect
+                x="14"
+                y="3"
+                width="7"
+                height="5"
+                rx="2"
+            />
+            <rect
+                x="14"
+                y="12"
+                width="7"
+                height="9"
+                rx="2"
+            />
+            <rect
+                x="3"
+                y="15"
+                width="7"
+                height="6"
+                rx="2"
+            />
         </svg>
     );
+}
+
+function buildInventoryPulse(
+    points: FlowPoint[],
+): number[] {
+    let running = 0;
+
+    return points.map((point) => {
+        running += point.stockIn - point.stockOut;
+
+        return Math.max(running, 0);
+    });
+}
+
+function createSmoothPath(
+    points: Point[],
+): string {
+    if (points.length === 0) {
+        return '';
+    }
+
+    if (points.length === 1) {
+        return `M ${points[0].x} ${points[0].y}`;
+    }
+
+    let path = `M ${points[0].x} ${points[0].y}`;
+
+    for (
+        let index = 0;
+        index < points.length - 1;
+        index++
+    ) {
+        const previous =
+            points[index - 1] ?? points[index];
+        const current = points[index];
+        const next = points[index + 1];
+        const afterNext =
+            points[index + 2] ?? next;
+
+        const controlOneX =
+            current.x +
+            (next.x - previous.x) / 6;
+        const controlOneY =
+            current.y +
+            (next.y - previous.y) / 6;
+        const controlTwoX =
+            next.x -
+            (afterNext.x - current.x) / 6;
+        const controlTwoY =
+            next.y -
+            (afterNext.y - current.y) / 6;
+
+        path += ` C ${controlOneX} ${controlOneY}, ${controlTwoX} ${controlTwoY}, ${next.x} ${next.y}`;
+    }
+
+    return path;
+}
+
+function createAreaPath(
+    points: Point[],
+    baselineY: number,
+): string {
+    if (points.length === 0) {
+        return '';
+    }
+
+    const linePath = createSmoothPath(points);
+    const first = points[0];
+    const last = points[points.length - 1];
+
+    return `${linePath} L ${last.x} ${baselineY} L ${first.x} ${baselineY} Z`;
 }
 
 function formatCurrency(value: number): string {
@@ -1407,24 +2571,43 @@ function formatRelativeDate(value: string): string {
         (date.getTime() - Date.now()) / 1000,
     );
 
-    const formatter = new Intl.RelativeTimeFormat(
-        'en',
-        {
+    const formatter =
+        new Intl.RelativeTimeFormat('en', {
             numeric: 'auto',
-        },
-    );
+        });
 
     const divisions: Array<{
         amount: number;
         unit: Intl.RelativeTimeFormatUnit;
     }> = [
-        { amount: 60, unit: 'second' },
-        { amount: 60, unit: 'minute' },
-        { amount: 24, unit: 'hour' },
-        { amount: 7, unit: 'day' },
-        { amount: 4.34524, unit: 'week' },
-        { amount: 12, unit: 'month' },
-        { amount: Number.POSITIVE_INFINITY, unit: 'year' },
+        {
+            amount: 60,
+            unit: 'second',
+        },
+        {
+            amount: 60,
+            unit: 'minute',
+        },
+        {
+            amount: 24,
+            unit: 'hour',
+        },
+        {
+            amount: 7,
+            unit: 'day',
+        },
+        {
+            amount: 4.34524,
+            unit: 'week',
+        },
+        {
+            amount: 12,
+            unit: 'month',
+        },
+        {
+            amount: Number.POSITIVE_INFINITY,
+            unit: 'year',
+        },
     ];
 
     let duration = seconds;

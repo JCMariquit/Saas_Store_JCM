@@ -557,29 +557,29 @@ export default function RolesAccessIndex({
                         </div>
                     </div>
 
-                    <div className="relative grid min-w-0 xl:grid-cols-[280px_400px_minmax(0,1fr)]">
+                    <div className="relative grid min-w-0 xl:grid-cols-[300px_minmax(0,1fr)]">
                         <div className="border-b border-border/60 p-4 xl:border-b-0 xl:border-r">
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
                                     <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
                                         Active role profile
                                     </p>
+
                                     <p className="mt-2 truncate text-lg font-semibold">
                                         {selectedRole?.name ?? 'No role selected'}
                                     </p>
+
                                     <p className="mt-1 line-clamp-2 text-[10px] leading-4 text-muted-foreground">
                                         {selectedRole?.description ??
                                             'Select a role to configure its access policy.'}
                                     </p>
                                 </div>
 
-                                <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-400">
-                                    {selectedRole?.code.toLowerCase() === 'manager' ? (
-                                        <UserCog className="size-4" />
-                                    ) : (
-                                        <CircleUserRound className="size-4" />
-                                    )}
-                                </span>
+                                {selectedRole?.code.toLowerCase() === 'manager' ? (
+                                    <UserCog className="size-5 shrink-0 text-violet-400" />
+                                ) : (
+                                    <CircleUserRound className="size-5 shrink-0 text-violet-400" />
+                                )}
                             </div>
 
                             <div className="mt-4">
@@ -587,6 +587,7 @@ export default function RolesAccessIndex({
                                     <span className="text-muted-foreground">
                                         Permission coverage
                                     </span>
+
                                     <span className="font-semibold tabular-nums text-violet-400">
                                         {accessPercentage}%
                                     </span>
@@ -599,10 +600,11 @@ export default function RolesAccessIndex({
                                     />
                                 </div>
 
-                                <div className="mt-3 flex items-center justify-between rounded-lg border border-border/60 bg-background/35 px-3 py-2">
+                                <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-3">
                                     <span className="text-[9px] text-muted-foreground">
                                         Accounts using this role
                                     </span>
+
                                     <span className="text-xs font-semibold tabular-nums">
                                         {selectedRole?.members_count ?? 0}
                                     </span>
@@ -610,74 +612,106 @@ export default function RolesAccessIndex({
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 grid-rows-2 gap-px border-b border-border/60 bg-border/60 p-px xl:border-b-0 xl:border-r">
-                            <AccessMetric
-                                label="Enabled access"
-                                value={`${currentEnabledCount}/${allAssignableItems.length}`}
-                                detail="Current role policy"
-                                icon={CheckCircle2}
-                                tone="emerald"
-                            />
+                        <div className="min-w-0">
+                            <div className="border-b border-border/60 p-4">
+                                <div className="flex flex-wrap items-end justify-between gap-3">
+                                    <div>
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+                                            Access distribution
+                                        </p>
 
-                            <AccessMetric
-                                label="Required access"
-                                value={String(requiredItemIds.length)}
-                                detail="Protected modules"
-                                icon={LockKeyhole}
-                                tone="amber"
-                            />
+                                        <p className="mt-1 text-[10px] text-muted-foreground">
+                                            Current policy coverage and protected access baseline.
+                                        </p>
+                                    </div>
 
-                            <AccessMetric
-                                label="Manager access"
-                                value={String(summary.manager_access)}
-                                detail="Configured modules"
-                                icon={UserCog}
-                                tone="blue"
-                            />
+                                    <p className="text-[10px] font-medium text-muted-foreground">
+                                        {currentEnabledCount} of {allAssignableItems.length} enabled
+                                    </p>
+                                </div>
 
-                            <AccessMetric
-                                label="Staff access"
-                                value={String(summary.staff_access)}
-                                detail="Configured modules"
-                                icon={CircleUserRound}
-                                tone="violet"
-                            />
-                        </div>
+                                <div className="mt-4 grid sm:grid-cols-2 xl:grid-cols-4">
+                                    <AccessStat
+                                        label="Enabled access"
+                                        value={`${currentEnabledCount}/${allAssignableItems.length}`}
+                                        detail="Current role policy"
+                                        icon={CheckCircle2}
+                                        tone="emerald"
+                                        className="border-b border-border/60 pb-3 sm:border-r sm:pr-4 xl:border-b-0 xl:pb-0"
+                                    />
 
-                        <div className="p-4">
-                            <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
-                                Governance signals
-                            </p>
+                                    <AccessStat
+                                        label="Required access"
+                                        value={String(requiredItemIds.length)}
+                                        detail="Protected modules"
+                                        icon={LockKeyhole}
+                                        tone="amber"
+                                        className="border-b border-border/60 py-3 sm:pl-4 xl:border-b-0 xl:border-r xl:py-0 xl:pr-4"
+                                    />
 
-                            <div className="mt-3 space-y-2">
-                                <ControlSignal
-                                    icon={LockKeyhole}
-                                    title="Required baseline"
-                                    description={`${requiredItemIds.length} access items cannot be disabled.`}
-                                    tone="amber"
-                                />
+                                    <AccessStat
+                                        label="Manager access"
+                                        value={String(summary.manager_access)}
+                                        detail="Configured modules"
+                                        icon={UserCog}
+                                        tone="blue"
+                                        className="border-b border-border/60 py-3 sm:border-r sm:pr-4 xl:border-b-0 xl:py-0 xl:pl-4"
+                                    />
 
-                                <ControlSignal
-                                    icon={SlidersHorizontal}
-                                    title={hasChanges ? 'Policy changed' : 'Policy synchronized'}
-                                    description={
-                                        hasChanges
-                                            ? 'Review and save the current role changes.'
-                                            : 'Saved access matches the active role policy.'
-                                    }
-                                    tone={hasChanges ? 'amber' : 'emerald'}
-                                />
+                                    <AccessStat
+                                        label="Staff access"
+                                        value={String(summary.staff_access)}
+                                        detail="Configured modules"
+                                        icon={CircleUserRound}
+                                        tone="violet"
+                                        className="pt-3 sm:pl-4 xl:pt-0"
+                                    />
+                                </div>
+                            </div>
 
-                                <ControlSignal
-                                    icon={ShieldCheck}
-                                    title="Plan control"
-                                    description={
-                                        plan.has_role_based_access
-                                            ? 'Role-based access is enabled for this subscription.'
-                                            : 'This plan may limit role-based access features.'
-                                    }
-                                    tone={plan.has_role_based_access ? 'blue' : 'amber'}
-                                />
+                            <div className="p-4">
+                                <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+                                    Governance signals
+                                </p>
+
+                                <div className="mt-3 grid gap-2 md:grid-cols-3">
+                                    <ControlSignal
+                                        icon={LockKeyhole}
+                                        title="Required baseline"
+                                        description={`${requiredItemIds.length} access items cannot be disabled.`}
+                                        tone="amber"
+                                    />
+
+                                    <ControlSignal
+                                        icon={SlidersHorizontal}
+                                        title={
+                                            hasChanges
+                                                ? 'Policy changed'
+                                                : 'Policy synchronized'
+                                        }
+                                        description={
+                                            hasChanges
+                                                ? 'Review and save the current role changes.'
+                                                : 'Saved access matches the active role policy.'
+                                        }
+                                        tone={hasChanges ? 'amber' : 'emerald'}
+                                    />
+
+                                    <ControlSignal
+                                        icon={ShieldCheck}
+                                        title="Plan control"
+                                        description={
+                                            plan.has_role_based_access
+                                                ? 'Role-based access is enabled for this subscription.'
+                                                : 'This plan may limit role-based access features.'
+                                        }
+                                        tone={
+                                            plan.has_role_based_access
+                                                ? 'blue'
+                                                : 'amber'
+                                        }
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1351,45 +1385,42 @@ function RoleRailCard({
 
 type AccessTone = 'blue' | 'violet' | 'emerald' | 'amber';
 
-function AccessMetric({
+function AccessStat({
     label,
     value,
     detail,
     icon: Icon,
     tone,
+    className,
 }: {
     label: string;
     value: string;
     detail: string;
     icon: LucideIcon;
     tone: AccessTone;
+    className?: string;
 }) {
     const styles: Record<
         AccessTone,
         {
-            shell: string;
             icon: string;
             value: string;
         }
     > = {
         blue: {
-            shell: 'bg-blue-500/[0.025]',
-            icon: 'border-blue-500/15 bg-blue-500/10 text-blue-400',
+            icon: 'text-blue-400',
             value: 'text-blue-400',
         },
         violet: {
-            shell: 'bg-violet-500/[0.025]',
-            icon: 'border-violet-500/15 bg-violet-500/10 text-violet-400',
+            icon: 'text-violet-400',
             value: 'text-violet-400',
         },
         emerald: {
-            shell: 'bg-emerald-500/[0.025]',
-            icon: 'border-emerald-500/15 bg-emerald-500/10 text-emerald-400',
+            icon: 'text-emerald-400',
             value: 'text-emerald-400',
         },
         amber: {
-            shell: 'bg-amber-500/[0.025]',
-            icon: 'border-amber-500/15 bg-amber-500/10 text-amber-400',
+            icon: 'text-amber-400',
             value: 'text-amber-400',
         },
     };
@@ -1399,28 +1430,24 @@ function AccessMetric({
     return (
         <div
             className={cn(
-                'relative flex min-h-[92px] min-w-0 items-center justify-between gap-4 overflow-hidden p-4',
-                style.shell,
+                'flex min-w-0 items-center justify-between gap-4',
+                className,
             )}
         >
-            <Icon className="pointer-events-none absolute -bottom-4 -right-3 size-20 opacity-[0.035]" />
-
-            <div className="relative flex min-w-0 items-center gap-3">
-                <span
+            <div className="flex min-w-0 items-center gap-2.5">
+                <Icon
                     className={cn(
-                        'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border',
+                        'size-4 shrink-0',
                         style.icon,
                     )}
-                >
-                    <Icon className="size-3.5" />
-                </span>
+                />
 
                 <div className="min-w-0">
-                    <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    <p className="truncate text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
                         {label}
                     </p>
 
-                    <p className="mt-1 truncate text-[8px] text-muted-foreground">
+                    <p className="mt-1 truncate text-[9px] text-muted-foreground">
                         {detail}
                     </p>
                 </div>
@@ -1428,7 +1455,7 @@ function AccessMetric({
 
             <p
                 className={cn(
-                    'relative shrink-0 text-2xl font-semibold leading-none tabular-nums',
+                    'shrink-0 text-xl font-semibold leading-none tabular-nums',
                     style.value,
                 )}
             >

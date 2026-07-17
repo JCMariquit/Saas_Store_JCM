@@ -10,7 +10,7 @@ use App\Http\Controllers\RoleAccessController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\StockOverviewController;
-use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SupplierController; 
 use App\Http\Controllers\TeamMemberController;
 use App\Http\Controllers\TeamOverviewController;
 use App\Http\Controllers\WarehouseController;

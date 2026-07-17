@@ -304,6 +304,12 @@ function resolveNavigationTone(item: DynamicSidebarItem): NavigationTone {
 |--------------------------------------------------------------------------
 */
 
+function normalizeUrl(url: string): string {
+    const cleanUrl = url.split('?')[0].replace(/\/+$/, '');
+
+    return cleanUrl || '/';
+}
+
 function isUrlActive(
     currentUrl: string,
     itemUrl: string,
@@ -312,13 +318,32 @@ function isUrlActive(
         return false;
     }
 
-    const cleanCurrentUrl = currentUrl.split('?')[0];
-    const cleanItemUrl = itemUrl.split('?')[0];
+    const cleanCurrentUrl = normalizeUrl(currentUrl);
+    const cleanItemUrl = normalizeUrl(itemUrl);
 
     return (
         cleanCurrentUrl === cleanItemUrl ||
         cleanCurrentUrl.startsWith(`${cleanItemUrl}/`)
     );
+}
+
+function resolveActiveChildId(
+    currentUrl: string,
+    items: DynamicSidebarItem[],
+): number | null {
+    const matchingItem = items
+        .filter(
+            (item) =>
+                !item.disabled &&
+                isUrlActive(currentUrl, item.url),
+        )
+        .sort(
+            (firstItem, secondItem) =>
+                normalizeUrl(secondItem.url).length -
+                normalizeUrl(firstItem.url).length,
+        )[0];
+
+    return matchingItem?.id ?? null;
 }
 
 /*
@@ -562,16 +587,16 @@ function DirectItem({
 
 function DropdownItem({
     item,
-    currentUrl,
+    activeItemId,
 }: {
     item: DynamicSidebarItem;
-    currentUrl: string;
+    activeItemId: number | null;
 }) {
     const Icon = resolveIcon(item.iconKey);
 
     const active =
         !item.disabled &&
-        isUrlActive(currentUrl, item.url);
+        item.id === activeItemId;
 
     const tone = resolveNavigationTone(item);
     const toneStyle = navigationToneStyles[tone];
@@ -667,11 +692,12 @@ function SidebarDropdown({
     const collapsed = state === 'collapsed';
     const GroupIcon = resolveIcon(group.iconKey);
 
-    const hasActiveItem = group.children.some(
-        (item) =>
-            !item.disabled &&
-            isUrlActive(url, item.url),
+    const activeItemId = resolveActiveChildId(
+        url,
+        group.children,
     );
+
+    const hasActiveItem = activeItemId !== null;
 
     const tone = resolveNavigationTone(group);
     const toneStyle = navigationToneStyles[tone];
@@ -818,7 +844,7 @@ function SidebarDropdown({
                         <DropdownItem
                             key={item.id}
                             item={item}
-                            currentUrl={url}
+                            activeItemId={activeItemId}
                         />
                     ))}
                 </div>

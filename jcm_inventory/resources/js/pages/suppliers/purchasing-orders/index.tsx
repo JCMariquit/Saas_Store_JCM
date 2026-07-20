@@ -2,7 +2,6 @@ import { ActionGroup } from "@/components/shared/action-group";
 import { AppPagination } from "@/components/shared/app-pagination";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
-import { EntityInfo } from "@/components/shared/entity-info";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { FormDialog } from "@/components/shared/form-dialog";
 import { FormField } from "@/components/shared/form-field";
@@ -245,6 +244,15 @@ type PurchaseOrderFormData = {
   items: PurchaseOrderFormItem[];
 };
 
+type PurchaseOrderViewer = {
+  user_id: number;
+  account_owner_id: number;
+  role_code: string;
+  role_name: string;
+  is_owner: boolean;
+  can_submit_for_approval: boolean;
+};
+
 type PurchaseOrderPageProps = {
   purchase_orders: PaginatedPurchaseOrders;
   summary: PurchaseOrderSummary;
@@ -254,9 +262,10 @@ type PurchaseOrderPageProps = {
   products: ProductOption[];
   statuses: StatusOption[];
   filters: PurchaseOrderFilters;
+  viewer: PurchaseOrderViewer;
 };
 
-type OrderAction = "submit" | "approve" | "cancel" | "delete";
+type OrderAction = "submit";
 
 type OrderActionTarget = {
   order: PurchaseOrder;
@@ -334,6 +343,7 @@ export default function PurchaseOrderIndex({
   products,
   statuses,
   filters,
+  viewer,
 }: PurchaseOrderPageProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -677,12 +687,6 @@ export default function PurchaseOrderIndex({
       onFinish: () => setActionProcessing(false),
     };
 
-    if (action === "delete") {
-      router.delete(`/suppliers/purchase-orders/${order.id}`, options);
-
-      return;
-    }
-
     router.post(
       `/suppliers/purchase-orders/${order.id}/${action}`,
       {},
@@ -779,8 +783,8 @@ export default function PurchaseOrderIndex({
                 </p>
 
                 <p className="mt-0.5 text-[10px] text-muted-foreground">
-                  Purchase approvals, receiving progress, supplier commitments,
-                  and order value.
+                  Draft preparation, approval status, receiving progress,
+                  supplier commitments, and order value.
                 </p>
               </div>
             </div>
@@ -892,8 +896,8 @@ export default function PurchaseOrderIndex({
               <PurchaseOrderNetworkMetric
                 title="Awaiting Approval"
                 value={summary.pending}
-                description="Requires procurement review"
-                footerLabel="Approval queue"
+                description="Submitted orders awaiting approval"
+                footerLabel="Pending review"
                 footerValue={`${pendingShare}%`}
                 progress={pendingShare}
                 icon={Clock3}
@@ -931,7 +935,7 @@ export default function PurchaseOrderIndex({
 
         <SectionCard
           title="Purchase Order Register"
-          description="Review essential order data at a glance. Click any purchase order row to expand delivery, financial, fulfillment, and workflow details."
+          description="Create, edit, submit, and monitor purchase orders. Drafts remain editable before submission; approval decisions are handled outside this page."
           actions={
             <div className="flex flex-wrap items-center gap-2">
               <Badge
@@ -1078,6 +1082,7 @@ export default function PurchaseOrderIndex({
 
           <PurchaseOrderRegistryTable
             purchaseOrders={purchase_orders.data}
+            viewer={viewer}
             expandedPurchaseOrderId={expandedPurchaseOrderId}
             onToggleDetails={togglePurchaseOrderDetails}
             onEdit={openEditDialog}
@@ -1624,6 +1629,7 @@ export default function PurchaseOrderIndex({
 
 type PurchaseOrderRegistryTableProps = {
   purchaseOrders: PurchaseOrder[];
+  viewer: PurchaseOrderViewer;
   expandedPurchaseOrderId: number | null;
   onToggleDetails: (purchaseOrderId: number) => void;
   onEdit: (purchaseOrder: PurchaseOrder) => void;
@@ -1633,6 +1639,7 @@ type PurchaseOrderRegistryTableProps = {
 
 function PurchaseOrderRegistryTable({
   purchaseOrders,
+  viewer,
   expandedPurchaseOrderId,
   onToggleDetails,
   onEdit,
@@ -1726,6 +1733,16 @@ function PurchaseOrderRegistryTable({
               purchaseOrders.map((purchaseOrder) => {
                 const isExpanded = expandedPurchaseOrderId === purchaseOrder.id;
                 const detailsId = `purchase-order-details-${purchaseOrder.id}`;
+                const isCreator =
+                  purchaseOrder.created_by?.id === viewer.user_id;
+
+                const canManageDraft =
+                  purchaseOrder.status === "draft" &&
+                  (viewer.is_owner || isCreator);
+
+                const canAdvanceDraft =
+                  purchaseOrder.status === "draft" && isCreator;
+
                 return (
                   <Fragment key={purchaseOrder.id}>
                     <tr
@@ -1850,18 +1867,17 @@ function PurchaseOrderRegistryTable({
                           onKeyDown={(event) => event.stopPropagation()}
                         >
                           <ActionGroup>
-                            {purchaseOrder.status === "draft" &&
-                              purchaseOrder.items && (
-                                <IconButton
-                                  label="Edit purchase order"
-                                  onClick={() => onEdit(purchaseOrder)}
-                                  className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
-                                >
-                                  <Pencil className="size-3.5" />
-                                </IconButton>
-                              )}
+                            {canManageDraft && purchaseOrder.items && (
+                              <IconButton
+                                label="Edit purchase order"
+                                onClick={() => onEdit(purchaseOrder)}
+                                className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
+                              >
+                                <Pencil className="size-3.5" />
+                              </IconButton>
+                            )}
 
-                            {purchaseOrder.status === "draft" && (
+                            {canAdvanceDraft && (
                               <IconButton
                                 label="Submit for approval"
                                 onClick={() =>
@@ -1870,44 +1886,6 @@ function PurchaseOrderRegistryTable({
                                 className="text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-400"
                               >
                                 <Send className="size-3.5" />
-                              </IconButton>
-                            )}
-
-                            {purchaseOrder.status === "pending" && (
-                              <IconButton
-                                label="Approve purchase order"
-                                onClick={() =>
-                                  onAction(purchaseOrder, "approve")
-                                }
-                                className="text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400"
-                              >
-                                <CheckCircle2 className="size-3.5" />
-                              </IconButton>
-                            )}
-
-                            {["draft", "pending", "approved"].includes(
-                              purchaseOrder.status,
-                            ) && (
-                              <IconButton
-                                label="Cancel purchase order"
-                                onClick={() =>
-                                  onAction(purchaseOrder, "cancel")
-                                }
-                                className="text-amber-400 hover:bg-amber-500/10 hover:text-amber-400"
-                              >
-                                <Ban className="size-3.5" />
-                              </IconButton>
-                            )}
-
-                            {purchaseOrder.status === "draft" && (
-                              <IconButton
-                                label="Delete draft"
-                                onClick={() =>
-                                  onAction(purchaseOrder, "delete")
-                                }
-                                className="text-red-400 hover:bg-red-500/10 hover:text-red-400"
-                              >
-                                <Trash2 className="size-3.5" />
                               </IconButton>
                             )}
                           </ActionGroup>
@@ -2652,35 +2630,10 @@ function getOrderActionDialog(target: OrderActionTarget | null): {
     case "submit":
       return {
         title: "Submit Purchase Order",
-        description: `Submit ${number} for approval? The draft will move to the pending approval stage.`,
+        description: `Submit ${number} for approval? The draft will move to the pending approval queue.`,
         confirmText: "Submit for Approval",
         destructive: false,
       };
-
-    case "approve":
-      return {
-        title: "Approve Purchase Order",
-        description: `Approve ${number}? Once approved, the order can proceed to supplier delivery and receiving.`,
-        confirmText: "Approve Order",
-        destructive: false,
-      };
-
-    case "cancel":
-      return {
-        title: "Cancel Purchase Order",
-        description: `Cancel ${number}? This order will no longer continue through the procurement workflow.`,
-        confirmText: "Cancel Order",
-        destructive: true,
-      };
-
-    case "delete":
-      return {
-        title: "Delete Draft Purchase Order",
-        description: `Delete ${number}? This draft and its item lines will be permanently removed.`,
-        confirmText: "Delete Draft",
-        destructive: true,
-      };
-
     default:
       return {
         title: "Update Purchase Order",

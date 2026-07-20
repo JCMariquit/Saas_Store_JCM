@@ -15,10 +15,14 @@ use Inertia\Response;
 
 class ReceivingController extends Controller
 {
+    private const PRODUCT_CODE =
+        'JCM-INVENTORY-001';
+
     public function index(Request $request): Response
     {
-        $tenantId = $this->getTenantId($request);
-        $isOwner = (int) $request->user()->id === $tenantId;
+        $context = $this->userContext($request);
+        $tenantId = $context['account_owner_id'];
+        $isOwner = $context['is_owner'];
 
         $search = trim(
             (string) $request->input('search', '')
@@ -869,7 +873,8 @@ class ReceivingController extends Controller
     public function store(
         Request $request
     ): RedirectResponse {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->userContext($request);
+        $tenantId = $context['account_owner_id'];
 
         $validated = $request->validate([
             'purchase_order_id' => [
@@ -1388,10 +1393,11 @@ class ReceivingController extends Controller
         Request $request,
         int $receipt
     ): RedirectResponse {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->userContext($request);
+        $tenantId = $context['account_owner_id'];
 
         abort_unless(
-            (int) $request->user()->id === $tenantId,
+            $context['is_owner'],
             403,
             'Only the account owner can void posted receipts.'
         );
@@ -2047,22 +2053,143 @@ class ReceivingController extends Controller
         return $value;
     }
 
-    private function getTenantId(
+    private function userContext(
         Request $request
-    ): int {
-        $user = $request->user();
-
-        $tenantId = (int) (
-            $user->client_id
-            ?: $user->id
+    ): array {
+        $userId = (int) (
+            $request->user()?->id
         );
 
-        abort_if(
-            $tenantId <= 0,
+        abort_unless(
+            $userId > 0,
+            401
+        );
+
+        $context = DB::connection('saas')
+            ->table(
+                'user_product_access as access'
+            )
+            ->join(
+                'products as product',
+                'product.id',
+                '=',
+                'access.product_id'
+            )
+            ->join(
+                'product_user_types as product_role',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'product_role.id',
+                            '=',
+                            'access.product_user_type_id'
+                        )
+                        ->on(
+                            'product_role.product_id',
+                            '=',
+                            'access.product_id'
+                        );
+                }
+            )
+            ->join(
+                'user_types as user_type',
+                'user_type.id',
+                '=',
+                'product_role.user_type_id'
+            )
+            ->join(
+                'subscriptions as subscription',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'subscription.id',
+                            '=',
+                            'access.subscription_id'
+                        )
+                        ->on(
+                            'subscription.product_id',
+                            '=',
+                            'access.product_id'
+                        );
+                }
+            )
+            ->where(
+                'access.user_id',
+                $userId
+            )
+            ->where(
+                'access.status',
+                'active'
+            )
+            ->where(
+                'product.product_code',
+                self::PRODUCT_CODE
+            )
+            ->whereIn(
+                'product.status',
+                [
+                    'development',
+                    'active',
+                ]
+            )
+            ->where(
+                'product_role.status',
+                'active'
+            )
+            ->where(
+                'user_type.status',
+                'active'
+            )
+            ->whereIn(
+                'subscription.status',
+                [
+                    'trial',
+                    'active',
+                ]
+            )
+            ->orderByDesc(
+                'subscription.id'
+            )
+            ->select([
+                'access.account_owner_id',
+                'access.product_id',
+                'access.subscription_id',
+                'product_role.display_name as role_name',
+                'user_type.type_code as role_code',
+                'user_type.is_owner_type',
+            ])
+            ->first();
+
+        abort_unless(
+            $context,
             403,
-            'Your account is not assigned to a client.'
+            'Your account does not have active access to JCM Inventory.'
         );
 
-        return $tenantId;
+        return [
+            'user_id' =>
+                $userId,
+
+            'account_owner_id' =>
+                (int) $context->account_owner_id,
+
+            'product_id' =>
+                (int) $context->product_id,
+
+            'subscription_id' =>
+                (int) $context->subscription_id,
+
+            'role_code' =>
+                (string) $context->role_code,
+
+            'role_name' =>
+                (string) (
+                    $context->role_name
+                    ?: $context->role_code
+                ),
+
+            'is_owner' =>
+                (bool) $context->is_owner_type,
+        ];
     }
 }

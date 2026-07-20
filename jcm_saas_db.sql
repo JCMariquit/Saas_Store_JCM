@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 16, 2026 at 10:51 AM
+-- Generation Time: Jul 20, 2026 at 09:27 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -586,7 +586,7 @@ INSERT INTO `product_user_type_sidebar_items` (`id`, `product_user_type_id`, `si
 (11, 3, 18, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (12, 3, 6, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (13, 3, 19, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
-(14, 3, 7, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
+(14, 3, 7, 1, '2026-07-13 02:00:58', '2026-07-20 04:29:27'),
 (15, 3, 9, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (16, 3, 8, 1, '2026-07-13 02:00:58', '2026-07-14 03:32:48'),
 (17, 3, 5, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
@@ -608,7 +608,8 @@ INSERT INTO `product_user_type_sidebar_items` (`id`, `product_user_type_id`, `si
 (49, 5, 17, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (50, 5, 18, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
 (51, 5, 6, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
-(57, 3, 4, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28');
+(57, 3, 4, 1, '2026-07-13 02:00:58', '2026-07-13 02:11:28'),
+(59, 3, 33, 1, '2026-07-20 04:29:27', '2026-07-20 04:29:27');
 
 -- --------------------------------------------------------
 
@@ -813,9 +814,10 @@ INSERT INTO `sidebar_items` (`id`, `product_id`, `parent_id`, `feature_id`, `ite
 (18, 11, 3, 5, 'stock-management', 'management', 'link', 'Stock Management', 'inventory.stocks.index', '/inventory/stocks', 'Boxes', 'DEV', 3, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
 (19, 11, 7, 11, 'suppliers', 'management', 'link', 'Supplier List', 'suppliers.index', '/suppliers', 'Truck', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 01:41:09'),
 (20, 11, 7, 12, 'purchase-orders', 'management', 'link', 'Purchase Orders', 'suppliers.purchase-orders.index', '/suppliers/purchase-orders', 'ClipboardCheck', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 01:41:09'),
-(21, 11, 7, 13, 'receiving', 'management', 'link', 'Receiving', 'suppliers.receiving.index', '/suppliers/receiving', 'PackageCheck', 'DEV', 3, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 01:41:09'),
+(21, 11, 7, 13, 'receiving', 'management', 'link', 'Receiving', 'suppliers.receiving.index', '/suppliers/receiving', 'PackageCheck', 'DEV', 3, 40, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-20 04:29:27'),
 (22, 11, 9, 15, 'staff-accounts', 'management', 'link', 'Team Members', 'team.members.index', '/team/members', 'Users', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 02:43:32'),
-(23, 11, 9, 16, 'roles-access', 'management', 'link', 'Roles & Access', 'team.roles.index', '/team/roles', 'UserCog', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 02:43:32');
+(23, 11, 9, 16, 'roles-access', 'management', 'link', 'Roles & Access', 'team.roles.index', '/team/roles', 'UserCog', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 02:43:32'),
+(33, 11, 7, 12, 'purchase-approvals', 'management', 'link', 'Purchase Approvals', 'suppliers.purchase-approvals.index', '/suppliers/purchase-approvals', 'ClipboardCheck', 'DEV', 3, 30, 1, 1, 'active', '2026-07-20 04:29:27', '2026-07-20 04:29:27');
 
 -- --------------------------------------------------------
 
@@ -1372,7 +1374,7 @@ ALTER TABLE `account_role_sidebar_items`
 -- AUTO_INCREMENT for table `app_features`
 --
 ALTER TABLE `app_features`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
 
 --
 -- AUTO_INCREMENT for table `carts`
@@ -1420,7 +1422,7 @@ ALTER TABLE `orders`
 -- AUTO_INCREMENT for table `payment_methods`
 --
 ALTER TABLE `payment_methods`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `plans`
@@ -1468,7 +1470,7 @@ ALTER TABLE `product_user_types`
 -- AUTO_INCREMENT for table `product_user_type_sidebar_items`
 --
 ALTER TABLE `product_user_type_sidebar_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT for table `services`
@@ -1504,7 +1506,7 @@ ALTER TABLE `sidebar_badges`
 -- AUTO_INCREMENT for table `sidebar_items`
 --
 ALTER TABLE `sidebar_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- AUTO_INCREMENT for table `subscriptions`
@@ -1546,7 +1548,7 @@ ALTER TABLE `user_product_access`
 -- AUTO_INCREMENT for table `user_types`
 --
 ALTER TABLE `user_types`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- Constraints for dumped tables

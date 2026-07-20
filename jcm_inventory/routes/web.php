@@ -5,6 +5,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\PurchaseApprovalController;
 use App\Http\Controllers\ReceivingController;
 use App\Http\Controllers\RoleAccessController;
 use App\Http\Controllers\StockController;
@@ -249,11 +250,6 @@ Route::middleware(['auth'])->group(function () {
                     )->name('submit');
 
                     Route::post(
-                        '/{purchaseOrder}/approve',
-                        'approve'
-                    )->name('approve');
-
-                    Route::post(
                         '/{purchaseOrder}/cancel',
                         'cancel'
                     )->name('cancel');
@@ -262,6 +258,30 @@ Route::middleware(['auth'])->group(function () {
                         '/{purchaseOrder}',
                         'destroy'
                     )->name('destroy');
+                });
+
+
+            Route::prefix('purchase-approvals')
+                ->name('purchase-approvals.')
+                ->middleware(
+                    'feature:purchase_orders'
+                )
+                ->controller(
+                    PurchaseApprovalController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
+
+                    Route::post(
+                        '/{purchaseOrder}/approve',
+                        'approve'
+                    )->name('approve');
+
+                    Route::post(
+                        '/{purchaseOrder}/return-to-draft',
+                        'returnToDraft'
+                    )->name('return-to-draft');
                 });
 
             Route::prefix('receiving')

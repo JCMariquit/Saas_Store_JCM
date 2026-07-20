@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -16,6 +14,8 @@ use Inertia\Response;
 
 class PurchaseOrderController extends Controller
 {
+    private const PRODUCT_CODE = 'JCM-INVENTORY-001';
+
     /*
     |--------------------------------------------------------------------------
     | Purchase Order List
@@ -24,7 +24,8 @@ class PurchaseOrderController extends Controller
 
     public function index(Request $request): Response
     {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->userContext($request);
+        $tenantId = $context['account_owner_id'];
 
         /*
         |--------------------------------------------------------------------------
@@ -303,6 +304,10 @@ class PurchaseOrderController extends Controller
                         ->whereColumn(
                             'purchase_order_items.purchase_order_id',
                             'purchase_orders.id'
+                        )
+                        ->whereColumn(
+                            'purchase_order_items.tenant_id',
+                            'purchase_orders.tenant_id'
                         );
                 },
                 'items_count'
@@ -318,6 +323,10 @@ class PurchaseOrderController extends Controller
                         ->whereColumn(
                             'purchase_order_items.purchase_order_id',
                             'purchase_orders.id'
+                        )
+                        ->whereColumn(
+                            'purchase_order_items.tenant_id',
+                            'purchase_orders.tenant_id'
                         );
                 },
                 'ordered_quantity'
@@ -333,6 +342,10 @@ class PurchaseOrderController extends Controller
                         ->whereColumn(
                             'purchase_order_items.purchase_order_id',
                             'purchase_orders.id'
+                        )
+                        ->whereColumn(
+                            'purchase_order_items.tenant_id',
+                            'purchase_orders.tenant_id'
                         );
                 },
                 'received_quantity'
@@ -346,6 +359,45 @@ class PurchaseOrderController extends Controller
             )
             ->paginate(15)
             ->withQueryString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Purchase Order Item Details
+        |--------------------------------------------------------------------------
+        */
+
+        $purchaseOrderIds = $orders
+            ->getCollection()
+            ->pluck('id')
+            ->map(
+                fn ($id): int => (int) $id
+            )
+            ->values();
+
+        $itemsByOrder = $purchaseOrderIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql')
+                ->table('purchase_order_items')
+                ->where('tenant_id', $tenantId)
+                ->whereIn(
+                    'purchase_order_id',
+                    $purchaseOrderIds
+                )
+                ->orderBy('id')
+                ->get([
+                    'id',
+                    'purchase_order_id',
+                    'product_id',
+                    'product_name',
+                    'product_sku',
+                    'unit',
+                    'quantity',
+                    'received_quantity',
+                    'unit_cost',
+                    'line_total',
+                    'notes',
+                ])
+                ->groupBy('purchase_order_id');
 
         /*
         |--------------------------------------------------------------------------
@@ -388,7 +440,8 @@ class PurchaseOrderController extends Controller
                 ->map(
                     function ($order) use (
                         $users,
-                        $statusLabels
+                        $statusLabels,
+                        $itemsByOrder
                     ): array {
                         return [
                             'id' => (int) $order->id,
@@ -485,6 +538,43 @@ class PurchaseOrderController extends Controller
                             'received_quantity' =>
                                 (float) $order
                                     ->received_quantity,
+
+                            'items' => collect(
+                                $itemsByOrder->get(
+                                    $order->id,
+                                    collect()
+                                )
+                            )
+                                ->map(
+                                    fn ($item): array => [
+                                        'id' =>
+                                            (int) $item->id,
+                                        'product_id' =>
+                                            (int) $item
+                                                ->product_id,
+                                        'product_name' =>
+                                            $item->product_name,
+                                        'product_sku' =>
+                                            $item->product_sku,
+                                        'unit' =>
+                                            $item->unit,
+                                        'quantity' =>
+                                            (float) $item
+                                                ->quantity,
+                                        'received_quantity' =>
+                                            (float) $item
+                                                ->received_quantity,
+                                        'unit_cost' =>
+                                            (float) $item
+                                                ->unit_cost,
+                                        'line_total' =>
+                                            (float) $item
+                                                ->line_total,
+                                        'notes' =>
+                                            $item->notes,
+                                    ]
+                                )
+                                ->values(),
 
                             'created_by' =>
                                 $this->formatUser(
@@ -714,6 +804,34 @@ class PurchaseOrderController extends Controller
                     'date_to' =>
                         $dateTo ?? '',
                 ],
+
+                'viewer' => [
+                    'user_id' =>
+                        $context['user_id'],
+
+                    'account_owner_id' =>
+                        $context['account_owner_id'],
+
+                    'role_code' =>
+                        $context['role_code'],
+
+                    'role_name' =>
+                        $context['role_name'],
+
+                    'is_owner' =>
+                        $context['is_owner'],
+
+                    'can_submit_for_approval' =>
+                        true,
+
+                    'can_approve_own_draft' =>
+                        false,
+
+                    'approval_page_url' =>
+                        $context['is_owner']
+                            ? '/suppliers/purchase-approvals'
+                            : null,
+                ],
             ]
         );
     }
@@ -727,7 +845,8 @@ class PurchaseOrderController extends Controller
     public function store(
         Request $request
     ): RedirectResponse {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->userContext($request);
+        $tenantId = $context['account_owner_id'];
 
         $validated = $this->validateOrder(
             request: $request,
@@ -883,7 +1002,7 @@ class PurchaseOrderController extends Controller
 
         return back()->with(
             'success',
-            "Purchase order {$poNumber} created successfully."
+            "Purchase order {$poNumber} created as a draft. Submit it for approval when ready."
         );
     }
 
@@ -897,7 +1016,8 @@ class PurchaseOrderController extends Controller
         Request $request,
         int $purchaseOrder
     ): RedirectResponse {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->userContext($request);
+        $tenantId = $context['account_owner_id'];
 
         $order = $this->findOrder(
             tenantId: $tenantId,
@@ -910,6 +1030,12 @@ class PurchaseOrderController extends Controller
                     'Only draft purchase orders can be edited.',
             ]);
         }
+
+        $this->authorizeDraftOwner(
+            order: $order,
+            context: $context,
+            action: 'edit'
+        );
 
         $validated = $this->validateOrder(
             request: $request,
@@ -1075,95 +1201,89 @@ class PurchaseOrderController extends Controller
         Request $request,
         int $purchaseOrder
     ): RedirectResponse {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->userContext($request);
+        $tenantId = $context['account_owner_id'];
+        $userId = $context['user_id'];
 
-        $order = $this->findOrder(
-            tenantId: $tenantId,
-            purchaseOrderId: $purchaseOrder
-        );
+        $poNumber = DB::connection('mysql')
+            ->transaction(
+                function () use (
+                    $context,
+                    $tenantId,
+                    $userId,
+                    $purchaseOrder
+                ): string {
+                    $database = DB::connection('mysql');
 
-        if ($order->status !== 'draft') {
-            throw ValidationException::withMessages([
-                'status' =>
-                    'Only draft purchase orders can be submitted.',
-            ]);
-        }
+                    $order = $database
+                        ->table('purchase_orders')
+                        ->where('id', $purchaseOrder)
+                        ->where('tenant_id', $tenantId)
+                        ->whereNull('deleted_at')
+                        ->lockForUpdate()
+                        ->first();
 
-        $hasItems = DB::connection('mysql')
-            ->table('purchase_order_items')
-            ->where(
-                'purchase_order_id',
-                $purchaseOrder
-            )
-            ->where('tenant_id', $tenantId)
-            ->exists();
+                    abort_if(
+                        ! $order,
+                        404,
+                        'Purchase order not found.'
+                    );
 
-        if (! $hasItems) {
-            throw ValidationException::withMessages([
-                'items' =>
-                    'Add at least one product before submitting.',
-            ]);
-        }
+                    if ($order->status !== 'draft') {
+                        throw ValidationException::withMessages([
+                            'status' =>
+                                'Only draft purchase orders can be submitted for approval.',
+                        ]);
+                    }
 
-        DB::connection('mysql')
-            ->table('purchase_orders')
-            ->where('id', $purchaseOrder)
-            ->where('tenant_id', $tenantId)
-            ->whereNull('deleted_at')
-            ->update([
-                'status' => 'pending',
-                'submitted_by' =>
-                    $request->user()->id,
-                'submitted_at' => now(),
-                'updated_at' => now(),
-            ]);
+                    $this->authorizeDraftOwner(
+                        order: $order,
+                        context: $context,
+                        action: 'submit'
+                    );
 
-        return back()->with(
-            'success',
-            'Purchase order submitted for approval.'
-        );
-    }
+                    $hasItems = $database
+                        ->table('purchase_order_items')
+                        ->where(
+                            'purchase_order_id',
+                            $purchaseOrder
+                        )
+                        ->where(
+                            'tenant_id',
+                            $tenantId
+                        )
+                        ->exists();
 
-    /*
-    |--------------------------------------------------------------------------
-    | Approve Purchase Order
-    |--------------------------------------------------------------------------
-    */
+                    if (! $hasItems) {
+                        throw ValidationException::withMessages([
+                            'items' =>
+                                'Add at least one product before submitting the purchase order.',
+                        ]);
+                    }
 
-    public function approve(
-        Request $request,
-        int $purchaseOrder
-    ): RedirectResponse {
-        $tenantId = $this->getTenantId($request);
+                    $now = now();
 
-        $order = $this->findOrder(
-            tenantId: $tenantId,
-            purchaseOrderId: $purchaseOrder
-        );
+                    $database
+                        ->table('purchase_orders')
+                        ->where('id', $purchaseOrder)
+                        ->where('tenant_id', $tenantId)
+                        ->update([
+                            'status' => 'pending',
+                            'submitted_by' => $userId,
+                            'submitted_at' => $now,
+                            'approved_by' => null,
+                            'approved_at' => null,
+                            'updated_at' => $now,
+                        ]);
 
-        if ($order->status !== 'pending') {
-            throw ValidationException::withMessages([
-                'status' =>
-                    'Only pending purchase orders can be approved.',
-            ]);
-        }
-
-        DB::connection('mysql')
-            ->table('purchase_orders')
-            ->where('id', $purchaseOrder)
-            ->where('tenant_id', $tenantId)
-            ->whereNull('deleted_at')
-            ->update([
-                'status' => 'approved',
-                'approved_by' =>
-                    $request->user()->id,
-                'approved_at' => now(),
-                'updated_at' => now(),
-            ]);
+                    return (string) $order->po_number;
+                },
+                3
+            );
 
         return back()->with(
             'success',
-            'Purchase order approved successfully.'
+            "{$poNumber} submitted for approval."
         );
     }
 
@@ -1177,69 +1297,114 @@ class PurchaseOrderController extends Controller
         Request $request,
         int $purchaseOrder
     ): RedirectResponse {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->userContext($request);
+        $tenantId = $context['account_owner_id'];
+        $userId = $context['user_id'];
 
-        $order = $this->findOrder(
-            tenantId: $tenantId,
-            purchaseOrderId: $purchaseOrder
-        );
+        $poNumber = DB::connection('mysql')
+            ->transaction(
+                function () use (
+                    $context,
+                    $tenantId,
+                    $userId,
+                    $purchaseOrder
+                ): string {
+                    $database = DB::connection('mysql');
 
-        $allowedStatuses = [
-            'draft',
-            'pending',
-            'approved',
-        ];
+                    $order = $database
+                        ->table('purchase_orders')
+                        ->where('id', $purchaseOrder)
+                        ->where('tenant_id', $tenantId)
+                        ->whereNull('deleted_at')
+                        ->lockForUpdate()
+                        ->first();
 
-        if (
-            ! in_array(
-                $order->status,
-                $allowedStatuses,
-                true
-            )
-        ) {
-            throw ValidationException::withMessages([
-                'status' =>
-                    'This purchase order can no longer be cancelled.',
-            ]);
-        }
+                    abort_if(
+                        ! $order,
+                        404,
+                        'Purchase order not found.'
+                    );
 
-        $hasReceivedItems = DB::connection('mysql')
-            ->table('purchase_order_items')
-            ->where(
-                'purchase_order_id',
-                $purchaseOrder
-            )
-            ->where('tenant_id', $tenantId)
-            ->where(
-                'received_quantity',
-                '>',
-                0
-            )
-            ->exists();
+                    $allowedStatuses = $context['is_owner']
+                        ? [
+                            'draft',
+                            'pending',
+                            'approved',
+                        ]
+                        : [
+                            'draft',
+                            'pending',
+                        ];
 
-        if ($hasReceivedItems) {
-            throw ValidationException::withMessages([
-                'status' =>
-                    'A purchase order with received items cannot be cancelled.',
-            ]);
-        }
+                    if (
+                        ! in_array(
+                            $order->status,
+                            $allowedStatuses,
+                            true
+                        )
+                    ) {
+                        throw ValidationException::withMessages([
+                            'status' =>
+                                'This purchase order can no longer be cancelled by your role.',
+                        ]);
+                    }
 
-        DB::connection('mysql')
-            ->table('purchase_orders')
-            ->where('id', $purchaseOrder)
-            ->where('tenant_id', $tenantId)
-            ->whereNull('deleted_at')
-            ->update([
-                'status' => 'cancelled',
-                'cancelled_by' =>
-                    $request->user()->id,
-                'cancelled_at' => now(),
-                'updated_at' => now(),
-            ]);
+                    if (
+                        ! $context['is_owner']
+                        && (int) $order->created_by
+                            !== $userId
+                    ) {
+                        throw ValidationException::withMessages([
+                            'status' =>
+                                'You may only cancel purchase orders that you created.',
+                        ]);
+                    }
+
+                    $hasReceivedItems = $database
+                        ->table('purchase_order_items')
+                        ->where(
+                            'purchase_order_id',
+                            $purchaseOrder
+                        )
+                        ->where(
+                            'tenant_id',
+                            $tenantId
+                        )
+                        ->where(
+                            'received_quantity',
+                            '>',
+                            0
+                        )
+                        ->exists();
+
+                    if ($hasReceivedItems) {
+                        throw ValidationException::withMessages([
+                            'status' =>
+                                'A purchase order with received items cannot be cancelled.',
+                        ]);
+                    }
+
+                    $now = now();
+
+                    $database
+                        ->table('purchase_orders')
+                        ->where('id', $purchaseOrder)
+                        ->where('tenant_id', $tenantId)
+                        ->update([
+                            'status' => 'cancelled',
+                            'cancelled_by' => $userId,
+                            'cancelled_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+
+                    return (string) $order->po_number;
+                },
+                3
+            );
 
         return back()->with(
             'success',
-            'Purchase order cancelled successfully.'
+            "{$poNumber} cancelled successfully."
         );
     }
 
@@ -1253,7 +1418,8 @@ class PurchaseOrderController extends Controller
         Request $request,
         int $purchaseOrder
     ): RedirectResponse {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->userContext($request);
+        $tenantId = $context['account_owner_id'];
 
         $order = $this->findOrder(
             tenantId: $tenantId,
@@ -1266,6 +1432,12 @@ class PurchaseOrderController extends Controller
                     'Only draft purchase orders can be deleted.',
             ]);
         }
+
+        $this->authorizeDraftOwner(
+            order: $order,
+            context: $context,
+            action: 'delete'
+        );
 
         DB::connection('mysql')
             ->table('purchase_orders')
@@ -1853,34 +2025,173 @@ class PurchaseOrderController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Tenant Helper
+    | Active Inventory Access Context
     |--------------------------------------------------------------------------
     */
 
-    private function getTenantId(
+    private function userContext(
         Request $request
-    ): int {
-        $tenantId = (int) (
-            $request->user()->client_id
-            ?? 0
+    ): array {
+        $userId = (int) (
+            $request->user()?->id
         );
 
-        /*
-         * Temporary local development fallback.
-         */
-        if (
-            $tenantId <= 0
-            && app()->environment('local')
-        ) {
-            return 1;
+        abort_unless(
+            $userId > 0,
+            401
+        );
+
+        $context = DB::connection('saas')
+            ->table(
+                'user_product_access as access'
+            )
+            ->join(
+                'products as product',
+                'product.id',
+                '=',
+                'access.product_id'
+            )
+            ->join(
+                'product_user_types as product_role',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'product_role.id',
+                            '=',
+                            'access.product_user_type_id'
+                        )
+                        ->on(
+                            'product_role.product_id',
+                            '=',
+                            'access.product_id'
+                        );
+                }
+            )
+            ->join(
+                'user_types as user_type',
+                'user_type.id',
+                '=',
+                'product_role.user_type_id'
+            )
+            ->join(
+                'subscriptions as subscription',
+                function ($join): void {
+                    $join
+                        ->on(
+                            'subscription.id',
+                            '=',
+                            'access.subscription_id'
+                        )
+                        ->on(
+                            'subscription.product_id',
+                            '=',
+                            'access.product_id'
+                        );
+                }
+            )
+            ->where(
+                'access.user_id',
+                $userId
+            )
+            ->where(
+                'access.status',
+                'active'
+            )
+            ->where(
+                'product.product_code',
+                self::PRODUCT_CODE
+            )
+            ->whereIn(
+                'product.status',
+                [
+                    'development',
+                    'active',
+                ]
+            )
+            ->where(
+                'product_role.status',
+                'active'
+            )
+            ->where(
+                'user_type.status',
+                'active'
+            )
+            ->whereIn(
+                'subscription.status',
+                [
+                    'trial',
+                    'active',
+                ]
+            )
+            ->orderByDesc(
+                'subscription.id'
+            )
+            ->select([
+                'access.account_owner_id',
+                'access.product_id',
+                'access.subscription_id',
+                'product_role.display_name as role_name',
+                'user_type.type_code as role_code',
+                'user_type.is_owner_type',
+            ])
+            ->first();
+
+        abort_unless(
+            $context,
+            403,
+            'Your account does not have active access to JCM Inventory.'
+        );
+
+        return [
+            'user_id' =>
+                $userId,
+
+            'account_owner_id' =>
+                (int) $context->account_owner_id,
+
+            'product_id' =>
+                (int) $context->product_id,
+
+            'subscription_id' =>
+                (int) $context->subscription_id,
+
+            'role_code' =>
+                (string) $context->role_code,
+
+            'role_name' =>
+                (string) (
+                    $context->role_name
+                    ?: $context->role_code
+                ),
+
+            'is_owner' =>
+                (bool) $context->is_owner_type,
+        ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Draft Ownership Guard
+    |--------------------------------------------------------------------------
+    */
+
+    private function authorizeDraftOwner(
+        object $order,
+        array $context,
+        string $action
+    ): void {
+        if ($context['is_owner']) {
+            return;
         }
 
-        abort_if(
-            $tenantId <= 0,
-            403,
-            'Your account is not assigned to a client.'
-        );
-
-        return $tenantId;
+        if (
+            (int) $order->created_by
+            !== $context['user_id']
+        ) {
+            throw ValidationException::withMessages([
+                'status' =>
+                    "You may only {$action} purchase orders that you created.",
+            ]);
+        }
     }
 }

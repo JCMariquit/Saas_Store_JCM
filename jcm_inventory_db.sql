@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 21, 2026 at 05:55 AM
+-- Generation Time: Jul 21, 2026 at 10:17 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -267,6 +267,61 @@ INSERT INTO `purchase_receipt_items` (`id`, `tenant_id`, `purchase_receipt_id`, 
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `stock_issuances`
+--
+
+CREATE TABLE `stock_issuances` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tenant_id` bigint(20) UNSIGNED NOT NULL,
+  `branch_id` bigint(20) UNSIGNED NOT NULL,
+  `warehouse_id` bigint(20) UNSIGNED NOT NULL,
+  `issuance_number` varchar(80) NOT NULL,
+  `issuance_date` date NOT NULL,
+  `reason` enum('used_consumed','employee_issuance','department_issuance','damaged','expired','lost_missing','giveaway_sample','other') NOT NULL,
+  `issued_to` varchar(150) DEFAULT NULL,
+  `department` varchar(150) DEFAULT NULL,
+  `purpose` varchar(500) DEFAULT NULL,
+  `reference_no` varchar(120) DEFAULT NULL,
+  `status` enum('posted','voided') NOT NULL DEFAULT 'posted',
+  `total_quantity` decimal(14,3) NOT NULL DEFAULT 0.000,
+  `total_cost` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `notes` text DEFAULT NULL,
+  `issued_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `posted_at` timestamp NULL DEFAULT NULL,
+  `voided_by` bigint(20) UNSIGNED DEFAULT NULL,
+  `voided_at` timestamp NULL DEFAULT NULL,
+  `void_reason` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `stock_issuance_items`
+--
+
+CREATE TABLE `stock_issuance_items` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tenant_id` bigint(20) UNSIGNED NOT NULL,
+  `stock_issuance_id` bigint(20) UNSIGNED NOT NULL,
+  `product_id` bigint(20) UNSIGNED NOT NULL,
+  `stock_movement_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `void_stock_movement_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `product_name` varchar(180) NOT NULL,
+  `product_sku` varchar(100) DEFAULT NULL,
+  `unit` varchar(50) NOT NULL DEFAULT 'pcs',
+  `quantity_issued` decimal(14,3) NOT NULL DEFAULT 0.000,
+  `unit_cost` decimal(18,4) NOT NULL DEFAULT 0.0000,
+  `line_total` decimal(18,2) NOT NULL DEFAULT 0.00,
+  `notes` varchar(500) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `stock_movements`
 --
 
@@ -508,6 +563,41 @@ ALTER TABLE `purchase_receipt_items`
   ADD KEY `purchase_receipt_items_tenant_order_item_product_index` (`tenant_id`,`purchase_order_item_id`,`product_id`);
 
 --
+-- Indexes for table `stock_issuances`
+--
+ALTER TABLE `stock_issuances`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `stock_issuances_tenant_number_unique` (`tenant_id`,`issuance_number`),
+  ADD UNIQUE KEY `stock_issuances_tenant_id_unique` (`tenant_id`,`id`),
+  ADD UNIQUE KEY `stock_issuances_context_unique` (`tenant_id`,`id`,`branch_id`,`warehouse_id`),
+  ADD KEY `stock_issuances_tenant_index` (`tenant_id`),
+  ADD KEY `stock_issuances_branch_index` (`branch_id`),
+  ADD KEY `stock_issuances_warehouse_index` (`warehouse_id`),
+  ADD KEY `stock_issuances_tenant_status_date_index` (`tenant_id`,`status`,`issuance_date`),
+  ADD KEY `stock_issuances_tenant_branch_date_index` (`tenant_id`,`branch_id`,`issuance_date`),
+  ADD KEY `stock_issuances_tenant_warehouse_date_index` (`tenant_id`,`warehouse_id`,`issuance_date`),
+  ADD KEY `stock_issuances_tenant_reason_date_index` (`tenant_id`,`reason`,`issuance_date`),
+  ADD KEY `stock_issuances_reference_index` (`tenant_id`,`reference_no`),
+  ADD KEY `stock_issuances_issued_by_index` (`issued_by`),
+  ADD KEY `stock_issuances_voided_by_index` (`voided_by`),
+  ADD KEY `stock_issuances_tenant_branch_warehouse_foreign` (`tenant_id`,`branch_id`,`warehouse_id`);
+
+--
+-- Indexes for table `stock_issuance_items`
+--
+ALTER TABLE `stock_issuance_items`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `stock_issuance_items_tenant_id_unique` (`tenant_id`,`id`),
+  ADD UNIQUE KEY `stock_issuance_items_issuance_product_unique` (`stock_issuance_id`,`product_id`),
+  ADD UNIQUE KEY `stock_issuance_items_stock_move_unique` (`tenant_id`,`stock_movement_id`),
+  ADD UNIQUE KEY `stock_issuance_items_void_move_unique` (`tenant_id`,`void_stock_movement_id`),
+  ADD KEY `stock_issuance_items_tenant_index` (`tenant_id`),
+  ADD KEY `stock_issuance_items_issuance_index` (`stock_issuance_id`),
+  ADD KEY `stock_issuance_items_product_index` (`product_id`),
+  ADD KEY `stock_issuance_items_tenant_issuance_index` (`tenant_id`,`stock_issuance_id`),
+  ADD KEY `stock_issuance_items_tenant_product_index` (`tenant_id`,`product_id`);
+
+--
 -- Indexes for table `stock_movements`
 --
 ALTER TABLE `stock_movements`
@@ -613,6 +703,18 @@ ALTER TABLE `purchase_receipt_items`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `stock_issuances`
+--
+ALTER TABLE `stock_issuances`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `stock_issuance_items`
+--
+ALTER TABLE `stock_issuance_items`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `stock_movements`
 --
 ALTER TABLE `stock_movements`
@@ -694,6 +796,25 @@ ALTER TABLE `purchase_receipt_items`
   ADD CONSTRAINT `purchase_receipt_items_tenant_receipt_foreign` FOREIGN KEY (`tenant_id`,`purchase_receipt_id`) REFERENCES `purchase_receipts` (`tenant_id`, `id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `receipt_items_stock_move_foreign` FOREIGN KEY (`tenant_id`,`stock_movement_id`) REFERENCES `stock_movements` (`tenant_id`, `id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `receipt_items_void_move_foreign` FOREIGN KEY (`tenant_id`,`void_stock_movement_id`) REFERENCES `stock_movements` (`tenant_id`, `id`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `stock_issuances`
+--
+ALTER TABLE `stock_issuances`
+  ADD CONSTRAINT `stock_issuances_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `stock_issuances_tenant_branch_warehouse_foreign` FOREIGN KEY (`tenant_id`,`branch_id`,`warehouse_id`) REFERENCES `warehouses` (`tenant_id`, `branch_id`, `id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `stock_issuances_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `warehouses` (`id`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `stock_issuance_items`
+--
+ALTER TABLE `stock_issuance_items`
+  ADD CONSTRAINT `stock_issuance_items_issuance_id_foreign` FOREIGN KEY (`stock_issuance_id`) REFERENCES `stock_issuances` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `stock_issuance_items_product_id_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `stock_issuance_items_stock_move_foreign` FOREIGN KEY (`tenant_id`,`stock_movement_id`) REFERENCES `stock_movements` (`tenant_id`, `id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `stock_issuance_items_tenant_issuance_foreign` FOREIGN KEY (`tenant_id`,`stock_issuance_id`) REFERENCES `stock_issuances` (`tenant_id`, `id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `stock_issuance_items_tenant_product_foreign` FOREIGN KEY (`tenant_id`,`product_id`) REFERENCES `products` (`tenant_id`, `id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `stock_issuance_items_void_move_foreign` FOREIGN KEY (`tenant_id`,`void_stock_movement_id`) REFERENCES `stock_movements` (`tenant_id`, `id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `stock_movements`

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 16, 2026 at 10:51 AM
+-- Generation Time: Jul 21, 2026 at 05:55 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -151,6 +151,16 @@ CREATE TABLE `purchase_orders` (
   `deleted_at` timestamp NULL DEFAULT NULL
 ) ;
 
+--
+-- Dumping data for table `purchase_orders`
+--
+
+INSERT INTO `purchase_orders` (`id`, `tenant_id`, `supplier_id`, `branch_id`, `warehouse_id`, `po_number`, `order_date`, `expected_delivery_date`, `status`, `payment_terms`, `subtotal`, `discount_amount`, `tax_amount`, `shipping_amount`, `total_amount`, `notes`, `created_by`, `submitted_by`, `submitted_at`, `approved_by`, `approved_at`, `cancelled_by`, `cancelled_at`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 1, 1, 3, 2, 'PO-20260720-RDS4QP', '2026-07-20', '5555-05-05', 'cancelled', 'qwerty', 25000.00, 2.00, 1.00, 20.00, 25019.00, NULL, 1, 1, '2026-07-20 04:33:18', NULL, NULL, 1, '2026-07-20 04:58:00', '2026-07-20 02:43:18', '2026-07-20 04:58:00', NULL),
+(2, 1, 1, 3, 2, 'PO-20260720-ZLP2ZW', '2026-07-20', '2026-07-31', 'received', 'qwerty', 2500.00, 5.00, 2.00, 222.00, 2719.00, NULL, 1, 1, '2026-07-20 05:02:34', 1, '2026-07-20 05:19:16', NULL, NULL, '2026-07-20 04:54:27', '2026-07-20 05:48:37', NULL),
+(3, 1, 1, 3, 2, 'PO-20260720-RTRG0E', '2026-07-20', '2026-07-22', 'draft', 'qwerty', 2000.00, 500.00, 200.00, 200.00, 1900.00, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, '2026-07-20 05:04:16', '2026-07-20 05:04:16', NULL),
+(4, 1, 1, 3, 2, 'PO-20260721-IRZAO3', '2026-07-21', '2026-08-23', 'received', 'qwerty', 1250.00, 100.00, 50.00, 600.00, 1800.00, NULL, 1, 1, '2026-07-21 03:54:20', 1, '2026-07-21 03:54:26', NULL, NULL, '2026-07-21 03:54:16', '2026-07-21 03:54:45', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -173,6 +183,16 @@ CREATE TABLE `purchase_order_items` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ;
+
+--
+-- Dumping data for table `purchase_order_items`
+--
+
+INSERT INTO `purchase_order_items` (`id`, `tenant_id`, `purchase_order_id`, `product_id`, `product_name`, `product_sku`, `unit`, `quantity`, `received_quantity`, `unit_cost`, `line_total`, `notes`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 2, 'Safeguard', 'QW1', 'pcs', 1000.000, 0.000, 25.0000, 25000.00, NULL, '2026-07-20 02:43:18', '2026-07-20 02:43:18'),
+(2, 1, 2, 2, 'Safeguard', 'QW1', 'pcs', 100.000, 100.000, 25.0000, 2500.00, NULL, '2026-07-20 04:54:27', '2026-07-20 05:48:37'),
+(3, 1, 3, 1, 'qw', 'QW', 'pcs', 200.000, 0.000, 10.0000, 2000.00, NULL, '2026-07-20 05:04:16', '2026-07-20 05:04:16'),
+(4, 1, 4, 2, 'Safeguard', 'QW1', 'pcs', 50.000, 50.000, 25.0000, 1250.00, NULL, '2026-07-21 03:54:16', '2026-07-21 03:54:45');
 
 -- --------------------------------------------------------
 
@@ -203,6 +223,14 @@ CREATE TABLE `purchase_receipts` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ;
 
+--
+-- Dumping data for table `purchase_receipts`
+--
+
+INSERT INTO `purchase_receipts` (`id`, `tenant_id`, `purchase_order_id`, `supplier_id`, `branch_id`, `warehouse_id`, `receipt_number`, `delivery_reference`, `received_date`, `status`, `total_quantity`, `total_amount`, `notes`, `received_by`, `posted_at`, `voided_by`, `voided_at`, `void_reason`, `created_at`, `updated_at`) VALUES
+(1, 1, 2, 1, 3, 2, 'RCV-20260720-6YEO6T', NULL, '2026-07-20', 'posted', 100.000, 2500.00, NULL, 1, '2026-07-20 05:48:37', NULL, NULL, NULL, '2026-07-20 05:48:37', '2026-07-20 05:48:37'),
+(2, 1, 4, 1, 3, 2, 'RCV-20260721-QHE5FY', NULL, '2026-07-21', 'posted', 50.000, 1250.00, NULL, 1, '2026-07-21 03:54:45', NULL, NULL, NULL, '2026-07-21 03:54:45', '2026-07-21 03:54:45');
+
 -- --------------------------------------------------------
 
 --
@@ -227,6 +255,14 @@ CREATE TABLE `purchase_receipt_items` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ;
+
+--
+-- Dumping data for table `purchase_receipt_items`
+--
+
+INSERT INTO `purchase_receipt_items` (`id`, `tenant_id`, `purchase_receipt_id`, `purchase_order_item_id`, `product_id`, `stock_movement_id`, `void_stock_movement_id`, `product_name`, `product_sku`, `unit`, `quantity_received`, `unit_cost`, `line_total`, `notes`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 2, 2, 3, NULL, 'Safeguard', 'QW1', 'pcs', 100.000, 25.0000, 2500.00, NULL, '2026-07-20 05:48:37', '2026-07-20 05:48:37'),
+(2, 1, 2, 4, 2, 4, NULL, 'Safeguard', 'QW1', 'pcs', 50.000, 25.0000, 1250.00, NULL, '2026-07-21 03:54:45', '2026-07-21 03:54:45');
 
 -- --------------------------------------------------------
 
@@ -264,7 +300,9 @@ CREATE TABLE `stock_movements` (
 --
 
 INSERT INTO `stock_movements` (`id`, `tenant_id`, `warehouse_id`, `product_id`, `movement_type`, `quantity`, `quantity_before`, `quantity_after`, `unit_cost`, `total_cost`, `average_cost_before`, `average_cost_after`, `reference_type`, `reference_id`, `reference_no`, `related_warehouse_id`, `reversal_of_movement_id`, `remarks`, `movement_date`, `created_by`, `created_at`, `updated_at`) VALUES
-(2, 1, 2, 2, 'opening_stock', 50.000, 0.000, 50.000, 25.0000, 1250.00, NULL, NULL, 'opening_stock', NULL, 'OPEN-20260716091506-KN1VI1', NULL, NULL, NULL, '2026-07-16 09:15:06', 1, '2026-07-16 01:15:06', '2026-07-16 01:15:06');
+(2, 1, 2, 2, 'opening_stock', 50.000, 0.000, 50.000, 25.0000, 1250.00, NULL, NULL, 'opening_stock', NULL, 'OPEN-20260716091506-KN1VI1', NULL, NULL, NULL, '2026-07-16 09:15:06', 1, '2026-07-16 01:15:06', '2026-07-16 01:15:06'),
+(3, 1, 2, 2, 'purchase_receipt', 100.000, 50.000, 150.000, 25.0000, 2500.00, 25.0000, 25.0000, 'purchase_receipt', 1, 'RCV-20260720-6YEO6T', NULL, NULL, 'Received from PO PO-20260720-ZLP2ZW', '2026-07-20 13:48:37', 1, '2026-07-20 05:48:37', '2026-07-20 05:48:37'),
+(4, 1, 2, 2, 'purchase_receipt', 50.000, 150.000, 200.000, 25.0000, 1250.00, 25.0000, 25.0000, 'purchase_receipt', 2, 'RCV-20260721-QHE5FY', NULL, NULL, 'Received from PO PO-20260721-IRZAO3', '2026-07-21 11:54:45', 1, '2026-07-21 03:54:45', '2026-07-21 03:54:45');
 
 -- --------------------------------------------------------
 
@@ -358,7 +396,7 @@ CREATE TABLE `warehouse_stocks` (
 --
 
 INSERT INTO `warehouse_stocks` (`id`, `tenant_id`, `warehouse_id`, `product_id`, `quantity`, `reorder_level`, `max_stock_level`, `average_cost`, `last_movement_at`, `created_at`, `updated_at`) VALUES
-(2, 1, 2, 2, 50.000, 5.000, NULL, 25.0000, '2026-07-16 09:15:06', '2026-07-16 01:15:06', '2026-07-16 01:15:06');
+(2, 1, 2, 2, 200.000, 5.000, NULL, 25.0000, '2026-07-21 11:54:45', '2026-07-16 01:15:06', '2026-07-21 03:54:45');
 
 --
 -- Indexes for dumped tables

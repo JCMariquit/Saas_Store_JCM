@@ -821,7 +821,7 @@ class ReceivingController extends Controller
             ->values();
 
         return Inertia::render(
-            'suppliers/receiving/index',
+            'procurement/receiving/index',
             [
                 'receipts' => $receipts,
 

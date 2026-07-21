@@ -340,7 +340,7 @@ class SupplierController extends Controller
         */
 
         return Inertia::render(
-            'suppliers/suppliers/index',
+            'procurement/suppliers/index',
             [
                 'suppliers' => $suppliers,
 

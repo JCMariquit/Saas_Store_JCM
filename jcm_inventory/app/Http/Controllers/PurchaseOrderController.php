@@ -767,7 +767,7 @@ class PurchaseOrderController extends Controller
         */
 
         return Inertia::render(
-            'suppliers/purchasing-orders/index',
+            'procurement/purchasing-orders/index',
             [
                 'purchase_orders' => $orders,
 

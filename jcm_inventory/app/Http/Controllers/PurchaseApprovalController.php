@@ -590,7 +590,7 @@ class PurchaseApprovalController extends Controller
             ->values();
 
         return Inertia::render(
-            'suppliers/purchase-approvals/index',
+            'procurement/purchase-approvals/index',
             [
                 'purchase_orders' =>
                     $purchaseOrders,

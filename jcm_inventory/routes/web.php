@@ -7,11 +7,12 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseApprovalController;
 use App\Http\Controllers\ReceivingController;
+use App\Http\Controllers\ReceivedOrderController;
 use App\Http\Controllers\RoleAccessController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\StockOverviewController;
-use App\Http\Controllers\SupplierController; 
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TeamMemberController;
 use App\Http\Controllers\TeamOverviewController;
 use App\Http\Controllers\WarehouseController;
@@ -192,12 +193,25 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('feature:stock_movements')
         ->name('stock-movements.index');
 
-    Route::prefix('suppliers')
-        ->name('suppliers.')
+    /*
+    |--------------------------------------------------------------------------
+    | Procurement
+    |--------------------------------------------------------------------------
+    |
+    | Canonical procurement URLs and route names use "procurement".
+    | Temporary legacy /suppliers aliases are registered below so existing
+    | frontend requests continue working while page paths are migrated.
+    |
+    */
+
+    Route::prefix('procurement')
+        ->name('procurement.')
         ->group(function () {
-            Route::middleware(
-                'feature:supplier_management'
-            )
+            Route::prefix('suppliers')
+                ->name('suppliers.')
+                ->middleware(
+                    'feature:supplier_management'
+                )
                 ->controller(
                     SupplierController::class
                 )
@@ -260,7 +274,6 @@ Route::middleware(['auth'])->group(function () {
                     )->name('destroy');
                 });
 
-
             Route::prefix('purchase-approvals')
                 ->name('purchase-approvals.')
                 ->middleware(
@@ -301,6 +314,137 @@ Route::middleware(['auth'])->group(function () {
                         '/{receipt}/void',
                         'void'
                     )->name('void');
+                });
+
+            Route::prefix('received-orders')
+                ->name('received-orders.')
+                ->middleware('feature:receiving')
+                ->controller(
+                    ReceivedOrderController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
+                });
+        });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Temporary legacy supplier URLs
+    |--------------------------------------------------------------------------
+    |
+    | These aliases intentionally have no route names. Remove this block after
+    | every frontend request, breadcrumb, controller redirect, and sidebar URL
+    | has been migrated from /suppliers to /procurement.
+    |
+    */
+
+    Route::prefix('suppliers')
+        ->group(function () {
+            Route::middleware(
+                'feature:supplier_management'
+            )
+                ->controller(
+                    SupplierController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index');
+
+                    Route::post('/', 'store');
+
+                    Route::put(
+                        '/{supplier}',
+                        'update'
+                    );
+
+                    Route::patch(
+                        '/{supplier}/status',
+                        'updateStatus'
+                    );
+
+                    Route::delete(
+                        '/{supplier}',
+                        'destroy'
+                    );
+                });
+
+            Route::prefix('purchase-orders')
+                ->middleware(
+                    'feature:purchase_orders'
+                )
+                ->controller(
+                    PurchaseOrderController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index');
+
+                    Route::post('/', 'store');
+
+                    Route::put(
+                        '/{purchaseOrder}',
+                        'update'
+                    );
+
+                    Route::post(
+                        '/{purchaseOrder}/submit',
+                        'submit'
+                    );
+
+                    Route::post(
+                        '/{purchaseOrder}/cancel',
+                        'cancel'
+                    );
+
+                    Route::delete(
+                        '/{purchaseOrder}',
+                        'destroy'
+                    );
+                });
+
+            Route::prefix('purchase-approvals')
+                ->middleware(
+                    'feature:purchase_orders'
+                )
+                ->controller(
+                    PurchaseApprovalController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index');
+
+                    Route::post(
+                        '/{purchaseOrder}/approve',
+                        'approve'
+                    );
+
+                    Route::post(
+                        '/{purchaseOrder}/return-to-draft',
+                        'returnToDraft'
+                    );
+                });
+
+            Route::prefix('receiving')
+                ->middleware('feature:receiving')
+                ->controller(
+                    ReceivingController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index');
+
+                    Route::post('/', 'store');
+
+                    Route::post(
+                        '/{receipt}/void',
+                        'void'
+                    );
+                });
+
+            Route::prefix('received-orders')
+                ->middleware('feature:receiving')
+                ->controller(
+                    ReceivedOrderController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index');
                 });
         });
 

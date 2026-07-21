@@ -1,11 +1,9 @@
-import { ActionGroup } from "@/components/shared/action-group";
 import { AppDrawer } from "@/components/shared/app-drawer";
 import { CalloutCard } from "@/components/shared/callout-card";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { FormDialog } from "@/components/shared/form-dialog";
 import { FormField } from "@/components/shared/form-field";
 import { FormSection } from "@/components/shared/form-section";
-import { IconButton } from "@/components/shared/icon-button";
 import { IconInput } from "@/components/shared/icon-input";
 import { PageContainer } from "@/components/shared/page-container";
 import { SectionCard } from "@/components/shared/section-card";
@@ -33,9 +31,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronDown,
-  CircleDollarSign,
   ClipboardList,
-  Eye,
   PackageCheck,
   ReceiptText,
   RotateCcw,
@@ -263,16 +259,15 @@ const breadcrumbs: BreadcrumbItem[] = [
     href: "/dashboard",
   },
   {
-    title: "Suppliers",
-    href: "/suppliers",
+    title: "Procurement",
+    href: "/procurement/suppliers",
   },
   {
     title: "Receiving",
-    href: "/suppliers/receiving",
+    href: "/procurement/receiving",
   },
 ];
 
-const ALL_VALUE = "all";
 const NONE_VALUE = "none";
 
 function todayDate(): string {
@@ -496,7 +491,7 @@ export default function ReceivingIndex({
       }),
     }));
 
-    form.post("/suppliers/receiving", {
+    form.post("/procurement/receiving", {
       preserveScroll: true,
 
       onSuccess: () => {
@@ -539,7 +534,7 @@ export default function ReceivingIndex({
       return;
     }
 
-    voidForm.post(`/suppliers/receiving/${voidingReceipt.id}/void`, {
+    voidForm.post(`/procurement/receiving/${voidingReceipt.id}/void`, {
       preserveScroll: true,
       onSuccess: () => {
         setVoidingReceipt(null);
@@ -603,7 +598,7 @@ export default function ReceivingIndex({
       <Head title="Receiving" />
 
       <PageContainer className="gap-4 md:gap-5">
-        {/* Supplier receiving overview */}
+        {/* Procurement receiving overview */}
 
         <section className="min-w-0 overflow-hidden rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[0.07] via-card/70 to-card/40">
           <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -614,7 +609,7 @@ export default function ReceivingIndex({
 
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold text-foreground">
-                  Supplier Receiving Flow
+                  Procurement Receiving Flow
                 </p>
 
                 <p className="mt-0.5 text-[10px] text-muted-foreground">
@@ -761,38 +756,28 @@ export default function ReceivingIndex({
           </div>
         </section>
 
-        {purchase_orders.length === 0 && (
-          <CalloutCard
-            tone="warning"
-            icon={PackageCheck}
-            title="No approved purchase orders available"
-            description="Approved purchase orders will appear in the Ready to Receive queue. Existing receipt history remains available below."
-          />
-        )}
         {/* Receiving register */}
 
-        {purchase_orders.length > 0 && (
-          <SectionCard
-            title="Receiving Approval Queue"
-            description="Approved and partially received purchase orders are listed here for warehouse receiving. Expand a row to review the ordered products before posting the delivery."
-            actions={
-              <Badge
-                variant="outline"
-                className="h-7 rounded-full border-emerald-500/20 bg-emerald-500/[0.07] px-2.5 text-[10px] font-medium text-emerald-300"
-              >
-                <PackageCheck className="mr-1 size-3" />
-                {formatNumber(purchase_orders.length)} ready
-              </Badge>
-            }
-          >
-            <ReadyToReceiveTable
-              purchaseOrders={purchase_orders}
-              expandedPurchaseOrderId={expandedPurchaseOrderId}
-              onToggleDetails={togglePurchaseOrderDetails}
-              onReceive={openCreateModal}
-            />
-          </SectionCard>
-        )}
+        <SectionCard
+          title="Receiving Approval Queue"
+          description="Approved and partially received purchase orders are listed here for warehouse receiving. Expand a row to review the ordered products before posting the delivery."
+          actions={
+            <Badge
+              variant="outline"
+              className="h-7 rounded-full border-emerald-500/20 bg-emerald-500/[0.07] px-2.5 text-[10px] font-medium text-emerald-300"
+            >
+              <PackageCheck className="mr-1 size-3" />
+              {formatNumber(purchase_orders.length)} ready
+            </Badge>
+          }
+        >
+          <ReadyToReceiveTable
+            purchaseOrders={purchase_orders}
+            expandedPurchaseOrderId={expandedPurchaseOrderId}
+            onToggleDetails={togglePurchaseOrderDetails}
+            onReceive={openCreateModal}
+          />
+        </SectionCard>
       </PageContainer>
 
       {/* Receive supplier delivery */}
@@ -1602,204 +1587,225 @@ function ReadyToReceiveTable({
           </thead>
 
           <tbody className="divide-y divide-border/60">
-            {purchaseOrders.map((order) => {
-              const isExpanded = expandedPurchaseOrderId === order.id;
-              const detailsId = `receiving-order-details-${order.id}`;
+            {purchaseOrders.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-4 py-12">
+                  <div className="mx-auto flex max-w-sm flex-col items-center text-center">
+                    <span className="flex size-11 items-center justify-center rounded-xl border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
+                      <PackageCheck className="size-5" />
+                    </span>
 
-              const remainingQuantity = order.items.reduce(
-                (total, item) => total + Number(item.remaining_quantity || 0),
-                0,
-              );
+                    <h3 className="mt-3 text-sm font-semibold">
+                      No approved purchase orders
+                    </h3>
 
-              const receivedQuantity = order.items.reduce(
-                (total, item) => total + Number(item.received_quantity || 0),
-                0,
-              );
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      Approved and partially received purchase orders will
+                      appear here when they are ready for warehouse receiving.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              purchaseOrders.map((order) => {
+                const isExpanded = expandedPurchaseOrderId === order.id;
+                const detailsId = `receiving-order-details-${order.id}`;
 
-              const orderedQuantity = order.items.reduce(
-                (total, item) => total + Number(item.ordered_quantity || 0),
-                0,
-              );
+                const remainingQuantity = order.items.reduce(
+                  (total, item) => total + Number(item.remaining_quantity || 0),
+                  0,
+                );
 
-              return (
-                <Fragment key={order.id}>
-                  <tr
-                    tabIndex={0}
-                    aria-expanded={isExpanded}
-                    aria-controls={detailsId}
-                    onClick={() => onToggleDetails(order.id)}
-                    onKeyDown={(event) => {
-                      if (event.target !== event.currentTarget) {
-                        return;
-                      }
+                const receivedQuantity = order.items.reduce(
+                  (total, item) => total + Number(item.received_quantity || 0),
+                  0,
+                );
 
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        onToggleDetails(order.id);
-                      }
-                    }}
-                    className={cn(
-                      "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/40",
-                      isExpanded &&
-                        "bg-emerald-500/[0.035] hover:bg-emerald-500/[0.055]",
-                    )}
-                  >
-                    <td className="px-3 py-3 align-middle">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={
-                          isExpanded
-                            ? `Collapse ${order.po_number} details`
-                            : `Expand ${order.po_number} details`
+                const orderedQuantity = order.items.reduce(
+                  (total, item) => total + Number(item.ordered_quantity || 0),
+                  0,
+                );
+
+                return (
+                  <Fragment key={order.id}>
+                    <tr
+                      tabIndex={0}
+                      aria-expanded={isExpanded}
+                      aria-controls={detailsId}
+                      onClick={() => onToggleDetails(order.id)}
+                      onKeyDown={(event) => {
+                        if (event.target !== event.currentTarget) {
+                          return;
                         }
-                        onClick={(event) => {
-                          event.stopPropagation();
+
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
                           onToggleDetails(order.id);
-                        }}
-                        className={cn(
-                          "size-7 rounded-md text-muted-foreground transition-colors hover:bg-emerald-500/10 hover:text-emerald-400",
-                          isExpanded && "bg-emerald-500/10 text-emerald-400",
-                        )}
-                      >
-                        <ChevronDown
-                          className={cn(
-                            "size-3.5 transition-transform duration-200",
-                            isExpanded && "rotate-180",
-                          )}
-                        />
-                      </Button>
-                    </td>
-
-                    <td className="px-3 py-3.5 align-middle">
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <EntityAvatar
-                          icon={ClipboardList}
-                          className="border-emerald-500/15 bg-emerald-500/10 text-emerald-400 group-hover:border-emerald-500/25 group-hover:bg-emerald-500/15"
-                        />
-
-                        <div className="min-w-0">
-                          <p className="max-w-[170px] truncate font-mono text-[10px] font-semibold text-emerald-300">
-                            {order.po_number}
-                          </p>
-
-                          <p className="mt-1 text-[9px] text-muted-foreground">
-                            Ordered {formatDate(order.order_date)}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="px-3 py-3.5 align-middle">
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <EntityAvatar
-                          icon={Truck}
-                          className="border-amber-500/15 bg-amber-500/10 text-amber-400"
-                        />
-
-                        <div className="min-w-0">
-                          <p className="max-w-[145px] truncate text-[10px] font-medium leading-4 text-foreground/85">
-                            {order.supplier.name}
-                          </p>
-
-                          <p className="mt-1 truncate text-[9px] text-muted-foreground">
-                            {order.supplier.code ?? "No supplier code"}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="px-3 py-3.5 align-middle">
-                      <div className="space-y-1.5">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <Warehouse className="size-3.5 shrink-0 text-violet-400" />
-
-                          <span className="max-w-[165px] truncate text-[10px] font-semibold text-foreground/90">
-                            {order.warehouse.name}
-                          </span>
-                        </div>
-
-                        <div className="flex min-w-0 items-center gap-2">
-                          <Building2 className="size-3.5 shrink-0 text-blue-400" />
-
-                          <span className="max-w-[165px] truncate text-[9px] text-muted-foreground">
-                            {order.branch.name}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="px-3 py-3.5 align-middle">
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-semibold text-foreground/90">
-                          {formatDate(order.expected_delivery_date)}
-                        </p>
-
-                        <p className="text-[9px] text-muted-foreground">
-                          Expected delivery
-                        </p>
-                      </div>
-                    </td>
-
-                    <td className="px-3 py-3.5 align-middle">
-                      <div className="space-y-1">
-                        <p className="text-[12px] font-semibold tabular-nums text-amber-400">
-                          {formatQuantity(remainingQuantity)} units
-                        </p>
-
-                        <p className="text-[9px] text-muted-foreground">
-                          {formatNumber(order.items.length)} product
-                          {order.items.length === 1 ? "" : "s"} ·{" "}
-                          {formatQuantity(receivedQuantity)} of{" "}
-                          {formatQuantity(orderedQuantity)} received
-                        </p>
-                      </div>
-                    </td>
-
-                    <td className="px-3 py-3.5 align-middle">
-                      <StatusBadge
-                        label={
-                          order.status === "partially_received"
-                            ? "Partially Received"
-                            : "Approved"
                         }
-                        variant={
-                          order.status === "partially_received"
-                            ? "warning"
-                            : "success"
-                        }
-                      />
-                    </td>
-
-                    <td className="px-3 py-3.5 text-right align-middle">
-                      <div
-                        className="inline-flex"
-                        onClick={(event) => event.stopPropagation()}
-                        onKeyDown={(event) => event.stopPropagation()}
-                      >
+                      }}
+                      className={cn(
+                        "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/40",
+                        isExpanded &&
+                          "bg-emerald-500/[0.035] hover:bg-emerald-500/[0.055]",
+                      )}
+                    >
+                      <td className="px-3 py-3 align-middle">
                         <Button
                           type="button"
-                          onClick={() => onReceive(order.id)}
-                          className="h-8 rounded-lg px-3 text-[10px]"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={
+                            isExpanded
+                              ? `Collapse ${order.po_number} details`
+                              : `Expand ${order.po_number} details`
+                          }
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onToggleDetails(order.id);
+                          }}
+                          className={cn(
+                            "size-7 rounded-md text-muted-foreground transition-colors hover:bg-emerald-500/10 hover:text-emerald-400",
+                            isExpanded && "bg-emerald-500/10 text-emerald-400",
+                          )}
                         >
-                          <ArrowDownToLine className="size-3.5" />
-                          Receive
+                          <ChevronDown
+                            className={cn(
+                              "size-3.5 transition-transform duration-200",
+                              isExpanded && "rotate-180",
+                            )}
+                          />
                         </Button>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
 
-                  {isExpanded && (
-                    <tr id={detailsId} className="bg-muted/[0.08]">
-                      <td colSpan={8} className="px-3 pb-3 pt-0">
-                        <ReadyToReceiveExpandedDetails order={order} />
+                      <td className="px-3 py-3.5 align-middle">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <EntityAvatar
+                            icon={ClipboardList}
+                            className="border-emerald-500/15 bg-emerald-500/10 text-emerald-400 group-hover:border-emerald-500/25 group-hover:bg-emerald-500/15"
+                          />
+
+                          <div className="min-w-0">
+                            <p className="max-w-[170px] truncate font-mono text-[10px] font-semibold text-emerald-300">
+                              {order.po_number}
+                            </p>
+
+                            <p className="mt-1 text-[9px] text-muted-foreground">
+                              Ordered {formatDate(order.order_date)}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-3 py-3.5 align-middle">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <EntityAvatar
+                            icon={Truck}
+                            className="border-amber-500/15 bg-amber-500/10 text-amber-400"
+                          />
+
+                          <div className="min-w-0">
+                            <p className="max-w-[145px] truncate text-[10px] font-medium leading-4 text-foreground/85">
+                              {order.supplier.name}
+                            </p>
+
+                            <p className="mt-1 truncate text-[9px] text-muted-foreground">
+                              {order.supplier.code ?? "No supplier code"}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-3 py-3.5 align-middle">
+                        <div className="space-y-1.5">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Warehouse className="size-3.5 shrink-0 text-violet-400" />
+
+                            <span className="max-w-[165px] truncate text-[10px] font-semibold text-foreground/90">
+                              {order.warehouse.name}
+                            </span>
+                          </div>
+
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Building2 className="size-3.5 shrink-0 text-blue-400" />
+
+                            <span className="max-w-[165px] truncate text-[9px] text-muted-foreground">
+                              {order.branch.name}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-3 py-3.5 align-middle">
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-semibold text-foreground/90">
+                            {formatDate(order.expected_delivery_date)}
+                          </p>
+
+                          <p className="text-[9px] text-muted-foreground">
+                            Expected delivery
+                          </p>
+                        </div>
+                      </td>
+
+                      <td className="px-3 py-3.5 align-middle">
+                        <div className="space-y-1">
+                          <p className="text-[12px] font-semibold tabular-nums text-amber-400">
+                            {formatQuantity(remainingQuantity)} units
+                          </p>
+
+                          <p className="text-[9px] text-muted-foreground">
+                            {formatNumber(order.items.length)} product
+                            {order.items.length === 1 ? "" : "s"} ·{" "}
+                            {formatQuantity(receivedQuantity)} of{" "}
+                            {formatQuantity(orderedQuantity)} received
+                          </p>
+                        </div>
+                      </td>
+
+                      <td className="px-3 py-3.5 align-middle">
+                        <StatusBadge
+                          label={
+                            order.status === "partially_received"
+                              ? "Partially Received"
+                              : "Approved"
+                          }
+                          variant={
+                            order.status === "partially_received"
+                              ? "warning"
+                              : "success"
+                          }
+                        />
+                      </td>
+
+                      <td className="px-3 py-3.5 text-right align-middle">
+                        <div
+                          className="inline-flex"
+                          onClick={(event) => event.stopPropagation()}
+                          onKeyDown={(event) => event.stopPropagation()}
+                        >
+                          <Button
+                            type="button"
+                            onClick={() => onReceive(order.id)}
+                            className="h-8 rounded-lg px-3 text-[10px]"
+                          >
+                            <ArrowDownToLine className="size-3.5" />
+                            Receive
+                          </Button>
+                        </div>
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              );
-            })}
+
+                    {isExpanded && (
+                      <tr id={detailsId} className="bg-muted/[0.08]">
+                        <td colSpan={8} className="px-3 pb-3 pt-0">
+                          <ReadyToReceiveExpandedDetails order={order} />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
@@ -1940,658 +1946,6 @@ function ReadyToReceiveExpandedDetails({
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| Receiving registry table
-|--------------------------------------------------------------------------
-*/
-
-type ReceivingRegistryTableProps = {
-  receipts: Receipt[];
-  expandedReceiptId: number | null;
-  onToggleDetails: (receiptId: number) => void;
-  onView: (receipt: Receipt) => void;
-  onVoid: (receipt: Receipt) => void;
-};
-
-function ReceivingRegistryTable({
-  receipts,
-  expandedReceiptId,
-  onToggleDetails,
-  onView,
-  onVoid,
-}: ReceivingRegistryTableProps) {
-  return (
-    <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1120px] border-collapse">
-          <thead className="select-none border-b border-border/70 bg-muted/20">
-            <tr>
-              <th scope="col" className="w-11 px-3 py-2.5 text-left">
-                <span className="sr-only">Expand details</span>
-              </th>
-
-              <th
-                scope="col"
-                className="min-w-[205px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-              >
-                Receipt
-              </th>
-
-              <th
-                scope="col"
-                className="min-w-[170px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-              >
-                Purchase Order
-              </th>
-
-              <th
-                scope="col"
-                className="min-w-[185px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-              >
-                Supplier
-              </th>
-
-              <th
-                scope="col"
-                className="min-w-[190px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-              >
-                Delivery
-              </th>
-
-              <th
-                scope="col"
-                className="min-w-[180px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-              >
-                Receipt Summary
-              </th>
-
-              <th
-                scope="col"
-                className="min-w-[120px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-              >
-                Status
-              </th>
-
-              <th
-                scope="col"
-                className="w-[108px] px-3 py-2.5 text-right text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-              >
-                Action
-              </th>
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-border/60">
-            {receipts.map((receipt) => {
-              const isExpanded = expandedReceiptId === receipt.id;
-              const detailsId = `receipt-details-${receipt.id}`;
-
-              return (
-                <Fragment key={receipt.id}>
-                  <tr
-                    tabIndex={0}
-                    aria-expanded={isExpanded}
-                    aria-controls={detailsId}
-                    onClick={() => onToggleDetails(receipt.id)}
-                    onKeyDown={(event) => {
-                      if (event.target !== event.currentTarget) {
-                        return;
-                      }
-
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        onToggleDetails(receipt.id);
-                      }
-                    }}
-                    className={cn(
-                      "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500/40",
-                      isExpanded &&
-                        "bg-amber-500/[0.035] hover:bg-amber-500/[0.055]",
-                    )}
-                  >
-                    <td className="px-3 py-3 align-middle">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={
-                          isExpanded
-                            ? `Collapse ${receipt.receipt_number} details`
-                            : `Expand ${receipt.receipt_number} details`
-                        }
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onToggleDetails(receipt.id);
-                        }}
-                        className={cn(
-                          "size-7 rounded-md text-muted-foreground transition-colors hover:bg-amber-500/10 hover:text-amber-400",
-                          isExpanded && "bg-amber-500/10 text-amber-400",
-                        )}
-                      >
-                        <ChevronDown
-                          className={cn(
-                            "size-3.5 transition-transform duration-200",
-                            isExpanded && "rotate-180",
-                          )}
-                        />
-                      </Button>
-                    </td>
-
-                    <td className="px-3 py-3.5 align-middle">
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <EntityAvatar
-                          icon={ReceiptText}
-                          className="border-amber-500/15 bg-amber-500/10 text-amber-400 group-hover:border-amber-500/25 group-hover:bg-amber-500/15"
-                        />
-
-                        <p className="max-w-[165px] truncate text-[11px] font-semibold leading-4 text-foreground/90">
-                          {receipt.receipt_number}
-                        </p>
-                      </div>
-                    </td>
-
-                    <td className="px-3 py-3.5 align-middle">
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
-                          <ClipboardList className="size-4" />
-                        </span>
-
-                        <p className="max-w-[135px] truncate font-mono text-[10px] font-semibold text-blue-300">
-                          {receipt.purchase_order.po_number}
-                        </p>
-                      </div>
-                    </td>
-
-                    <td className="px-3 py-3.5 align-middle">
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <EntityAvatar
-                          icon={Truck}
-                          className="border-amber-500/15 bg-amber-500/10 text-amber-400"
-                        />
-
-                        <p className="max-w-[145px] truncate text-[10px] font-medium leading-4 text-foreground/85">
-                          {receipt.supplier.name}
-                        </p>
-                      </div>
-                    </td>
-
-                    <td className="px-3 py-3.5 align-middle">
-                      <div className="space-y-1.5">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <Building2 className="size-3.5 shrink-0 text-blue-400" />
-
-                          <span className="max-w-[150px] truncate text-[10px] font-semibold text-foreground/90">
-                            {receipt.branch.name}
-                          </span>
-                        </div>
-
-                        <div className="flex min-w-0 items-center gap-2">
-                          <CalendarDays className="size-3.5 shrink-0 text-violet-400" />
-
-                          <span className="text-[9px] text-muted-foreground">
-                            {formatDate(receipt.received_date)}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="px-3 py-3.5 align-middle">
-                      <div className="space-y-1">
-                        <p className="text-[12px] font-semibold tabular-nums text-emerald-400">
-                          {formatCurrency(receipt.total_amount)}
-                        </p>
-
-                        <p className="text-[9px] text-muted-foreground">
-                          {formatNumber(receipt.items_count)} product
-                          {receipt.items_count === 1 ? "" : "s"} ·{" "}
-                          {formatQuantity(receipt.total_quantity)} units
-                        </p>
-                      </div>
-                    </td>
-
-                    <td className="px-3 py-3.5 align-middle">
-                      <StatusBadge
-                        label={receipt.status_label}
-                        variant={
-                          receipt.status === "posted" ? "success" : "danger"
-                        }
-                      />
-                    </td>
-
-                    <td className="px-3 py-3.5 text-right align-middle">
-                      <div
-                        className="inline-flex"
-                        onClick={(event) => event.stopPropagation()}
-                        onKeyDown={(event) => event.stopPropagation()}
-                      >
-                        <ActionGroup>
-                          <IconButton
-                            label="View receipt"
-                            onClick={() => onView(receipt)}
-                            className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
-                          >
-                            <Eye className="size-3.5" />
-                          </IconButton>
-
-                          {receipt.can_void && (
-                            <IconButton
-                              label="Void receipt"
-                              onClick={() => onVoid(receipt)}
-                              className="text-red-400 hover:bg-red-500/10 hover:text-red-400"
-                            >
-                              <RotateCcw className="size-3.5" />
-                            </IconButton>
-                          )}
-                        </ActionGroup>
-                      </div>
-                    </td>
-                  </tr>
-
-                  {isExpanded && (
-                    <tr id={detailsId} className="bg-muted/[0.08]">
-                      <td colSpan={8} className="px-3 pb-3 pt-0">
-                        <ReceivingExpandedDetails receipt={receipt} />
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function ReceivingExpandedDetails({ receipt }: { receipt: Receipt }) {
-  return (
-    <div className="overflow-hidden rounded-xl border border-amber-500/10 bg-background/45 shadow-sm">
-      <div className="flex flex-col gap-2 border-b border-border/60 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-300">
-            Complete Receiving Record
-          </p>
-
-          <p className="mt-0.5 text-[9px] text-muted-foreground">
-            Supplier reference, receiving destination, products, value, and
-            workflow history.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge
-            variant="outline"
-            className="h-6 rounded-full border-border/70 bg-muted/20 px-2.5 font-mono text-[9px] text-muted-foreground"
-          >
-            {receipt.receipt_number}
-          </Badge>
-
-          <StatusBadge
-            label={receipt.status_label}
-            variant={receipt.status === "posted" ? "success" : "danger"}
-          />
-        </div>
-      </div>
-
-      <div className="grid gap-3 p-3 lg:grid-cols-2 xl:grid-cols-4">
-        <ReceiptDetailSection
-          title="Supplier & Reference"
-          description="Supplier identity and source purchasing document."
-          icon={Truck}
-          iconClassName="border-amber-500/15 bg-amber-500/10 text-amber-400"
-        >
-          <ReceiptDetailItem
-            label="Supplier"
-            value={`${receipt.supplier.name}${
-              receipt.supplier.code ? ` · ${receipt.supplier.code}` : ""
-            }`}
-            icon={Truck}
-          />
-
-          <ReceiptDetailItem
-            label="Contact person"
-            value={receipt.supplier.contact_person ?? "Not provided"}
-            icon={UserRound}
-          />
-
-          <ReceiptDetailItem
-            label="Purchase order"
-            value={receipt.purchase_order.po_number}
-            icon={ClipboardList}
-            mono
-          />
-
-          <ReceiptDetailItem
-            label="Delivery reference"
-            value={receipt.delivery_reference ?? "No reference recorded"}
-            icon={ReceiptText}
-            mono
-          />
-        </ReceiptDetailSection>
-
-        <ReceiptDetailSection
-          title="Receiving Destination"
-          description="Branch, warehouse, and posted receipt date."
-          icon={Warehouse}
-          iconClassName="border-violet-500/15 bg-violet-500/10 text-violet-400"
-        >
-          <ReceiptDetailItem
-            label="Branch"
-            value={`${receipt.branch.name}${
-              receipt.branch.code ? ` · ${receipt.branch.code}` : ""
-            }`}
-            icon={Building2}
-          />
-
-          <ReceiptDetailItem
-            label="Warehouse"
-            value={`${receipt.warehouse.name}${
-              receipt.warehouse.code ? ` · ${receipt.warehouse.code}` : ""
-            }`}
-            icon={Warehouse}
-          />
-
-          <ReceiptDetailItem
-            label="Received date"
-            value={formatDate(receipt.received_date)}
-            icon={CalendarDays}
-          />
-
-          <ReceiptDetailItem
-            label="Total quantity"
-            value={`${formatQuantity(receipt.total_quantity)} units`}
-            icon={Boxes}
-            valueClassName="font-semibold tabular-nums text-cyan-300"
-          />
-        </ReceiptDetailSection>
-
-        <ReceiptDetailSection
-          title="Receipt Summary"
-          description="Products and acquisition value applied to stock."
-          icon={Banknote}
-          iconClassName="border-emerald-500/15 bg-emerald-500/10 text-emerald-400"
-        >
-          <ReceiptDetailItem
-            label="Products"
-            value={`${formatNumber(receipt.items_count)} product${
-              receipt.items_count === 1 ? "" : "s"
-            }`}
-            icon={Boxes}
-          />
-
-          <ReceiptDetailItem
-            label="Received quantity"
-            value={`${formatQuantity(receipt.total_quantity)} units`}
-            icon={PackageCheck}
-          />
-
-          <ReceiptDetailItem
-            label="Receipt value"
-            value={formatCurrency(receipt.total_amount)}
-            icon={CircleDollarSign}
-            valueClassName="font-semibold tabular-nums text-emerald-400"
-          />
-
-          <ReceiptDetailItem
-            label="Record state"
-            value={
-              receipt.can_void
-                ? "Posted and reversible"
-                : receipt.status === "voided"
-                  ? "Reversed receipt"
-                  : receipt.status_label
-            }
-            icon={ShieldCheck}
-          />
-        </ReceiptDetailSection>
-
-        <ReceiptDetailSection
-          title="Workflow & Audit"
-          description="Receiver, record dates, reversal, and notes."
-          icon={ShieldCheck}
-          iconClassName="border-blue-500/15 bg-blue-500/10 text-blue-400"
-        >
-          <ReceiptDetailItem
-            label="Received by"
-            value={
-              receipt.received_by
-                ? `${receipt.received_by.name}${
-                    receipt.received_by.email
-                      ? ` · ${receipt.received_by.email}`
-                      : ""
-                  }`
-                : "Receiver not recorded"
-            }
-            icon={UserRound}
-            multiline
-          />
-
-          <ReceiptDetailItem
-            label="Created"
-            value={formatDateTime(receipt.created_at)}
-            icon={CalendarDays}
-          />
-
-          <ReceiptDetailItem
-            label="Last updated"
-            value={formatDateTime(receipt.updated_at)}
-            icon={CalendarDays}
-          />
-
-          {receipt.voided_at && (
-            <ReceiptDetailItem
-              label="Reversed"
-              value={`${receipt.voided_by?.name ?? "Unknown user"} · ${formatDateTime(receipt.voided_at)}`}
-              icon={RotateCcw}
-              multiline
-              valueClassName="text-red-300"
-            />
-          )}
-
-          {receipt.void_reason && (
-            <ReceiptDetailItem
-              label="Reversal reason"
-              value={receipt.void_reason}
-              icon={XCircle}
-              multiline
-            />
-          )}
-
-          <ReceiptDetailItem
-            label="Receiving notes"
-            value={receipt.notes ?? "No receiving notes"}
-            icon={ReceiptText}
-            multiline
-          />
-        </ReceiptDetailSection>
-      </div>
-
-      <section className="border-t border-border/60 p-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-[11px] font-semibold">Received Products</h3>
-
-            <p className="mt-0.5 text-[8px] leading-4 text-muted-foreground">
-              Product quantities, unit costs, line values, and receiving notes.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge
-              variant="outline"
-              className="h-6 gap-1.5 rounded-full border-cyan-500/15 bg-cyan-500/10 px-2.5 text-[9px] text-cyan-300"
-            >
-              <Boxes className="size-3" />
-              {formatNumber(receipt.items_count)} product
-              {receipt.items_count === 1 ? "" : "s"}
-            </Badge>
-
-            <Badge
-              variant="outline"
-              className="h-6 gap-1.5 rounded-full border-emerald-500/15 bg-emerald-500/10 px-2.5 text-[9px] text-emerald-300"
-            >
-              <Banknote className="size-3" />
-              {formatCurrency(receipt.total_amount)}
-            </Badge>
-          </div>
-        </div>
-
-        {receipt.items.length > 0 ? (
-          <div className="app-scrollbar-thin mt-3 overflow-x-auto rounded-lg border border-border/60">
-            <table className="w-full min-w-[900px] border-collapse text-left">
-              <thead className="border-b border-border/60 bg-muted/20">
-                <tr className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                  <th className="min-w-[230px] px-3 py-2.5">Product</th>
-                  <th className="w-28 px-3 py-2.5">Quantity</th>
-                  <th className="w-36 px-3 py-2.5">Unit Cost</th>
-                  <th className="w-36 px-3 py-2.5">Line Total</th>
-                  <th className="min-w-[190px] px-3 py-2.5">Notes</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-border/50">
-                {receipt.items.map((item) => (
-                  <tr key={item.id} className="bg-card/10 align-top">
-                    <td className="px-3 py-2.5">
-                      <p className="text-[10px] font-semibold">
-                        {item.product_name}
-                      </p>
-
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <Badge
-                          variant="outline"
-                          className="h-5 rounded-md border-violet-500/15 bg-violet-500/[0.06] px-1.5 font-mono text-[8px] text-violet-300"
-                        >
-                          {item.product_sku ?? "NO SKU"}
-                        </Badge>
-
-                        <span className="text-[8px] text-muted-foreground">
-                          Unit: {item.unit}
-                        </span>
-                      </div>
-                    </td>
-
-                    <td className="px-3 py-2.5 text-[10px] font-medium tabular-nums text-cyan-400">
-                      {formatQuantity(item.quantity_received)}
-                    </td>
-
-                    <td className="px-3 py-2.5 text-[10px] tabular-nums">
-                      {formatCurrency(item.unit_cost)}
-                    </td>
-
-                    <td className="px-3 py-2.5 text-[10px] font-semibold tabular-nums text-emerald-400">
-                      {formatCurrency(item.line_total)}
-                    </td>
-
-                    <td className="px-3 py-2.5 text-[9px] leading-4 text-muted-foreground">
-                      {item.notes ?? "No line notes"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="mt-3 rounded-lg border border-dashed border-border/70 bg-muted/[0.06] px-4 py-6 text-center">
-            <Boxes className="mx-auto size-5 text-muted-foreground" />
-
-            <p className="mt-2 text-[10px] font-semibold">
-              Item details are not included
-            </p>
-
-            <p className="mt-1 text-[9px] text-muted-foreground">
-              Receipt summary is available, but product line details were not
-              returned.
-            </p>
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function ReceiptDetailSection({
-  title,
-  description,
-  icon: Icon,
-  iconClassName,
-  children,
-}: {
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  iconClassName: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="min-w-0 rounded-lg border border-border/60 bg-card/25 p-3">
-      <div className="flex items-start gap-2.5">
-        <span
-          className={cn(
-            "inline-flex size-7 shrink-0 items-center justify-center rounded-lg border",
-            iconClassName,
-          )}
-        >
-          <Icon className="size-3.5" />
-        </span>
-
-        <div className="min-w-0">
-          <h3 className="text-[11px] font-semibold">{title}</h3>
-
-          <p className="mt-0.5 text-[8px] leading-4 text-muted-foreground">
-            {description}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-3 space-y-2.5">{children}</div>
-    </section>
-  );
-}
-
-function ReceiptDetailItem({
-  label,
-  value,
-  icon: Icon,
-  mono = false,
-  multiline = false,
-  valueClassName,
-}: {
-  label: string;
-  value: ReactNode;
-  icon: LucideIcon;
-  mono?: boolean;
-  multiline?: boolean;
-  valueClassName?: string;
-}) {
-  return (
-    <div className="flex min-w-0 items-start gap-2">
-      <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-muted/40 text-muted-foreground">
-        <Icon className="size-3" />
-      </span>
-
-      <div className="min-w-0">
-        <p className="text-[8px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-          {label}
-        </p>
-
-        <div
-          className={cn(
-            "mt-0.5 text-[10px] leading-4 text-foreground/80",
-            mono && "font-mono",
-            multiline ? "whitespace-pre-wrap break-words" : "truncate",
-            valueClassName,
-          )}
-        >
-          {value}
-        </div>
       </div>
     </div>
   );

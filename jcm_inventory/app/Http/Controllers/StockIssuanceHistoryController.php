@@ -547,7 +547,7 @@ class StockIssuanceHistoryController extends Controller
             ->values();
 
         return Inertia::render(
-            'stock-issuance/history/index',
+            'inventory/history/index',
             [
                 'issuances' => $issuances,
                 'summary' => $summary,

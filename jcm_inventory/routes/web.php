@@ -14,7 +14,7 @@ use App\Http\Controllers\RoleAccessController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\StockMovementController;
 use App\Http\Controllers\StockOverviewController;
-use App\Http\Controllers\SupplierController; 
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TeamMemberController;
 use App\Http\Controllers\TeamOverviewController;
 use App\Http\Controllers\WarehouseController;
@@ -26,12 +26,24 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth'])->group(function () {
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard
+    |--------------------------------------------------------------------------
+    */
+
     Route::get(
         '/dashboard',
         [DashboardController::class, 'index']
     )
         ->middleware('feature:dashboard')
         ->name('dashboard');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Branches
+    |--------------------------------------------------------------------------
+    */
 
     Route::prefix('branches')
         ->name('branches.')
@@ -56,6 +68,12 @@ Route::middleware(['auth'])->group(function () {
                 ->name('destroy');
         });
 
+    /*
+    |--------------------------------------------------------------------------
+    | Warehouses
+    |--------------------------------------------------------------------------
+    */
+
     Route::prefix('warehouses')
         ->name('warehouses.')
         ->middleware('feature:warehouse_management')
@@ -79,9 +97,21 @@ Route::middleware(['auth'])->group(function () {
                 ->name('destroy');
         });
 
+    /*
+    |--------------------------------------------------------------------------
+    | Inventory
+    |--------------------------------------------------------------------------
+    */
+
     Route::prefix('inventory')
         ->name('inventory.')
         ->group(function () {
+            /*
+            |--------------------------------------------------------------------------
+            | Inventory Overview
+            |--------------------------------------------------------------------------
+            */
+
             Route::get(
                 '/overview',
                 [StockOverviewController::class, 'index']
@@ -90,6 +120,12 @@ Route::middleware(['auth'])->group(function () {
                     'feature:inventory_overview'
                 )
                 ->name('overview');
+
+            /*
+            |--------------------------------------------------------------------------
+            | Products
+            |--------------------------------------------------------------------------
+            */
 
             Route::prefix('products')
                 ->name('products.')
@@ -118,6 +154,12 @@ Route::middleware(['auth'])->group(function () {
                     )->name('destroy');
                 });
 
+            /*
+            |--------------------------------------------------------------------------
+            | Categories
+            |--------------------------------------------------------------------------
+            */
+
             Route::prefix('categories')
                 ->name('categories.')
                 ->middleware('feature:categories')
@@ -144,6 +186,12 @@ Route::middleware(['auth'])->group(function () {
                         'destroy'
                     )->name('destroy');
                 });
+
+            /*
+            |--------------------------------------------------------------------------
+            | Stock Management
+            |--------------------------------------------------------------------------
+            */
 
             Route::prefix('stocks')
                 ->name('stocks.')
@@ -186,7 +234,59 @@ Route::middleware(['auth'])->group(function () {
                         'destroy'
                     )->name('destroy');
                 });
+
+            /*
+            |--------------------------------------------------------------------------
+            | Withdraw Stock
+            |--------------------------------------------------------------------------
+            */
+
+            Route::prefix('withdraw')
+                ->name('withdraw.')
+                ->middleware(
+                    'feature:stock_issuance_terminal'
+                )
+                ->controller(
+                    StockIssuanceController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'terminal')
+                        ->name('index');
+
+                    Route::post('/', 'store')
+                        ->name('store');
+                });
+
+            /*
+            |--------------------------------------------------------------------------
+            | Withdrawal History
+            |--------------------------------------------------------------------------
+            */
+
+            Route::prefix('history')
+                ->name('history.')
+                ->middleware(
+                    'feature:stock_issuance_history'
+                )
+                ->controller(
+                    StockIssuanceHistoryController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
+
+                    Route::post(
+                        '/{issuance}/void',
+                        'void'
+                    )->name('void');
+                });
         });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Received Orders Direct Route
+    |--------------------------------------------------------------------------
+    */
 
     Route::get(
         '/procurement/received-orders',
@@ -197,45 +297,9 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Stock Issuance
+    | Stock Movements
     |--------------------------------------------------------------------------
     */
-
-    Route::get(
-        '/stock-issuance/terminal',
-        [StockIssuanceController::class, 'terminal']
-    )
-        ->middleware(
-            'feature:stock_issuance_terminal'
-        )
-        ->name('stock-issuance.terminal.index');
-
-    Route::post(
-        '/stock-issuance/terminal',
-        [StockIssuanceController::class, 'store']
-    )
-        ->middleware(
-            'feature:stock_issuance_terminal'
-        )
-        ->name('stock-issuance.terminal.store');
-
-    Route::get(
-        '/stock-issuance/history',
-        [StockIssuanceHistoryController::class, 'index']
-    )
-        ->middleware(
-            'feature:stock_issuance_history'
-        )
-        ->name('stock-issuance.history.index');
-
-    Route::post(
-        '/stock-issuance/history/{issuance}/void',
-        [StockIssuanceHistoryController::class, 'void']
-    )
-        ->middleware(
-            'feature:stock_issuance_history'
-        )
-        ->name('stock-issuance.history.void');
 
     Route::get(
         '/stock-movements',
@@ -244,9 +308,21 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('feature:stock_movements')
         ->name('stock-movements.index');
 
+    /*
+    |--------------------------------------------------------------------------
+    | Procurement
+    |--------------------------------------------------------------------------
+    */
+
     Route::prefix('suppliers')
         ->name('suppliers.')
         ->group(function () {
+            /*
+            |--------------------------------------------------------------------------
+            | Suppliers
+            |--------------------------------------------------------------------------
+            */
+
             Route::middleware(
                 'feature:supplier_management'
             )
@@ -275,6 +351,12 @@ Route::middleware(['auth'])->group(function () {
                         'destroy'
                     )->name('destroy');
                 });
+
+            /*
+            |--------------------------------------------------------------------------
+            | Purchase Orders
+            |--------------------------------------------------------------------------
+            */
 
             Route::prefix('purchase-orders')
                 ->name('purchase-orders.')
@@ -312,6 +394,11 @@ Route::middleware(['auth'])->group(function () {
                     )->name('destroy');
                 });
 
+            /*
+            |--------------------------------------------------------------------------
+            | Purchase Approvals
+            |--------------------------------------------------------------------------
+            */
 
             Route::prefix('purchase-approvals')
                 ->name('purchase-approvals.')
@@ -336,6 +423,12 @@ Route::middleware(['auth'])->group(function () {
                     )->name('return-to-draft');
                 });
 
+            /*
+            |--------------------------------------------------------------------------
+            | Receiving
+            |--------------------------------------------------------------------------
+            */
+
             Route::prefix('receiving')
                 ->name('receiving.')
                 ->middleware('feature:receiving')
@@ -355,6 +448,12 @@ Route::middleware(['auth'])->group(function () {
                     )->name('void');
                 });
 
+            /*
+            |--------------------------------------------------------------------------
+            | Received Orders
+            |--------------------------------------------------------------------------
+            */
+
             Route::prefix('received-orders')
                 ->name('received-orders.')
                 ->middleware('feature:receiving')
@@ -367,15 +466,33 @@ Route::middleware(['auth'])->group(function () {
                 });
         });
 
+    /*
+    |--------------------------------------------------------------------------
+    | Team Management
+    |--------------------------------------------------------------------------
+    */
+
     Route::prefix('team')
         ->name('team.')
         ->group(function () {
+            /*
+            |--------------------------------------------------------------------------
+            | Team Overview
+            |--------------------------------------------------------------------------
+            */
+
             Route::get(
                 '/overview',
                 [TeamOverviewController::class, 'index']
             )
                 ->middleware('feature:team_overview')
                 ->name('overview');
+
+            /*
+            |--------------------------------------------------------------------------
+            | Team Members
+            |--------------------------------------------------------------------------
+            */
 
             Route::prefix('members')
                 ->name('members.')
@@ -413,6 +530,12 @@ Route::middleware(['auth'])->group(function () {
                     )->name('destroy');
                 });
 
+            /*
+            |--------------------------------------------------------------------------
+            | Roles and Access
+            |--------------------------------------------------------------------------
+            */
+
             Route::prefix('roles')
                 ->name('roles.')
                 ->middleware(
@@ -431,6 +554,12 @@ Route::middleware(['auth'])->group(function () {
                     )->name('update');
                 });
         });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Compatibility Redirects
+    |--------------------------------------------------------------------------
+    */
 
     Route::redirect(
         '/team/staff',

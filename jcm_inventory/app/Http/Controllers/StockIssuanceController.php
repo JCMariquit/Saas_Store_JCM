@@ -433,7 +433,7 @@ class StockIssuanceController extends Controller
             ->first();
 
         return Inertia::render(
-            'stock-issuance/terminal/index',
+            'inventory/withdraw/index',
             [
                 'warehouses' => $warehouses,
                 'products' => $availableStocks,

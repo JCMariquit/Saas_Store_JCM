@@ -124,10 +124,6 @@ type NavigationToneStyle = {
 |--------------------------------------------------------------------------
 | Icon registry
 |--------------------------------------------------------------------------
-|
-| The database stores icon names such as "Boxes" or "Users".
-| React maps those names to the matching Lucide icon component.
-|
 */
 
 const iconMap: Record<string, IconComponent> = {
@@ -169,7 +165,10 @@ function resolveIcon(iconKey: string | null): IconComponent {
 |--------------------------------------------------------------------------
 */
 
-const navigationToneStyles: Record<NavigationTone, NavigationToneStyle> = {
+const navigationToneStyles: Record<
+    NavigationTone,
+    NavigationToneStyle
+> = {
     blue: {
         itemActive:
             'border-blue-500/20 bg-blue-500/[0.075] text-blue-300 shadow-[0_0_22px_rgba(59,130,246,0.045)]',
@@ -181,6 +180,7 @@ const navigationToneStyles: Record<NavigationTone, NavigationToneStyle> = {
         indicator: 'bg-blue-400',
         guideBorder: 'border-blue-500/20',
     },
+
     cyan: {
         itemActive:
             'border-cyan-500/20 bg-cyan-500/[0.07] text-cyan-300 shadow-[0_0_22px_rgba(34,211,238,0.04)]',
@@ -192,6 +192,7 @@ const navigationToneStyles: Record<NavigationTone, NavigationToneStyle> = {
         indicator: 'bg-cyan-400',
         guideBorder: 'border-cyan-500/20',
     },
+
     emerald: {
         itemActive:
             'border-emerald-500/20 bg-emerald-500/[0.07] text-emerald-300 shadow-[0_0_22px_rgba(16,185,129,0.04)]',
@@ -203,6 +204,7 @@ const navigationToneStyles: Record<NavigationTone, NavigationToneStyle> = {
         indicator: 'bg-emerald-400',
         guideBorder: 'border-emerald-500/20',
     },
+
     amber: {
         itemActive:
             'border-amber-500/20 bg-amber-500/[0.07] text-amber-300 shadow-[0_0_22px_rgba(245,158,11,0.04)]',
@@ -214,6 +216,7 @@ const navigationToneStyles: Record<NavigationTone, NavigationToneStyle> = {
         indicator: 'bg-amber-400',
         guideBorder: 'border-amber-500/20',
     },
+
     violet: {
         itemActive:
             'border-violet-500/20 bg-violet-500/[0.075] text-violet-300 shadow-[0_0_22px_rgba(139,92,246,0.045)]',
@@ -225,6 +228,7 @@ const navigationToneStyles: Record<NavigationTone, NavigationToneStyle> = {
         indicator: 'bg-violet-400',
         guideBorder: 'border-violet-500/20',
     },
+
     slate: {
         itemActive:
             'border-border/70 bg-background/75 text-sidebar-foreground shadow-[0_1px_10px_rgba(0,0,0,0.08)]',
@@ -238,7 +242,9 @@ const navigationToneStyles: Record<NavigationTone, NavigationToneStyle> = {
     },
 };
 
-function resolveNavigationTone(item: DynamicSidebarItem): NavigationTone {
+function resolveNavigationTone(
+    item: DynamicSidebarItem,
+): NavigationTone {
     const identity = [
         item.sectionKey,
         item.key,
@@ -260,12 +266,16 @@ function resolveNavigationTone(item: DynamicSidebarItem): NavigationTone {
     if (
         identity.includes('supplier') ||
         identity.includes('purchase') ||
-        identity.includes('receiv')
+        identity.includes('receiv') ||
+        identity.includes('procurement')
     ) {
         return 'amber';
     }
 
-    if (identity.includes('branch')) {
+    if (
+        identity.includes('branch') ||
+        identity.includes('location')
+    ) {
         return 'blue';
     }
 
@@ -281,7 +291,8 @@ function resolveNavigationTone(item: DynamicSidebarItem): NavigationTone {
         identity.includes('inventory') ||
         identity.includes('categor') ||
         identity.includes('product') ||
-        identity.includes('stock')
+        identity.includes('stock') ||
+        identity.includes('withdraw')
     ) {
         return 'emerald';
     }
@@ -300,12 +311,14 @@ function resolveNavigationTone(item: DynamicSidebarItem): NavigationTone {
 
 /*
 |--------------------------------------------------------------------------
-| Active URL helper
+| Active URL helpers
 |--------------------------------------------------------------------------
 */
 
 function normalizeUrl(url: string): string {
-    const cleanUrl = url.split('?')[0].replace(/\/+$/, '');
+    const cleanUrl = url
+        .split('?')[0]
+        .replace(/\/+$/, '');
 
     return cleanUrl || '/';
 }
@@ -323,7 +336,9 @@ function isUrlActive(
 
     return (
         cleanCurrentUrl === cleanItemUrl ||
-        cleanCurrentUrl.startsWith(`${cleanItemUrl}/`)
+        cleanCurrentUrl.startsWith(
+            `${cleanItemUrl}/`,
+        )
     );
 }
 
@@ -335,15 +350,50 @@ function resolveActiveChildId(
         .filter(
             (item) =>
                 !item.disabled &&
-                isUrlActive(currentUrl, item.url),
+                isUrlActive(
+                    currentUrl,
+                    item.url,
+                ),
         )
         .sort(
-            (firstItem, secondItem) =>
-                normalizeUrl(secondItem.url).length -
-                normalizeUrl(firstItem.url).length,
+            (
+                firstItem,
+                secondItem,
+            ) =>
+                normalizeUrl(
+                    secondItem.url,
+                ).length -
+                normalizeUrl(
+                    firstItem.url,
+                ).length,
         )[0];
 
     return matchingItem?.id ?? null;
+}
+
+function resolveActiveGroupId(
+    currentUrl: string,
+    sections: DynamicSidebarSection[],
+): number | null {
+    for (const section of sections) {
+        for (const item of section.items) {
+            if (item.type !== 'group') {
+                continue;
+            }
+
+            const activeChildId =
+                resolveActiveChildId(
+                    currentUrl,
+                    item.children,
+                );
+
+            if (activeChildId !== null) {
+                return item.id;
+            }
+        }
+    }
+
+    return null;
 }
 
 /*
@@ -367,26 +417,38 @@ function MenuBadge({
     const styles: Record<string, string> = {
         live:
             'border-emerald-500/15 bg-emerald-500/[0.075] text-emerald-400',
+
         core:
             'border-blue-500/15 bg-blue-500/[0.075] text-blue-400',
+
         development:
             'border-sky-500/15 bg-sky-500/[0.075] text-sky-400',
+
         tuning:
             'border-orange-500/15 bg-orange-500/[0.075] text-orange-400',
+
         testing:
             'border-amber-500/15 bg-amber-500/[0.075] text-amber-400',
+
         new:
             'border-emerald-500/15 bg-emerald-500/[0.075] text-emerald-400',
+
         beta:
             'border-violet-500/15 bg-violet-500/[0.075] text-violet-400',
+
         soon: fallbackStyle,
         default: fallbackStyle,
     };
 
-    const BadgeIcon = resolveIcon(badge.iconKey);
+    const BadgeIcon = resolveIcon(
+        badge.iconKey,
+    );
 
     const style = badge.styleKey
-        ? (styles[badge.styleKey] ?? fallbackStyle)
+        ? (
+            styles[badge.styleKey] ??
+            fallbackStyle
+        )
         : fallbackStyle;
 
     return (
@@ -401,6 +463,7 @@ function MenuBadge({
             ].join(' ')}
         >
             <BadgeIcon className="size-2.5" />
+
             {badge.code}
         </span>
     );
@@ -421,9 +484,15 @@ function DirectItemContent({
     active: boolean;
     collapsed: boolean;
 }) {
-    const Icon = resolveIcon(item.iconKey);
-    const tone = resolveNavigationTone(item);
-    const toneStyle = navigationToneStyles[tone];
+    const Icon = resolveIcon(
+        item.iconKey,
+    );
+
+    const tone =
+        resolveNavigationTone(item);
+
+    const toneStyle =
+        navigationToneStyles[tone];
 
     return (
         <>
@@ -466,13 +535,17 @@ function DirectItemContent({
                     <span
                         className={[
                             'min-w-0 flex-1 truncate text-left',
-                            active ? 'font-semibold' : 'font-medium',
+                            active
+                                ? 'font-semibold'
+                                : 'font-medium',
                         ].join(' ')}
                     >
                         {item.title}
                     </span>
 
-                    <MenuBadge badge={item.badge} />
+                    <MenuBadge
+                        badge={item.badge}
+                    />
                 </>
             )}
         </>
@@ -493,14 +566,21 @@ function DirectItem({
     const { url } = usePage();
     const { state } = useSidebar();
 
-    const collapsed = state === 'collapsed';
+    const collapsed =
+        state === 'collapsed';
 
     const active =
         !item.disabled &&
-        isUrlActive(url, item.url);
+        isUrlActive(
+            url,
+            item.url,
+        );
 
-    const tone = resolveNavigationTone(item);
-    const toneStyle = navigationToneStyles[tone];
+    const tone =
+        resolveNavigationTone(item);
+
+    const toneStyle =
+        navigationToneStyles[tone];
 
     const baseClass = [
         'group relative h-10 overflow-hidden rounded-xl border border-transparent',
@@ -511,12 +591,17 @@ function DirectItem({
             : 'w-full px-2.5',
     ].join(' ');
 
-    if (item.disabled || item.url === '#') {
+    if (
+        item.disabled ||
+        item.url === '#'
+    ) {
         return (
             <SidebarMenuItem>
                 <SidebarMenuButton
                     type="button"
-                    tooltip={`${item.title} — not yet available`}
+                    tooltip={
+                        `${item.title} — not yet available`
+                    }
                     aria-disabled="true"
                     className={[
                         baseClass,
@@ -538,7 +623,9 @@ function DirectItem({
                         <DirectItemContent
                             item={item}
                             active={false}
-                            collapsed={collapsed}
+                            collapsed={
+                                collapsed
+                            }
                         />
                     </div>
                 </SidebarMenuButton>
@@ -571,7 +658,9 @@ function DirectItem({
                     <DirectItemContent
                         item={item}
                         active={active}
-                        collapsed={collapsed}
+                        collapsed={
+                            collapsed
+                        }
                     />
                 </Link>
             </SidebarMenuButton>
@@ -592,14 +681,19 @@ function DropdownItem({
     item: DynamicSidebarItem;
     activeItemId: number | null;
 }) {
-    const Icon = resolveIcon(item.iconKey);
+    const Icon = resolveIcon(
+        item.iconKey,
+    );
 
     const active =
         !item.disabled &&
         item.id === activeItemId;
 
-    const tone = resolveNavigationTone(item);
-    const toneStyle = navigationToneStyles[tone];
+    const tone =
+        resolveNavigationTone(item);
+
+    const toneStyle =
+        navigationToneStyles[tone];
 
     const itemClass = [
         'group relative flex h-9 w-full items-center gap-2',
@@ -636,16 +730,23 @@ function DropdownItem({
                 {item.title}
             </span>
 
-            <MenuBadge badge={item.badge} />
+            <MenuBadge
+                badge={item.badge}
+            />
         </>
     );
 
-    if (item.disabled || item.url === '#') {
+    if (
+        item.disabled ||
+        item.url === '#'
+    ) {
         return (
             <button
                 type="button"
                 aria-disabled="true"
-                title={`${item.title} — not yet available`}
+                title={
+                    `${item.title} — not yet available`
+                }
                 className={[
                     itemClass,
                     'cursor-not-allowed',
@@ -683,33 +784,51 @@ function DropdownItem({
 
 function SidebarDropdown({
     group,
+    open,
+    onOpenChange,
 }: {
     group: DynamicSidebarItem;
+    open: boolean;
+    onOpenChange: (
+        groupId: number | null,
+    ) => void;
 }) {
     const { url } = usePage();
-    const { state, toggleSidebar } = useSidebar();
 
-    const collapsed = state === 'collapsed';
-    const GroupIcon = resolveIcon(group.iconKey);
+    const {
+        state,
+        toggleSidebar,
+    } = useSidebar();
 
-    const activeItemId = resolveActiveChildId(
-        url,
-        group.children,
+    const collapsed =
+        state === 'collapsed';
+
+    const GroupIcon = resolveIcon(
+        group.iconKey,
     );
 
-    const hasActiveItem = activeItemId !== null;
+    const activeItemId =
+        resolveActiveChildId(
+            url,
+            group.children,
+        );
 
-    const tone = resolveNavigationTone(group);
-    const toneStyle = navigationToneStyles[tone];
+    const hasActiveItem =
+        activeItemId !== null;
 
-    const [open, setOpen] =
-        React.useState(hasActiveItem);
+    const tone =
+        resolveNavigationTone(group);
 
-    React.useEffect(() => {
-        if (hasActiveItem) {
-            setOpen(true);
-        }
-    }, [hasActiveItem]);
+    const toneStyle =
+        navigationToneStyles[tone];
+
+    const toggleGroup = () => {
+        onOpenChange(
+            open
+                ? null
+                : group.id,
+        );
+    };
 
     if (collapsed) {
         return (
@@ -718,7 +837,10 @@ function SidebarDropdown({
                     type="button"
                     tooltip={group.title}
                     onClick={() => {
-                        setOpen(true);
+                        onOpenChange(
+                            group.id,
+                        );
+
                         toggleSidebar();
                     }}
                     className={[
@@ -771,9 +893,7 @@ function SidebarDropdown({
         <div className="space-y-1">
             <button
                 type="button"
-                onClick={() =>
-                    setOpen((value) => !value)
-                }
+                onClick={toggleGroup}
                 aria-expanded={open}
                 className={[
                     'group relative flex h-10 w-full items-center gap-2.5',
@@ -809,13 +929,17 @@ function SidebarDropdown({
                 <span
                     className={[
                         'min-w-0 flex-1 truncate text-left',
-                        hasActiveItem ? 'font-semibold' : 'font-medium',
+                        hasActiveItem
+                            ? 'font-semibold'
+                            : 'font-medium',
                     ].join(' ')}
                 >
                     {group.title}
                 </span>
 
-                <MenuBadge badge={group.badge} />
+                <MenuBadge
+                    badge={group.badge}
+                />
 
                 <span className="hidden text-[8px] tabular-nums text-sidebar-foreground/30 2xl:inline">
                     {group.children.length}
@@ -826,7 +950,9 @@ function SidebarDropdown({
                         'size-3.5 shrink-0',
                         'text-sidebar-foreground/35',
                         'transition-transform duration-200',
-                        open ? 'rotate-180' : '',
+                        open
+                            ? 'rotate-180'
+                            : '',
                     ].join(' ')}
                 />
             </button>
@@ -840,13 +966,21 @@ function SidebarDropdown({
                             : 'border-border/45',
                     ].join(' ')}
                 >
-                    {group.children.map((item) => (
-                        <DropdownItem
-                            key={item.id}
-                            item={item}
-                            activeItemId={activeItemId}
-                        />
-                    ))}
+                    {group.children.map(
+                        (item) => (
+                            <DropdownItem
+                                key={
+                                    item.id
+                                }
+                                item={
+                                    item
+                                }
+                                activeItemId={
+                                    activeItemId
+                                }
+                            />
+                        ),
+                    )}
                 </div>
             )}
         </div>
@@ -862,25 +996,48 @@ function SidebarDropdown({
 function SectionItems({
     items,
     collapsed,
+    openGroupId,
+    onOpenGroupChange,
 }: {
     items: DynamicSidebarItem[];
     collapsed: boolean;
+    openGroupId: number | null;
+    onOpenGroupChange: (
+        groupId: number | null,
+    ) => void;
 }) {
     if (collapsed) {
         return (
             <SidebarMenu className="items-center space-y-1 px-0">
-                {items.map((item) =>
-                    item.type === 'group' ? (
-                        <SidebarDropdown
-                            key={item.id}
-                            group={item}
-                        />
-                    ) : (
-                        <DirectItem
-                            key={item.id}
-                            item={item}
-                        />
-                    ),
+                {items.map(
+                    (item) =>
+                        item.type ===
+                        'group' ? (
+                            <SidebarDropdown
+                                key={
+                                    item.id
+                                }
+                                group={
+                                    item
+                                }
+                                open={
+                                    openGroupId ===
+                                    item.id
+                                }
+                                onOpenChange={
+                                    onOpenGroupChange
+                                }
+                            />
+                        ) : (
+                            <DirectItem
+                                key={
+                                    item.id
+                                }
+                                item={
+                                    item
+                                }
+                            />
+                        ),
                 )}
             </SidebarMenu>
         );
@@ -888,20 +1045,35 @@ function SectionItems({
 
     return (
         <div className="space-y-1 px-3">
-            {items.map((item) =>
-                item.type === 'group' ? (
-                    <SidebarDropdown
-                        key={item.id}
-                        group={item}
-                    />
-                ) : (
-                    <SidebarMenu
-                        key={item.id}
-                        className="space-y-0.5"
-                    >
-                        <DirectItem item={item} />
-                    </SidebarMenu>
-                ),
+            {items.map(
+                (item) =>
+                    item.type ===
+                    'group' ? (
+                        <SidebarDropdown
+                            key={
+                                item.id
+                            }
+                            group={
+                                item
+                            }
+                            open={
+                                openGroupId ===
+                                item.id
+                            }
+                            onOpenChange={
+                                onOpenGroupChange
+                            }
+                        />
+                    ) : (
+                        <SidebarMenu
+                            key={item.id}
+                            className="space-y-0.5"
+                        >
+                            <DirectItem
+                                item={item}
+                            />
+                        </SidebarMenu>
+                    ),
             )}
         </div>
     );
@@ -915,25 +1087,79 @@ function SectionItems({
 
 export function AppSidebar() {
     const { state } = useSidebar();
-    const collapsed = state === 'collapsed';
 
-    const { sidebar } =
-        usePage<SidebarPageProps>().props;
+    const collapsed =
+        state === 'collapsed';
 
-    const sections = sidebar?.sections ?? [];
+    const page =
+        usePage<SidebarPageProps>();
+
+    const { sidebar } = page.props;
+
+    const sections = React.useMemo(
+        () => sidebar?.sections ?? [],
+        [sidebar?.sections],
+    );
+
+    const activeGroupId =
+        React.useMemo(
+            () =>
+                resolveActiveGroupId(
+                    page.url,
+                    sections,
+                ),
+            [
+                page.url,
+                sections,
+            ],
+        );
+
+    const [
+        openGroupId,
+        setOpenGroupId,
+    ] = React.useState<
+        number | null
+    >(activeGroupId);
+
+    React.useEffect(() => {
+        setOpenGroupId(
+            activeGroupId,
+        );
+    }, [activeGroupId]);
+
+    const handleOpenGroupChange =
+        React.useCallback(
+            (
+                groupId:
+                    | number
+                    | null,
+            ) => {
+                setOpenGroupId(
+                    groupId,
+                );
+            },
+            [],
+        );
 
     const productName =
-        sidebar?.product?.name ?? 'JCM Inventory';
+        sidebar?.product?.name ??
+        'JCM Inventory';
 
     const roleName =
-        sidebar?.access?.roleName ?? 'Inventory User';
+        sidebar?.access?.roleName ??
+        'Inventory User';
 
     const subscriptionStatus =
         sidebar?.subscription?.status
             ? sidebar.subscription.status
-                  .replaceAll('_', ' ')
-                  .replace(/\b\w/g, (character) =>
-                      character.toUpperCase(),
+                  .replaceAll(
+                      '_',
+                      ' ',
+                  )
+                  .replace(
+                      /\b\w/g,
+                      (character) =>
+                          character.toUpperCase(),
                   )
             : 'No subscription';
 
@@ -942,7 +1168,8 @@ export function AppSidebar() {
         'trialing',
         'trial',
     ].includes(
-        sidebar?.subscription?.status?.toLowerCase() ?? '',
+        sidebar?.subscription?.status
+            ?.toLowerCase() ?? '',
     );
 
     return (
@@ -990,7 +1217,9 @@ export function AppSidebar() {
                         'border-b border-border/35',
                         'pb-4 pt-4',
                         'transition-all duration-200',
-                        collapsed ? 'px-2' : 'px-3',
+                        collapsed
+                            ? 'px-2'
+                            : 'px-3',
                     ].join(' ')}
                 >
                     <SidebarMenu>
@@ -998,7 +1227,9 @@ export function AppSidebar() {
                             <SidebarMenuButton
                                 size="lg"
                                 asChild
-                                tooltip={productName}
+                                tooltip={
+                                    productName
+                                }
                                 className={[
                                     'h-auto overflow-hidden rounded-2xl border',
                                     'border-border/40 bg-background/20',
@@ -1038,33 +1269,49 @@ export function AppSidebar() {
                             : 'gap-5 px-0 py-4',
                     ].join(' ')}
                 >
-                    {sections.map((section) => (
-                        <div
-                            key={section.key}
-                            className={
-                                collapsed
-                                    ? 'space-y-1'
-                                    : 'space-y-2 pb-1'
-                            }
-                        >
-                            {!collapsed && (
-                                <div className="flex items-center gap-2 px-5">
-                                    <span className="size-1 rounded-full bg-sidebar-foreground/25" />
+                    {sections.map(
+                        (section) => (
+                            <div
+                                key={
+                                    section.key
+                                }
+                                className={
+                                    collapsed
+                                        ? 'space-y-1'
+                                        : 'space-y-2 pb-1'
+                                }
+                            >
+                                {!collapsed && (
+                                    <div className="flex items-center gap-2 px-5">
+                                        <span className="size-1 rounded-full bg-sidebar-foreground/25" />
 
-                                    <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35">
-                                        {section.label}
-                                    </p>
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35">
+                                            {
+                                                section.label
+                                            }
+                                        </p>
 
-                                    <span className="h-px min-w-0 flex-1 bg-border/25" />
-                                </div>
-                            )}
+                                        <span className="h-px min-w-0 flex-1 bg-border/25" />
+                                    </div>
+                                )}
 
-                            <SectionItems
-                                items={section.items}
-                                collapsed={collapsed}
-                            />
-                        </div>
-                    ))}
+                                <SectionItems
+                                    items={
+                                        section.items
+                                    }
+                                    collapsed={
+                                        collapsed
+                                    }
+                                    openGroupId={
+                                        openGroupId
+                                    }
+                                    onOpenGroupChange={
+                                        handleOpenGroupChange
+                                    }
+                                />
+                            </div>
+                        ),
+                    )}
 
                     {sections.length === 0 &&
                         !collapsed && (
@@ -1076,62 +1323,79 @@ export function AppSidebar() {
 
                                     <div>
                                         <p className="text-xs font-semibold text-sidebar-foreground/75">
-                                            No menu access assigned
+                                            No menu
+                                            access
+                                            assigned
                                         </p>
 
                                         <p className="mt-1 text-[10px] leading-4 text-sidebar-foreground/40">
-                                            Check this account&apos;s product access,
-                                            subscription, and role assignments.
+                                            Check this
+                                            account&apos;s
+                                            product
+                                            access,
+                                            subscription,
+                                            and role
+                                            assignments.
                                         </p>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                    {!collapsed && sidebar?.access && (
-                        <div className="mx-3 mt-auto pb-3 pt-1">
-                            <div className="relative overflow-hidden rounded-2xl border border-violet-500/10 bg-background/28 p-3">
-                                <div className="pointer-events-none absolute -bottom-10 -right-8 size-24 rounded-full bg-violet-500/8 blur-3xl" />
+                    {!collapsed &&
+                        sidebar?.access && (
+                            <div className="mx-3 mt-auto pb-3 pt-1">
+                                <div className="relative overflow-hidden rounded-2xl border border-violet-500/10 bg-background/28 p-3">
+                                    <div className="pointer-events-none absolute -bottom-10 -right-8 size-24 rounded-full bg-violet-500/8 blur-3xl" />
 
-                                <div className="relative flex items-center gap-2.5">
-                                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
-                                        <ShieldCheck className="size-3.5" />
-                                    </span>
+                                    <div className="relative flex items-center gap-2.5">
+                                        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
+                                            <ShieldCheck className="size-3.5" />
+                                        </span>
 
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[8px] font-semibold uppercase tracking-[0.13em] text-sidebar-foreground/35">
-                                            Access profile
-                                        </p>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-[8px] font-semibold uppercase tracking-[0.13em] text-sidebar-foreground/35">
+                                                Access
+                                                profile
+                                            </p>
 
-                                        <p className="mt-0.5 truncate text-[11px] font-semibold text-sidebar-foreground/80">
-                                            {roleName}
-                                        </p>
-                                    </div>
+                                            <p className="mt-0.5 truncate text-[11px] font-semibold text-sidebar-foreground/80">
+                                                {
+                                                    roleName
+                                                }
+                                            </p>
+                                        </div>
 
-                                    <span
-                                        className={[
-                                            'inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-1',
-                                            'text-[7px] font-semibold uppercase tracking-[0.08em]',
-                                            subscriptionHealthy
-                                                ? 'border-emerald-500/15 bg-emerald-500/[0.07] text-emerald-400'
-                                                : 'border-amber-500/15 bg-amber-500/[0.07] text-amber-400',
-                                        ].join(' ')}
-                                    >
                                         <span
                                             className={[
-                                                'size-1.5 rounded-full',
+                                                'inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-1',
+                                                'text-[7px] font-semibold uppercase tracking-[0.08em]',
                                                 subscriptionHealthy
-                                                    ? 'bg-emerald-400'
-                                                    : 'bg-amber-400',
-                                            ].join(' ')}
-                                        />
+                                                    ? 'border-emerald-500/15 bg-emerald-500/[0.07] text-emerald-400'
+                                                    : 'border-amber-500/15 bg-amber-500/[0.07] text-amber-400',
+                                            ].join(
+                                                ' ',
+                                            )}
+                                        >
+                                            <span
+                                                className={[
+                                                    'size-1.5 rounded-full',
+                                                    subscriptionHealthy
+                                                        ? 'bg-emerald-400'
+                                                        : 'bg-amber-400',
+                                                ].join(
+                                                    ' ',
+                                                )}
+                                            />
 
-                                        {subscriptionStatus}
-                                    </span>
+                                            {
+                                                subscriptionStatus
+                                            }
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
                 </SidebarContent>
             </Sidebar>
         </>

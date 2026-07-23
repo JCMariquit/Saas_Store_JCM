@@ -26,26 +26,22 @@ import {
 import {
     AlertTriangle,
     ArrowLeft,
-    Boxes,
     CalendarDays,
-    CheckCircle2,
-    ChevronDown,
     Clock3,
-    FileText,
+    Fingerprint,
     History,
     PackageMinus,
     ReceiptText,
     RotateCcw,
     Search,
     ShieldAlert,
-    Trash2,
     UserRound,
     Warehouse,
     X,
 } from 'lucide-react';
 import {
-    Fragment,
     type FormEvent,
+    type ReactNode,
     useEffect,
     useMemo,
     useState,
@@ -198,11 +194,8 @@ type VoidFormData = {
 |--------------------------------------------------------------------------
 */
 
-const HISTORY_URL =
-    '/stock-issuance/history';
-
-const TERMINAL_URL =
-    '/stock-issuance/terminal';
+const HISTORY_URL = '/inventory/history';
+const TERMINAL_URL = '/inventory/withdraw';
 
 const ALL_VALUE = 'all';
 
@@ -212,11 +205,15 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/dashboard',
     },
     {
-        title: 'Stock Issuance',
+        title: 'Inventory',
+        href: '/inventory/overview',
+    },
+    {
+        title: 'Withdraw Stock',
         href: TERMINAL_URL,
     },
     {
-        title: 'Issuance History',
+        title: 'Withdrawal History',
         href: HISTORY_URL,
     },
 ];
@@ -325,10 +322,10 @@ function getReasonTone(
             'border-blue-500/20 bg-blue-500/[0.08] text-blue-300',
 
         employee_issuance:
-            'border-violet-500/20 bg-violet-500/[0.08] text-violet-300',
+            'border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-400',
 
         department_issuance:
-            'border-violet-500/20 bg-violet-500/[0.08] text-violet-300',
+            'border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-400',
 
         damaged:
             'border-rose-500/20 bg-rose-500/[0.08] text-rose-300',
@@ -352,13 +349,92 @@ function getReasonTone(
     );
 }
 
+
+function HistoryHeader({
+    onBack,
+}: {
+    summary: IssuanceSummary;
+    postedPercentage: number;
+    voidedPercentage: number;
+    onBack: () => void;
+}) {
+    return (
+        <div className="space-y-4">
+            <section className="relative overflow-hidden rounded-2xl border border-emerald-500/15 bg-[linear-gradient(135deg,rgba(16,185,129,0.035)_0%,rgba(9,11,10,0.98)_34%,rgba(7,9,8,0.99)_100%)] shadow-sm">
+                <div className="pointer-events-none absolute -left-16 -top-20 size-48 rounded-full bg-emerald-500/[0.045] blur-3xl" />
+
+                <div className="relative flex flex-col gap-3 border-b border-border/60 bg-background/15 px-4 py-3 sm:flex-row sm:items-center sm:justify-between md:px-5">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] text-emerald-400">
+                            <History className="size-4" />
+                        </span>
+
+                        <div className="min-w-0">
+                            <p className="text-[11px] font-semibold text-white">
+                                Inventory Withdrawal Archive
+                            </p>
+                            <p className="mt-0.5 truncate text-[9px] text-white/45">
+                                Posted, voided, and restored stock movement records.
+                            </p>
+                        </div>
+                    </div>
+
+                    <Badge
+                        variant="outline"
+                        className="h-6 w-fit rounded-full border-emerald-500/15 bg-emerald-500/[0.055] px-2.5 text-[9px] font-semibold tracking-[0.08em] text-emerald-400"
+                    >
+                        AUDIT REGISTER
+                    </Badge>
+                </div>
+
+                <div className="relative flex flex-col gap-5 px-4 py-5 lg:flex-row lg:items-center lg:justify-between md:px-6 md:py-6">
+                    <div className="min-w-0">
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-400">
+                            Stock movement history
+                        </p>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-2.5">
+                            <h1 className="text-[26px] font-semibold leading-none tracking-[-0.035em] text-foreground md:text-[30px]">
+                                Stock Withdrawal History
+                            </h1>
+                            <Badge
+                                variant="outline"
+                                className="h-6 rounded-full border-emerald-500/15 bg-emerald-500/[0.055] px-2.5 text-[9px] font-semibold text-emerald-400"
+                            >
+                                INVENTORY
+                            </Badge>
+                        </div>
+
+                        <p className="mt-2 max-w-2xl text-[10px] leading-5 text-muted-foreground md:text-[11px]">
+                            Review every non-sales stock withdrawal, inspect item and recipient details, and safely reverse eligible posted records.
+                        </p>
+                    </div>
+
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onBack}
+                        className="h-9 shrink-0 rounded-xl border-emerald-500/15 bg-emerald-500/[0.045] px-3 text-xs text-emerald-400 hover:bg-emerald-500/[0.08] hover:text-emerald-300"
+                    >
+                        <ArrowLeft className="size-3.5" />
+                        Back to Withdrawal
+                    </Button>
+                </div>
+
+                <div className="relative h-px bg-gradient-to-r from-transparent via-emerald-500/25 to-transparent" />
+            </section>
+
+        </div>
+    );
+}
+
 /*
 |--------------------------------------------------------------------------
 | Main page
 |--------------------------------------------------------------------------
 */
 
-export default function StockIssuanceHistory({
+export default function StockWithdrawalHistory({
     issuances,
     summary,
     warehouses,
@@ -390,9 +466,9 @@ export default function StockIssuanceHistory({
         useState(filters.date_to ?? '');
 
     const [
-        expandedIssuanceId,
-        setExpandedIssuanceId,
-    ] = useState<number | null>(null);
+        selectedIssuance,
+        setSelectedIssuance,
+    ] = useState<StockIssuance | null>(null);
 
     const [
         voidTarget,
@@ -430,6 +506,52 @@ export default function StockIssuanceHistory({
         filters.warehouse_id,
         filters.date_from,
         filters.date_to,
+    ]);
+
+    useEffect(() => {
+        if (!selectedIssuance && !voidTarget) {
+            return;
+        }
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        function handleKeyDown(
+            event: globalThis.KeyboardEvent,
+        ): void {
+            if (event.key !== 'Escape') {
+                return;
+            }
+
+            if (voidTarget) {
+                if (!voidForm.processing) {
+                    closeVoidDialog();
+                }
+
+                return;
+            }
+
+            setSelectedIssuance(null);
+        }
+
+        window.addEventListener(
+            'keydown',
+            handleKeyDown,
+        );
+
+        return () => {
+            document.body.style.overflow =
+                previousOverflow;
+
+            window.removeEventListener(
+                'keydown',
+                handleKeyDown,
+            );
+        };
+    }, [
+        selectedIssuance,
+        voidTarget,
+        voidForm.processing,
     ]);
 
     const hasActiveFilters =
@@ -522,7 +644,7 @@ export default function StockIssuanceHistory({
         setWarehouseId('');
         setDateFrom('');
         setDateTo('');
-        setExpandedIssuanceId(null);
+        setSelectedIssuance(null);
 
         router.get(
             HISTORY_URL,
@@ -535,23 +657,12 @@ export default function StockIssuanceHistory({
         );
     }
 
-    function toggleIssuance(
-        issuanceId: number,
-    ): void {
-        setExpandedIssuanceId(
-            (currentId) =>
-                currentId === issuanceId
-                    ? null
-                    : issuanceId,
-        );
-    }
-
     function openVoidDialog(
         issuance: StockIssuance,
     ): void {
         voidForm.reset();
         voidForm.clearErrors();
-
+        setSelectedIssuance(null);
         setVoidTarget(issuance);
     }
 
@@ -581,10 +692,7 @@ export default function StockIssuanceHistory({
 
                 onSuccess: () => {
                     setVoidTarget(null);
-                    setExpandedIssuanceId(
-                        null,
-                    );
-
+                    setSelectedIssuance(null);
                     voidForm.reset();
                 },
             },
@@ -595,234 +703,36 @@ export default function StockIssuanceHistory({
         <AppLayout
             breadcrumbs={breadcrumbs}
         >
-            <Head title="Issuance History" />
+            <Head title="Withdrawal History" />
 
-            <PageContainer className="gap-3.5 md:gap-4">
-                {/* Archive summary */}
+            <PageContainer className="gap-4 md:gap-5">
+                <HistoryHeader
+                    summary={summary}
+                    postedPercentage={postedPercentage}
+                    voidedPercentage={voidedPercentage}
+                    onBack={() => router.get(TERMINAL_URL)}
+                />
 
-                <section className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm">
-                    <div className="flex flex-col gap-3 border-b border-border/60 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="flex min-w-0 items-center gap-3">
-                            <span className="relative flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/[0.08] text-violet-300">
-                                <History className="size-4" />
-
-                                <span className="absolute -right-1 -top-1 size-2.5 rounded-full border-2 border-card bg-emerald-400" />
-                            </span>
-
-                            <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <h1 className="text-sm font-semibold tracking-tight">
-                                        Stock Issuance
-                                        History
-                                    </h1>
-
-                                    <Badge
-                                        variant="outline"
-                                        className="h-5 rounded-full border-violet-500/15 bg-violet-500/[0.06] px-2 text-[8px] font-semibold tracking-[0.1em] text-violet-300"
-                                    >
-                                        AUDIT REGISTER
-                                    </Badge>
-                                </div>
-
-                                <p className="mt-0.5 text-[10px] text-muted-foreground">
-                                    Review posted and
-                                    voided non-sales
-                                    stock releases,
-                                    item details,
-                                    recipients, stock
-                                    value, and movement
-                                    references.
-                                </p>
-                            </div>
-                        </div>
-
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() =>
-                                router.get(
-                                    TERMINAL_URL,
-                                )
-                            }
-                            className="h-8 rounded-lg border-rose-500/20 bg-rose-500/[0.06] px-3 text-[10px] text-rose-300 hover:bg-rose-500/10 hover:text-rose-200"
-                        >
-                            <ArrowLeft className="size-3.5" />
-                            Back to Terminal
-                        </Button>
-                    </div>
-
-                    <div className="grid divide-y divide-border/60 md:grid-cols-[1fr_1fr_1fr_1.2fr] md:divide-x md:divide-y-0">
-                        <div className="flex items-center gap-3 px-4 py-3">
-                            <span className="flex size-8 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/[0.08] text-blue-300">
-                                <ReceiptText className="size-3.5" />
-                            </span>
-
-                            <div>
-                                <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Transactions
-                                </p>
-
-                                <p className="mt-0.5 text-sm font-semibold tabular-nums">
-                                    {formatNumber(
-                                        summary.total,
-                                        0,
-                                    )}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 px-4 py-3">
-                            <span className="flex size-8 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-300">
-                                <CheckCircle2 className="size-3.5" />
-                            </span>
-
-                            <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between gap-3">
-                                    <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                        Posted
-                                    </p>
-
-                                    <span className="text-[9px] font-semibold text-emerald-300">
-                                        {
-                                            postedPercentage
-                                        }
-                                        %
-                                    </span>
-                                </div>
-
-                                <p className="mt-0.5 text-sm font-semibold tabular-nums">
-                                    {formatNumber(
-                                        summary.posted,
-                                        0,
-                                    )}
-                                </p>
-
-                                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted/50">
-                                    <div
-                                        className="h-full rounded-full bg-emerald-400"
-                                        style={{
-                                            width: `${postedPercentage}%`,
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 px-4 py-3">
-                            <span className="flex size-8 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/[0.08] text-rose-300">
-                                <ShieldAlert className="size-3.5" />
-                            </span>
-
-                            <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between gap-3">
-                                    <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                        Voided
-                                    </p>
-
-                                    <span className="text-[9px] font-semibold text-rose-300">
-                                        {
-                                            voidedPercentage
-                                        }
-                                        %
-                                    </span>
-                                </div>
-
-                                <p className="mt-0.5 text-sm font-semibold tabular-nums">
-                                    {formatNumber(
-                                        summary.voided,
-                                        0,
-                                    )}
-                                </p>
-
-                                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted/50">
-                                    <div
-                                        className="h-full rounded-full bg-rose-400"
-                                        style={{
-                                            width: `${voidedPercentage}%`,
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 px-4 py-3">
-                            <span className="flex size-8 items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/[0.08] text-amber-300">
-                                <PackageMinus className="size-3.5" />
-                            </span>
-
-                            <div>
-                                <p className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Active Issued
-                                    Quantity
-                                </p>
-
-                                <p className="mt-0.5 text-sm font-semibold tabular-nums text-rose-300">
-                                    −
-                                    {formatNumber(
-                                        summary.quantity_issued,
-                                    )}
-                                </p>
-
-                                <p className="mt-0.5 text-[9px] text-muted-foreground">
-                                    {
-                                        summary.issued_today
-                                    }{' '}
-                                    posted today
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Main history register */}
+                {/* Withdrawal history register */}
 
                 <SectionCard
-                    title={
-                        <div className="flex items-center gap-2.5">
-                            <span className="flex size-8 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-500/[0.07] text-violet-300">
-                                <History className="size-3.5" />
-                            </span>
-
-                            <div>
-                                <p className="text-xs font-semibold">
-                                    Issuance
-                                    Register
-                                </p>
-
-                                <p className="mt-0.5 text-[9px] font-normal text-muted-foreground">
-                                    Expand a row to
-                                    inspect products,
-                                    movement links,
-                                    recipient, notes,
-                                    and audit details.
-                                </p>
-                            </div>
-                        </div>
-                    }
+                    title="Withdrawal Register"
+                    description="Filter the archive and open a transaction to inspect its products, destination, movement links, notes, and audit trail."
                     actions={
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge
                                 variant="outline"
-                                className="h-7 rounded-full border-border/70 bg-muted/25 px-2.5 text-[9px] text-muted-foreground"
+                                className="h-7 rounded-full border-emerald-500/15 bg-emerald-500/[0.045] px-2.5 text-[9px] text-emerald-400"
                             >
-                                {
-                                    issuances.total
-                                }{' '}
-                                transaction
-                                {issuances.total === 1
-                                    ? ''
-                                    : 's'}
+                                <ReceiptText className="mr-1 size-3" />
+                                {issuances.total} record{issuances.total === 1 ? '' : 's'}
                             </Badge>
 
                             <Badge
                                 variant="outline"
-                                className="h-7 rounded-full border-rose-500/15 bg-rose-500/[0.06] px-2.5 text-[9px] text-rose-300"
+                                className="h-7 rounded-full border-amber-500/15 bg-amber-500/[0.045] px-2.5 text-[9px] text-amber-400"
                             >
-                                −
-                                {formatNumber(
-                                    pageQuantity,
-                                )}{' '}
-                                on this page
+                                −{formatNumber(pageQuantity)} on this page
                             </Badge>
                         </div>
                     }
@@ -835,10 +745,10 @@ export default function StockIssuanceHistory({
                                 <Button
                                     type="submit"
                                     variant="secondary"
-                                    className="h-10 px-4 text-sm"
+                                    className="h-10 border border-emerald-500/15 bg-emerald-500/[0.055] px-4 text-sm text-emerald-400 hover:bg-emerald-500/[0.09] hover:text-emerald-300"
                                 >
                                     <Search className="size-3.5" />
-                                    Apply
+                                    Apply Filters
                                 </Button>
 
                                 <Button
@@ -869,7 +779,7 @@ export default function StockIssuanceHistory({
                             onClear={() =>
                                 setSearch('')
                             }
-                            placeholder="Search issuance, recipient, reference, branch..."
+                            placeholder="Search withdrawal no., recipient, reference, branch..."
                         />
 
                         <Select
@@ -1029,8 +939,8 @@ export default function StockIssuanceHistory({
                             }
                             type="date"
                             value={dateFrom}
-                            title="Issuance date from"
-                            aria-label="Issuance date from"
+                            title="Withdrawal date from"
+                            aria-label="Withdrawal date from"
                             onChange={(
                                 event,
                             ) =>
@@ -1054,8 +964,8 @@ export default function StockIssuanceHistory({
                                 dateFrom ||
                                 undefined
                             }
-                            title="Issuance date to"
-                            aria-label="Issuance date to"
+                            title="Withdrawal date to"
+                            aria-label="Withdrawal date to"
                             onChange={(
                                 event,
                             ) =>
@@ -1065,25 +975,19 @@ export default function StockIssuanceHistory({
                                 )
                             }
                             className="h-10"
-                            iconClassName="text-violet-400"
+                            iconClassName="text-emerald-400"
                         />
                     </FilterBar>
 
                     {/* Register table */}
 
-                    <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20">
+                    <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20 shadow-sm">
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[1180px] border-collapse">
-                                <thead className="border-b border-border/70 bg-muted/20">
+                            <table className="w-full min-w-[1080px] border-collapse">
+                                <thead className="border-b border-border/70 bg-emerald-500/[0.025]">
                                     <tr>
-                                        <th className="w-11 px-3 py-2.5">
-                                            <span className="sr-only">
-                                                Details
-                                            </span>
-                                        </th>
-
                                         <th className="min-w-[190px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                            Issuance
+                                            Withdrawal
                                         </th>
 
                                         <th className="min-w-[185px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -1106,52 +1010,45 @@ export default function StockIssuanceHistory({
                                             Status
                                         </th>
 
-                                        <th className="w-[105px] px-3 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                        <th className="w-[110px] px-3 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                                             Action
                                         </th>
                                     </tr>
                                 </thead>
 
                                 <tbody className="divide-y divide-border/60">
-                                    {issuances.data
-                                        .length ===
-                                    0 ? (
+                                    {issuances.data.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={
-                                                    8
-                                                }
+                                                colSpan={7}
                                                 className="px-4 py-14"
                                             >
                                                 <div className="mx-auto flex max-w-sm flex-col items-center text-center">
-                                                    <span className="flex size-11 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/[0.08] text-violet-300">
+                                                    <span className="flex size-11 items-center justify-center rounded-xl border border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-400">
                                                         <History className="size-5" />
                                                     </span>
 
                                                     <h3 className="mt-3 text-sm font-semibold">
                                                         {hasActiveFilters
-                                                            ? 'No matching issuances'
-                                                            : 'No stock issuances yet'}
+                                                            ? 'No matching withdrawals'
+                                                            : 'No stock withdrawals yet'}
                                                     </h3>
 
                                                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
                                                         {hasActiveFilters
-                                                            ? 'Adjust or reset the filters to review other issuance transactions.'
-                                                            : 'Posted transactions from the Issuance Terminal will appear here.'}
+                                                            ? 'Adjust or reset the filters to review other withdrawal transactions.'
+                                                            : 'Posted transactions from the Withdrawal Terminal will appear here.'}
                                                     </p>
 
                                                     {hasActiveFilters && (
                                                         <Button
                                                             type="button"
                                                             variant="outline"
-                                                            onClick={
-                                                                resetFilters
-                                                            }
+                                                            onClick={resetFilters}
                                                             className="mt-4 h-8 rounded-lg text-[10px]"
                                                         >
                                                             <RotateCcw className="size-3.5" />
-                                                            Clear
-                                                            Filters
+                                                            Clear Filters
                                                         </Button>
                                                     )}
                                                 </div>
@@ -1159,286 +1056,200 @@ export default function StockIssuanceHistory({
                                         </tr>
                                     ) : (
                                         issuances.data.map(
-                                            (
-                                                issuance,
-                                            ) => {
-                                                const isExpanded =
-                                                    expandedIssuanceId ===
-                                                    issuance.id;
-
-                                                const detailsId = `issuance-details-${issuance.id}`;
-
-                                                return (
-                                                    <Fragment
-                                                        key={
-                                                            issuance.id
+                                            (issuance) => (
+                                                <tr
+                                                    key={issuance.id}
+                                                    tabIndex={0}
+                                                    role="button"
+                                                    onClick={() =>
+                                                        setSelectedIssuance(
+                                                            issuance,
+                                                        )
+                                                    }
+                                                    onKeyDown={(
+                                                        event,
+                                                    ) => {
+                                                        if (
+                                                            event.target !==
+                                                            event.currentTarget
+                                                        ) {
+                                                            return;
                                                         }
-                                                    >
-                                                        <tr
-                                                            tabIndex={
-                                                                0
+
+                                                        if (
+                                                            event.key ===
+                                                                'Enter' ||
+                                                            event.key === ' '
+                                                        ) {
+                                                            event.preventDefault();
+
+                                                            setSelectedIssuance(
+                                                                issuance,
+                                                            );
+                                                        }
+                                                    }}
+                                                    className="group cursor-pointer bg-card transition hover:bg-emerald-500/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/30"
+                                                >
+                                                    <td className="px-3 py-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/[0.07] text-rose-300">
+                                                                <PackageMinus className="size-3.5" />
+                                                            </span>
+
+                                                            <div className="min-w-0">
+                                                                <p className="truncate text-[10px] font-semibold">
+                                                                    {
+                                                                        issuance.issuance_number
+                                                                    }
+                                                                </p>
+
+                                                                <p className="mt-0.5 text-[9px] text-muted-foreground">
+                                                                    {formatDate(
+                                                                        issuance.issuance_date,
+                                                                    )}
+                                                                </p>
+
+                                                                {issuance.reference_no && (
+                                                                    <p className="mt-0.5 max-w-40 truncate text-[8px] text-blue-300">
+                                                                        Ref:{' '}
+                                                                        {
+                                                                            issuance.reference_no
+                                                                        }
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="px-3 py-3">
+                                                        <div className="flex items-start gap-2">
+                                                            <UserRound className="mt-0.5 size-3.5 shrink-0 text-emerald-400" />
+
+                                                            <div className="min-w-0">
+                                                                <p className="max-w-[165px] truncate text-[10px] font-medium">
+                                                                    {getRecipientLabel(
+                                                                        issuance,
+                                                                    )}
+                                                                </p>
+
+                                                                <p className="mt-0.5 max-w-[165px] truncate text-[9px] text-muted-foreground">
+                                                                    {issuance.department ||
+                                                                        'No department'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="px-3 py-3">
+                                                        <div className="flex items-start gap-2">
+                                                            <Warehouse className="mt-0.5 size-3.5 shrink-0 text-amber-300" />
+
+                                                            <div className="min-w-0">
+                                                                <p className="max-w-[175px] truncate text-[10px] font-medium">
+                                                                    {
+                                                                        issuance
+                                                                            .warehouse
+                                                                            .name
+                                                                    }
+                                                                </p>
+
+                                                                <p className="mt-0.5 max-w-[175px] truncate text-[9px] text-muted-foreground">
+                                                                    {issuance
+                                                                        .warehouse
+                                                                        .code ||
+                                                                        'No code'}{' '}
+                                                                    ·{' '}
+                                                                    {
+                                                                        issuance
+                                                                            .branch
+                                                                            .name
+                                                                    }
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="px-3 py-3">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={cn(
+                                                                'h-6 max-w-[160px] rounded-full px-2 text-[8px] font-semibold',
+                                                                getReasonTone(
+                                                                    issuance.reason,
+                                                                ),
+                                                            )}
+                                                        >
+                                                            <span className="truncate">
+                                                                {
+                                                                    issuance.reason_label
+                                                                }
+                                                            </span>
+                                                        </Badge>
+                                                    </td>
+
+                                                    <td className="px-3 py-3 text-right">
+                                                        <p className="text-[11px] font-semibold tabular-nums text-rose-300">
+                                                            −
+                                                            {formatNumber(
+                                                                issuance.total_quantity,
+                                                            )}
+                                                        </p>
+
+                                                        <p className="mt-0.5 text-[9px] tabular-nums text-muted-foreground">
+                                                            {formatMoney(
+                                                                issuance.total_cost,
+                                                            )}
+                                                        </p>
+
+                                                        <p className="mt-0.5 text-[8px] text-muted-foreground">
+                                                            {
+                                                                issuance.items_count
+                                                            }{' '}
+                                                            item
+                                                            {issuance.items_count ===
+                                                            1
+                                                                ? ''
+                                                                : 's'}
+                                                        </p>
+                                                    </td>
+
+                                                    <td className="px-3 py-3">
+                                                        <StatusBadge
+                                                            label={
+                                                                issuance.status ===
+                                                                'posted'
+                                                                    ? 'Posted'
+                                                                    : 'Voided'
                                                             }
-                                                            aria-expanded={
-                                                                isExpanded
+                                                            variant={
+                                                                issuance.status ===
+                                                                'posted'
+                                                                    ? 'success'
+                                                                    : 'danger'
                                                             }
-                                                            aria-controls={
-                                                                detailsId
-                                                            }
-                                                            onClick={() =>
-                                                                toggleIssuance(
-                                                                    issuance.id,
-                                                                )
-                                                            }
-                                                            onKeyDown={(
+                                                        />
+                                                    </td>
+
+                                                    <td className="px-3 py-3 text-right">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            onClick={(
                                                                 event,
                                                             ) => {
-                                                                if (
-                                                                    event.target !==
-                                                                    event.currentTarget
-                                                                ) {
-                                                                    return;
-                                                                }
+                                                                event.stopPropagation();
 
-                                                                if (
-                                                                    event.key ===
-                                                                        'Enter' ||
-                                                                    event.key ===
-                                                                        ' '
-                                                                ) {
-                                                                    event.preventDefault();
-
-                                                                    toggleIssuance(
-                                                                        issuance.id,
-                                                                    );
-                                                                }
+                                                                setSelectedIssuance(
+                                                                    issuance,
+                                                                );
                                                             }}
-                                                            className="cursor-pointer bg-card transition hover:bg-muted/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                                                            className="h-8 rounded-lg border-emerald-500/15 bg-emerald-500/[0.035] px-2.5 text-[9px] text-emerald-400 hover:bg-emerald-500/[0.08] hover:text-emerald-300"
                                                         >
-                                                            <td className="px-3 py-3">
-                                                                <span className="flex size-7 items-center justify-center rounded-lg border border-border/70 bg-background/40 text-muted-foreground">
-                                                                    <ChevronDown
-                                                                        className={cn(
-                                                                            'size-3.5 transition-transform',
-                                                                            isExpanded &&
-                                                                                'rotate-180',
-                                                                        )}
-                                                                    />
-                                                                </span>
-                                                            </td>
-
-                                                            <td className="px-3 py-3">
-                                                                <div className="flex items-center gap-3">
-                                                                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/[0.07] text-rose-300">
-                                                                        <PackageMinus className="size-3.5" />
-                                                                    </span>
-
-                                                                    <div className="min-w-0">
-                                                                        <p className="truncate text-[10px] font-semibold">
-                                                                            {
-                                                                                issuance.issuance_number
-                                                                            }
-                                                                        </p>
-
-                                                                        <p className="mt-0.5 text-[9px] text-muted-foreground">
-                                                                            {formatDate(
-                                                                                issuance.issuance_date,
-                                                                            )}
-                                                                        </p>
-
-                                                                        {issuance.reference_no && (
-                                                                            <p className="mt-0.5 max-w-40 truncate text-[8px] text-blue-300">
-                                                                                Ref:{' '}
-                                                                                {
-                                                                                    issuance.reference_no
-                                                                                }
-                                                                            </p>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-
-                                                            <td className="px-3 py-3">
-                                                                <div className="flex items-start gap-2">
-                                                                    <UserRound className="mt-0.5 size-3.5 shrink-0 text-violet-300" />
-
-                                                                    <div className="min-w-0">
-                                                                        <p className="max-w-[165px] truncate text-[10px] font-medium">
-                                                                            {getRecipientLabel(
-                                                                                issuance,
-                                                                            )}
-                                                                        </p>
-
-                                                                        <p className="mt-0.5 max-w-[165px] truncate text-[9px] text-muted-foreground">
-                                                                            {issuance.department ||
-                                                                                'No department'}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-
-                                                            <td className="px-3 py-3">
-                                                                <div className="flex items-start gap-2">
-                                                                    <Warehouse className="mt-0.5 size-3.5 shrink-0 text-amber-300" />
-
-                                                                    <div className="min-w-0">
-                                                                        <p className="max-w-[175px] truncate text-[10px] font-medium">
-                                                                            {
-                                                                                issuance
-                                                                                    .warehouse
-                                                                                    .name
-                                                                            }
-                                                                        </p>
-
-                                                                        <p className="mt-0.5 max-w-[175px] truncate text-[9px] text-muted-foreground">
-                                                                            {issuance
-                                                                                .warehouse
-                                                                                .code ||
-                                                                                'No code'}{' '}
-                                                                            ·{' '}
-                                                                            {
-                                                                                issuance
-                                                                                    .branch
-                                                                                    .name
-                                                                            }
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-
-                                                            <td className="px-3 py-3">
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className={cn(
-                                                                        'h-6 max-w-[160px] rounded-full px-2 text-[8px] font-semibold',
-                                                                        getReasonTone(
-                                                                            issuance.reason,
-                                                                        ),
-                                                                    )}
-                                                                >
-                                                                    <span className="truncate">
-                                                                        {
-                                                                            issuance.reason_label
-                                                                        }
-                                                                    </span>
-                                                                </Badge>
-                                                            </td>
-
-                                                            <td className="px-3 py-3 text-right">
-                                                                <p className="text-[11px] font-semibold tabular-nums text-rose-300">
-                                                                    −
-                                                                    {formatNumber(
-                                                                        issuance.total_quantity,
-                                                                    )}
-                                                                </p>
-
-                                                                <p className="mt-0.5 text-[9px] tabular-nums text-muted-foreground">
-                                                                    {formatMoney(
-                                                                        issuance.total_cost,
-                                                                    )}
-                                                                </p>
-
-                                                                <p className="mt-0.5 text-[8px] text-muted-foreground">
-                                                                    {
-                                                                        issuance.items_count
-                                                                    }{' '}
-                                                                    item
-                                                                    {issuance.items_count ===
-                                                                    1
-                                                                        ? ''
-                                                                        : 's'}
-                                                                </p>
-                                                            </td>
-
-                                                            <td className="px-3 py-3">
-                                                                <StatusBadge
-                                                                    label={
-                                                                        issuance.status ===
-                                                                        'posted'
-                                                                            ? 'Posted'
-                                                                            : 'Voided'
-                                                                    }
-                                                                    variant={
-                                                                        issuance.status ===
-                                                                        'posted'
-                                                                            ? 'success'
-                                                                            : 'danger'
-                                                                    }
-                                                                />
-                                                            </td>
-
-                                                            <td className="px-3 py-3 text-right">
-                                                                {permissions.can_void &&
-                                                                issuance.status ===
-                                                                    'posted' ? (
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="ghost"
-                                                                        onClick={(
-                                                                            event,
-                                                                        ) => {
-                                                                            event.stopPropagation();
-
-                                                                            openVoidDialog(
-                                                                                issuance,
-                                                                            );
-                                                                        }}
-                                                                        className="h-8 rounded-lg px-2 text-[9px] text-rose-300 hover:bg-rose-500/10 hover:text-rose-200"
-                                                                    >
-                                                                        <Trash2 className="size-3" />
-                                                                        Void
-                                                                    </Button>
-                                                                ) : (
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="ghost"
-                                                                        onClick={(
-                                                                            event,
-                                                                        ) => {
-                                                                            event.stopPropagation();
-
-                                                                            toggleIssuance(
-                                                                                issuance.id,
-                                                                            );
-                                                                        }}
-                                                                        className="h-8 rounded-lg px-2 text-[9px]"
-                                                                    >
-                                                                        Details
-                                                                    </Button>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-
-                                                        {isExpanded && (
-                                                            <tr
-                                                                id={
-                                                                    detailsId
-                                                                }
-                                                            >
-                                                                <td
-                                                                    colSpan={
-                                                                        8
-                                                                    }
-                                                                    className="bg-muted/[0.08] p-0"
-                                                                >
-                                                                    <IssuanceDetails
-                                                                        issuance={
-                                                                            issuance
-                                                                        }
-                                                                        canVoid={
-                                                                            permissions.can_void
-                                                                        }
-                                                                        onVoid={() =>
-                                                                            openVoidDialog(
-                                                                                issuance,
-                                                                            )
-                                                                        }
-                                                                    />
-                                                                </td>
-                                                            </tr>
-                                                        )}
-                                                    </Fragment>
-                                                );
-                                            },
+                                                            Details
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ),
                                         )
                                     )}
                                 </tbody>
@@ -1450,10 +1261,21 @@ export default function StockIssuanceHistory({
                         pagination={
                             issuances
                         }
-                        itemLabel="stock issuances"
+                        itemLabel="stock withdrawals"
                     />
                 </SectionCard>
             </PageContainer>
+
+            <WithdrawalDetailsDrawer
+                issuance={selectedIssuance}
+                canVoid={permissions.can_void}
+                onClose={() =>
+                    setSelectedIssuance(null)
+                }
+                onVoid={(issuance) =>
+                    openVoidDialog(issuance)
+                }
+            />
 
             {/* Void dialog */}
 
@@ -1492,7 +1314,7 @@ export default function StockIssuanceHistory({
                                         className="text-sm font-semibold"
                                     >
                                         Void Stock
-                                        Issuance
+                                        Withdrawal
                                     </h2>
 
                                     <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
@@ -1529,7 +1351,7 @@ export default function StockIssuanceHistory({
                             <div className="grid gap-3 rounded-xl border border-border/70 bg-muted/[0.12] p-3 sm:grid-cols-2">
                                 <div>
                                     <p className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                        Issuance
+                                        Withdrawal
                                     </p>
 
                                     <p className="mt-1 text-[10px] font-medium">
@@ -1592,7 +1414,7 @@ export default function StockIssuanceHistory({
                                         current stock no
                                         longer matches
                                         the original
-                                        issuance state.
+                                        withdrawal state.
                                     </p>
                                 </div>
                             </div>
@@ -1708,453 +1530,416 @@ export default function StockIssuanceHistory({
 
 /*
 |--------------------------------------------------------------------------
-| Expanded issuance details
+| Withdrawal details side drawer
 |--------------------------------------------------------------------------
 */
 
-function IssuanceDetails({
+function WithdrawalDetailsDrawer({
     issuance,
     canVoid,
+    onClose,
     onVoid,
 }: {
-    issuance: StockIssuance;
+    issuance: StockIssuance | null;
     canVoid: boolean;
-    onVoid: () => void;
+    onClose: () => void;
+    onVoid: (issuance: StockIssuance) => void;
 }) {
+    if (!issuance) {
+        return null;
+    }
+
     return (
-        <div className="space-y-4 border-t border-violet-500/15 px-4 py-4">
-            <div className="grid gap-3 lg:grid-cols-[1.15fr_1fr_1fr]">
-                {/* Transaction information */}
+        <>
+            <button
+                type="button"
+                aria-label="Close withdrawal details"
+                onClick={onClose}
+                className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[1px] animate-in fade-in duration-200"
+            />
 
-                <div className="rounded-xl border border-border/70 bg-card p-3.5">
-                    <div className="flex items-center gap-2">
-                        <ReceiptText className="size-3.5 text-blue-300" />
+            <aside
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="withdrawal-details-title"
+                className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[840px] flex-col overflow-hidden border-l border-border/80 bg-card shadow-[-24px_0_70px_-30px_rgba(0,0,0,0.82)] animate-in slide-in-from-right duration-300"
+            >
+                <header className="relative shrink-0 border-b border-border/70 bg-card px-4 py-4 sm:px-6 sm:py-5">
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
 
-                        <h3 className="text-[10px] font-semibold">
-                            Transaction
-                            Information
-                        </h3>
-                    </div>
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex min-w-0 items-start gap-3.5">
+                            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-400 shadow-sm">
+                                <ReceiptText className="size-5" />
+                            </span>
 
-                    <dl className="mt-3 grid gap-2.5 text-[9px] sm:grid-cols-2 lg:grid-cols-1">
-                        <DetailRow
-                            label="Issuance Number"
-                            value={
-                                issuance.issuance_number
-                            }
-                        />
-
-                        <DetailRow
-                            label="Issuance Date"
-                            value={formatDate(
-                                issuance.issuance_date,
-                            )}
-                        />
-
-                        <DetailRow
-                            label="Reference"
-                            value={
-                                issuance.reference_no ||
-                                '—'
-                            }
-                        />
-
-                        <DetailRow
-                            label="Purpose"
-                            value={
-                                issuance.purpose ||
-                                '—'
-                            }
-                        />
-                    </dl>
-                </div>
-
-                {/* Recipient */}
-
-                <div className="rounded-xl border border-border/70 bg-card p-3.5">
-                    <div className="flex items-center gap-2">
-                        <UserRound className="size-3.5 text-violet-300" />
-
-                        <h3 className="text-[10px] font-semibold">
-                            Recipient and
-                            Destination
-                        </h3>
-                    </div>
-
-                    <dl className="mt-3 space-y-2.5 text-[9px]">
-                        <DetailRow
-                            label="Issued To"
-                            value={
-                                issuance.issued_to ||
-                                '—'
-                            }
-                        />
-
-                        <DetailRow
-                            label="Department"
-                            value={
-                                issuance.department ||
-                                '—'
-                            }
-                        />
-
-                        <DetailRow
-                            label="Branch"
-                            value={
-                                issuance.branch.code
-                                    ? `${issuance.branch.code} — ${issuance.branch.name}`
-                                    : issuance.branch
-                                          .name
-                            }
-                        />
-
-                        <DetailRow
-                            label="Warehouse"
-                            value={
-                                issuance.warehouse
-                                    .code
-                                    ? `${issuance.warehouse.code} — ${issuance.warehouse.name}`
-                                    : issuance
-                                          .warehouse
-                                          .name
-                            }
-                        />
-                    </dl>
-                </div>
-
-                {/* Audit */}
-
-                <div className="rounded-xl border border-border/70 bg-card p-3.5">
-                    <div className="flex items-center gap-2">
-                        <FileText className="size-3.5 text-amber-300" />
-
-                        <h3 className="text-[10px] font-semibold">
-                            Audit Trail
-                        </h3>
-                    </div>
-
-                    <dl className="mt-3 space-y-2.5 text-[9px]">
-                        <DetailRow
-                            label="Issued By"
-                            value={
-                                issuance.issued_by
-                                    ?.name ||
-                                'System user'
-                            }
-                        />
-
-                        <DetailRow
-                            label="Posted At"
-                            value={formatDateTime(
-                                issuance.posted_at,
-                            )}
-                        />
-
-                        <DetailRow
-                            label="Created At"
-                            value={formatDateTime(
-                                issuance.created_at,
-                            )}
-                        />
-
-                        {issuance.status ===
-                            'voided' && (
-                            <>
-                                <DetailRow
-                                    label="Voided By"
-                                    value={
-                                        issuance
-                                            .voided_by
-                                            ?.name ||
-                                        'System user'
-                                    }
-                                />
-
-                                <DetailRow
-                                    label="Voided At"
-                                    value={formatDateTime(
-                                        issuance.voided_at,
-                                    )}
-                                />
-                            </>
-                        )}
-                    </dl>
-                </div>
-            </div>
-
-            {issuance.notes && (
-                <div className="rounded-xl border border-blue-500/15 bg-blue-500/[0.04] px-3.5 py-3">
-                    <div className="flex items-start gap-2.5">
-                        <FileText className="mt-0.5 size-3.5 shrink-0 text-blue-300" />
-
-                        <div>
-                            <p className="text-[9px] font-semibold uppercase tracking-wider text-blue-300">
-                                Transaction Notes
-                            </p>
-
-                            <p className="mt-1 whitespace-pre-wrap text-[10px] leading-5 text-muted-foreground">
-                                {issuance.notes}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {issuance.status ===
-                'voided' &&
-                issuance.void_reason && (
-                    <div className="rounded-xl border border-rose-500/20 bg-rose-500/[0.05] px-3.5 py-3">
-                        <div className="flex items-start gap-2.5">
-                            <ShieldAlert className="mt-0.5 size-3.5 shrink-0 text-rose-300" />
-
-                            <div>
-                                <p className="text-[9px] font-semibold uppercase tracking-wider text-rose-300">
-                                    Void Reason
+                            <div className="min-w-0">
+                                <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-emerald-400">
+                                    Withdrawal audit record
                                 </p>
 
-                                <p className="mt-1 whitespace-pre-wrap text-[10px] leading-5 text-rose-100/70">
-                                    {
-                                        issuance.void_reason
-                                    }
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-            {/* Items */}
-
-            <div className="overflow-hidden rounded-xl border border-border/70 bg-card">
-                <div className="flex flex-col gap-2 border-b border-border/60 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-2.5">
-                        <span className="flex size-8 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/[0.07] text-rose-300">
-                            <Boxes className="size-3.5" />
-                        </span>
-
-                        <div>
-                            <h3 className="text-[10px] font-semibold">
-                                Issued Products
-                            </h3>
-
-                            <p className="mt-0.5 text-[9px] text-muted-foreground">
-                                Product snapshots
-                                and linked stock
-                                movement records.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                        <Badge
-                            variant="outline"
-                            className="h-6 rounded-full border-border/70 bg-muted/25 px-2 text-[8px]"
-                        >
-                            {
-                                issuance.items_count
-                            }{' '}
-                            products
-                        </Badge>
-
-                        <Badge
-                            variant="outline"
-                            className="h-6 rounded-full border-rose-500/20 bg-rose-500/[0.07] px-2 text-[8px] text-rose-300"
-                        >
-                            −
-                            {formatNumber(
-                                issuance.total_quantity,
-                            )}
-                        </Badge>
-
-                        <Badge
-                            variant="outline"
-                            className="h-6 rounded-full border-amber-500/20 bg-amber-500/[0.07] px-2 text-[8px] text-amber-300"
-                        >
-                            {formatMoney(
-                                issuance.total_cost,
-                            )}
-                        </Badge>
-                    </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[850px] border-collapse">
-                        <thead className="border-b border-border/60 bg-muted/20">
-                            <tr>
-                                <th className="min-w-[230px] px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Product
-                                </th>
-
-                                <th className="min-w-[110px] px-3 py-2.5 text-right text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Quantity
-                                </th>
-
-                                <th className="min-w-[130px] px-3 py-2.5 text-right text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Unit Cost
-                                </th>
-
-                                <th className="min-w-[130px] px-3 py-2.5 text-right text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Line Total
-                                </th>
-
-                                <th className="min-w-[175px] px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Movement
-                                </th>
-
-                                <th className="min-w-[190px] px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Notes
-                                </th>
-                            </tr>
-                        </thead>
-
-                        <tbody className="divide-y divide-border/60">
-                            {issuance.items.map(
-                                (item) => (
-                                    <tr
-                                        key={
-                                            item.id
-                                        }
+                                <div className="mt-1.5 flex flex-wrap items-center gap-2.5">
+                                    <h2
+                                        id="withdrawal-details-title"
+                                        className="truncate font-mono text-base font-semibold tracking-tight text-foreground sm:text-lg"
                                     >
-                                        <td className="px-3 py-3">
-                                            <div className="flex items-center gap-2.5">
-                                                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/30 text-muted-foreground">
-                                                    <Boxes className="size-3.5" />
-                                                </span>
+                                        {issuance.issuance_number}
+                                    </h2>
 
-                                                <div className="min-w-0">
-                                                    <p className="max-w-[220px] truncate text-[10px] font-medium">
-                                                        {
-                                                            item.product_name
-                                                        }
-                                                    </p>
+                                    <StatusBadge
+                                        label={issuance.status === 'posted' ? 'Posted' : 'Voided'}
+                                        variant={issuance.status === 'posted' ? 'success' : 'danger'}
+                                    />
+                                </div>
 
-                                                    <p className="mt-0.5 text-[9px] text-muted-foreground">
-                                                        {item.product_sku ||
-                                                            'No SKU'}{' '}
-                                                        ·{' '}
-                                                        {
-                                                            item.unit
-                                                        }
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        <td className="px-3 py-3 text-right">
-                                            <p className="text-[10px] font-semibold tabular-nums text-rose-300">
-                                                −
-                                                {formatNumber(
-                                                    item.quantity_issued,
-                                                )}
-                                            </p>
-
-                                            <p className="mt-0.5 text-[8px] text-muted-foreground">
-                                                {
-                                                    item.unit
-                                                }
-                                            </p>
-                                        </td>
-
-                                        <td className="px-3 py-3 text-right text-[10px] tabular-nums">
-                                            {formatMoney(
-                                                item.unit_cost,
-                                            )}
-                                        </td>
-
-                                        <td className="px-3 py-3 text-right text-[10px] font-semibold tabular-nums">
-                                            {formatMoney(
-                                                item.line_total,
-                                            )}
-                                        </td>
-
-                                        <td className="px-3 py-3">
-                                            <div className="space-y-1">
-                                                <p className="text-[9px] font-medium text-blue-300">
-                                                    {item.stock_movement_id
-                                                        ? `Movement #${item.stock_movement_id}`
-                                                        : 'No movement link'}
-                                                </p>
-
-                                                {item.void_stock_movement_id && (
-                                                    <p className="text-[8px] text-rose-300">
-                                                        Reversal
-                                                        #
-                                                        {
-                                                            item.void_stock_movement_id
-                                                        }
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </td>
-
-                                        <td className="px-3 py-3">
-                                            <p
-                                                title={
-                                                    item.notes ||
-                                                    undefined
-                                                }
-                                                className="max-w-[190px] truncate text-[9px] text-muted-foreground"
-                                            >
-                                                {item.notes ||
-                                                    '—'}
-                                            </p>
-                                        </td>
-                                    </tr>
-                                ),
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {canVoid &&
-                issuance.status ===
-                    'posted' && (
-                    <div className="flex flex-col gap-3 rounded-xl border border-rose-500/20 bg-rose-500/[0.04] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-start gap-2.5">
-                            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-rose-300" />
-
-                            <div>
-                                <p className="text-[10px] font-semibold text-rose-300">
-                                    Owner Reversal
-                                    Control
-                                </p>
-
-                                <p className="mt-0.5 text-[9px] leading-4 text-muted-foreground">
-                                    Void only when
-                                    this transaction
-                                    was posted by
-                                    mistake. The
-                                    system validates
-                                    all stock movement
-                                    links before
-                                    restoring
-                                    quantity.
-                                </p>
+                                <div className="mt-2 flex flex-wrap items-center gap-2 text-[9px] text-muted-foreground">
+                                    <span>{formatDate(issuance.issuance_date)}</span>
+                                    <span className="text-border">•</span>
+                                    <span>{issuance.warehouse.name}</span>
+                                    <span className="text-border">•</span>
+                                    <Badge
+                                        variant="outline"
+                                        className={cn(
+                                            'h-5 max-w-[190px] rounded-full px-2 text-[8px] font-semibold',
+                                            getReasonTone(issuance.reason),
+                                        )}
+                                    >
+                                        <span className="truncate">{issuance.reason_label}</span>
+                                    </Badge>
+                                </div>
                             </div>
                         </div>
+
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background/35 text-muted-foreground transition hover:border-emerald-500/20 hover:bg-emerald-500/[0.055] hover:text-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+                            aria-label="Close withdrawal details"
+                        >
+                            <X className="size-4" />
+                        </button>
+                    </div>
+                </header>
+
+                <div className="min-h-0 flex-1 overflow-y-auto bg-background/20">
+                    <WithdrawalDrawerContent issuance={issuance} />
+                </div>
+
+                <footer className="flex shrink-0 flex-col-reverse gap-2 border-t border-border/70 bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
+                        <Fingerprint className="size-3.5 text-emerald-400" />
+                        Immutable inventory transaction snapshot
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {canVoid && issuance.status === 'posted' && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onVoid(issuance)}
+                                className="h-9 rounded-lg border-rose-500/20 bg-rose-500/[0.06] px-3 text-[10px] text-rose-300 hover:bg-rose-500/10 hover:text-rose-200"
+                            >
+                                <ShieldAlert className="size-3.5" />
+                                Void Withdrawal
+                            </Button>
+                        )}
 
                         <Button
                             type="button"
-                            variant="outline"
-                            onClick={onVoid}
-                            className="h-8 shrink-0 rounded-lg border-rose-500/20 bg-rose-500/[0.07] px-3 text-[9px] text-rose-300 hover:bg-rose-500/10 hover:text-rose-200"
+                            onClick={onClose}
+                            className="h-9 rounded-lg bg-foreground px-5 text-[10px] font-semibold text-background hover:bg-foreground/90"
                         >
-                            <ShieldAlert className="size-3.5" />
-                            Void Issuance
+                            Close
                         </Button>
                     </div>
-                )}
-        </div>
+                </footer>
+            </aside>
+        </>
     );
 }
 
 /*
 |--------------------------------------------------------------------------
-| Detail row
+| Professional withdrawal drawer content
 |--------------------------------------------------------------------------
 */
 
-function DetailRow({
+function WithdrawalDrawerContent({
+    issuance,
+}: {
+    issuance: StockIssuance;
+}) {
+    const recipient = getRecipientLabel(issuance);
+    const warehouseLabel = issuance.warehouse.code
+        ? `${issuance.warehouse.code} — ${issuance.warehouse.name}`
+        : issuance.warehouse.name;
+    const branchLabel = issuance.branch.code
+        ? `${issuance.branch.code} — ${issuance.branch.name}`
+        : issuance.branch.name;
+
+    return (
+        <div className="px-4 py-5 sm:px-6 sm:py-6">
+            {/* Single transaction summary band */}
+            <section className="border-b border-border/70 pb-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="min-w-0">
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                            Total quantity released
+                        </p>
+                        <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                            <p className="text-3xl font-semibold tracking-[-0.045em] tabular-nums text-rose-300 sm:text-4xl">
+                                −{formatNumber(issuance.total_quantity)}
+                            </p>
+                            <span className="text-[10px] text-muted-foreground">
+                                across {issuance.items_count} product{issuance.items_count === 1 ? '' : 's'}
+                            </span>
+                        </div>
+                        <p className="mt-2 max-w-xl text-[10px] leading-5 text-muted-foreground">
+                            Released from <span className="font-medium text-foreground">{issuance.warehouse.name}</span> to{' '}
+                            <span className="font-medium text-foreground">{recipient}</span>.
+                        </p>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2">
+                        <StatusBadge
+                            label={issuance.status === 'posted' ? 'Posted' : 'Voided'}
+                            variant={issuance.status === 'posted' ? 'success' : 'danger'}
+                        />
+                        <Badge
+                            variant="outline"
+                            className={cn(
+                                'h-6 max-w-[210px] rounded-full px-2.5 text-[8px] font-semibold',
+                                getReasonTone(issuance.reason),
+                            )}
+                        >
+                            <span className="truncate">{issuance.reason_label}</span>
+                        </Badge>
+                    </div>
+                </div>
+
+                <dl className="mt-5 grid overflow-hidden rounded-xl border border-border/70 bg-background/25 sm:grid-cols-4 sm:divide-x sm:divide-border/70">
+                    <SummaryDatum
+                        label="Stock value"
+                        value={formatMoney(issuance.total_cost)}
+                        valueClassName="text-amber-300"
+                    />
+                    <SummaryDatum
+                        label="Withdrawal date"
+                        value={formatDate(issuance.issuance_date)}
+                    />
+                    <SummaryDatum
+                        label="Reference"
+                        value={issuance.reference_no || '—'}
+                        mono
+                    />
+                    <SummaryDatum
+                        label="Warehouse"
+                        value={issuance.warehouse.code || issuance.warehouse.name}
+                    />
+                </dl>
+            </section>
+
+            <div className="grid lg:grid-cols-[minmax(0,1fr)_280px]">
+                <main className="min-w-0 py-6 lg:pr-7">
+                    <ProfessionalSection
+                        title="Transaction information"
+                        description="Request, purpose, and source record details."
+                    >
+                        <dl className="grid gap-x-8 sm:grid-cols-2">
+                            <DefinitionRow
+                                label="Withdrawal number"
+                                value={issuance.issuance_number}
+                                mono
+                            />
+                            <DefinitionRow
+                                label="Reason"
+                                value={issuance.reason_label}
+                            />
+                            <DefinitionRow
+                                label="Reference number"
+                                value={issuance.reference_no || '—'}
+                                mono
+                            />
+                            <DefinitionRow
+                                label="Purpose / justification"
+                                value={issuance.purpose || '—'}
+                            />
+                        </dl>
+
+                        {issuance.notes && (
+                            <div className="mt-5 border-l-2 border-blue-400/40 pl-4">
+                                <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-blue-300">
+                                    Transaction notes
+                                </p>
+                                <p className="mt-1.5 whitespace-pre-wrap text-[10px] leading-5 text-foreground/80">
+                                    {issuance.notes}
+                                </p>
+                            </div>
+                        )}
+                    </ProfessionalSection>
+
+                    <ProfessionalSection
+                        title="Withdrawn products"
+                        description="Item quantities, recorded costs, and linked stock movements."
+                        className="mt-7"
+                    >
+                        <div className="mt-4 overflow-hidden border-y border-border/70">
+                            <div className="hidden grid-cols-[minmax(0,1fr)_100px_120px] gap-4 border-b border-border/70 bg-muted/[0.08] px-3 py-2 text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground sm:grid">
+                                <span>Product</span>
+                                <span className="text-right">Quantity</span>
+                                <span className="text-right">Line value</span>
+                            </div>
+                            <div className="divide-y divide-border/60">
+                                {issuance.items.map((item) => (
+                                    <ProfessionalItemRow key={item.id} item={item} />
+                                ))}
+                            </div>
+                        </div>
+                    </ProfessionalSection>
+                </main>
+
+                <aside className="border-t border-border/70 py-6 lg:border-l lg:border-t-0 lg:pl-7">
+                    <ProfessionalSection
+                        title="Recipient and location"
+                        description="Accountability and inventory source."
+                    >
+                        <dl>
+                            <CompactDefinition label="Issued to" value={recipient} />
+                            <CompactDefinition
+                                label="Department / office"
+                                value={issuance.department || '—'}
+                            />
+                            <CompactDefinition label="Branch" value={branchLabel} />
+                            <CompactDefinition label="Warehouse" value={warehouseLabel} />
+                        </dl>
+                    </ProfessionalSection>
+
+                    <ProfessionalSection
+                        title="Audit trail"
+                        description="Users and system timestamps."
+                        className="mt-7"
+                    >
+                        <div className="mt-4 space-y-4">
+                            <AuditLine
+                                label="Created"
+                                value={formatDateTime(issuance.created_at)}
+                                helper={issuance.issued_by?.name || 'System user'}
+                            />
+                            <AuditLine
+                                label="Posted"
+                                value={formatDateTime(issuance.posted_at)}
+                                helper={issuance.issued_by?.email || 'No email recorded'}
+                            />
+                            {issuance.status === 'voided' && (
+                                <AuditLine
+                                    label="Voided"
+                                    value={formatDateTime(issuance.voided_at)}
+                                    helper={issuance.voided_by?.name || 'System user'}
+                                    tone="rose"
+                                />
+                            )}
+                        </div>
+                    </ProfessionalSection>
+
+                    {issuance.status === 'voided' && issuance.void_reason && (
+                        <div className="mt-7 border-l-2 border-rose-400/50 pl-4">
+                            <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-rose-300">
+                                Void reason
+                            </p>
+                            <p className="mt-1.5 whitespace-pre-wrap text-[10px] leading-5 text-foreground/80">
+                                {issuance.void_reason}
+                            </p>
+                        </div>
+                    )}
+                </aside>
+            </div>
+        </div>
+    );
+}
+
+function SummaryDatum({
+    label,
+    value,
+    valueClassName,
+    mono = false,
+}: {
+    label: string;
+    value: string;
+    valueClassName?: string;
+    mono?: boolean;
+}) {
+    return (
+        <div className="min-w-0 border-b border-border/70 px-3.5 py-3 last:border-b-0 sm:border-b-0">
+            <dt className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                {label}
+            </dt>
+            <dd
+                className={cn(
+                    'mt-1.5 truncate text-[10px] font-semibold text-foreground',
+                    mono && 'font-mono',
+                    valueClassName,
+                )}
+                title={value}
+            >
+                {value}
+            </dd>
+        </div>
+    );
+}
+
+function ProfessionalSection({
+    title,
+    description,
+    className,
+    children,
+}: {
+    title: string;
+    description: string;
+    className?: string;
+    children: ReactNode;
+}) {
+    return (
+        <section className={className}>
+            <div className="border-b border-border/70 pb-3">
+                <h3 className="text-[11px] font-semibold text-foreground">
+                    {title}
+                </h3>
+                <p className="mt-0.5 text-[8px] leading-4 text-muted-foreground">
+                    {description}
+                </p>
+            </div>
+            <div className="pt-1">{children}</div>
+        </section>
+    );
+}
+
+function DefinitionRow({
+    label,
+    value,
+    mono = false,
+}: {
+    label: string;
+    value: string;
+    mono?: boolean;
+}) {
+    return (
+        <div className="border-b border-border/60 py-3.5">
+            <dt className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                {label}
+            </dt>
+            <dd
+                className={cn(
+                    'mt-1.5 break-words text-[10px] font-medium leading-5 text-foreground/90',
+                    mono && 'font-mono',
+                )}
+            >
+                {value}
+            </dd>
+        </div>
+    );
+}
+
+function CompactDefinition({
     label,
     value,
 }: {
@@ -2162,14 +1947,113 @@ function DetailRow({
     value: string;
 }) {
     return (
-        <div className="flex items-start justify-between gap-4 border-b border-border/40 pb-2 last:border-0 last:pb-0">
-            <dt className="shrink-0 text-muted-foreground">
+        <div className="border-b border-border/60 py-3 last:border-b-0">
+            <dt className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                 {label}
             </dt>
-
-            <dd className="min-w-0 break-words text-right font-medium text-foreground">
+            <dd className="mt-1.5 break-words text-[10px] font-medium leading-5 text-foreground/90">
                 {value}
             </dd>
+        </div>
+    );
+}
+
+function ProfessionalItemRow({
+    item,
+}: {
+    item: IssuanceItem;
+}) {
+    return (
+        <article className="px-3 py-3.5 transition-colors hover:bg-muted/[0.06]">
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_100px_120px] sm:items-start sm:gap-4">
+                <div className="min-w-0">
+                    <p className="text-[10px] font-semibold leading-4 text-foreground">
+                        {item.product_name}
+                    </p>
+                    <p className="mt-1 font-mono text-[8px] text-muted-foreground">
+                        {item.product_sku || 'No SKU'} · {item.unit}
+                    </p>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 sm:block sm:text-right">
+                    <span className="text-[8px] uppercase tracking-[0.1em] text-muted-foreground sm:hidden">
+                        Quantity
+                    </span>
+                    <p className="text-[10px] font-semibold tabular-nums text-rose-300">
+                        −{formatNumber(item.quantity_issued)} {item.unit}
+                    </p>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 sm:block sm:text-right">
+                    <span className="text-[8px] uppercase tracking-[0.1em] text-muted-foreground sm:hidden">
+                        Line value
+                    </span>
+                    <p className="text-[10px] font-semibold tabular-nums text-foreground">
+                        {formatMoney(item.line_total)}
+                    </p>
+                    <p className="mt-0.5 hidden text-[8px] text-muted-foreground sm:block">
+                        {formatMoney(item.unit_cost)} / unit
+                    </p>
+                </div>
+            </div>
+
+            <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 border-t border-border/50 pt-2.5 text-[8px] text-muted-foreground">
+                <span>
+                    Movement:{' '}
+                    <strong className="font-mono font-medium text-blue-300">
+                        {item.stock_movement_id ? `#${item.stock_movement_id}` : 'Not linked'}
+                    </strong>
+                </span>
+                {item.void_stock_movement_id && (
+                    <span>
+                        Reversal:{' '}
+                        <strong className="font-mono font-medium text-rose-300">
+                            #{item.void_stock_movement_id}
+                        </strong>
+                    </span>
+                )}
+            </div>
+
+            {item.notes && (
+                <p className="mt-2 text-[9px] leading-4 text-muted-foreground">
+                    <span className="font-medium text-foreground/80">Note:</span>{' '}
+                    {item.notes}
+                </p>
+            )}
+        </article>
+    );
+}
+
+function AuditLine({
+    label,
+    value,
+    helper,
+    tone = 'emerald',
+}: {
+    label: string;
+    value: string;
+    helper: string;
+    tone?: 'emerald' | 'rose';
+}) {
+    return (
+        <div className="flex gap-3">
+            <span
+                className={cn(
+                    'mt-1 size-2 shrink-0 rounded-full',
+                    tone === 'rose' ? 'bg-rose-400' : 'bg-emerald-400',
+                )}
+            />
+            <div className="min-w-0">
+                <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                    {label}
+                </p>
+                <p className="mt-1 text-[10px] font-medium text-foreground">
+                    {value}
+                </p>
+                <p className="mt-0.5 break-words text-[8px] leading-4 text-muted-foreground">
+                    {helper}
+                </p>
+            </div>
         </div>
     );
 }

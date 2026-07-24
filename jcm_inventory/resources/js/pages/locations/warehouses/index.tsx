@@ -153,7 +153,7 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
   {
     title: "Warehouses",
-    href: "/warehouses",
+    href: "/locations/warehouses",
   },
 ];
 
@@ -292,7 +292,7 @@ export default function WarehouseIndex({
     event.preventDefault();
 
     if (editingWarehouse) {
-      form.put(`/warehouses/${editingWarehouse.id}`, {
+      form.put(`/locations/warehouses/${editingWarehouse.id}`, {
         preserveScroll: true,
         onSuccess: resetAndCloseDialog,
       });
@@ -300,7 +300,7 @@ export default function WarehouseIndex({
       return;
     }
 
-    form.post("/warehouses", {
+    form.post("/locations/warehouses", {
       preserveScroll: true,
       onSuccess: resetAndCloseDialog,
     });
@@ -316,7 +316,7 @@ export default function WarehouseIndex({
     event.preventDefault();
 
     router.get(
-      "/warehouses",
+      "/locations/warehouses",
       {
         search: search.trim() || undefined,
         status: status || undefined,
@@ -336,7 +336,7 @@ export default function WarehouseIndex({
     setBranchId("");
 
     router.get(
-      "/warehouses",
+      "/locations/warehouses",
       {},
       {
         preserveState: true,
@@ -367,7 +367,7 @@ export default function WarehouseIndex({
     }
 
     router.patch(
-      `/warehouses/${warehouse.id}/status`,
+      `/locations/warehouses/${warehouse.id}/status`,
       {
         is_active: !warehouse.is_active,
       },
@@ -395,7 +395,7 @@ export default function WarehouseIndex({
       return;
     }
 
-    router.delete(`/warehouses/${deleteTarget.id}`, {
+    router.delete(`/locations/warehouses/${deleteTarget.id}`, {
       preserveScroll: true,
       onStart: () => setDeleteProcessing(true),
       onSuccess: () => setDeleteTarget(null),
@@ -419,7 +419,7 @@ export default function WarehouseIndex({
           avatar={
             <EntityAvatar
               icon={WarehouseIcon}
-              className="border-cyan-500/15 bg-cyan-500/10 text-cyan-400 group-hover:border-cyan-500/25 group-hover:bg-cyan-500/15"
+              className="border-primary/20 bg-primary/10 text-primary group-hover:border-primary/30 group-hover:bg-primary/15"
             />
           }
           title={warehouse.name}
@@ -453,7 +453,7 @@ export default function WarehouseIndex({
       cell: (warehouse) =>
         warehouse.branch ? (
           <div className="flex items-start gap-2.5">
-            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
+            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
               <Building2 className="size-4" />
             </span>
 
@@ -485,7 +485,7 @@ export default function WarehouseIndex({
       className: "min-w-[215px]",
       cell: (warehouse) => (
         <div className="flex max-w-[245px] items-start gap-2.5">
-          <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-red-500/15 bg-red-500/10 text-red-400">
+          <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
             <MapPin className="size-3.5" />
           </span>
 
@@ -502,7 +502,7 @@ export default function WarehouseIndex({
       cell: (warehouse) => (
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-[11px]">
-            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-blue-500/10 text-blue-400">
+            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
               <User className="size-3" />
             </span>
 
@@ -518,7 +518,7 @@ export default function WarehouseIndex({
           </div>
 
           <div className="flex items-center gap-2 text-[11px]">
-            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-400">
+            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
               <Phone className="size-3" />
             </span>
 
@@ -543,14 +543,12 @@ export default function WarehouseIndex({
             icon={Boxes}
             value={warehouse.stocks_count}
             label="Stock records"
-            tone="blue"
           />
 
           <InventoryCount
             icon={Activity}
             value={warehouse.stock_movements_count}
             label="Movements"
-            tone="violet"
           />
         </div>
       ),
@@ -585,7 +583,7 @@ export default function WarehouseIndex({
           <IconButton
             label="Edit warehouse"
             onClick={() => openEditDialog(warehouse)}
-            className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
+            className="text-primary hover:bg-primary/10 hover:text-primary"
           >
             <Pencil className="size-3.5" />
           </IconButton>
@@ -667,7 +665,7 @@ export default function WarehouseIndex({
             description="Create a business branch before registering warehouse locations."
             actions={
               <Button asChild type="button" variant="outline" size="sm">
-                <Link href="/branches">Manage Branches</Link>
+                <Link href="/locations/branches">Manage Branches</Link>
               </Button>
             }
           />
@@ -678,13 +676,13 @@ export default function WarehouseIndex({
         <section className="grid min-w-0 gap-3 xl:grid-cols-[280px_minmax(0,1fr)]">
           {/* Donut readiness gauge */}
 
-          <div className="relative overflow-hidden rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/[0.10] via-card/70 to-card/40 p-4">
-            <div className="pointer-events-none absolute -left-16 -top-16 size-44 rounded-full bg-cyan-500/10 blur-3xl" />
-            <WarehouseIcon className="pointer-events-none absolute -bottom-8 -right-6 size-28 text-cyan-400 opacity-[0.025]" />
+          <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.10] via-card/70 to-card/40 p-4">
+            <div className="pointer-events-none absolute -left-16 -top-16 size-44 rounded-full bg-primary/10 blur-3xl" />
+            <WarehouseIcon className="pointer-events-none absolute -bottom-8 -right-6 size-28 text-primary opacity-[0.025]" />
 
             <div className="relative flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-cyan-300">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-primary">
                   Operational Readiness
                 </p>
 
@@ -693,7 +691,7 @@ export default function WarehouseIndex({
                 </p>
               </div>
 
-              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-cyan-500/20 bg-cyan-500/10 text-cyan-400">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
                 <CircleGauge className="size-4" />
               </span>
             </div>
@@ -727,12 +725,12 @@ export default function WarehouseIndex({
                     strokeWidth="9"
                     strokeLinecap="round"
                     strokeDasharray={`${operationalPercentage} ${100 - operationalPercentage}`}
-                    className="text-cyan-400 transition-all duration-700"
+                    className="text-primary transition-all duration-700"
                   />
                 </svg>
 
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <span className="text-[26px] font-semibold leading-none tracking-[-0.04em] text-cyan-400 tabular-nums">
+                  <span className="text-[26px] font-semibold leading-none tracking-[-0.04em] text-primary tabular-nums">
                     {operationalPercentage}%
                   </span>
 
@@ -776,7 +774,7 @@ export default function WarehouseIndex({
           <div className="min-w-0 overflow-hidden rounded-2xl border border-border/60 bg-card/55">
             <div className="flex flex-col gap-3 border-b border-border/60 bg-muted/[0.025] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="inline-flex size-8 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
+                <span className="inline-flex size-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
                   <Boxes className="size-4" />
                 </span>
 
@@ -805,7 +803,7 @@ export default function WarehouseIndex({
                 value={summary.total}
                 description="Registered warehouses"
                 icon={WarehouseIcon}
-                tone="cyan"
+                tone="primary"
                 className="border-b border-border/60 sm:border-b-0 sm:border-r"
               />
 
@@ -814,7 +812,7 @@ export default function WarehouseIndex({
                 value={branches.length}
                 description={`${activeBranchCount} active branch${activeBranchCount === 1 ? "" : "es"}`}
                 icon={Building2}
-                tone="blue"
+                tone="primary"
                 className="border-b border-border/60 sm:border-b-0 sm:border-r"
               />
 
@@ -1026,7 +1024,7 @@ export default function WarehouseIndex({
                 </Button>
               ) : (
                 <Button asChild type="button">
-                  <Link href="/branches">
+                  <Link href="/locations/branches">
                     <Building2 className="size-4" />
                     Create Branch
                   </Link>
@@ -1216,7 +1214,7 @@ export default function WarehouseIndex({
                 onChange={(event) => form.setData("phone", event.target.value)}
                 placeholder="09XXXXXXXXX"
                 autoComplete="tel"
-                iconClassName="group-focus-within:text-emerald-400"
+                iconClassName="group-focus-within:text-primary"
               />
             </FormField>
           </div>
@@ -1332,19 +1330,14 @@ function StorageSnapshot({
   value: number;
   description: string;
   icon: LucideIcon;
-  tone: "cyan" | "blue" | "amber";
+  tone: "primary" | "amber";
   className?: string;
 }) {
   const toneStyles = {
-    cyan: {
-      icon: "border-cyan-500/20 bg-cyan-500/10 text-cyan-400",
-      value: "text-cyan-400",
-      glow: "bg-cyan-500/10",
-    },
-    blue: {
-      icon: "border-blue-500/20 bg-blue-500/10 text-blue-400",
-      value: "text-blue-400",
-      glow: "bg-blue-500/10",
+    primary: {
+      icon: "border-primary/20 bg-primary/10 text-primary",
+      value: "text-primary",
+      glow: "bg-primary/10",
     },
     amber: {
       icon: "border-amber-500/20 bg-amber-500/10 text-amber-400",
@@ -1413,17 +1406,12 @@ function InventoryCount({
   icon: Icon,
   value,
   label,
-  tone,
 }: {
   icon: LucideIcon;
   value: number;
   label: string;
-  tone: "blue" | "violet";
 }) {
-  const style =
-    tone === "blue"
-      ? "border-blue-500/15 bg-blue-500/[0.045] text-blue-400"
-      : "border-violet-500/15 bg-violet-500/[0.045] text-violet-400";
+  const style = "border-primary/15 bg-primary/[0.045] text-primary";
 
   return (
     <div className={cn("min-w-0 rounded-lg border px-2.5 py-2", style)}>

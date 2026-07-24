@@ -600,10 +600,10 @@ export default function ReceivingIndex({
       <PageContainer className="gap-4 md:gap-5">
         {/* Procurement receiving overview */}
 
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[0.07] via-card/70 to-card/40">
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.08] via-card/70 to-card/40">
           <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-400">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                 <ArrowDownToLine className="size-4" />
               </span>
 
@@ -642,18 +642,18 @@ export default function ReceivingIndex({
 
           <div className="grid min-w-0 lg:grid-cols-[minmax(330px,1.08fr)_minmax(0,1.92fr)]">
             <div className="relative overflow-hidden border-b border-border/60 p-4 lg:border-b-0 lg:border-r">
-              <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-amber-500/10 blur-3xl" />
-              <ArrowDownToLine className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-amber-400 opacity-[0.025]" />
+              <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-primary/10 blur-3xl" />
+              <ArrowDownToLine className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-primary opacity-[0.025]" />
 
               <div className="relative grid gap-4 sm:grid-cols-[64px_minmax(0,1fr)] sm:items-center">
-                <div className="flex size-16 items-center justify-center rounded-2xl border border-amber-500/20 bg-amber-500/10 text-amber-400 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.04)]">
+                <div className="flex size-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
                   <PackageCheck className="size-7" />
                 </div>
 
                 <div className="min-w-0">
                   <div className="flex items-end justify-between gap-4">
                     <div>
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-amber-300">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
                         Posted receipt integrity
                       </p>
 
@@ -669,7 +669,7 @@ export default function ReceivingIndex({
                     </div>
 
                     <div className="text-right">
-                      <p className="text-lg font-semibold tabular-nums text-amber-400">
+                      <p className="text-lg font-semibold tabular-nums text-primary">
                         {postedPercentage}%
                       </p>
 
@@ -849,7 +849,7 @@ export default function ReceivingIndex({
                 onChange={(event) =>
                   form.setData("received_date", event.target.value)
                 }
-                iconClassName="group-focus-within:text-blue-400"
+                iconClassName="group-focus-within:text-primary"
               />
             </FormField>
 
@@ -870,14 +870,14 @@ export default function ReceivingIndex({
                 }
                 placeholder="DR-0001"
                 autoComplete="off"
-                iconClassName="group-focus-within:text-amber-400"
+                iconClassName="group-focus-within:text-primary"
               />
             </FormField>
           </div>
         </FormSection>
 
         {selectedPurchaseOrder && (
-          <section className="overflow-hidden rounded-xl border border-amber-500/10 bg-amber-500/[0.025]">
+          <section className="overflow-hidden rounded-xl border border-primary/10 bg-primary/[0.025]">
             <div className="flex flex-col gap-2 border-b border-border/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-[11px] font-semibold">
@@ -1034,7 +1034,7 @@ export default function ReceivingIndex({
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-start gap-2.5">
-                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
+                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
                               <Boxes className="size-4" />
                             </span>
 
@@ -1110,8 +1110,8 @@ export default function ReceivingIndex({
                         </td>
 
                         <td className="px-4 py-3">
-                          <div className="rounded-lg border border-emerald-500/10 bg-emerald-500/[0.035] px-3 py-2.5">
-                            <p className="text-[11px] font-semibold tabular-nums text-emerald-400">
+                          <div className="rounded-lg border border-primary/10 bg-primary/[0.035] px-3 py-2.5">
+                            <p className="text-[11px] font-semibold tabular-nums text-primary">
                               {formatCurrency(lineTotal)}
                             </p>
                             <p className="mt-1 text-[8px] text-muted-foreground">
@@ -1172,10 +1172,10 @@ export default function ReceivingIndex({
               </FormField>
             </FormSection>
 
-            <section className="overflow-hidden rounded-xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.07] via-card/70 to-card/40">
+            <section className="overflow-hidden rounded-xl border border-primary/15 bg-gradient-to-br from-primary/[0.07] via-card/70 to-card/40">
               <div className="border-b border-border/60 px-4 py-3">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex size-8 items-center justify-center rounded-lg border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
+                  <span className="inline-flex size-8 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
                     <PackageCheck className="size-4" />
                   </span>
 
@@ -1231,7 +1231,7 @@ export default function ReceivingIndex({
         {viewingReceipt && (
           <div className="flex min-h-full flex-col">
             <div className="flex-1 space-y-4 p-5">
-              <section className="overflow-hidden rounded-xl border border-amber-500/10 bg-amber-500/[0.025]">
+              <section className="overflow-hidden rounded-xl border border-primary/10 bg-primary/[0.025]">
                 <div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
                   <div>
                     <p className="text-[11px] font-semibold">
@@ -1328,7 +1328,7 @@ export default function ReceivingIndex({
                           <td className="px-4 py-3 text-[11px] tabular-nums">
                             {formatCurrency(item.unit_cost)}
                           </td>
-                          <td className="px-4 py-3 text-[11px] font-semibold tabular-nums text-emerald-400">
+                          <td className="px-4 py-3 text-[11px] font-semibold tabular-nums text-primary">
                             {formatCurrency(item.line_total)}
                           </td>
                           <td className="max-w-[220px] px-4 py-3 text-[10px] text-muted-foreground">
@@ -1344,7 +1344,7 @@ export default function ReceivingIndex({
               <div className="grid gap-3 sm:grid-cols-2">
                 <section className="rounded-xl border border-border/60 bg-muted/[0.02] p-4">
                   <div className="flex items-start gap-3">
-                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
                       <UserRound className="size-4" />
                     </span>
                     <div>
@@ -1591,7 +1591,7 @@ function ReadyToReceiveTable({
               <tr>
                 <td colSpan={8} className="px-4 py-12">
                   <div className="mx-auto flex max-w-sm flex-col items-center text-center">
-                    <span className="flex size-11 items-center justify-center rounded-xl border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
+                    <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
                       <PackageCheck className="size-5" />
                     </span>
 
@@ -1644,9 +1644,9 @@ function ReadyToReceiveTable({
                         }
                       }}
                       className={cn(
-                        "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/40",
+                        "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
                         isExpanded &&
-                          "bg-emerald-500/[0.035] hover:bg-emerald-500/[0.055]",
+                          "bg-primary/[0.035] hover:bg-primary/[0.055]",
                       )}
                     >
                       <td className="px-3 py-3 align-middle">
@@ -1664,8 +1664,8 @@ function ReadyToReceiveTable({
                             onToggleDetails(order.id);
                           }}
                           className={cn(
-                            "size-7 rounded-md text-muted-foreground transition-colors hover:bg-emerald-500/10 hover:text-emerald-400",
-                            isExpanded && "bg-emerald-500/10 text-emerald-400",
+                            "size-7 rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary",
+                            isExpanded && "bg-primary/10 text-primary",
                           )}
                         >
                           <ChevronDown
@@ -1681,11 +1681,11 @@ function ReadyToReceiveTable({
                         <div className="flex min-w-0 items-center gap-2.5">
                           <EntityAvatar
                             icon={ClipboardList}
-                            className="border-emerald-500/15 bg-emerald-500/10 text-emerald-400 group-hover:border-emerald-500/25 group-hover:bg-emerald-500/15"
+                            className="border-primary/15 bg-primary/10 text-primary group-hover:border-primary/25 group-hover:bg-primary/15"
                           />
 
                           <div className="min-w-0">
-                            <p className="max-w-[170px] truncate font-mono text-[10px] font-semibold text-emerald-300">
+                            <p className="max-w-[170px] truncate font-mono text-[10px] font-semibold text-primary">
                               {order.po_number}
                             </p>
 
@@ -1700,7 +1700,7 @@ function ReadyToReceiveTable({
                         <div className="flex min-w-0 items-center gap-2.5">
                           <EntityAvatar
                             icon={Truck}
-                            className="border-amber-500/15 bg-amber-500/10 text-amber-400"
+                            className="border-primary/15 bg-primary/10 text-primary"
                           />
 
                           <div className="min-w-0">
@@ -1718,7 +1718,7 @@ function ReadyToReceiveTable({
                       <td className="px-3 py-3.5 align-middle">
                         <div className="space-y-1.5">
                           <div className="flex min-w-0 items-center gap-2">
-                            <Warehouse className="size-3.5 shrink-0 text-violet-400" />
+                            <Warehouse className="size-3.5 shrink-0 text-primary" />
 
                             <span className="max-w-[165px] truncate text-[10px] font-semibold text-foreground/90">
                               {order.warehouse.name}
@@ -1726,7 +1726,7 @@ function ReadyToReceiveTable({
                           </div>
 
                           <div className="flex min-w-0 items-center gap-2">
-                            <Building2 className="size-3.5 shrink-0 text-blue-400" />
+                            <Building2 className="size-3.5 shrink-0 text-primary" />
 
                             <span className="max-w-[165px] truncate text-[9px] text-muted-foreground">
                               {order.branch.name}
@@ -1824,10 +1824,10 @@ function ReadyToReceiveExpandedDetails({
   );
 
   return (
-    <div className="overflow-hidden rounded-xl border border-emerald-500/10 bg-background/45 shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-primary/10 bg-background/45 shadow-sm">
       <div className="flex flex-col gap-2 border-b border-border/60 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-300">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
             Approved Order Details
           </p>
 
@@ -1907,7 +1907,7 @@ function ReadyToReceiveExpandedDetails({
               <tr key={item.id} className="hover:bg-muted/[0.025]">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2.5">
-                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
+                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
                       <Boxes className="size-4" />
                     </span>
 
@@ -1935,7 +1935,7 @@ function ReadyToReceiveExpandedDetails({
                   {formatQuantity(item.remaining_quantity)}
                 </td>
 
-                <td className="px-4 py-3 text-[11px] tabular-nums text-emerald-400">
+                <td className="px-4 py-3 text-[11px] tabular-nums text-primary">
                   {formatCurrency(item.unit_cost)}
                 </td>
 
@@ -1982,16 +1982,16 @@ function ReceivingNetworkMetric({
 }) {
   const toneStyles = {
     amber: {
-      icon: "border-amber-500/20 bg-amber-500/10 text-amber-400",
-      value: "text-amber-400",
-      glow: "bg-amber-500/10",
-      bar: "bg-amber-400",
+      icon: "border-primary/20 bg-primary/10 text-primary",
+      value: "text-primary",
+      glow: "bg-primary/10",
+      bar: "bg-primary",
     },
     blue: {
-      icon: "border-blue-500/20 bg-blue-500/10 text-blue-400",
-      value: "text-blue-400",
-      glow: "bg-blue-500/10",
-      bar: "bg-blue-400",
+      icon: "border-primary/20 bg-primary/10 text-primary",
+      value: "text-primary",
+      glow: "bg-primary/10",
+      bar: "bg-primary",
     },
     emerald: {
       icon: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
@@ -2105,10 +2105,10 @@ function ReceiptContextMetric({
   className?: string;
 }) {
   const toneStyles = {
-    amber: "border-amber-500/15 bg-amber-500/10 text-amber-400",
-    blue: "border-blue-500/15 bg-blue-500/10 text-blue-400",
-    emerald: "border-emerald-500/15 bg-emerald-500/10 text-emerald-400",
-    violet: "border-violet-500/15 bg-violet-500/10 text-violet-400",
+    amber: "border-primary/15 bg-primary/10 text-primary",
+    blue: "border-primary/15 bg-primary/10 text-primary",
+    emerald: "border-primary/15 bg-primary/10 text-primary",
+    violet: "border-primary/15 bg-primary/10 text-primary",
   } as const;
 
   return (
@@ -2166,7 +2166,7 @@ function ReceiptSummaryRow({
       <span
         className={cn(
           "font-semibold tabular-nums",
-          strong ? "text-lg text-emerald-400" : "text-[12px]",
+          strong ? "text-lg text-primary" : "text-[12px]",
         )}
       >
         {value}

@@ -131,8 +131,7 @@ type BranchPageProps = {
 };
 
 type BranchMetricTone =
-    | 'blue'
-    | 'violet'
+    | 'primary'
     | 'amber'
     | 'red';
 
@@ -149,7 +148,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
     {
         title: 'Branches',
-        href: '/branches',
+        href: '/locations/branches',
     },
 ];
 
@@ -292,7 +291,7 @@ export default function BranchIndex({
 
         if (editingBranch) {
             form.put(
-                `/branches/${editingBranch.id}`,
+                `/locations/branches/${editingBranch.id}`,
                 {
                     preserveScroll: true,
                     onSuccess:
@@ -303,7 +302,7 @@ export default function BranchIndex({
             return;
         }
 
-        form.post('/branches', {
+        form.post('/locations/branches', {
             preserveScroll: true,
             onSuccess:
                 resetAndCloseBranchDialog,
@@ -322,7 +321,7 @@ export default function BranchIndex({
         event.preventDefault();
 
         router.get(
-            '/branches',
+            '/locations/branches',
             {
                 search:
                     search.trim() || undefined,
@@ -343,7 +342,7 @@ export default function BranchIndex({
         setStatus('');
 
         router.get(
-            '/branches',
+            '/locations/branches',
             {},
             {
                 preserveState: true,
@@ -384,7 +383,7 @@ export default function BranchIndex({
         }
 
         router.patch(
-            `/branches/${branch.id}/status`,
+            `/locations/branches/${branch.id}/status`,
             {
                 is_active:
                     !branch.is_active,
@@ -427,7 +426,7 @@ export default function BranchIndex({
         }
 
         router.delete(
-            `/branches/${deleteTarget.id}`,
+            `/locations/branches/${deleteTarget.id}`,
             {
                 preserveScroll: true,
 
@@ -461,7 +460,7 @@ export default function BranchIndex({
                         avatar={
                             <EntityAvatar
                                 icon={Building2}
-                                className="border-blue-500/15 bg-blue-500/10 text-blue-400 group-hover:border-blue-500/25 group-hover:bg-blue-500/15"
+                                className="border-primary/20 bg-primary/10 text-primary group-hover:border-primary/30 group-hover:bg-primary/15"
                             />
                         }
                         title={branch.name}
@@ -495,7 +494,7 @@ export default function BranchIndex({
 
                 cell: (branch) => (
                     <div className="flex max-w-[270px] items-start gap-2.5">
-                        <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-red-500/15 bg-red-500/10 text-red-400">
+                        <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
                             <MapPin className="size-3.5" />
                         </span>
 
@@ -520,7 +519,7 @@ export default function BranchIndex({
                 cell: (branch) => (
                     <div className="space-y-2">
                         <div className="flex items-center gap-2 text-[11px]">
-                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-400">
+                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                                 <Phone className="size-3" />
                             </span>
 
@@ -537,7 +536,7 @@ export default function BranchIndex({
                         </div>
 
                         <div className="flex items-center gap-2 text-[11px]">
-                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-blue-500/10 text-blue-400">
+                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                                 <Mail className="size-3" />
                             </span>
 
@@ -636,7 +635,7 @@ export default function BranchIndex({
                                     branch,
                                 )
                             }
-                            className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
+                            className="text-primary hover:bg-primary/10 hover:text-primary"
                         >
                             <Pencil className="size-3.5" />
                         </IconButton>
@@ -722,10 +721,10 @@ export default function BranchIndex({
                 |--------------------------------------------------------------------------
                 */}
 
-                <section className="min-w-0 overflow-hidden rounded-2xl border border-blue-500/15 bg-gradient-to-br from-blue-500/[0.08] via-card/70 to-card/40">
+                <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.08] via-card/70 to-card/40">
                     <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                                 <Network className="size-4" />
                             </span>
 
@@ -761,18 +760,18 @@ export default function BranchIndex({
 
                     <div className="grid min-w-0 lg:grid-cols-[minmax(300px,1.05fr)_minmax(0,1.95fr)]">
                         <div className="relative overflow-hidden border-b border-border/60 p-4 lg:border-b-0 lg:border-r">
-                            <div className="pointer-events-none absolute -right-12 -top-16 size-44 rounded-full bg-blue-500/10 blur-3xl" />
-                            <Network className="pointer-events-none absolute -bottom-7 -right-5 size-28 text-blue-400 opacity-[0.025]" />
+                            <div className="pointer-events-none absolute -right-12 -top-16 size-44 rounded-full bg-primary/10 blur-3xl" />
+                            <Network className="pointer-events-none absolute -bottom-7 -right-5 size-28 text-primary opacity-[0.025]" />
 
                             <div className="relative grid gap-4 sm:grid-cols-[64px_minmax(0,1fr)] sm:items-center">
-                                <div className="flex size-16 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/10 text-blue-400 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.04)]">
+                                <div className="flex size-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
                                     <Network className="size-7" />
                                 </div>
 
                                 <div className="min-w-0">
                                     <div className="flex items-end justify-between gap-4">
                                         <div>
-                                            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-blue-300">
+                                            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
                                                 Operational coverage
                                             </p>
 
@@ -788,7 +787,7 @@ export default function BranchIndex({
                                         </div>
 
                                         <div className="text-right">
-                                            <p className="text-lg font-semibold tabular-nums text-blue-400">
+                                            <p className="text-lg font-semibold tabular-nums text-primary">
                                                 {operationalPercentage}%
                                             </p>
 
@@ -800,7 +799,7 @@ export default function BranchIndex({
 
                                     <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-background/60">
                                         <div
-                                            className="h-full rounded-full bg-blue-400 transition-all duration-500"
+                                            className="h-full rounded-full bg-primary transition-all duration-500"
                                             style={{
                                                 width: `${operationalPercentage}%`,
                                             }}
@@ -820,7 +819,7 @@ export default function BranchIndex({
                                 value={summary.total}
                                 description="Registered branches"
                                 icon={Building2}
-                                tone="violet"
+                                tone="primary"
                                 className="border-b border-border/60 sm:border-b-0 sm:border-r"
                                 footer={
                                     <div className="space-y-2">
@@ -1267,7 +1266,7 @@ export default function BranchIndex({
                                 }
                                 placeholder="09XXXXXXXXX"
                                 autoComplete="tel"
-                                iconClassName="group-focus-within:text-emerald-400"
+                                iconClassName="group-focus-within:text-primary"
                             />
                         </FormField>
 
@@ -1486,32 +1485,18 @@ function BranchNetworkMetric({
             footer: string;
         }
     > = {
-        blue: {
+        primary: {
             icon:
-                'border-blue-500/20 bg-blue-500/10 text-blue-400',
+                'border-primary/20 bg-primary/10 text-primary',
 
-            value: 'text-blue-400',
+            value: 'text-primary',
 
-            accent: 'bg-blue-400',
+            accent: 'bg-primary',
 
-            glow: 'bg-blue-500/10',
+            glow: 'bg-primary/10',
 
             footer:
-                'border-blue-500/10 bg-blue-500/[0.035]',
-        },
-
-        violet: {
-            icon:
-                'border-violet-500/20 bg-violet-500/10 text-violet-400',
-
-            value: 'text-violet-400',
-
-            accent: 'bg-violet-400',
-
-            glow: 'bg-violet-500/10',
-
-            footer:
-                'border-violet-500/10 bg-violet-500/[0.035]',
+                'border-primary/15 bg-primary/[0.04]',
         },
 
         amber: {

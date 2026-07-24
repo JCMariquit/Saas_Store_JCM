@@ -360,20 +360,20 @@ function HistoryHeader({
 }) {
     return (
         <div className="space-y-4">
-            <section className="relative overflow-hidden rounded-2xl border border-emerald-500/15 bg-[linear-gradient(135deg,rgba(16,185,129,0.035)_0%,rgba(9,11,10,0.98)_34%,rgba(7,9,8,0.99)_100%)] shadow-sm">
-                <div className="pointer-events-none absolute -left-16 -top-20 size-48 rounded-full bg-emerald-500/[0.045] blur-3xl" />
+            <section className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.055] via-card/95 to-card shadow-sm">
+                <div className="pointer-events-none absolute -left-16 -top-20 size-48 rounded-full bg-primary/[0.06] blur-3xl" />
 
                 <div className="relative flex flex-col gap-3 border-b border-border/60 bg-background/15 px-4 py-3 sm:flex-row sm:items-center sm:justify-between md:px-5">
                     <div className="flex min-w-0 items-center gap-3">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] text-emerald-400">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/[0.08] text-primary">
                             <History className="size-4" />
                         </span>
 
                         <div className="min-w-0">
-                            <p className="text-[11px] font-semibold text-white">
+                            <p className="text-[11px] font-semibold text-foreground">
                                 Inventory Withdrawal Archive
                             </p>
-                            <p className="mt-0.5 truncate text-[9px] text-white/45">
+                            <p className="mt-0.5 truncate text-[9px] text-muted-foreground">
                                 Posted, voided, and restored stock movement records.
                             </p>
                         </div>
@@ -389,7 +389,7 @@ function HistoryHeader({
 
                 <div className="relative flex flex-col gap-5 px-4 py-5 lg:flex-row lg:items-center lg:justify-between md:px-6 md:py-6">
                     <div className="min-w-0">
-                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-400">
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
                             Stock movement history
                         </p>
 
@@ -414,14 +414,14 @@ function HistoryHeader({
                         type="button"
                         variant="outline"
                         onClick={onBack}
-                        className="h-9 shrink-0 rounded-xl border-emerald-500/15 bg-emerald-500/[0.045] px-3 text-xs text-emerald-400 hover:bg-emerald-500/[0.08] hover:text-emerald-300"
+                        className="h-9 shrink-0 rounded-xl border-primary/15 bg-primary/[0.055] px-3 text-xs text-primary hover:bg-primary/[0.1] hover:text-primary"
                     >
                         <ArrowLeft className="size-3.5" />
                         Back to Withdrawal
                     </Button>
                 </div>
 
-                <div className="relative h-px bg-gradient-to-r from-transparent via-emerald-500/25 to-transparent" />
+                <div className="relative h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
             </section>
 
         </div>
@@ -548,11 +548,7 @@ export default function StockWithdrawalHistory({
                 handleKeyDown,
             );
         };
-    }, [
-        selectedIssuance,
-        voidTarget,
-        voidForm.processing,
-    ]);
+    }, );
 
     const hasActiveFilters =
         Boolean(
@@ -745,7 +741,7 @@ export default function StockWithdrawalHistory({
                                 <Button
                                     type="submit"
                                     variant="secondary"
-                                    className="h-10 border border-emerald-500/15 bg-emerald-500/[0.055] px-4 text-sm text-emerald-400 hover:bg-emerald-500/[0.09] hover:text-emerald-300"
+                                    className="h-10 border border-primary/15 bg-primary/[0.06] px-4 text-sm text-primary hover:bg-primary/[0.1] hover:text-primary"
                                 >
                                     <Search className="size-3.5" />
                                     Apply Filters
@@ -950,7 +946,7 @@ export default function StockWithdrawalHistory({
                                 )
                             }
                             className="h-10"
-                            iconClassName="text-blue-400"
+                            iconClassName="text-primary"
                         />
 
                         <IconInput
@@ -975,7 +971,7 @@ export default function StockWithdrawalHistory({
                                 )
                             }
                             className="h-10"
-                            iconClassName="text-emerald-400"
+                            iconClassName="text-primary"
                         />
                     </FilterBar>
 
@@ -984,7 +980,7 @@ export default function StockWithdrawalHistory({
                     <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20 shadow-sm">
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[1080px] border-collapse">
-                                <thead className="border-b border-border/70 bg-emerald-500/[0.025]">
+                                <thead className="border-b border-border/70 bg-primary/[0.025]">
                                     <tr>
                                         <th className="min-w-[190px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                                             Withdrawal
@@ -1024,7 +1020,7 @@ export default function StockWithdrawalHistory({
                                                 className="px-4 py-14"
                                             >
                                                 <div className="mx-auto flex max-w-sm flex-col items-center text-center">
-                                                    <span className="flex size-11 items-center justify-center rounded-xl border border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-400">
+                                                    <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.06] text-primary">
                                                         <History className="size-5" />
                                                     </span>
 
@@ -1088,7 +1084,7 @@ export default function StockWithdrawalHistory({
                                                             );
                                                         }
                                                     }}
-                                                    className="group cursor-pointer bg-card transition hover:bg-emerald-500/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/30"
+                                                    className="group cursor-pointer bg-card transition hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30"
                                                 >
                                                     <td className="px-3 py-3">
                                                         <div className="flex items-center gap-3">
@@ -1110,7 +1106,7 @@ export default function StockWithdrawalHistory({
                                                                 </p>
 
                                                                 {issuance.reference_no && (
-                                                                    <p className="mt-0.5 max-w-40 truncate text-[8px] text-blue-300">
+                                                                    <p className="mt-0.5 max-w-40 truncate text-[8px] text-primary/80">
                                                                         Ref:{' '}
                                                                         {
                                                                             issuance.reference_no
@@ -1123,7 +1119,7 @@ export default function StockWithdrawalHistory({
 
                                                     <td className="px-3 py-3">
                                                         <div className="flex items-start gap-2">
-                                                            <UserRound className="mt-0.5 size-3.5 shrink-0 text-emerald-400" />
+                                                            <UserRound className="mt-0.5 size-3.5 shrink-0 text-primary" />
 
                                                             <div className="min-w-0">
                                                                 <p className="max-w-[165px] truncate text-[10px] font-medium">
@@ -1142,7 +1138,7 @@ export default function StockWithdrawalHistory({
 
                                                     <td className="px-3 py-3">
                                                         <div className="flex items-start gap-2">
-                                                            <Warehouse className="mt-0.5 size-3.5 shrink-0 text-amber-300" />
+                                                            <Warehouse className="mt-0.5 size-3.5 shrink-0 text-primary" />
 
                                                             <div className="min-w-0">
                                                                 <p className="max-w-[175px] truncate text-[10px] font-medium">
@@ -1243,7 +1239,7 @@ export default function StockWithdrawalHistory({
                                                                     issuance,
                                                                 );
                                                             }}
-                                                            className="h-8 rounded-lg border-emerald-500/15 bg-emerald-500/[0.035] px-2.5 text-[9px] text-emerald-400 hover:bg-emerald-500/[0.08] hover:text-emerald-300"
+                                                            className="h-8 rounded-lg border-primary/15 bg-primary/[0.04] px-2.5 text-[9px] text-primary hover:bg-primary/[0.09] hover:text-primary"
                                                         >
                                                             Details
                                                         </Button>
@@ -1403,7 +1399,7 @@ export default function StockWithdrawalHistory({
 
                             <div className="rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5">
                                 <div className="flex items-start gap-2">
-                                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-300" />
+                                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-primary" />
 
                                     <p className="text-[9px] leading-4 text-amber-200/80">
                                         The backend
@@ -1565,16 +1561,16 @@ function WithdrawalDetailsDrawer({
                 className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[840px] flex-col overflow-hidden border-l border-border/80 bg-card shadow-[-24px_0_70px_-30px_rgba(0,0,0,0.82)] animate-in slide-in-from-right duration-300"
             >
                 <header className="relative shrink-0 border-b border-border/70 bg-card px-4 py-4 sm:px-6 sm:py-5">
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
 
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex min-w-0 items-start gap-3.5">
-                            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-400 shadow-sm">
+                            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/[0.08] text-primary shadow-sm">
                                 <ReceiptText className="size-5" />
                             </span>
 
                             <div className="min-w-0">
-                                <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-emerald-400">
+                                <p className="text-[8px] font-semibold uppercase tracking-[0.16em] text-primary">
                                     Withdrawal audit record
                                 </p>
 
@@ -1613,7 +1609,7 @@ function WithdrawalDetailsDrawer({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background/35 text-muted-foreground transition hover:border-emerald-500/20 hover:bg-emerald-500/[0.055] hover:text-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+                            className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background/35 text-muted-foreground transition hover:border-primary/20 hover:bg-primary/[0.06] hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                             aria-label="Close withdrawal details"
                         >
                             <X className="size-4" />
@@ -1627,7 +1623,7 @@ function WithdrawalDetailsDrawer({
 
                 <footer className="flex shrink-0 flex-col-reverse gap-2 border-t border-border/70 bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
-                        <Fingerprint className="size-3.5 text-emerald-400" />
+                        <Fingerprint className="size-3.5 text-primary" />
                         Immutable inventory transaction snapshot
                     </div>
 
@@ -1767,8 +1763,8 @@ function WithdrawalDrawerContent({
                         </dl>
 
                         {issuance.notes && (
-                            <div className="mt-5 border-l-2 border-blue-400/40 pl-4">
-                                <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-blue-300">
+                            <div className="mt-5 border-l-2 border-primary/40 pl-4">
+                                <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-primary">
                                     Transaction notes
                                 </p>
                                 <p className="mt-1.5 whitespace-pre-wrap text-[10px] leading-5 text-foreground/80">
@@ -2000,7 +1996,7 @@ function ProfessionalItemRow({
             <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 border-t border-border/50 pt-2.5 text-[8px] text-muted-foreground">
                 <span>
                     Movement:{' '}
-                    <strong className="font-mono font-medium text-blue-300">
+                    <strong className="font-mono font-medium text-primary">
                         {item.stock_movement_id ? `#${item.stock_movement_id}` : 'Not linked'}
                     </strong>
                 </span>
@@ -2028,19 +2024,19 @@ function AuditLine({
     label,
     value,
     helper,
-    tone = 'emerald',
+    tone = 'primary',
 }: {
     label: string;
     value: string;
     helper: string;
-    tone?: 'emerald' | 'rose';
+    tone?: 'primary' | 'rose';
 }) {
     return (
         <div className="flex gap-3">
             <span
                 className={cn(
                     'mt-1 size-2 shrink-0 rounded-full',
-                    tone === 'rose' ? 'bg-rose-400' : 'bg-emerald-400',
+                    tone === 'rose' ? 'bg-rose-400' : 'bg-primary',
                 )}
             />
             <div className="min-w-0">

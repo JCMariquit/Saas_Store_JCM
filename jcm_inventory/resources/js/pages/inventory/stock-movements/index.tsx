@@ -352,7 +352,7 @@ export default function StockMovementIndex({
                             <>
                                 <Button
                                     type="submit"
-                                    className="h-10 border border-emerald-500/25 bg-emerald-500/10 px-4 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/15 hover:text-emerald-200"
+                                    className="h-10 border border-primary/25 bg-primary/10 px-4 text-sm font-semibold text-primary hover:bg-primary/15 hover:text-primary"
                                 >
                                     <Search className="size-3.5" />
                                     Apply Filters
@@ -455,7 +455,7 @@ export default function StockMovementIndex({
                             aria-label="Movement date from"
                             title="Movement date from"
                             className="h-10"
-                            iconClassName="group-focus-within:text-emerald-400"
+                            iconClassName="group-focus-within:text-primary"
                         />
 
                         <IconInput
@@ -468,7 +468,7 @@ export default function StockMovementIndex({
                             aria-label="Movement date to"
                             title="Movement date to"
                             className="h-10"
-                            iconClassName="group-focus-within:text-emerald-400"
+                            iconClassName="group-focus-within:text-primary"
                         />
                     </FilterBar>
                     <div className="border-t border-border/60">
@@ -516,7 +516,7 @@ function MovementLedgerTable({
         <div className="overflow-hidden bg-background/10">
             <div className="overflow-x-auto">
                 <table className="w-full min-w-[980px] border-collapse">
-                    <thead className="border-b border-emerald-500/10 bg-emerald-500/[0.025]">
+                    <thead className="border-b border-primary/10 bg-primary/[0.025]">
                         <tr>
                             <th className="min-w-[220px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                                 Movement
@@ -544,7 +544,7 @@ function MovementLedgerTable({
                             <tr>
                                 <td colSpan={6} className="px-6 py-14">
                                     <div className="mx-auto flex max-w-sm flex-col items-center text-center">
-                                        <span className="flex size-11 items-center justify-center rounded-xl border border-emerald-500/15 bg-emerald-500/[0.045] text-emerald-400">
+                                        <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.045] text-primary">
                                             <Activity className="size-5" />
                                         </span>
                                         <h3 className="mt-3 text-sm font-semibold">
@@ -588,7 +588,7 @@ function MovementLedgerTable({
                                             onSelectMovement(movement);
                                         }
                                     }}
-                                    className="group cursor-pointer bg-card/55 transition-colors hover:bg-emerald-500/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/40"
+                                    className="group cursor-pointer bg-card/55 transition-colors hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
                                 >
                                     <td className="px-4 py-3.5">
                                         <div className="flex min-w-0 items-start gap-3">
@@ -639,7 +639,7 @@ function MovementLedgerTable({
 
                                     <td className="px-4 py-3.5">
                                         <div className="flex min-w-0 items-center gap-2.5">
-                                            <Warehouse className="size-3.5 shrink-0 text-emerald-400" />
+                                            <Warehouse className="size-3.5 shrink-0 text-primary" />
                                             <div className="min-w-0">
                                                 <p className="max-w-[165px] truncate text-[10px] font-semibold">
                                                     {movement.warehouse.name}
@@ -697,7 +697,7 @@ function MovementLedgerTable({
                                                 event.stopPropagation();
                                                 onSelectMovement(movement);
                                             }}
-                                            className="h-8 rounded-lg border-emerald-500/15 bg-emerald-500/[0.035] px-2.5 text-[9px] text-emerald-400 hover:bg-emerald-500/[0.08] hover:text-emerald-300"
+                                            className="h-8 rounded-lg border-primary/15 bg-primary/[0.035] px-2.5 text-[9px] text-primary hover:bg-primary/[0.08] hover:text-primary"
                                         >
                                             <Eye className="size-3.5" />
                                             Details
@@ -740,7 +740,7 @@ function MovementDetailsDrawer({
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="movement-details-title"
-                className="absolute inset-y-0 right-0 flex w-full max-w-[720px] flex-col overflow-hidden border-l border-emerald-500/15 bg-card shadow-[-24px_0_80px_-30px_rgba(0,0,0,0.85)] animate-in slide-in-from-right duration-300 sm:w-[92vw]"
+                className="absolute inset-y-0 right-0 flex w-full max-w-[720px] flex-col overflow-hidden border-l border-primary/15 bg-card shadow-[-24px_0_80px_-30px_rgba(0,0,0,0.85)] animate-in slide-in-from-right duration-300 sm:w-[92vw]"
             >
                 <div
                     className={cn(
@@ -749,7 +749,7 @@ function MovementDetailsDrawer({
                     )}
                 />
 
-                <header className="flex shrink-0 items-start justify-between gap-4 border-b border-emerald-500/10 bg-[linear-gradient(135deg,rgba(16,185,129,0.05)_0%,rgba(16,185,129,0.015)_48%,transparent_100%)] px-4 py-4 sm:px-6 sm:py-5">
+                <header className="flex shrink-0 items-start justify-between gap-4 border-b border-primary/10 bg-gradient-to-br from-primary/[0.05] via-primary/[0.015] to-transparent px-4 py-4 sm:px-6 sm:py-5">
                     <div className="flex min-w-0 items-start gap-3.5">
                         <span
                             className={cn(
@@ -790,7 +790,7 @@ function MovementDetailsDrawer({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background/40 text-muted-foreground transition hover:border-border hover:bg-muted/60 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+                        className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background/40 text-muted-foreground transition hover:border-border hover:bg-muted/60 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                         aria-label="Close movement details"
                     >
                         <X className="size-4" />
@@ -999,7 +999,7 @@ function MovementDetailsDrawer({
                                         <>
                                             <div className="flex items-center gap-2 px-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                                 <span className="h-px flex-1 bg-border/60" />
-                                                <ArrowRightLeft className="size-3.5 text-teal-400" />
+                                                <ArrowRightLeft className="size-3.5 text-primary" />
                                                 Transfer route
                                                 <span className="h-px flex-1 bg-border/60" />
                                             </div>
@@ -1056,16 +1056,16 @@ function MovementDetailsDrawer({
                     </div>
                 </div>
 
-                <footer className="flex shrink-0 flex-col gap-3 border-t border-emerald-500/10 bg-emerald-500/[0.025] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <footer className="flex shrink-0 flex-col gap-3 border-t border-primary/10 bg-primary/[0.025] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                        <ShieldCheck className="size-3.5 text-emerald-400" />
+                        <ShieldCheck className="size-3.5 text-primary" />
                         Read-only inventory audit record
                     </div>
 
                     <Button
                         type="button"
                         onClick={onClose}
-                        className="h-9 rounded-lg bg-emerald-600 px-5 text-xs font-semibold text-white hover:bg-emerald-500"
+                        className="h-9 rounded-lg bg-primary px-5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                     >
                         Close
                     </Button>
@@ -1132,7 +1132,7 @@ function ModalSection({
     return (
         <section>
             <div className="mb-3 flex items-center gap-3">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/15 bg-emerald-500/[0.045] text-emerald-400">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.045] text-primary">
                     <Icon className="size-3.5" />
                 </span>
 
@@ -1224,8 +1224,8 @@ function ModalWarehouse({
                 className={cn(
                     'flex size-9 shrink-0 items-center justify-center rounded-lg border',
                     tone === 'emerald'
-                        ? 'border-emerald-500/15 bg-emerald-500/[0.05] text-emerald-400'
-                        : 'border-teal-500/15 bg-teal-500/[0.05] text-teal-400',
+                        ? 'border-primary/20 bg-primary/[0.06] text-primary'
+                        : 'border-primary/15 bg-primary/[0.035] text-primary/80',
                 )}
             >
                 <Warehouse className="size-4" />
@@ -1272,10 +1272,10 @@ function MovementControlBoard({
     const netIncoming = netQuantity >= 0;
 
     return (
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.035] via-card/70 to-card/40">
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.035] via-card/70 to-card/40">
             <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] text-emerald-400">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/[0.07] text-primary">
                         <Activity className="size-4" />
                     </span>
 
@@ -1300,10 +1300,10 @@ function MovementControlBoard({
 
             <div className="grid min-w-0 xl:grid-cols-[minmax(320px,1.15fr)_minmax(0,1.85fr)]">
                 <div className="relative overflow-hidden border-b border-border/60 p-4 xl:border-b-0 xl:border-r md:p-5">
-                    <div className="pointer-events-none absolute -left-16 -top-20 size-48 rounded-full bg-emerald-500/[0.055] blur-3xl" />
+                    <div className="pointer-events-none absolute -left-16 -top-20 size-48 rounded-full bg-primary/[0.055] blur-3xl" />
 
                     <div className="relative">
-                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-emerald-300">
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-primary">
                             Net inventory quantity
                         </p>
 
@@ -1345,7 +1345,7 @@ function MovementControlBoard({
                             </div>
 
                             <div className="text-right">
-                                <p className="text-xl font-semibold tabular-nums text-emerald-400">
+                                <p className="text-xl font-semibold tabular-nums text-primary">
                                     {formatNumber(summary.total)}
                                 </p>
                                 <p className="mt-1 text-[8px] uppercase tracking-wider text-muted-foreground">
@@ -1460,7 +1460,7 @@ function ControlSnapshot({
         emerald:
             'border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-400',
         rose: 'border-rose-500/15 bg-rose-500/[0.055] text-rose-400',
-        teal: 'border-teal-500/15 bg-teal-500/[0.055] text-teal-400',
+        teal: 'border-primary/15 bg-primary/[0.055] text-primary',
     }[tone];
 
     return (
@@ -1502,7 +1502,7 @@ function ControlDetail({
 }) {
     return (
         <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-border/60 bg-background/30 px-3 py-2.5">
-            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/[0.055] text-emerald-400">
+            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/[0.055] text-primary">
                 <Icon className="size-4" />
             </span>
 

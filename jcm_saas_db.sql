@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 23, 2026 at 08:04 AM
+-- Generation Time: Jul 24, 2026 at 09:28 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -825,9 +825,9 @@ INSERT INTO `sidebar_items` (`id`, `product_id`, `parent_id`, `feature_id`, `ite
 (1, 11, NULL, 1, 'dashboard', 'overview', 'link', 'Main Dashboard', 'dashboard', '/dashboard', 'LayoutDashboard', 'TEST', 5, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-23 05:58:25'),
 (2, 11, NULL, 2, 'inventory-overview', 'overview', 'link', 'Stock Overview', 'inventory.overview', '/inventory/overview', 'BarChart3', 'TEST', 5, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-23 05:58:25'),
 (3, 11, NULL, NULL, 'inventory-group', 'management', 'group', 'Inventory', NULL, NULL, 'Boxes', 'TEST', 5, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-23 05:58:25'),
-(4, 11, 38, 9, 'branches', 'management', 'link', 'Branches', 'branches.index', '/branches', 'Building2', NULL, NULL, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
-(5, 11, 38, 10, 'warehouses', 'management', 'link', 'Warehouses', 'warehouses.index', '/warehouses', 'Warehouse', NULL, NULL, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
-(6, 11, 3, 8, 'stock-movements', 'management', 'link', 'Stock Movements', 'stock-movements.index', '/stock-movements', 'History', NULL, NULL, 60, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
+(4, 11, 38, 9, 'branches', 'management', 'link', 'Branches', 'branches.index', '/locations/branches', 'Building2', NULL, NULL, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-24 05:57:07'),
+(5, 11, 38, 10, 'warehouses', 'management', 'link', 'Warehouses', 'warehouses.index', '/locations/warehouses', 'Warehouse', NULL, NULL, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-24 05:57:01'),
+(6, 11, 3, 8, 'stock-movements', 'management', 'link', 'Stock Movements', 'stock-movements.index', '/inventory/stock-movements', 'History', NULL, NULL, 60, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-24 05:44:50'),
 (7, 11, NULL, NULL, 'suppliers-group', 'management', 'group', 'Procurement', NULL, NULL, 'ShoppingCart', 'TEST', 5, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-23 05:58:25'),
 (8, 11, NULL, 14, 'team-overview', 'overview', 'link', 'Team Overview', 'team.overview', '/team/overview', 'Users', 'TEST', 5, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-23 05:58:25'),
 (9, 11, NULL, NULL, 'team-group', 'management', 'group', 'Team Management', NULL, NULL, 'Users', 'TEST', 5, 40, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-23 05:58:25'),

@@ -10,7 +10,6 @@ import {
     CheckCircle2,
     CircleUserRound,
     Clock3,
-    Database,
     KeyRound,
     Mail,
     Network,
@@ -20,7 +19,6 @@ import {
     UserCog,
     UserPlus,
     Users,
-    UserX,
     type LucideIcon,
 } from 'lucide-react';
 import {
@@ -276,7 +274,7 @@ export default function TeamOverviewIndex({
                         }
                         statusTone={
                             summary.staff > 0
-                                ? 'amber'
+                                ? 'blue'
                                 : 'neutral'
                         }
                         sparkValues={roleDistribution.map(
@@ -422,13 +420,13 @@ function TeamOverviewHeader({
     hasTeamData: boolean;
 }) {
     return (
-        <section className="relative overflow-hidden rounded-2xl border border-violet-500/15 bg-card/75 shadow-[0_12px_40px_rgba(139,92,246,0.06)]">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_12%,rgba(139,92,246,0.13),transparent_30%),radial-gradient(circle_at_92%_18%,rgba(59,130,246,0.08),transparent_28%)]" />
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-400/55 to-transparent" />
+        <section className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card/75">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/[0.10] via-transparent to-chart-2/[0.05]" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/55 to-transparent" />
 
             <div className="relative flex flex-col gap-4 p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-start gap-3">
-                    <span className="relative inline-flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-400">
+                    <span className="relative inline-flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-primary/20 bg-primary/10 text-primary">
                         <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.12),transparent_48%)]" />
                         <Users className="relative size-5" />
 
@@ -436,8 +434,8 @@ function TeamOverviewHeader({
                             className={[
                                 'absolute -right-1 -top-1 size-2.5 rounded-full border-2 border-card',
                                 hasTeamData
-                                    ? 'bg-blue-400'
-                                    : 'bg-violet-400',
+                                    ? 'bg-chart-2'
+                                    : 'bg-primary',
                             ].join(' ')}
                         />
                     </span>
@@ -452,8 +450,8 @@ function TeamOverviewHeader({
                                 className={[
                                     'inline-flex h-5 items-center gap-1.5 rounded-full border px-2 text-[9px] font-semibold uppercase tracking-[0.12em]',
                                     hasTeamData
-                                        ? 'border-blue-500/20 bg-blue-500/[0.07] text-blue-300'
-                                        : 'border-violet-500/20 bg-violet-500/[0.07] text-violet-300',
+                                        ? 'border-chart-2/20 bg-chart-2/[0.07] text-chart-2'
+                                        : 'border-primary/20 bg-primary/[0.07] text-primary',
                                 ].join(' ')}
                             >
                                 {hasTeamData ? (
@@ -498,7 +496,7 @@ function TeamOverviewHeader({
                     <Link
                         href="/team/roles"
                         prefetch
-                        className="inline-flex h-9 items-center gap-2 rounded-xl border border-blue-500/15 bg-blue-500/[0.045] px-3 text-[10px] font-semibold text-blue-300 transition hover:bg-blue-500/10 hover:text-blue-200"
+                        className="inline-flex h-9 items-center gap-2 rounded-xl border border-primary/15 bg-primary/[0.045] px-3 text-[10px] font-semibold text-primary transition hover:bg-primary/10 hover:text-primary"
                     >
                         <KeyRound className="size-3.5" />
                         Roles & Access
@@ -507,7 +505,7 @@ function TeamOverviewHeader({
                     <Link
                         href="/team/members"
                         prefetch
-                        className="inline-flex h-9 items-center gap-2 rounded-xl bg-violet-500 px-3 text-[10px] font-semibold text-white shadow-[0_7px_22px_rgba(139,92,246,0.20)] transition hover:bg-violet-500/90"
+                        className="inline-flex h-9 items-center gap-2 rounded-xl bg-primary px-3 text-[10px] font-semibold text-primary-foreground transition hover:bg-primary/90"
                     >
                         <Users className="size-3.5" />
                         Team Members
@@ -526,8 +524,8 @@ function HeaderPill({
     label: string;
 }) {
     return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/10 bg-violet-500/[0.035] px-2 py-1 text-[9px] text-muted-foreground">
-            <Icon className="size-3 text-violet-400" />
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/10 bg-primary/[0.035] px-2 py-1 text-[9px] text-muted-foreground">
+            <Icon className="size-3 text-primary" />
             {label}
         </span>
     );
@@ -562,16 +560,16 @@ function MetricCard({
         }
     > = {
         violet: {
-            icon: 'border-violet-500/15 bg-violet-500/10 text-violet-400',
-            value: 'text-violet-400',
-            glow: 'from-violet-500/[0.075]',
-            line: 'text-violet-400',
+            icon: 'border-primary/15 bg-primary/10 text-primary',
+            value: 'text-primary',
+            glow: 'from-primary/[0.075]',
+            line: 'text-primary',
         },
         blue: {
-            icon: 'border-blue-500/15 bg-blue-500/10 text-blue-400',
-            value: 'text-blue-400',
-            glow: 'from-blue-500/[0.075]',
-            line: 'text-blue-400',
+            icon: 'border-chart-2/15 bg-chart-2/10 text-chart-2',
+            value: 'text-chart-2',
+            glow: 'from-chart-2/[0.075]',
+            line: 'text-chart-2',
         },
         emerald: {
             icon: 'border-emerald-500/15 bg-emerald-500/10 text-emerald-400',
@@ -580,17 +578,17 @@ function MetricCard({
             line: 'text-emerald-400',
         },
         amber: {
-            icon: 'border-amber-500/15 bg-amber-500/10 text-amber-400',
-            value: 'text-amber-400',
-            glow: 'from-amber-500/[0.075]',
-            line: 'text-amber-400',
+            icon: 'border-chart-3/15 bg-chart-3/10 text-chart-3',
+            value: 'text-chart-3',
+            glow: 'from-chart-3/[0.075]',
+            line: 'text-chart-3',
         },
     };
 
     const style = styles[tone];
 
     return (
-        <article className="group relative min-h-[134px] overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-3.5 transition hover:border-violet-500/15 sm:p-4">
+        <article className="group relative min-h-[134px] overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-3.5 transition hover:border-primary/15 sm:p-4">
             <div
                 className={[
                     'pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t to-transparent opacity-80',
@@ -699,7 +697,7 @@ function MetricSparkline({
                             cy="27"
                             r="2"
                             fill="currentColor"
-                            className="text-violet-400/25"
+                            className="text-primary/25"
                         />
                     ),
                 )}
@@ -750,9 +748,9 @@ function StatusPill({
         neutral:
             'border-border/60 bg-background/45 text-muted-foreground',
         violet:
-            'border-violet-500/15 bg-violet-500/10 text-violet-400',
+            'border-primary/15 bg-primary/10 text-primary',
         blue:
-            'border-blue-500/15 bg-blue-500/10 text-blue-300',
+            'border-chart-2/15 bg-chart-2/10 text-chart-2',
         emerald:
             'border-emerald-500/15 bg-emerald-500/10 text-emerald-400',
         amber:
@@ -788,24 +786,24 @@ function OverviewPanel({
 }) {
     const styles = {
         violet: {
-            icon: 'border-violet-500/15 bg-violet-500/[0.06] text-violet-400',
-            badge: 'border-violet-500/10 bg-violet-500/[0.035] text-violet-300/80',
-            line: 'via-violet-400/45',
+            icon: 'border-primary/15 bg-primary/[0.06] text-primary',
+            badge: 'border-primary/10 bg-primary/[0.035] text-primary/80',
+            line: 'via-primary/45',
         },
         blue: {
-            icon: 'border-blue-500/15 bg-blue-500/[0.06] text-blue-400',
-            badge: 'border-blue-500/10 bg-blue-500/[0.035] text-blue-300/80',
-            line: 'via-blue-400/45',
+            icon: 'border-chart-2/15 bg-chart-2/[0.06] text-chart-2',
+            badge: 'border-chart-2/10 bg-chart-2/[0.035] text-chart-2/80',
+            line: 'via-chart-2/45',
         },
         emerald: {
-            icon: 'border-emerald-500/15 bg-emerald-500/[0.06] text-emerald-400',
-            badge: 'border-emerald-500/10 bg-emerald-500/[0.035] text-emerald-300/80',
-            line: 'via-emerald-400/45',
+            icon: 'border-chart-3/15 bg-chart-3/[0.06] text-chart-3',
+            badge: 'border-chart-3/10 bg-chart-3/[0.035] text-chart-3/80',
+            line: 'via-chart-3/45',
         },
         amber: {
-            icon: 'border-amber-500/15 bg-amber-500/[0.06] text-amber-400',
-            badge: 'border-amber-500/10 bg-amber-500/[0.035] text-amber-300/80',
-            line: 'via-amber-400/45',
+            icon: 'border-chart-4/15 bg-chart-4/[0.06] text-chart-4',
+            badge: 'border-chart-4/10 bg-chart-4/[0.035] text-chart-4/80',
+            line: 'via-chart-4/45',
         },
     }[accent];
 
@@ -867,8 +865,6 @@ function AccessHealthGauge({
         (health.operational / total) * 100;
     const restricted =
         (health.restricted / total) * 100;
-    const pending =
-        (health.pending / total) * 100;
     const hasData = health.total > 0;
 
     const ringBackground = hasData
@@ -883,9 +879,9 @@ function AccessHealthGauge({
         )`
         : `conic-gradient(
             from 210deg,
-            rgba(139,92,246,0.64),
-            rgba(59,130,246,0.18),
-            rgba(139,92,246,0.64)
+            color-mix(in srgb, var(--primary) 64%, transparent),
+            color-mix(in srgb, var(--chart-2) 18%, transparent),
+            color-mix(in srgb, var(--primary) 64%, transparent)
         )`;
 
     return (
@@ -895,18 +891,18 @@ function AccessHealthGauge({
                     className={[
                         'absolute inset-0 rounded-full',
                         hasData
-                            ? 'shadow-[0_0_28px_rgba(139,92,246,0.10)]'
-                            : 'shadow-[0_0_30px_rgba(139,92,246,0.13)]',
+                            ? 'shadow-[0_0_28px_rgba(52,211,153,0.10)]'
+                            : 'shadow-[0_0_30px_var(--theme-glow)]',
                     ].join(' ')}
                     style={{
                         background: ringBackground,
                     }}
                 />
 
-                <div className="absolute inset-[7px] rounded-full border border-dashed border-violet-500/10" />
+                <div className="absolute inset-[7px] rounded-full border border-dashed border-primary/10" />
                 <div className="absolute inset-[11px] rounded-full border border-border/60 bg-card" />
-                <div className="absolute inset-[20px] rounded-full border border-dashed border-violet-500/18" />
-                <div className="absolute inset-[31px] rounded-full border border-dashed border-blue-500/10" />
+                <div className="absolute inset-[20px] rounded-full border border-dashed border-primary/18" />
+                <div className="absolute inset-[31px] rounded-full border border-dashed border-chart-2/10" />
 
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                     <p className="text-3xl font-semibold tabular-nums">
@@ -928,7 +924,7 @@ function AccessHealthGauge({
                             'mt-2 inline-flex rounded-full border px-2 py-1 text-[8px] font-medium',
                             hasData
                                 ? 'border-emerald-500/15 bg-emerald-500/10 text-emerald-400'
-                                : 'border-violet-500/15 bg-violet-500/10 text-violet-300',
+                                : 'border-primary/15 bg-primary/10 text-primary',
                         ].join(' ')}
                     >
                         {hasData
@@ -1054,15 +1050,15 @@ function RoleDistributionBoard({
     > = {
         manager: {
             icon: UserCog,
-            shell: 'border-violet-500/15 bg-violet-500/[0.055] text-violet-400',
-            bar: 'from-violet-400 to-blue-400',
-            value: 'text-violet-400',
+            shell: 'border-chart-1/15 bg-chart-1/[0.055] text-chart-1',
+            bar: 'from-chart-1 to-chart-2',
+            value: 'text-chart-1',
         },
         staff: {
             icon: CircleUserRound,
-            shell: 'border-blue-500/15 bg-blue-500/[0.055] text-blue-400',
-            bar: 'from-blue-400 to-cyan-400',
-            value: 'text-blue-400',
+            shell: 'border-chart-2/15 bg-chart-2/[0.055] text-chart-2',
+            bar: 'from-chart-2 to-chart-3',
+            value: 'text-chart-2',
         },
     };
 
@@ -1113,9 +1109,9 @@ function RoleDistributionBoard({
                         const style =
                             roleStyles[role.key] ?? {
                                 icon: Users,
-                                shell: 'border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-400',
-                                bar: 'from-emerald-400 to-cyan-400',
-                                value: 'text-emerald-400',
+                                shell: 'border-chart-3/15 bg-chart-3/[0.055] text-chart-3',
+                                bar: 'from-chart-3 to-chart-4',
+                                value: 'text-chart-3',
                             };
                         const Icon = style.icon;
                         const relativeWidth =
@@ -1131,7 +1127,7 @@ function RoleDistributionBoard({
                         return (
                             <article
                                 key={role.key}
-                                className="grid gap-3 px-3 py-3 transition hover:bg-violet-500/[0.025] sm:grid-cols-[minmax(180px,0.8fr)_minmax(0,1.4fr)_90px] sm:items-center sm:gap-4"
+                                className="grid gap-3 px-3 py-3 transition hover:bg-primary/[0.025] sm:grid-cols-[minmax(180px,0.8fr)_minmax(0,1.4fr)_90px] sm:items-center sm:gap-4"
                             >
                                 <div className="flex min-w-0 items-center gap-2.5">
                                     <span
@@ -1213,9 +1209,9 @@ function RoleSummary({
     tone: 'violet' | 'blue' | 'emerald';
 }) {
     const valueClass = {
-        violet: 'text-violet-400',
-        blue: 'text-blue-400',
-        emerald: 'text-emerald-400',
+        violet: 'text-chart-1',
+        blue: 'text-chart-2',
+        emerald: 'text-chart-3',
     }[tone];
 
     return (
@@ -1257,8 +1253,8 @@ function RoleDistributionReadyState() {
 
     return (
         <div className="grid min-h-[250px] items-center gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
-            <div className="relative overflow-hidden rounded-2xl border border-violet-500/10 bg-violet-500/[0.025] p-4">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_115%,rgba(139,92,246,0.13),transparent_60%)]" />
+            <div className="relative overflow-hidden rounded-2xl border border-primary/10 bg-primary/[0.025] p-4">
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/[0.12] to-transparent" />
 
                 <div className="relative mx-auto flex max-w-[180px] items-end justify-center gap-3">
                     {[52, 82, 66].map(
@@ -1268,7 +1264,7 @@ function RoleDistributionReadyState() {
                                 className="relative flex h-32 flex-1 items-end overflow-hidden rounded-xl border border-border/50 bg-background/35 p-2"
                             >
                                 <div
-                                    className="w-full rounded-t-md bg-gradient-to-t from-violet-500/20 to-blue-400/50"
+                                    className="w-full rounded-t-md bg-gradient-to-t from-primary/20 to-chart-2/50"
                                     style={{
                                         height: `${height}%`,
                                     }}
@@ -1284,11 +1280,11 @@ function RoleDistributionReadyState() {
 
                 <div className="relative mx-auto mt-3 flex max-w-[180px] items-center justify-between rounded-xl border border-border/50 bg-background/35 px-3 py-2">
                     <span className="inline-flex items-center gap-2 text-[9px] text-muted-foreground">
-                        <Users className="size-3.5 text-violet-400" />
+                        <Users className="size-3.5 text-primary" />
                         Role composition
                     </span>
 
-                    <span className="rounded-full border border-violet-500/15 bg-violet-500/10 px-2 py-1 text-[8px] font-medium text-violet-300">
+                    <span className="rounded-full border border-primary/15 bg-primary/10 px-2 py-1 text-[8px] font-medium text-primary">
                         Ready
                     </span>
                 </div>
@@ -1317,10 +1313,10 @@ function RoleDistributionReadyState() {
                                 key={label}
                                 href={href}
                                 prefetch
-                                className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/30 px-3 py-2 text-[9px] text-muted-foreground transition hover:border-violet-500/15 hover:bg-violet-500/[0.04] hover:text-violet-300"
+                                className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/30 px-3 py-2 text-[9px] text-muted-foreground transition hover:border-primary/15 hover:bg-violet-500/[0.04] hover:text-violet-300"
                             >
                                 <span className="inline-flex items-center gap-2">
-                                    <Icon className="size-3.5 text-violet-400" />
+                                    <Icon className="size-3.5 text-primary" />
                                     {label}
                                 </span>
 
@@ -1407,10 +1403,10 @@ function BranchCoverageBoard({
                         return (
                             <article
                                 key={branch.id}
-                                className="grid gap-3 px-3 py-3 transition hover:bg-violet-500/[0.025] md:grid-cols-[minmax(190px,1.35fr)_110px_90px_90px_110px] md:items-center"
+                                className="grid gap-3 px-3 py-3 transition hover:bg-primary/[0.025] md:grid-cols-[minmax(190px,1.35fr)_110px_90px_90px_110px] md:items-center"
                             >
                                 <div className="flex min-w-0 items-center gap-2.5">
-                                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/15 bg-blue-500/10 text-blue-400">
+                                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
                                         <Building2 className="size-4" />
                                     </span>
 
@@ -1421,7 +1417,7 @@ function BranchCoverageBoard({
                                             </p>
 
                                             {branch.isMain && (
-                                                <span className="rounded-full border border-blue-500/15 bg-blue-500/[0.06] px-1.5 py-0.5 text-[7px] font-semibold text-blue-300">
+                                                <span className="rounded-full border border-primary/15 bg-primary/[0.06] px-1.5 py-0.5 text-[7px] font-semibold text-primary">
                                                     MAIN
                                                 </span>
                                             )}
@@ -1490,7 +1486,7 @@ function BranchCoverageBoard({
                                     <div className="relative mt-1.5 h-3">
                                         <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 overflow-hidden rounded-full bg-muted">
                                             <div
-                                                className="h-full rounded-full bg-gradient-to-r from-violet-400 via-blue-400 to-emerald-400"
+                                                className="h-full rounded-full bg-gradient-to-r from-primary via-chart-2 to-emerald-400"
                                                 style={{
                                                     width: `${activePercentage}%`,
                                                 }}
@@ -1530,8 +1526,8 @@ function TableCount({
     tone: 'violet' | 'blue';
 }) {
     const valueClass = {
-        violet: 'text-violet-400',
-        blue: 'text-blue-400',
+        violet: 'text-chart-1',
+        blue: 'text-chart-2',
     }[tone];
 
     return (
@@ -1548,39 +1544,6 @@ function TableCount({
             >
                 {formatNumber(value)}
             </span>
-        </div>
-    );
-}
-
-function BranchMiniCount({
-    label,
-    value,
-    tone,
-}: {
-    label: string;
-    value: number;
-    tone: 'emerald' | 'violet' | 'blue';
-}) {
-    const valueClass = {
-        emerald: 'text-emerald-400',
-        violet: 'text-violet-400',
-        blue: 'text-blue-400',
-    }[tone];
-
-    return (
-        <div className="rounded-lg border border-border/50 bg-card px-2 py-1.5 text-center">
-            <p className="text-[7px] uppercase tracking-wider text-muted-foreground">
-                {label}
-            </p>
-
-            <p
-                className={[
-                    'mt-0.5 text-[10px] font-semibold tabular-nums',
-                    valueClass,
-                ].join(' ')}
-            >
-                {value}
-            </p>
         </div>
     );
 }
@@ -1606,7 +1569,7 @@ function BranchCoverageReadyState() {
 
     return (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(240px,0.9fr)]">
-            <div className="overflow-hidden rounded-xl border border-blue-500/10 bg-blue-500/[0.02]">
+            <div className="overflow-hidden rounded-xl border border-primary/10 bg-primary/[0.02]">
                 <div className="grid grid-cols-[minmax(130px,1fr)_72px_58px_58px] items-center gap-2 border-b border-border/50 bg-background/45 px-3 py-2 text-[7px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                     <span>Branch</span>
                     <span>Status</span>
@@ -1629,7 +1592,7 @@ function BranchCoverageReadyState() {
                             className="grid grid-cols-[minmax(130px,1fr)_72px_58px_58px] items-center gap-2 px-3 py-2.5"
                         >
                             <div className="flex min-w-0 items-center gap-2">
-                                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/[0.06] text-blue-400">
+                                <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.06] text-primary">
                                     <Building2 className="size-3.5" />
                                 </span>
 
@@ -1644,15 +1607,15 @@ function BranchCoverageReadyState() {
                                 </div>
                             </div>
 
-                            <span className="inline-flex justify-center rounded-full border border-violet-500/10 bg-violet-500/[0.04] px-1.5 py-1 text-[7px] font-medium text-violet-300/70">
+                            <span className="inline-flex justify-center rounded-full border border-primary/10 bg-primary/[0.04] px-1.5 py-1 text-[7px] font-medium text-primary/70">
                                 Ready
                             </span>
 
-                            <span className="text-center text-[9px] font-semibold tabular-nums text-violet-400/45">
+                            <span className="text-center text-[9px] font-semibold tabular-nums text-chart-1/45">
                                 —
                             </span>
 
-                            <span className="text-center text-[9px] font-semibold tabular-nums text-blue-400/45">
+                            <span className="text-center text-[9px] font-semibold tabular-nums text-chart-2/45">
                                 —
                             </span>
                         </div>
@@ -1667,7 +1630,7 @@ function BranchCoverageReadyState() {
                             <span
                                 key={mark}
                                 aria-hidden="true"
-                                className="absolute bottom-0 top-0 border-l border-dashed border-blue-500/20"
+                                className="absolute bottom-0 top-0 border-l border-dashed border-primary/20"
                                 style={{
                                     left: `${mark}%`,
                                 }}
@@ -1679,7 +1642,7 @@ function BranchCoverageReadyState() {
 
             <div className="flex flex-col justify-center">
                 <div className="flex items-start gap-3">
-                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/15 bg-blue-500/[0.06] text-blue-400">
+                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.06] text-primary">
                         <Network className="size-4" />
                     </span>
 
@@ -1708,10 +1671,10 @@ function BranchCoverageReadyState() {
                                 key={label}
                                 href={href}
                                 prefetch
-                                className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/30 px-3 py-2 text-[9px] text-muted-foreground transition hover:border-blue-500/15 hover:bg-blue-500/[0.04] hover:text-blue-300"
+                                className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/30 px-3 py-2 text-[9px] text-muted-foreground transition hover:border-primary/15 hover:bg-primary/[0.04] hover:text-primary"
                             >
                                 <span className="inline-flex items-center gap-2">
-                                    <Icon className="size-3.5 text-blue-400" />
+                                    <Icon className="size-3.5 text-primary" />
                                     {label}
                                 </span>
 
@@ -1814,7 +1777,7 @@ function OnboardingTrendChart({
             </div>
 
             <div className="relative mt-3 overflow-hidden rounded-xl border border-border/50 bg-background/25">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(139,92,246,0.10),transparent_58%)]" />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-primary/[0.08] to-transparent" />
 
                 <svg
                     viewBox={`0 0 ${chart.width} ${chart.height}`}
@@ -1832,12 +1795,12 @@ function OnboardingTrendChart({
                         >
                             <stop
                                 offset="0%"
-                                stopColor="rgb(167 139 250)"
+                                stopColor="var(--chart-1)"
                                 stopOpacity="0.28"
                             />
                             <stop
                                 offset="100%"
-                                stopColor="rgb(167 139 250)"
+                                stopColor="var(--chart-1)"
                                 stopOpacity="0"
                             />
                         </linearGradient>
@@ -1932,7 +1895,7 @@ function OnboardingTrendChart({
                                     stroke="currentColor"
                                     strokeWidth="1"
                                     strokeDasharray="3 8"
-                                    className="text-violet-500/15"
+                                    className="text-primary/15"
                                 />
 
                                 <text
@@ -1992,7 +1955,7 @@ function OnboardingTrendChart({
                             <path
                                 d={chart.linePath}
                                 fill="none"
-                                stroke="rgb(167 139 250)"
+                                stroke="var(--chart-1)"
                                 strokeWidth="2.8"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -2006,8 +1969,8 @@ function OnboardingTrendChart({
                                         cx={point.x}
                                         cy={point.y}
                                         r="4"
-                                        fill="rgb(10 16 24)"
-                                        stroke="rgb(167 139 250)"
+                                        fill="var(--card)"
+                                        stroke="var(--chart-1)"
                                         strokeWidth="2"
                                     >
                                         <title>
@@ -2051,8 +2014,8 @@ function OnboardingSummary({
     tone: 'violet' | 'blue';
 }) {
     const valueClass = {
-        violet: 'text-violet-400',
-        blue: 'text-blue-400',
+        violet: 'text-chart-1',
+        blue: 'text-chart-2',
     }[tone];
 
     return (
@@ -2095,7 +2058,7 @@ function OnboardingReadyState({
                     width - paddingRight
                 }`}
                 fill="none"
-                stroke="rgb(167 139 250)"
+                stroke="var(--chart-1)"
                 strokeWidth="1.5"
                 strokeDasharray="5 8"
                 opacity="0.34"
@@ -2115,7 +2078,7 @@ function OnboardingReadyState({
                             cx={x}
                             cy={baselineY}
                             r="5"
-                            fill="rgb(139 92 246)"
+                            fill="var(--primary)"
                             opacity="0.12"
                         />
 
@@ -2123,7 +2086,7 @@ function OnboardingReadyState({
                             cx={x}
                             cy={baselineY}
                             r="2"
-                            fill="rgb(96 165 250)"
+                            fill="var(--chart-2)"
                             opacity="0.45"
                         />
                     </g>
@@ -2141,9 +2104,9 @@ function OnboardingReadyState({
                     width="224"
                     height="62"
                     rx="14"
-                    fill="rgb(12 18 28)"
+                    fill="var(--card)"
                     fillOpacity="0.88"
-                    stroke="rgb(139 92 246)"
+                    stroke="var(--primary)"
                     strokeOpacity="0.18"
                 />
 
@@ -2151,14 +2114,14 @@ function OnboardingReadyState({
                     cx="-78"
                     cy="0"
                     r="14"
-                    fill="rgb(139 92 246)"
+                    fill="var(--primary)"
                     fillOpacity="0.12"
                 />
 
                 <path
                     d="M -85 4 C -81 -4, -76 5, -70 -7"
                     fill="none"
-                    stroke="rgb(167 139 250)"
+                    stroke="var(--chart-1)"
                     strokeWidth="2"
                     strokeLinecap="round"
                 />
@@ -2166,7 +2129,7 @@ function OnboardingReadyState({
                 <text
                     x="-52"
                     y="-3"
-                    fill="rgb(226 232 240)"
+                    fill="var(--foreground)"
                     fontSize="11"
                     fontWeight="600"
                 >
@@ -2176,7 +2139,7 @@ function OnboardingReadyState({
                 <text
                     x="-52"
                     y="13"
-                    fill="rgb(148 163 184)"
+                    fill="var(--muted-foreground)"
                     fontSize="8.5"
                 >
                     New accounts will plot automatically
@@ -2205,14 +2168,14 @@ function DashboardPanel({
 }) {
     const styles = {
         violet: {
-            icon: 'border-violet-500/15 bg-violet-500/[0.055] text-violet-400',
-            action: 'border-violet-500/15 bg-violet-500/[0.045] text-violet-300 hover:bg-violet-500/10 hover:text-violet-200',
-            line: 'via-violet-400/40',
+            icon: 'border-primary/15 bg-primary/[0.055] text-primary',
+            action: 'border-primary/15 bg-primary/[0.045] text-primary hover:bg-primary/10',
+            line: 'via-primary/40',
         },
         blue: {
-            icon: 'border-blue-500/15 bg-blue-500/[0.055] text-blue-400',
-            action: 'border-blue-500/15 bg-blue-500/[0.045] text-blue-300 hover:bg-blue-500/10 hover:text-blue-200',
-            line: 'via-blue-400/40',
+            icon: 'border-chart-2/15 bg-chart-2/[0.055] text-chart-2',
+            action: 'border-chart-2/15 bg-chart-2/[0.045] text-chart-2 hover:bg-chart-2/10',
+            line: 'via-chart-2/40',
         },
     }[accent];
 
@@ -2318,9 +2281,9 @@ function RecentMemberRow({
           : 'bg-amber-400';
 
     return (
-        <article className="grid gap-3 px-4 py-3 transition hover:bg-violet-500/[0.025] md:grid-cols-[minmax(210px,1.45fr)_100px_minmax(120px,0.75fr)_100px_86px] md:items-center">
+        <article className="grid gap-3 px-4 py-3 transition hover:bg-primary/[0.025] md:grid-cols-[minmax(210px,1.45fr)_100px_minmax(120px,0.75fr)_100px_86px] md:items-center">
             <div className="flex min-w-0 items-center gap-3">
-                <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-[10px] font-semibold text-violet-300">
+                <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-[10px] font-semibold text-primary">
                     {memberInitials(member.name)}
                 </span>
 
@@ -2416,9 +2379,9 @@ function TableCell({
 }) {
     const toneClass = {
         violet:
-            'border-violet-500/15 bg-violet-500/[0.055] text-violet-300',
+            'border-chart-1/15 bg-chart-1/[0.055] text-chart-1',
         blue:
-            'border-blue-500/15 bg-blue-500/[0.055] text-blue-300',
+            'border-chart-2/15 bg-chart-2/[0.055] text-chart-2',
     }[tone];
 
     return (
@@ -2590,20 +2553,20 @@ function OperationalEmptyState({
 }) {
     const styles = {
         violet: {
-            icon: 'border-violet-500/15 bg-violet-500/[0.06] text-violet-400',
-            button: 'border-violet-500/15 bg-violet-500/[0.055] text-violet-300 hover:bg-violet-500/10',
-            accent: 'bg-violet-400/40',
+            icon: 'border-primary/15 bg-primary/[0.06] text-primary',
+            button: 'border-primary/15 bg-primary/[0.055] text-primary hover:bg-primary/10',
+            accent: 'bg-primary/40',
         },
         blue: {
-            icon: 'border-blue-500/15 bg-blue-500/[0.06] text-blue-400',
-            button: 'border-blue-500/15 bg-blue-500/[0.055] text-blue-300 hover:bg-blue-500/10',
-            accent: 'bg-blue-400/40',
+            icon: 'border-chart-2/15 bg-chart-2/[0.06] text-chart-2',
+            button: 'border-chart-2/15 bg-chart-2/[0.055] text-chart-2 hover:bg-chart-2/10',
+            accent: 'bg-chart-2/40',
         },
     }[tone];
 
     return (
         <div className="relative min-h-[230px] overflow-hidden px-5 py-6">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_110%,rgba(139,92,246,0.06),transparent_58%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-primary/[0.05] to-transparent" />
 
             <div className="relative mx-auto max-w-md text-center">
                 <span
@@ -2649,8 +2612,8 @@ function OperationalEmptyState({
                                         className={[
                                             'size-4',
                                             index % 2 === 0
-                                                ? 'text-violet-400/55'
-                                                : 'text-blue-400/55',
+                                                ? 'text-chart-1/55'
+                                                : 'text-chart-2/55',
                                         ].join(' ')}
                                     />
 

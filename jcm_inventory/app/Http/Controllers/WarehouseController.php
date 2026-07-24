@@ -108,7 +108,7 @@ class WarehouseController extends Controller
             ->orderBy('name')
             ->get();
 
-        return Inertia::render('warehouses/index', [
+        return Inertia::render('locations/warehouses/index', [
             'warehouses' => $warehouses,
 
             'branches' => $branches,

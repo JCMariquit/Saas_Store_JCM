@@ -145,7 +145,7 @@ type SupplierPageProps = {
   filters: SupplierFilters;
 };
 
-type SupplierMetricTone = "blue" | "emerald" | "red";
+type SupplierMetricTone = "primary" | "emerald" | "red";
 
 /*
 |--------------------------------------------------------------------------
@@ -451,10 +451,10 @@ export default function SupplierIndex({
       <PageContainer className="gap-4 md:gap-5">
         {/* Supplier operations overview */}
 
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[0.07] via-card/70 to-card/40">
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.08] via-card/70 to-card/40">
           <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-400">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                 <Truck className="size-4" />
               </span>
 
@@ -487,18 +487,18 @@ export default function SupplierIndex({
 
           <div className="grid min-w-0 lg:grid-cols-[minmax(330px,1.08fr)_minmax(0,1.92fr)]">
             <div className="relative overflow-hidden border-b border-border/60 p-4 lg:border-b-0 lg:border-r">
-              <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-amber-500/10 blur-3xl" />
-              <Truck className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-amber-400 opacity-[0.025]" />
+              <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-primary/10 blur-3xl" />
+              <Truck className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-primary opacity-[0.025]" />
 
               <div className="relative grid gap-4 sm:grid-cols-[64px_minmax(0,1fr)] sm:items-center">
-                <div className="flex size-16 items-center justify-center rounded-2xl border border-amber-500/20 bg-amber-500/10 text-amber-400 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.04)]">
+                <div className="flex size-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary shadow-sm">
                   <Truck className="size-7" />
                 </div>
 
                 <div className="min-w-0">
                   <div className="flex items-end justify-between gap-4">
                     <div>
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-amber-300">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
                         Operational coverage
                       </p>
 
@@ -560,7 +560,7 @@ export default function SupplierIndex({
                 footerValue={`${summary.active}/${summary.total}`}
                 progress={operationalPercentage}
                 icon={Truck}
-                tone="blue"
+                tone="primary"
                 className="border-b border-border/60 sm:border-b-0 sm:border-r"
               />
 
@@ -780,7 +780,7 @@ export default function SupplierIndex({
                 }
                 placeholder="Juan Dela Cruz"
                 autoComplete="name"
-                iconClassName="group-focus-within:text-blue-400"
+                iconClassName="group-focus-within:text-primary"
               />
             </FormField>
 
@@ -800,7 +800,7 @@ export default function SupplierIndex({
                 }
                 placeholder="000-000-000-000"
                 autoComplete="off"
-                iconClassName="group-focus-within:text-violet-400"
+                iconClassName="group-focus-within:text-primary"
               />
             </FormField>
           </div>
@@ -827,7 +827,7 @@ export default function SupplierIndex({
                 onChange={(event) => form.setData("phone", event.target.value)}
                 placeholder="09XXXXXXXXX"
                 autoComplete="tel"
-                iconClassName="group-focus-within:text-emerald-400"
+                iconClassName="group-focus-within:text-primary"
               />
             </FormField>
 
@@ -866,7 +866,7 @@ export default function SupplierIndex({
                 onChange={(event) => form.setData("email", event.target.value)}
                 placeholder="supplier@example.com"
                 autoComplete="email"
-                iconClassName="group-focus-within:text-blue-400"
+                iconClassName="group-focus-within:text-primary"
               />
             </FormField>
           </div>
@@ -1073,7 +1073,7 @@ function SupplierRegistryTable({
               <tr>
                 <td colSpan={6} className="px-4 py-12">
                   <div className="mx-auto flex max-w-sm flex-col items-center text-center">
-                    <span className="flex size-11 items-center justify-center rounded-xl border border-amber-500/15 bg-amber-500/10 text-amber-400">
+                    <span className="flex size-11 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                       <Truck className="size-5" />
                     </span>
 
@@ -1120,9 +1120,9 @@ function SupplierRegistryTable({
                         }
                       }}
                       className={cn(
-                        "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500/40",
+                        "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
                         isExpanded &&
-                          "bg-amber-500/[0.035] hover:bg-amber-500/[0.055]",
+                          "bg-primary/[0.04] hover:bg-primary/[0.06]",
                       )}
                     >
                       <td className="px-3 py-3 align-middle">
@@ -1140,8 +1140,8 @@ function SupplierRegistryTable({
                             onToggleDetails(supplier.id);
                           }}
                           className={cn(
-                            "size-7 rounded-md text-muted-foreground transition-colors hover:bg-amber-500/10 hover:text-amber-400",
-                            isExpanded && "bg-amber-500/10 text-amber-400",
+                            "size-7 rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary",
+                            isExpanded && "bg-primary/10 text-primary",
                           )}
                         >
                           <ChevronDown
@@ -1158,7 +1158,7 @@ function SupplierRegistryTable({
                           avatar={
                             <EntityAvatar
                               icon={Truck}
-                              className="border-amber-500/15 bg-amber-500/10 text-amber-400 group-hover:border-amber-500/25 group-hover:bg-amber-500/15"
+                              className="border-primary/20 bg-primary/10 text-primary group-hover:border-primary/30 group-hover:bg-primary/15"
                             />
                           }
                           title={supplier.name}
@@ -1182,7 +1182,7 @@ function SupplierRegistryTable({
                       <td className="px-3 py-3 align-middle">
                         <div className="space-y-1.5">
                           <div className="flex min-w-0 items-center gap-2">
-                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-blue-500/10 text-blue-400">
+                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                               <UserRound className="size-3" />
                             </span>
 
@@ -1198,7 +1198,7 @@ function SupplierRegistryTable({
                           </div>
 
                           <div className="flex min-w-0 items-center gap-2">
-                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-400">
+                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                               <Phone className="size-3" />
                             </span>
 
@@ -1219,7 +1219,7 @@ function SupplierRegistryTable({
                       <td className="px-3 py-3 align-middle">
                         <div className="space-y-1.5">
                           <div className="flex min-w-0 items-center gap-2">
-                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-violet-500/10 text-violet-400">
+                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                               <ReceiptText className="size-3" />
                             </span>
 
@@ -1235,11 +1235,11 @@ function SupplierRegistryTable({
                           </div>
 
                           <div className="flex min-w-0 items-center gap-2">
-                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-400">
+                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
                               <CircleDollarSign className="size-3" />
                             </span>
 
-                            <span className="text-[11px] font-semibold tabular-nums text-emerald-400">
+                            <span className="text-[11px] font-semibold tabular-nums text-primary">
                               {formatCurrency(supplier.credit_limit)}
                             </span>
                           </div>
@@ -1279,7 +1279,7 @@ function SupplierRegistryTable({
                             <IconButton
                               label="Edit supplier"
                               onClick={() => onEdit(supplier)}
-                              className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
+                              className="text-primary hover:bg-primary/10 hover:text-primary"
                             >
                               <Pencil className="size-3.5" />
                             </IconButton>
@@ -1299,10 +1299,10 @@ function SupplierRegistryTable({
                     {isExpanded && (
                       <tr id={detailsId} className="bg-muted/[0.08]">
                         <td colSpan={6} className="px-3 pb-3 pt-0">
-                          <div className="overflow-hidden rounded-xl border border-amber-500/10 bg-background/45 shadow-sm">
+                          <div className="overflow-hidden rounded-xl border border-primary/15 bg-background/45 shadow-sm">
                             <div className="flex flex-col gap-2 border-b border-border/60 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
                               <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-300">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
                                   Complete Supplier Record
                                 </p>
 
@@ -1325,7 +1325,7 @@ function SupplierRegistryTable({
                                 title="Communication"
                                 description="Contact channels for supplier coordination."
                                 icon={Phone}
-                                iconClassName="border-blue-500/15 bg-blue-500/10 text-blue-400"
+                                iconClassName="border-primary/20 bg-primary/10 text-primary"
                               >
                                 <SupplierDetailItem
                                   label="Contact person"
@@ -1360,7 +1360,7 @@ function SupplierRegistryTable({
                                 title="Business Profile"
                                 description="Registered address and tax identity."
                                 icon={MapPin}
-                                iconClassName="border-red-500/15 bg-red-500/10 text-red-400"
+                                iconClassName="border-primary/20 bg-primary/10 text-primary"
                               >
                                 <SupplierDetailItem
                                   label="Business address"
@@ -1381,7 +1381,7 @@ function SupplierRegistryTable({
                                 title="Procurement Record"
                                 description="Terms, ownership, dates, and internal notes."
                                 icon={Banknote}
-                                iconClassName="border-emerald-500/15 bg-emerald-500/10 text-emerald-400"
+                                iconClassName="border-primary/20 bg-primary/10 text-primary"
                               >
                                 <SupplierDetailItem
                                   label="Payment terms"
@@ -1395,7 +1395,7 @@ function SupplierRegistryTable({
                                   label="Credit limit"
                                   value={formatCurrency(supplier.credit_limit)}
                                   icon={CircleDollarSign}
-                                  valueClassName="font-semibold tabular-nums text-emerald-400"
+                                  valueClassName="font-semibold tabular-nums text-primary"
                                 />
 
                                 <SupplierDetailItem
@@ -1564,12 +1564,12 @@ function SupplierNetworkMetric({
       footer: string;
     }
   > = {
-    blue: {
-      icon: "border-blue-500/20 bg-blue-500/10 text-blue-400",
-      value: "text-blue-400",
-      glow: "bg-blue-500/10",
-      bar: "bg-blue-400",
-      footer: "text-blue-300",
+    primary: {
+      icon: "border-primary/20 bg-primary/10 text-primary",
+      value: "text-primary",
+      glow: "bg-primary/10",
+      bar: "bg-primary",
+      footer: "text-primary",
     },
     emerald: {
       icon: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",

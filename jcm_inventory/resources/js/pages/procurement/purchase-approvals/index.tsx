@@ -387,10 +387,10 @@ export default function PurchaseApprovalIndex({
       <Head title="Purchase Approvals" />
 
       <PageContainer className="gap-4 md:gap-5">
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[0.07] via-card/70 to-card/40">
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.08] via-card/70 to-card/40">
           <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-400">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                 <ShieldCheck className="size-4" />
               </span>
 
@@ -427,18 +427,18 @@ export default function PurchaseApprovalIndex({
 
           <div className="grid min-w-0 lg:grid-cols-[minmax(310px,1.05fr)_minmax(0,1.95fr)]">
             <div className="relative overflow-hidden border-b border-border/60 p-4 lg:border-b-0 lg:border-r">
-              <div className="pointer-events-none absolute -right-16 -top-16 size-44 rounded-full bg-amber-500/10 blur-3xl" />
-              <ShieldCheck className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-amber-400 opacity-[0.025]" />
+              <div className="pointer-events-none absolute -right-16 -top-16 size-44 rounded-full bg-primary/10 blur-3xl" />
+              <ShieldCheck className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-primary opacity-[0.025]" />
 
               <div className="relative grid gap-4 sm:grid-cols-[64px_minmax(0,1fr)] sm:items-center">
-                <div className="flex size-16 items-center justify-center rounded-2xl border border-amber-500/20 bg-amber-500/10 text-amber-400 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.04)]">
+                <div className="flex size-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
                   <BadgeCheck className="size-7" />
                 </div>
 
                 <div className="min-w-0">
                   <div className="flex items-end justify-between gap-4">
                     <div>
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-amber-300">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
                         Pending commitment
                       </p>
 
@@ -448,7 +448,7 @@ export default function PurchaseApprovalIndex({
                     </div>
 
                     <div className="text-right">
-                      <p className="text-lg font-semibold tabular-nums text-amber-400">
+                      <p className="text-lg font-semibold tabular-nums text-primary">
                         {formatNumber(summary.pending_orders)}
                       </p>
 
@@ -462,7 +462,7 @@ export default function PurchaseApprovalIndex({
                     <div
                       className={cn(
                         "h-full rounded-full transition-all duration-500",
-                        oldestWaitingDays >= 3 ? "bg-red-400" : "bg-amber-400",
+                        oldestWaitingDays >= 3 ? "bg-red-400" : "bg-primary",
                       )}
                       style={{
                         width:
@@ -663,7 +663,7 @@ export default function PurchaseApprovalIndex({
               aria-label="Submitted date from"
               onChange={(event) => setDateFrom(event.target.value)}
               className="h-10"
-              iconClassName="text-blue-400"
+              iconClassName="text-primary"
             />
 
             <IconInput
@@ -676,7 +676,7 @@ export default function PurchaseApprovalIndex({
               aria-label="Submitted date to"
               onChange={(event) => setDateTo(event.target.value)}
               className="h-10"
-              iconClassName="text-violet-400"
+              iconClassName="text-primary"
             />
           </FilterBar>
 
@@ -835,9 +835,9 @@ function PurchaseApprovalTable({
                         }
                       }}
                       className={cn(
-                        "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500/40",
+                        "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
                         isExpanded &&
-                          "bg-amber-500/[0.035] hover:bg-amber-500/[0.055]",
+                          "bg-primary/[0.04] hover:bg-primary/[0.065]",
                       )}
                     >
                       <td className="px-3 py-3 align-middle">
@@ -855,8 +855,8 @@ function PurchaseApprovalTable({
                             onToggleDetails(purchaseOrder.id);
                           }}
                           className={cn(
-                            "size-7 rounded-md text-muted-foreground transition-colors hover:bg-amber-500/10 hover:text-amber-400",
-                            isExpanded && "bg-amber-500/10 text-amber-400",
+                            "size-7 rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary",
+                            isExpanded && "bg-primary/10 text-primary",
                           )}
                         >
                           <ChevronDown
@@ -873,7 +873,7 @@ function PurchaseApprovalTable({
                           avatar={
                             <EntityAvatar
                               icon={ClipboardCheck}
-                              className="border-amber-500/15 bg-amber-500/10 text-amber-400 group-hover:border-amber-500/25 group-hover:bg-amber-500/15"
+                              className="border-primary/20 bg-primary/10 text-primary group-hover:border-primary/30 group-hover:bg-primary/15"
                             />
                           }
                           title={purchaseOrder.po_number}
@@ -896,7 +896,7 @@ function PurchaseApprovalTable({
                         <div className="flex min-w-0 items-center gap-2.5">
                           <EntityAvatar
                             icon={Truck}
-                            className="border-amber-500/15 bg-amber-500/10 text-amber-400"
+                            className="border-primary/20 bg-primary/10 text-primary"
                           />
 
                           <div className="min-w-0">
@@ -915,14 +915,14 @@ function PurchaseApprovalTable({
                       <td className="px-3 py-3.5 align-middle">
                         <div className="space-y-1.5 text-[10px]">
                           <div className="flex min-w-0 items-center gap-2">
-                            <Building2 className="size-3.5 shrink-0 text-blue-400" />
+                            <Building2 className="size-3.5 shrink-0 text-primary" />
                             <span className="max-w-[165px] truncate font-medium text-foreground/85">
                               {purchaseOrder.branch.name}
                             </span>
                           </div>
 
                           <div className="flex min-w-0 items-center gap-2 text-muted-foreground">
-                            <Warehouse className="size-3.5 shrink-0 text-violet-400" />
+                            <Warehouse className="size-3.5 shrink-0 text-primary" />
                             <span className="max-w-[165px] truncate">
                               {purchaseOrder.warehouse.name}
                             </span>
@@ -934,7 +934,7 @@ function PurchaseApprovalTable({
                         <div className="flex min-w-0 items-center gap-2.5">
                           <EntityAvatar
                             icon={UserRound}
-                            className="border-blue-500/15 bg-blue-500/10 text-blue-400"
+                            className="border-primary/20 bg-primary/10 text-primary"
                           />
 
                           <div className="min-w-0">
@@ -963,7 +963,7 @@ function PurchaseApprovalTable({
 
                       <td className="px-3 py-3.5 align-middle">
                         <div className="space-y-1.5">
-                          <p className="text-[13px] font-semibold tabular-nums text-emerald-400">
+                          <p className="text-[13px] font-semibold tabular-nums text-primary">
                             {formatCurrency(purchaseOrder.total_amount)}
                           </p>
 
@@ -1006,7 +1006,7 @@ function PurchaseApprovalTable({
                       <tr id={detailsId}>
                         <td
                           colSpan={7}
-                          className="border-t border-amber-500/10 bg-amber-500/[0.018] p-0"
+                          className="border-t border-primary/15 bg-primary/[0.02] p-0"
                         >
                           <PurchaseApprovalDetails order={purchaseOrder} />
                         </td>
@@ -1075,7 +1075,7 @@ function PurchaseApprovalDetails({ order }: { order: PurchaseOrder }) {
                   <tr key={item.id} className="hover:bg-muted/[0.025]">
                     <td className="px-4 py-3">
                       <div className="flex min-w-0 items-start gap-2.5">
-                        <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
+                        <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
                           <Boxes className="size-3.5" />
                         </span>
 
@@ -1111,7 +1111,7 @@ function PurchaseApprovalDetails({ order }: { order: PurchaseOrder }) {
                       {formatCurrency(item.unit_cost)}
                     </td>
 
-                    <td className="px-4 py-3 text-right text-[11px] font-semibold tabular-nums text-emerald-400">
+                    <td className="px-4 py-3 text-right text-[11px] font-semibold tabular-nums text-primary">
                       {formatCurrency(item.line_total)}
                     </td>
                   </tr>
@@ -1159,14 +1159,14 @@ function PurchaseApprovalDetails({ order }: { order: PurchaseOrder }) {
         </div>
 
         {order.notes && (
-          <section className="rounded-xl border border-blue-500/10 bg-blue-500/[0.035] p-4">
+          <section className="rounded-xl border border-primary/15 bg-primary/[0.05] p-4">
             <div className="flex items-start gap-3">
-              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
                 <FileText className="size-4" />
               </span>
 
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-blue-300">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-primary">
                   Order Notes
                 </p>
                 <p className="mt-2 whitespace-pre-wrap text-[11px] leading-5 text-muted-foreground">
@@ -1179,9 +1179,9 @@ function PurchaseApprovalDetails({ order }: { order: PurchaseOrder }) {
       </div>
 
       <div className="space-y-4">
-        <section className="overflow-hidden rounded-xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.06] via-card to-card">
-          <div className="flex items-center gap-3 border-b border-emerald-500/10 px-4 py-3">
-            <span className="inline-flex size-8 items-center justify-center rounded-lg border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
+        <section className="overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/[0.07] via-card to-card">
+          <div className="flex items-center gap-3 border-b border-primary/15 px-4 py-3">
+            <span className="inline-flex size-8 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
               <Banknote className="size-4" />
             </span>
 
@@ -1208,7 +1208,7 @@ function PurchaseApprovalDetails({ order }: { order: PurchaseOrder }) {
               value={formatCurrency(order.shipping_amount)}
             />
 
-            <div className="border-t border-emerald-500/10 pt-3">
+            <div className="border-t border-primary/15 pt-3">
               <SummaryRow
                 label="Order Total"
                 value={formatCurrency(order.total_amount)}
@@ -1285,19 +1285,19 @@ function ApprovalMetric({
       bar: "bg-amber-400",
     },
     emerald: {
-      icon: "border-emerald-500/15 bg-emerald-500/10 text-emerald-400",
-      value: "text-emerald-400",
-      bar: "bg-emerald-400",
+      icon: "border-primary/20 bg-primary/10 text-primary",
+      value: "text-primary",
+      bar: "bg-primary",
     },
     blue: {
-      icon: "border-blue-500/15 bg-blue-500/10 text-blue-400",
-      value: "text-blue-400",
-      bar: "bg-blue-400",
+      icon: "border-primary/20 bg-primary/10 text-primary",
+      value: "text-primary",
+      bar: "bg-primary",
     },
     violet: {
-      icon: "border-violet-500/15 bg-violet-500/10 text-violet-400",
-      value: "text-violet-400",
-      bar: "bg-violet-400",
+      icon: "border-primary/20 bg-primary/10 text-primary",
+      value: "text-primary",
+      bar: "bg-primary",
     },
     red: {
       icon: "border-red-500/15 bg-red-500/10 text-red-400",
@@ -1362,11 +1362,9 @@ type DetailCardProps = {
   children: ReactNode;
 };
 
-function DetailCard({ title, icon: Icon, tone, children }: DetailCardProps) {
+function DetailCard({ title, icon: Icon, children }: DetailCardProps) {
   const toneClass =
-    tone === "blue"
-      ? "border-blue-500/15 bg-blue-500/10 text-blue-400"
-      : "border-violet-500/15 bg-violet-500/10 text-violet-400";
+    "border-primary/20 bg-primary/10 text-primary";
 
   return (
     <section className="rounded-xl border border-border/70 bg-card/35 p-4">
@@ -1420,7 +1418,7 @@ function SummaryRow({
       <span
         className={cn(
           "text-[11px] font-medium tabular-nums text-foreground/80",
-          strong && "text-sm font-semibold text-emerald-400",
+          strong && "text-sm font-semibold text-primary",
         )}
       >
         {value}

@@ -521,8 +521,8 @@ export default function CategoryIndex({
                                 }
                                 className={
                                     category.parent_id
-                                        ? 'border-teal-500/15 bg-teal-500/10 text-teal-400 group-hover:border-teal-500/25 group-hover:bg-teal-500/15'
-                                        : 'border-emerald-500/15 bg-emerald-500/10 text-emerald-400 group-hover:border-emerald-500/25 group-hover:bg-emerald-500/15'
+                                        ? 'border-primary/15 bg-primary/[0.055] text-primary/80 group-hover:border-primary/25 group-hover:bg-primary/10'
+                                        : 'border-primary/20 bg-primary/10 text-primary group-hover:border-primary/30 group-hover:bg-primary/15'
                                 }
                             />
                         }
@@ -533,8 +533,8 @@ export default function CategoryIndex({
                                 className={cn(
                                     'h-5 rounded-full px-2 text-[9px] font-semibold',
                                     category.parent_id
-                                        ? 'border-teal-500/15 bg-teal-500/[0.06] text-teal-400'
-                                        : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400',
+                                        ? 'border-primary/15 bg-primary/[0.055] text-primary/80'
+                                        : 'border-primary/20 bg-primary/10 text-primary',
                                 )}
                             >
                                 {category.parent_id
@@ -564,7 +564,7 @@ export default function CategoryIndex({
                 cell: (category) =>
                     category.parent ? (
                         <div className="flex items-start gap-2.5">
-                            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-teal-500/15 bg-teal-500/10 text-teal-400">
+                            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.055] text-primary/80">
                                 <Layers3 className="size-4" />
                             </span>
 
@@ -577,7 +577,7 @@ export default function CategoryIndex({
                                     {category.parent.name}
                                 </p>
 
-                                <p className="mt-1 max-w-[175px] truncate font-mono text-[9px] text-teal-400/80">
+                                <p className="mt-1 max-w-[175px] truncate font-mono text-[9px] text-primary/75">
                                     {category.parent.slug}
                                     {' / '}
                                     {category.slug}
@@ -586,7 +586,7 @@ export default function CategoryIndex({
                         </div>
                     ) : (
                         <div className="flex items-start gap-2.5">
-                            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
+                            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
                                 <FolderTree className="size-4" />
                             </span>
 
@@ -687,7 +687,7 @@ export default function CategoryIndex({
                                     category,
                                 )
                             }
-                            className="text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400"
+                            className="text-primary hover:bg-primary/10 hover:text-primary"
                         >
                             <Pencil className="size-3.5" />
                         </IconButton>
@@ -729,10 +729,10 @@ export default function CategoryIndex({
             <PageContainer className="gap-4 md:gap-5">
                 {/* Catalog structure board */}
 
-                <section className="min-w-0 overflow-hidden rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.075] via-card/70 to-card/40">
+                <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.075] via-card/70 to-card/40">
                     <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                                 <FolderTree className="size-4" />
                             </span>
 
@@ -770,18 +770,18 @@ export default function CategoryIndex({
                         {/* Primary catalog coverage */}
 
                         <div className="relative overflow-hidden border-b border-border/60 p-4 xl:border-b-0 xl:border-r md:p-5">
-                            <div className="pointer-events-none absolute -left-16 -top-20 size-52 rounded-full bg-emerald-500/10 blur-3xl" />
-                            <FolderTree className="pointer-events-none absolute -bottom-8 -right-5 size-32 text-emerald-400 opacity-[0.022]" />
+                            <div className="pointer-events-none absolute -left-16 -top-20 size-52 rounded-full bg-primary/10 blur-3xl" />
+                            <FolderTree className="pointer-events-none absolute -bottom-8 -right-5 size-32 text-primary opacity-[0.022]" />
 
                             <div className="relative">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-emerald-300">
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-primary">
                                             Active catalog coverage
                                         </p>
 
                                         <div className="mt-3 flex items-center gap-3">
-                                            <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+                                            <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                                                 <CircleGauge className="size-5" />
                                             </span>
 
@@ -936,21 +936,21 @@ export default function CategoryIndex({
                                             </p>
                                         </div>
 
-                                        <span className="text-sm font-semibold tabular-nums text-teal-400">
+                                        <span className="text-sm font-semibold tabular-nums text-primary">
                                             {summary.root}/{summary.total}
                                         </span>
                                     </div>
 
                                     <div className="mt-4 flex h-2 overflow-hidden rounded-full bg-muted">
                                         <div
-                                            className="h-full bg-teal-400 transition-all duration-500"
+                                            className="h-full bg-primary transition-all duration-500"
                                             style={{
                                                 width: `${rootPercentage}%`,
                                             }}
                                         />
 
                                         <div
-                                            className="h-full bg-lime-400 transition-all duration-500"
+                                            className="h-full bg-primary/45 transition-all duration-500"
                                             style={{
                                                 width: `${nestedPercentage}%`,
                                             }}
@@ -958,13 +958,13 @@ export default function CategoryIndex({
                                     </div>
 
                                     <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[9px]">
-                                        <span className="inline-flex items-center gap-1.5 text-teal-400">
-                                            <span className="size-1.5 rounded-full bg-teal-400" />
+                                        <span className="inline-flex items-center gap-1.5 text-primary">
+                                            <span className="size-1.5 rounded-full bg-primary" />
                                             {summary.root} root
                                         </span>
 
-                                        <span className="inline-flex items-center gap-1.5 text-lime-400">
-                                            <span className="size-1.5 rounded-full bg-lime-400" />
+                                        <span className="inline-flex items-center gap-1.5 text-primary/70">
+                                            <span className="size-1.5 rounded-full bg-primary/45" />
                                             {nestedCategories} nested
                                         </span>
                                     </div>
@@ -982,14 +982,14 @@ export default function CategoryIndex({
                                             </p>
                                         </div>
 
-                                        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
+                                        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
                                             <FolderTree className="size-4" />
                                         </span>
                                     </div>
 
-                                    <div className="mt-4 rounded-xl border border-emerald-500/10 bg-emerald-500/[0.035] px-3 py-2.5">
+                                    <div className="mt-4 rounded-xl border border-primary/10 bg-primary/[0.035] px-3 py-2.5">
                                         <div className="flex items-center gap-2.5">
-                                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                                 <Layers3 className="size-4" />
                                             </span>
 
@@ -1031,7 +1031,7 @@ export default function CategoryIndex({
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge
                                 variant="outline"
-                                className="h-7 rounded-full border-emerald-500/15 bg-emerald-500/[0.06] px-2.5 text-[10px] font-medium text-emerald-300"
+                                className="h-7 rounded-full border-primary/15 bg-primary/[0.06] px-2.5 text-[10px] font-medium text-primary"
                             >
                                 <Tags className="mr-1 size-3" />
                                 {categories.total}{' '}
@@ -1419,7 +1419,7 @@ export default function CategoryIndex({
                         error={
                             form.errors.is_active
                         }
-                        className="border-emerald-500/15 bg-emerald-500/[0.035]"
+                        className="border-primary/15 bg-primary/[0.035]"
                     />
                 </FormSection>
             </FormDialog>
@@ -1481,19 +1481,19 @@ function CategorySnapshot({
         }
     > = {
         emerald: {
-            icon: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400',
-            value: 'text-emerald-400',
-            glow: 'bg-emerald-500/10',
+            icon: 'border-primary/20 bg-primary/10 text-primary',
+            value: 'text-primary',
+            glow: 'bg-primary/10',
         },
         lime: {
-            icon: 'border-lime-500/20 bg-lime-500/10 text-lime-400',
-            value: 'text-lime-400',
-            glow: 'bg-lime-500/10',
+            icon: 'border-primary/15 bg-primary/[0.05] text-primary/70',
+            value: 'text-primary/70',
+            glow: 'bg-primary/[0.05]',
         },
         teal: {
-            icon: 'border-teal-500/20 bg-teal-500/10 text-teal-400',
-            value: 'text-teal-400',
-            glow: 'bg-teal-500/10',
+            icon: 'border-primary/15 bg-primary/[0.075] text-primary/85',
+            value: 'text-primary/85',
+            glow: 'bg-primary/[0.075]',
         },
     };
 
@@ -1555,9 +1555,9 @@ function CategoryUsage({
 }) {
     return (
         <div className="grid grid-cols-2 gap-2">
-            <div className="min-w-0 rounded-lg border border-amber-500/15 bg-amber-500/[0.045] px-2.5 py-2">
+            <div className="min-w-0 rounded-lg border border-primary/15 bg-primary/[0.045] px-2.5 py-2">
                 <div className="flex items-center gap-1.5">
-                    <Package2 className="size-3 text-amber-400" />
+                    <Package2 className="size-3 text-primary" />
 
                     <span className="text-[12px] font-semibold tabular-nums text-foreground">
                         {products}
@@ -1569,9 +1569,9 @@ function CategoryUsage({
                 </p>
             </div>
 
-            <div className="min-w-0 rounded-lg border border-teal-500/15 bg-teal-500/[0.045] px-2.5 py-2">
+            <div className="min-w-0 rounded-lg border border-primary/10 bg-primary/[0.025] px-2.5 py-2">
                 <div className="flex items-center gap-1.5">
-                    <Layers3 className="size-3 text-teal-400" />
+                    <Layers3 className="size-3 text-primary/70" />
 
                     <span className="text-[12px] font-semibold tabular-nums text-foreground">
                         {children}

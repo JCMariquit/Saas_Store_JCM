@@ -605,10 +605,10 @@ export default function ProductIndex({
             <PageContainer className="gap-4 md:gap-5">
                 {/* Product catalog control board */}
 
-                <section className="min-w-0 overflow-hidden rounded-2xl border border-emerald-500/15 bg-[linear-gradient(135deg,rgba(16,185,129,0.055)_0%,rgba(16,185,129,0.018)_34%,rgba(10,12,11,0)_72%)] shadow-sm">
-                    <div className="flex flex-col gap-3 border-b border-emerald-500/10 bg-background/25 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.055] via-primary/[0.018] to-transparent shadow-sm">
+                    <div className="flex flex-col gap-3 border-b border-primary/10 bg-background/25 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/[0.075] text-emerald-400">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/[0.075] text-primary">
                                 <Package2 className="size-4" />
                             </span>
 
@@ -644,17 +644,17 @@ export default function ProductIndex({
 
                     <div className="grid min-w-0 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
                         <div className="relative min-w-0 overflow-hidden p-4 md:p-5">
-                            <div className="pointer-events-none absolute -left-20 -top-24 size-60 rounded-full bg-emerald-500/[0.08] blur-3xl" />
-                            <Package2 className="pointer-events-none absolute -bottom-10 -right-6 size-36 text-emerald-400 opacity-[0.018]" />
+                            <div className="pointer-events-none absolute -left-20 -top-24 size-60 rounded-full bg-primary/[0.08] blur-3xl" />
+                            <Package2 className="pointer-events-none absolute -bottom-10 -right-6 size-36 text-primary opacity-[0.018]" />
 
                             <div className="relative">
-                                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-400">
+                                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
                                     Catalog readiness
                                 </p>
 
                                 <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                                     <div className="flex min-w-0 items-end gap-3">
-                                        <p className="shrink-0 text-[34px] font-semibold leading-none tracking-[-0.045em] tabular-nums text-emerald-400 sm:text-[38px]">
+                                        <p className="shrink-0 text-[34px] font-semibold leading-none tracking-[-0.045em] tabular-nums text-primary sm:text-[38px]">
                                             {activePercentage}%
                                         </p>
 
@@ -692,7 +692,7 @@ export default function ProductIndex({
                                             <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                                 Tracking coverage
                                             </p>
-                                            <p className="text-sm font-semibold tabular-nums text-teal-400 sm:mt-1.5">
+                                            <p className="text-sm font-semibold tabular-nums text-primary/85 sm:mt-1.5">
                                                 {trackedPercentage}%
                                             </p>
                                         </div>
@@ -706,7 +706,7 @@ export default function ProductIndex({
                                             <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                                 Active categories
                                             </p>
-                                            <p className="text-sm font-semibold tabular-nums text-lime-400 sm:mt-1.5">
+                                            <p className="text-sm font-semibold tabular-nums text-primary sm:mt-1.5">
                                                 {activeCategoryCount}
                                             </p>
                                         </div>
@@ -787,7 +787,7 @@ export default function ProductIndex({
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge
                                 variant="outline"
-                                className="h-7 rounded-full border-emerald-500/15 bg-emerald-500/[0.06] px-2.5 text-[10px] font-medium text-emerald-300"
+                                className="h-7 rounded-full border-primary/15 bg-primary/[0.06] px-2.5 text-[10px] font-medium text-primary"
                             >
                                 <Package2 className="mr-1 size-3" />
                                 {products.total} item
@@ -1005,14 +1005,14 @@ export default function ProductIndex({
                 maxWidth="max-w-5xl"
             >
                 <div className="overflow-hidden rounded-xl border border-border/70 bg-card">
-                    <div className="flex flex-col gap-3 border-b border-emerald-500/10 bg-[linear-gradient(135deg,rgba(16,185,129,0.045),transparent_58%)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-col gap-3 border-b border-primary/10 bg-gradient-to-r from-primary/[0.045] to-transparent px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-emerald-500/15 bg-emerald-500/[0.06] text-emerald-400">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.06] text-primary">
                                 <Package2 className="size-4" />
                             </span>
 
                             <div className="min-w-0">
-                                <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-emerald-400">
+                                <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-primary">
                                     {editingProduct
                                         ? 'Catalog maintenance'
                                         : 'New catalog record'}
@@ -1058,7 +1058,7 @@ export default function ProductIndex({
                             <section className="p-5">
                                 <div className="mb-5 flex items-start justify-between gap-4">
                                     <div>
-                                        <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-emerald-400">
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
                                             01 · Product identity
                                         </p>
 
@@ -1182,7 +1182,7 @@ export default function ProductIndex({
                                             error={form.errors.barcode}
                                         >
                                             <div className="group relative">
-                                                <Barcode className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-emerald-400" />
+                                                <Barcode className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
 
                                                 <Input
                                                     id="barcode"
@@ -1266,7 +1266,7 @@ export default function ProductIndex({
 
                             <section className="border-t border-border/70 p-5">
                                 <div className="mb-5">
-                                    <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-emerald-400">
+                                    <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
                                         02 · Commercial profile
                                     </p>
 
@@ -1377,7 +1377,7 @@ export default function ProductIndex({
 
                         <aside className="border-t border-border/70 bg-muted/[0.018] p-5 lg:border-l lg:border-t-0">
                             <div>
-                                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-emerald-400">
+                                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
                                     03 · Operations
                                 </p>
 
@@ -1479,7 +1479,7 @@ export default function ProductIndex({
                                 </dl>
                             </div>
 
-                            <div className="mt-5 border-l-2 border-emerald-500/30 pl-3">
+                            <div className="mt-5 border-l-2 border-primary/30 pl-3">
                                 <p className="text-[9px] font-semibold text-foreground/80">
                                     Inventory note
                                 </p>
@@ -1534,7 +1534,7 @@ function ProductDirectoryTable({
         <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20 shadow-sm">
             <div className="overflow-x-auto">
                 <table className="w-full min-w-[880px] border-collapse">
-                    <thead className="border-b border-emerald-500/10 bg-emerald-500/[0.025]">
+                    <thead className="border-b border-primary/10 bg-primary/[0.025]">
                         <tr>
                             <th className="min-w-[280px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
                                 Product
@@ -1559,7 +1559,7 @@ function ProductDirectoryTable({
                             <tr>
                                 <td colSpan={5} className="px-6 py-14">
                                     <div className="mx-auto flex max-w-sm flex-col items-center text-center">
-                                        <span className="flex size-11 items-center justify-center rounded-xl border border-emerald-500/15 bg-emerald-500/[0.045] text-emerald-400">
+                                        <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.045] text-primary">
                                             <Package2 className="size-5" />
                                         </span>
                                         <h3 className="mt-3 text-sm font-semibold text-foreground">
@@ -1596,14 +1596,14 @@ function ProductDirectoryTable({
                                             onSelect(product);
                                         }
                                     }}
-                                    className="group cursor-pointer bg-card/55 transition-colors hover:bg-emerald-500/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/35"
+                                    className="group cursor-pointer bg-card/55 transition-colors hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
                                 >
                                     <td className="px-4 py-2.5">
                                         <EntityInfo
                                             avatar={
                                                 <EntityAvatar
                                                     icon={Package2}
-                                                    className="border-emerald-500/15 bg-emerald-500/[0.07] text-emerald-400 transition-colors group-hover:border-emerald-500/25 group-hover:bg-emerald-500/10"
+                                                    className="border-primary/15 bg-primary/[0.07] text-primary transition-colors group-hover:border-primary/25 group-hover:bg-primary/10"
                                                 />
                                             }
                                             title={product.name}
@@ -1618,7 +1618,7 @@ function ProductDirectoryTable({
                                     <td className="px-4 py-2.5">
                                         <div className="min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <Tags className="size-3.5 shrink-0 text-emerald-400" />
+                                                <Tags className="size-3.5 shrink-0 text-primary" />
                                                 <p className="max-w-[145px] truncate text-[11px] font-semibold text-foreground/90">
                                                     {product.category?.name ?? 'Uncategorized'}
                                                 </p>
@@ -1630,7 +1630,7 @@ function ProductDirectoryTable({
                                     </td>
 
                                     <td className="px-4 py-2.5">
-                                        <p className="text-[13px] font-semibold tabular-nums text-emerald-400">
+                                        <p className="text-[13px] font-semibold tabular-nums text-primary">
                                             {formatCurrency(product.selling_price)}
                                         </p>
                                         <p className="mt-1 text-[9px] text-muted-foreground">
@@ -1792,11 +1792,11 @@ function ProductDetailsDrawer({
             {product && (
                 <div className="flex min-h-full flex-col bg-card">
                     <div className="min-h-0 flex-1 overflow-y-auto">
-                        <section className="border-b border-emerald-500/10 bg-[linear-gradient(135deg,rgba(16,185,129,0.055),rgba(16,185,129,0.012)_48%,transparent_78%)] px-5 py-5">
+                        <section className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                 <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-400">
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
                                             Catalog product
                                         </p>
                                         <StatusBadge
@@ -1830,7 +1830,7 @@ function ProductDetailsDrawer({
                                     <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                         Selling price
                                     </p>
-                                    <p className="mt-1 text-2xl font-semibold leading-none tabular-nums text-emerald-400">
+                                    <p className="mt-1 text-2xl font-semibold leading-none tabular-nums text-primary">
                                         {formatCurrency(product.selling_price)}
                                     </p>
                                     <p className="mt-1 text-[9px] text-muted-foreground">
@@ -1924,7 +1924,7 @@ function ProductDetailsDrawer({
                                     <ProductDetailRow
                                         label="Selling price"
                                         value={formatCurrency(product.selling_price)}
-                                        valueClassName="text-emerald-400"
+                                        valueClassName="text-primary"
                                     />
                                     <ProductDetailRow
                                         label="Wholesale price"
@@ -2059,7 +2059,7 @@ function ProductDetailsDrawer({
                             <Button
                                 type="button"
                                 onClick={() => onEdit(product)}
-                                className="h-9 rounded-lg bg-emerald-600 px-4 text-xs text-white hover:bg-emerald-500"
+                                className="h-9 rounded-lg bg-primary px-4 text-xs text-primary-foreground hover:bg-primary/90"
                             >
                                 <Pencil className="size-3.5" />
                                 Edit Product
@@ -2174,16 +2174,16 @@ function CatalogFactRow({
 }) {
     const toneStyles = {
         emerald: {
-            icon: 'border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-400',
-            value: 'text-emerald-400',
+            icon: 'border-primary/15 bg-primary/[0.055] text-primary',
+            value: 'text-primary',
         },
         lime: {
-            icon: 'border-lime-500/15 bg-lime-500/[0.055] text-lime-400',
-            value: 'text-lime-400',
+            icon: 'border-primary/15 bg-primary/[0.055] text-primary',
+            value: 'text-primary',
         },
         teal: {
-            icon: 'border-teal-500/15 bg-teal-500/[0.055] text-teal-400',
-            value: 'text-teal-400',
+            icon: 'border-primary/15 bg-primary/[0.055] text-primary',
+            value: 'text-primary',
         },
         amber: {
             icon: 'border-amber-500/15 bg-amber-500/[0.055] text-amber-400',

@@ -41,60 +41,70 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Branches
+    | Locations
     |--------------------------------------------------------------------------
     */
 
-    Route::prefix('branches')
-        ->name('branches.')
-        ->middleware('feature:branch_management')
-        ->controller(BranchController::class)
+    Route::prefix('locations')
+        ->name('locations.')
         ->group(function () {
-            Route::get('/', 'index')
-                ->name('index');
+            /*
+            |--------------------------------------------------------------------------
+            | Branches
+            |--------------------------------------------------------------------------
+            */
 
-            Route::post('/', 'store')
-                ->name('store');
+            Route::prefix('branches')
+                ->name('branches.')
+                ->middleware('feature:branch_management')
+                ->controller(BranchController::class)
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
 
-            Route::put('/{branch}', 'update')
-                ->name('update');
+                    Route::post('/', 'store')
+                        ->name('store');
 
-            Route::patch(
-                '/{branch}/status',
-                'updateStatus'
-            )->name('status');
+                    Route::put('/{branch}', 'update')
+                        ->name('update');
 
-            Route::delete('/{branch}', 'destroy')
-                ->name('destroy');
-        });
+                    Route::patch(
+                        '/{branch}/status',
+                        'updateStatus'
+                    )->name('status');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Warehouses
-    |--------------------------------------------------------------------------
-    */
+                    Route::delete('/{branch}', 'destroy')
+                        ->name('destroy');
+                });
 
-    Route::prefix('warehouses')
-        ->name('warehouses.')
-        ->middleware('feature:warehouse_management')
-        ->controller(WarehouseController::class)
-        ->group(function () {
-            Route::get('/', 'index')
-                ->name('index');
+            /*
+            |--------------------------------------------------------------------------
+            | Warehouses
+            |--------------------------------------------------------------------------
+            */
 
-            Route::post('/', 'store')
-                ->name('store');
+            Route::prefix('warehouses')
+                ->name('warehouses.')
+                ->middleware('feature:warehouse_management')
+                ->controller(WarehouseController::class)
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
 
-            Route::put('/{warehouse}', 'update')
-                ->name('update');
+                    Route::post('/', 'store')
+                        ->name('store');
 
-            Route::patch(
-                '/{warehouse}/status',
-                'updateStatus'
-            )->name('status');
+                    Route::put('/{warehouse}', 'update')
+                        ->name('update');
 
-            Route::delete('/{warehouse}', 'destroy')
-                ->name('destroy');
+                    Route::patch(
+                        '/{warehouse}/status',
+                        'updateStatus'
+                    )->name('status');
+
+                    Route::delete('/{warehouse}', 'destroy')
+                        ->name('destroy');
+                });
         });
 
     /*
@@ -280,6 +290,25 @@ Route::middleware(['auth'])->group(function () {
                         'void'
                     )->name('void');
                 });
+            /*
+            |--------------------------------------------------------------------------
+            | Stock Movements
+            |--------------------------------------------------------------------------
+            */
+
+            Route::prefix('stock-movements')
+                ->name('stock-movements.')
+                ->middleware(
+                    'feature:stock_movements'
+                )
+                ->controller(
+                    StockMovementController::class
+                )
+                ->group(function () {
+                    Route::get('/', 'index')
+                        ->name('index');
+                });
+
         });
 
     /*
@@ -295,18 +324,6 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('feature:receiving')
         ->name('procurement.received-orders.index');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Stock Movements
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get(
-        '/stock-movements',
-        [StockMovementController::class, 'index']
-    )
-        ->middleware('feature:stock_movements')
-        ->name('stock-movements.index');
 
     /*
     |--------------------------------------------------------------------------
@@ -567,23 +584,33 @@ Route::middleware(['auth'])->group(function () {
     );
 
     Route::redirect(
+        '/branches',
+        '/locations/branches'
+    );
+
+    Route::redirect(
+        '/warehouses',
+        '/locations/warehouses'
+    );
+
+    Route::redirect(
         '/inventory/branches',
-        '/branches'
+        '/locations/branches'
     );
 
     Route::redirect(
         '/inventory/locations',
-        '/warehouses'
+        '/locations/warehouses'
     );
 
     Route::redirect(
         '/inventory/warehouses',
-        '/warehouses'
+        '/locations/warehouses'
     );
 
     Route::redirect(
         '/inventory/movements',
-        '/stock-movements'
+        '/inventory/stock-movements'
     );
 });
 

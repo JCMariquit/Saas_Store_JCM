@@ -60,7 +60,7 @@ class BranchController extends Controller
         $summaryQuery = Branch::query()
             ->forTenant($tenantId);
 
-        return Inertia::render('branches/index', [
+        return Inertia::render('locations/branches/index', [
             'branches' => $branches,
 
             'summary' => [

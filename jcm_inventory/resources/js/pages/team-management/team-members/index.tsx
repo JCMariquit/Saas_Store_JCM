@@ -557,7 +557,7 @@ export default function TeamMembersIndex({
       cell: (member) => (
         <EntityInfo
           avatar={
-            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-[11px] font-semibold text-violet-300">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-[11px] font-semibold text-primary">
               {memberInitials(member.name)}
             </span>
           }
@@ -582,7 +582,7 @@ export default function TeamMembersIndex({
           }
           subtitle={
             <span className="inline-flex max-w-[210px] items-center gap-1.5 truncate">
-              <Mail className="size-3 text-blue-400" />
+              <Mail className="size-3 text-primary" />
               {member.email}
             </span>
           }
@@ -617,7 +617,7 @@ export default function TeamMembersIndex({
       cell: (member) =>
         member.branch ? (
           <div className="flex items-start gap-2.5">
-            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
               <Building2 className="size-4" />
             </span>
 
@@ -711,7 +711,7 @@ export default function TeamMembersIndex({
               label="Edit team member"
               disabled={isProcessing}
               onClick={() => openEditDialog(member)}
-              className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
+              className="text-primary hover:bg-primary/10 hover:text-primary"
             >
               <Edit3 className="size-3.5" />
             </IconButton>
@@ -720,7 +720,7 @@ export default function TeamMembersIndex({
               label="Reset password"
               disabled={isProcessing}
               onClick={() => openResetPasswordDialog(member)}
-              className="text-violet-400 hover:bg-violet-500/10 hover:text-violet-400"
+              className="text-primary hover:bg-primary/10 hover:text-primary"
             >
               <KeyRound className="size-3.5" />
             </IconButton>
@@ -773,12 +773,12 @@ export default function TeamMembersIndex({
       <PageContainer className="gap-4 md:gap-5">
         {/* Team operations board */}
 
-        <section className="relative min-w-0 overflow-hidden rounded-2xl border border-violet-500/15 bg-card/75 shadow-sm">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_10%,rgba(139,92,246,0.10),transparent_30%),radial-gradient(circle_at_88%_18%,rgba(59,130,246,0.08),transparent_27%),linear-gradient(to_bottom_right,rgba(255,255,255,0.018),transparent_55%)]" />
+        <section className="relative min-w-0 overflow-hidden rounded-2xl border border-primary/15 bg-card/75 shadow-sm">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_10%,var(--theme-glow),transparent_30%),linear-gradient(to_bottom_right,rgba(255,255,255,0.018),transparent_55%)]" />
 
           <div className="relative flex flex-col gap-3 border-b border-border/60 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="relative flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-400 shadow-[0_0_24px_rgba(139,92,246,0.09)]">
+              <div className="relative flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-[0_0_24px_var(--theme-glow)]">
                 <Users className="size-4.5" />
 
                 <span className="absolute -right-1 -top-1 size-2 rounded-full border-2 border-card bg-emerald-400" />
@@ -867,7 +867,7 @@ export default function TeamMembersIndex({
                   </p>
                 </div>
 
-                <Users className="size-5 shrink-0 text-violet-400" />
+                <Users className="size-5 shrink-0 text-primary" />
               </div>
 
               <div className="mt-4">
@@ -876,7 +876,7 @@ export default function TeamMembersIndex({
                     Account availability
                   </span>
 
-                  <span className="font-semibold tabular-nums text-violet-400">
+                  <span className="font-semibold tabular-nums text-primary">
                     {activePercentage}%
                   </span>
                 </div>
@@ -1407,9 +1407,9 @@ export default function TeamMembersIndex({
         maxWidth="max-w-lg"
       >
         {resettingMember && (
-          <section className="rounded-xl border border-violet-500/10 bg-violet-500/[0.045] p-4">
+          <section className="rounded-xl border border-primary/10 bg-primary/[0.045] p-4">
             <div className="flex items-center gap-3">
-              <span className="inline-flex size-10 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-[11px] font-semibold text-violet-300">
+              <span className="inline-flex size-10 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-[11px] font-semibold text-primary">
                 {memberInitials(resettingMember.name)}
               </span>
 
@@ -1528,12 +1528,12 @@ function WorkforceStat({
       value: "text-emerald-400",
     },
     violet: {
-      icon: "text-violet-400",
-      value: "text-violet-400",
+      icon: "text-primary",
+      value: "text-primary",
     },
     blue: {
-      icon: "text-blue-400",
-      value: "text-blue-400",
+      icon: "text-primary",
+      value: "text-primary",
     },
     amber: {
       icon: "text-amber-400",
@@ -1599,12 +1599,12 @@ function TeamSignal({
       icon: "bg-emerald-500/10 text-emerald-400",
     },
     violet: {
-      shell: "border-violet-500/15 bg-violet-500/[0.055]",
-      icon: "bg-violet-500/10 text-violet-400",
+      shell: "border-primary/15 bg-primary/[0.055]",
+      icon: "bg-primary/10 text-primary",
     },
     blue: {
-      shell: "border-blue-500/15 bg-blue-500/[0.055]",
-      icon: "bg-blue-500/10 text-blue-400",
+      shell: "border-primary/15 bg-primary/[0.055]",
+      icon: "bg-primary/10 text-primary",
     },
     amber: {
       shell: "border-amber-500/15 bg-amber-500/[0.055]",

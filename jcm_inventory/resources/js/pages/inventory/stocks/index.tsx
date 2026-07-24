@@ -249,8 +249,7 @@ type DrawerType =
     | null;
 
 type StockMetricTone =
-    | 'blue'
-    | 'violet'
+    | 'primary'
     | 'amber'
     | 'red';
 
@@ -794,7 +793,7 @@ export default function StockIndex({
                         avatar={
                             <EntityAvatar
                                 icon={Package2}
-                                className="border-violet-500/15 bg-violet-500/10 text-violet-400 group-hover:border-violet-500/25 group-hover:bg-violet-500/15"
+                                className="border-primary/15 bg-primary/10 text-primary group-hover:border-primary/25 group-hover:bg-primary/15"
                             />
                         }
                         title={
@@ -825,7 +824,7 @@ export default function StockIndex({
                 cell: (stock) => (
                     <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
-                            <span className="inline-flex size-7 items-center justify-center rounded-lg border border-cyan-500/15 bg-cyan-500/10 text-cyan-400">
+                            <span className="inline-flex size-7 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
                                 <WarehouseIcon className="size-3.5" />
                             </span>
 
@@ -956,7 +955,7 @@ export default function StockIndex({
 
                     return (
                         <div className="space-y-1">
-                            <p className="text-[12px] font-semibold tabular-nums text-emerald-400">
+                            <p className="text-[12px] font-semibold tabular-nums text-primary">
                                 {formatCurrency(
                                     quantity *
                                         averageCost,
@@ -1032,7 +1031,7 @@ export default function StockIndex({
                                         stock,
                                     )
                                 }
-                                className="text-blue-400 hover:bg-blue-500/10 hover:text-blue-400"
+                                className="text-primary hover:bg-primary/10 hover:text-primary"
                             >
                                 <ArrowRightLeft className="size-3.5" />
                             </IconButton>
@@ -1044,7 +1043,7 @@ export default function StockIndex({
                                         stock,
                                     )
                                 }
-                                className="text-violet-400 hover:bg-violet-500/10 hover:text-violet-400"
+                                className="text-primary hover:bg-primary/10 hover:text-primary"
                             >
                                 <Settings2 className="size-3.5" />
                             </IconButton>
@@ -1185,10 +1184,10 @@ export default function StockIndex({
 
                 {/* Inventory control board */}
 
-                <section className="min-w-0 overflow-hidden rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.075] via-card/70 to-card/40">
+                <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.075] via-card/70 to-card/40">
                     <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                                 <Boxes className="size-4" />
                             </span>
 
@@ -1237,17 +1236,17 @@ export default function StockIndex({
 
                     <div className="grid min-w-0 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
                         <div className="relative overflow-hidden border-b border-border/60 p-4 xl:border-b-0 xl:border-r md:p-5">
-                            <div className="pointer-events-none absolute -left-16 -top-20 size-52 rounded-full bg-emerald-500/10 blur-3xl" />
-                            <CircleDollarSign className="pointer-events-none absolute -bottom-10 -right-6 size-36 text-emerald-400 opacity-[0.025]" />
+                            <div className="pointer-events-none absolute -left-16 -top-20 size-52 rounded-full bg-primary/10 blur-3xl" />
+                            <CircleDollarSign className="pointer-events-none absolute -bottom-10 -right-6 size-36 text-primary opacity-[0.025]" />
 
                             <div className="relative">
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                     <div>
-                                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-emerald-300">
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-primary/80">
                                             Current Inventory Valuation
                                         </p>
 
-                                        <p className="mt-3 text-[30px] font-semibold leading-none tracking-[-0.045em] tabular-nums text-emerald-400 sm:text-[34px]">
+                                        <p className="mt-3 text-[30px] font-semibold leading-none tracking-[-0.045em] tabular-nums text-primary sm:text-[34px]">
                                             {formatCurrency(
                                                 summary.inventory_value,
                                             )}
@@ -1259,8 +1258,8 @@ export default function StockIndex({
                                     </div>
 
                                     <div className="grid min-w-[210px] grid-cols-2 gap-2">
-                                        <div className="rounded-xl border border-violet-500/15 bg-violet-500/[0.045] px-3 py-2.5">
-                                            <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-violet-300">
+                                        <div className="rounded-xl border border-primary/15 bg-primary/[0.045] px-3 py-2.5">
+                                            <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-primary/80">
                                                 Quantity
                                             </p>
                                             <p className="mt-1.5 text-[15px] font-semibold tabular-nums">
@@ -1273,8 +1272,8 @@ export default function StockIndex({
                                             </p>
                                         </div>
 
-                                        <div className="rounded-xl border border-blue-500/15 bg-blue-500/[0.045] px-3 py-2.5">
-                                            <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-blue-300">
+                                        <div className="rounded-xl border border-primary/15 bg-primary/[0.045] px-3 py-2.5">
+                                            <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-primary/80">
                                                 Positions
                                             </p>
                                             <p className="mt-1.5 text-[15px] font-semibold tabular-nums">
@@ -1354,7 +1353,7 @@ export default function StockIndex({
                                 )}
                                 description="Product and warehouse pairs"
                                 icon={Layers3}
-                                tone="blue"
+                                tone="primary"
                                 className="border-b border-r border-border/60"
                             />
 
@@ -1365,7 +1364,7 @@ export default function StockIndex({
                                 )}
                                 description="Combined units on hand"
                                 icon={Boxes}
-                                tone="violet"
+                                tone="primary"
                                 className="border-b border-border/60"
                             />
 
@@ -1403,7 +1402,7 @@ export default function StockIndex({
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge
                                 variant="outline"
-                                className="h-7 rounded-full border-blue-500/15 bg-blue-500/[0.06] px-2.5 text-[10px] font-medium text-blue-300"
+                                className="h-7 rounded-full border-primary/15 bg-primary/[0.06] px-2.5 text-[10px] font-medium text-primary/80"
                             >
                                 <Layers3 className="mr-1 size-3" />
                                 {stocks.total} position
@@ -2545,7 +2544,7 @@ export default function StockIndex({
                                     </p>
                                 </div>
 
-                                <div className="flex size-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-400">
+                                <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary">
                                     <ArrowRightLeft className="size-4" />
                                 </div>
 
@@ -2781,15 +2780,10 @@ function StockControlMetric({
             glow: string;
         }
     > = {
-        blue: {
-            icon: 'border-blue-500/20 bg-blue-500/10 text-blue-400',
-            value: 'text-blue-400',
-            glow: 'bg-blue-500/10',
-        },
-        violet: {
-            icon: 'border-violet-500/20 bg-violet-500/10 text-violet-400',
-            value: 'text-violet-400',
-            glow: 'bg-violet-500/10',
+        primary: {
+            icon: 'border-primary/20 bg-primary/10 text-primary',
+            value: 'text-primary',
+            glow: 'bg-primary/10',
         },
         amber: {
             icon: 'border-amber-500/20 bg-amber-500/10 text-amber-400',

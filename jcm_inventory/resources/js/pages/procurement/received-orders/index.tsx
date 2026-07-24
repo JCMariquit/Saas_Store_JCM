@@ -361,10 +361,10 @@ export default function ReceivedOrderIndex({
       <Head title="Received Orders" />
 
       <PageContainer className="gap-4 md:gap-5">
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.07] via-card/70 to-card/40">
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.07] via-card/70 to-card/40">
           <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                 <History className="size-4" />
               </span>
 
@@ -406,18 +406,18 @@ export default function ReceivedOrderIndex({
 
           <div className="grid min-w-0 lg:grid-cols-[minmax(330px,1.08fr)_minmax(0,1.92fr)]">
             <div className="relative overflow-hidden border-b border-border/60 p-4 lg:border-b-0 lg:border-r">
-              <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-emerald-500/10 blur-3xl" />
-              <History className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-emerald-400 opacity-[0.025]" />
+              <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-primary/10 blur-3xl" />
+              <History className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-primary opacity-[0.025]" />
 
               <div className="relative grid gap-4 sm:grid-cols-[64px_minmax(0,1fr)] sm:items-center">
-                <div className="flex size-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+                <div className="flex size-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
                   <PackageCheck className="size-7" />
                 </div>
 
                 <div className="min-w-0">
                   <div className="flex items-end justify-between gap-4">
                     <div>
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-emerald-300">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
                         Completed procurement orders
                       </p>
 
@@ -427,7 +427,7 @@ export default function ReceivedOrderIndex({
                     </div>
 
                     <div className="text-right">
-                      <p className="text-lg font-semibold tabular-nums text-emerald-400">
+                      <p className="text-lg font-semibold tabular-nums text-primary">
                         {formatNumber(summary.completed_this_month)}
                       </p>
 
@@ -439,7 +439,7 @@ export default function ReceivedOrderIndex({
 
                   <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-background/60">
                     <div
-                      className="h-full rounded-full bg-emerald-400 transition-[width] duration-500"
+                      className="h-full rounded-full bg-primary transition-[width] duration-500"
                       style={{
                         width: `${Math.max(
                           summary.completed_this_month > 0 ? 4 : 0,
@@ -613,7 +613,7 @@ export default function ReceivedOrderIndex({
               aria-label="Completion date from"
               onChange={(event) => setDateFrom(event.target.value)}
               className="h-10"
-              iconClassName="text-blue-400"
+              iconClassName="text-primary"
             />
 
             <IconInput
@@ -626,7 +626,7 @@ export default function ReceivedOrderIndex({
               aria-label="Completion date to"
               onChange={(event) => setDateTo(event.target.value)}
               className="h-10"
-              iconClassName="text-violet-400"
+              iconClassName="text-primary"
             />
           </FilterBar>
 
@@ -702,7 +702,7 @@ function ReceivedOrderTable({
               <tr>
                 <td colSpan={8} className="px-4 py-12">
                   <div className="mx-auto flex max-w-sm flex-col items-center text-center">
-                    <span className="flex size-11 items-center justify-center rounded-xl border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
+                    <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
                       <History className="size-5" />
                     </span>
 
@@ -743,9 +743,9 @@ function ReceivedOrderTable({
                         }
                       }}
                       className={cn(
-                        "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/40",
+                        "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
                         isExpanded &&
-                          "bg-emerald-500/[0.035] hover:bg-emerald-500/[0.055]",
+                          "bg-primary/[0.035] hover:bg-primary/[0.055]",
                       )}
                     >
                       <td className="px-3 py-3 align-middle">
@@ -763,8 +763,8 @@ function ReceivedOrderTable({
                             onToggleDetails(order.id);
                           }}
                           className={cn(
-                            "size-7 rounded-md text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-400",
-                            isExpanded && "bg-emerald-500/10 text-emerald-400",
+                            "size-7 rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary",
+                            isExpanded && "bg-primary/10 text-primary",
                           )}
                         >
                           <ChevronDown
@@ -780,11 +780,11 @@ function ReceivedOrderTable({
                         <div className="flex min-w-0 items-center gap-2.5">
                           <EntityAvatar
                             icon={ClipboardCheck}
-                            className="border-emerald-500/15 bg-emerald-500/10 text-emerald-400"
+                            className="border-primary/15 bg-primary/10 text-primary"
                           />
 
                           <div className="min-w-0">
-                            <p className="max-w-[165px] truncate font-mono text-[10px] font-semibold text-emerald-300">
+                            <p className="max-w-[165px] truncate font-mono text-[10px] font-semibold text-primary">
                               {order.po_number}
                             </p>
 
@@ -799,7 +799,7 @@ function ReceivedOrderTable({
                         <div className="flex min-w-0 items-center gap-2.5">
                           <EntityAvatar
                             icon={Truck}
-                            className="border-amber-500/15 bg-amber-500/10 text-amber-400"
+                            className="border-primary/15 bg-primary/10 text-primary"
                           />
 
                           <div className="min-w-0">
@@ -819,13 +819,13 @@ function ReceivedOrderTable({
                           <TableMeta
                             icon={Warehouse}
                             value={order.warehouse.name}
-                            className="text-violet-400"
+                            className="text-primary"
                           />
 
                           <TableMeta
                             icon={Building2}
                             value={order.branch.name}
-                            className="text-blue-400"
+                            className="text-primary"
                             muted
                           />
                         </div>
@@ -843,7 +843,7 @@ function ReceivedOrderTable({
                       </td>
 
                       <td className="px-3 py-3.5 align-middle">
-                        <p className="text-[11px] font-semibold tabular-nums text-emerald-400">
+                        <p className="text-[11px] font-semibold tabular-nums text-primary">
                           {formatQuantity(order.received_quantity)} units
                         </p>
 
@@ -871,8 +871,8 @@ function ReceivedOrderTable({
                             label="View complete received order"
                             onClick={() => onToggleDetails(order.id)}
                             className={cn(
-                              "text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-400",
-                              isExpanded && "bg-emerald-500/10",
+                              "text-primary hover:bg-primary/10 hover:text-primary",
+                              isExpanded && "bg-primary/10",
                             )}
                           >
                             <Eye className="size-3.5" />
@@ -907,10 +907,10 @@ function ReceivedOrderTable({
 
 function ExpandedReceivedOrder({ order }: { order: ReceivedOrder }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-emerald-500/10 bg-background/45 shadow-sm">
+    <div className="overflow-hidden rounded-xl border border-primary/10 bg-background/45 shadow-sm">
       <div className="flex flex-col gap-2 border-b border-border/60 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-300">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
             Complete Received Order Record
           </p>
 
@@ -1006,7 +1006,7 @@ function ExpandedReceivedOrder({ order }: { order: ReceivedOrder }) {
       {order.notes && (
         <div className="border-t border-border/60 p-3">
           <div className="flex items-start gap-2.5 rounded-lg border border-border/60 bg-card/25 p-3">
-            <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/10 text-blue-400">
+            <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
               <FileText className="size-3.5" />
             </span>
 
@@ -1036,10 +1036,10 @@ function InfoPanel({
   items: Array<[string, string]>;
 }) {
   const tones = {
-    amber: "border-amber-500/15 bg-amber-500/10 text-amber-400",
-    violet: "border-violet-500/15 bg-violet-500/10 text-violet-400",
-    emerald: "border-emerald-500/15 bg-emerald-500/10 text-emerald-400",
-    blue: "border-blue-500/15 bg-blue-500/10 text-blue-400",
+    amber: "border-primary/15 bg-primary/10 text-primary",
+    violet: "border-primary/15 bg-primary/10 text-primary",
+    emerald: "border-primary/15 bg-primary/10 text-primary",
+    blue: "border-primary/15 bg-primary/10 text-primary",
   };
 
   return (
@@ -1133,7 +1133,7 @@ function OrderItemsTable({ order }: { order: ReceivedOrder }) {
               <tr key={item.id} className="hover:bg-muted/[0.025]">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2.5">
-                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
+                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
                       <Boxes className="size-4" />
                     </span>
 
@@ -1153,7 +1153,7 @@ function OrderItemsTable({ order }: { order: ReceivedOrder }) {
                   {formatQuantity(item.ordered_quantity)}
                 </td>
 
-                <td className="px-4 py-3 text-[11px] font-semibold tabular-nums text-emerald-400">
+                <td className="px-4 py-3 text-[11px] font-semibold tabular-nums text-primary">
                   {formatQuantity(item.received_quantity)}
                 </td>
 
@@ -1161,7 +1161,7 @@ function OrderItemsTable({ order }: { order: ReceivedOrder }) {
                   {formatCurrency(item.unit_cost)}
                 </td>
 
-                <td className="px-4 py-3 text-[11px] font-semibold tabular-nums text-emerald-400">
+                <td className="px-4 py-3 text-[11px] font-semibold tabular-nums text-primary">
                   {formatCurrency(item.line_total)}
                 </td>
 
@@ -1278,14 +1278,14 @@ function ReceiptCard({ receipt }: { receipt: ReceiptRecord }) {
           label="Quantity"
           value={`${formatQuantity(receipt.total_quantity)} units`}
           icon={Boxes}
-          valueClassName="text-violet-300"
+          valueClassName="text-primary"
         />
 
         <ReceiptMetric
           label="Receipt value"
           value={formatCurrency(receipt.total_amount)}
           icon={Banknote}
-          valueClassName="text-emerald-300"
+          valueClassName="text-primary"
         />
       </div>
 
@@ -1322,7 +1322,7 @@ function ReceiptCard({ receipt }: { receipt: ReceiptRecord }) {
                     {formatCurrency(item.unit_cost)}
                   </td>
 
-                  <td className="px-3 py-2.5 text-[9px] font-semibold tabular-nums text-emerald-400">
+                  <td className="px-3 py-2.5 text-[9px] font-semibold tabular-nums text-primary">
                     {formatCurrency(item.line_total)}
                   </td>
                 </tr>
@@ -1387,19 +1387,19 @@ function ArchiveMetric({
 }) {
   const tones = {
     blue: {
-      icon: "border-blue-500/15 bg-blue-500/10 text-blue-400",
-      bar: "bg-blue-400",
-      value: "text-blue-300",
+      icon: "border-primary/15 bg-primary/10 text-primary",
+      bar: "bg-primary",
+      value: "text-primary",
     },
     amber: {
-      icon: "border-amber-500/15 bg-amber-500/10 text-amber-400",
-      bar: "bg-amber-400",
-      value: "text-amber-300",
+      icon: "border-primary/15 bg-primary/10 text-primary",
+      bar: "bg-primary",
+      value: "text-primary",
     },
     violet: {
-      icon: "border-violet-500/15 bg-violet-500/10 text-violet-400",
-      bar: "bg-violet-400",
-      value: "text-violet-300",
+      icon: "border-primary/15 bg-primary/10 text-primary",
+      bar: "bg-primary",
+      value: "text-primary",
     },
     emerald: {
       icon: "border-emerald-500/15 bg-emerald-500/10 text-emerald-400",

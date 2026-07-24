@@ -264,19 +264,19 @@ function WorkspaceHeader({
 }) {
     return (
         <header>
-            <section className="relative overflow-hidden rounded-[20px] border border-emerald-500/15 bg-[linear-gradient(135deg,rgba(16,185,129,0.085)_0%,rgba(16,185,129,0.025)_38%,rgba(9,11,10,0)_72%)] shadow-sm">
-                <div className="pointer-events-none absolute -left-20 -top-24 size-56 rounded-full bg-emerald-500/[0.07] blur-3xl" />
-                <PackageMinus className="pointer-events-none absolute -bottom-9 -right-7 size-36 text-emerald-400 opacity-[0.025]" />
+            <section className="relative overflow-hidden rounded-[20px] border border-primary/15 bg-gradient-to-br from-primary/[0.085] via-primary/[0.025] to-transparent shadow-sm">
+                <div className="pointer-events-none absolute -left-20 -top-24 size-56 rounded-full bg-primary/[0.07] blur-3xl" />
+                <PackageMinus className="pointer-events-none absolute -bottom-9 -right-7 size-36 text-primary opacity-[0.025]" />
 
                 <div className="relative flex flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between md:px-6 md:py-6">
                     <div className="min-w-0">
-                        <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-400">
-                            <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.55)]" />
+                        <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-primary">
+                            <span className="size-1.5 rounded-full bg-primary shadow-[0_0_10px_var(--theme-glow)]" />
                             Inventory operation
                         </div>
 
                         <div className="mt-3 flex items-center gap-3.5">
-                            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-400">
+                            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/[0.08] text-primary">
                                 <PackageMinus className="size-5" />
                             </span>
 
@@ -305,17 +305,17 @@ function WorkspaceHeader({
                         variant="outline"
                         onClick={onReset}
                         disabled={processing}
-                        className="h-9 self-start rounded-xl border-emerald-500/15 bg-emerald-500/[0.035] px-3 text-[10px] text-emerald-400 hover:border-emerald-500/25 hover:bg-emerald-500/[0.075] hover:text-emerald-300 sm:self-auto"
+                        className="h-9 self-start rounded-xl border-primary/15 bg-primary/[0.035] px-3 text-[10px] text-primary hover:border-primary/25 hover:bg-primary/[0.075] hover:text-primary sm:self-auto"
                     >
                         <RotateCcw className="size-3.5" />
                         Start over
                     </Button>
                 </div>
 
-                <div className="relative h-px bg-gradient-to-r from-transparent via-emerald-500/25 to-transparent" />
+                <div className="relative h-px bg-gradient-to-r from-transparent via-primary/25 to-transparent" />
 
                 <div className="relative grid bg-background/15 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="min-w-0 border-b border-emerald-500/10 px-4 py-3.5 sm:border-r xl:border-b-0">
+                    <div className="min-w-0 border-b border-primary/10 px-4 py-3.5 sm:border-r xl:border-b-0">
                         <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                             Warehouse
                         </p>
@@ -327,11 +327,11 @@ function WorkspaceHeader({
                         </p>
                     </div>
 
-                    <div className="min-w-0 border-b border-emerald-500/10 px-4 py-3.5 xl:border-b-0 xl:border-r">
+                    <div className="min-w-0 border-b border-primary/10 px-4 py-3.5 xl:border-b-0 xl:border-r">
                         <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                             Available quantity
                         </p>
-                        <p className="mt-1 text-[14px] font-semibold tabular-nums text-emerald-400">
+                        <p className="mt-1 text-[14px] font-semibold tabular-nums text-primary">
                             {formatNumber(availableQuantity)}
                         </p>
                         <p className="mt-0.5 text-[8px] text-muted-foreground">
@@ -339,7 +339,7 @@ function WorkspaceHeader({
                         </p>
                     </div>
 
-                    <div className="min-w-0 border-b border-emerald-500/10 px-4 py-3.5 sm:border-r sm:border-b-0">
+                    <div className="min-w-0 border-b border-primary/10 px-4 py-3.5 sm:border-r sm:border-b-0">
                         <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                             Current request
                         </p>
@@ -405,7 +405,7 @@ function RequestDetails({
             <div className="grid xl:grid-cols-[300px_minmax(0,1fr)]">
                 <div className="border-b border-border/60 bg-muted/[0.035] p-4 md:p-5 xl:border-b-0 xl:border-r">
                     <div className="mb-4 flex items-start gap-3">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/[0.07] text-emerald-400">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
                             <Warehouse className="size-4" />
                         </span>
                         <div>
@@ -465,7 +465,7 @@ function RequestDetails({
 
                 <div className="min-w-0 p-4 md:p-5">
                     <div className="flex items-start gap-3">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/[0.07] text-blue-400">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
                             <UserRound className="size-4" />
                         </span>
                         <div>
@@ -537,7 +537,7 @@ function RequestDetails({
                     <div className="my-5 h-px bg-border/60" />
 
                     <div className="flex items-start gap-3">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/[0.07] text-amber-400">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
                             <FileText className="size-4" />
                         </span>
                         <div>
@@ -721,7 +721,7 @@ function ProductRow({
         <article
             className={cn(
                 'group grid gap-3 px-4 py-3.5 transition-colors hover:bg-muted/[0.025] lg:grid-cols-[minmax(250px,1.5fr)_130px_120px_120px] lg:items-center lg:gap-4 md:px-5',
-                selected && 'bg-emerald-500/[0.025]',
+                selected && 'bg-primary/[0.025]',
             )}
         >
             <div className="flex min-w-0 items-center gap-3">
@@ -729,7 +729,7 @@ function ProductRow({
                     className={cn(
                         'flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors',
                         selected
-                            ? 'border-emerald-500/20 bg-emerald-500/[0.07] text-emerald-400'
+                            ? 'border-primary/20 bg-primary/[0.07] text-primary'
                             : 'border-border/60 bg-background/35 text-muted-foreground group-hover:text-foreground',
                     )}
                 >
@@ -882,25 +882,25 @@ function ReviewPanel({
             <aside
                 aria-hidden={!visible}
                 className={cn(
-                    'flex w-full flex-col overflow-hidden bg-card bg-[linear-gradient(180deg,rgba(16,185,129,0.055)_0%,rgba(16,185,129,0.016)_18%,rgba(9,11,10,0)_46%)]',
+                    'flex w-full flex-col overflow-hidden bg-card bg-gradient-to-b from-primary/[0.055] via-primary/[0.016] to-transparent',
                     desktop
-                        ? 'sticky top-0 self-start h-[calc(100vh-2rem)] min-h-[600px] rounded-[20px] border border-emerald-500/15 shadow-sm'
-                        : 'fixed inset-y-0 right-0 z-50 max-w-[430px] border-l border-emerald-500/15 shadow-2xl transition-transform duration-300 ease-out',
+                        ? 'sticky top-0 self-start h-[calc(100vh-2rem)] min-h-[600px] rounded-[20px] border border-primary/15 shadow-sm'
+                        : 'fixed inset-y-0 right-0 z-50 max-w-[430px] border-l border-primary/15 shadow-2xl transition-transform duration-300 ease-out',
                     !desktop && (open ? 'translate-x-0' : 'translate-x-full'),
                 )}
             >
-                <div className="relative overflow-hidden border-b border-emerald-500/10 px-4 py-4">
-                    <div className="pointer-events-none absolute -right-10 -top-12 size-28 rounded-full bg-emerald-500/[0.055] blur-3xl" />
-                    <ShoppingCart className="pointer-events-none absolute -bottom-5 -right-3 size-20 text-emerald-400 opacity-[0.025]" />
+                <div className="relative overflow-hidden border-b border-primary/10 px-4 py-4">
+                    <div className="pointer-events-none absolute -right-10 -top-12 size-28 rounded-full bg-primary/[0.055] blur-3xl" />
+                    <ShoppingCart className="pointer-events-none absolute -bottom-5 -right-3 size-20 text-primary opacity-[0.025]" />
 
                     <div className="relative flex items-start justify-between gap-3">
                         <div className="flex min-w-0 items-start gap-3">
-                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-400">
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/[0.08] text-primary">
                                 <ShoppingCart className="size-4.5" />
                             </span>
                             <div className="min-w-0">
-                                <div className="flex items-center gap-2 text-[8px] font-semibold uppercase tracking-[0.13em] text-emerald-400">
-                                    <span className="size-1 rounded-full bg-emerald-400" />
+                                <div className="flex items-center gap-2 text-[8px] font-semibold uppercase tracking-[0.13em] text-primary">
+                                    <span className="size-1 rounded-full bg-primary" />
                                     Inventory review
                                 </div>
                                 <div className="mt-1.5 flex items-center gap-2">
@@ -949,7 +949,7 @@ function ReviewPanel({
                 <div className="min-h-0 flex-1 overflow-y-auto">
                     {entries.length === 0 ? (
                         <div className="flex h-full min-h-72 flex-col items-center justify-center px-8 py-12 text-center">
-                            <span className="flex size-14 items-center justify-center rounded-full border border-dashed border-emerald-500/20 bg-emerald-500/[0.035] text-emerald-400">
+                            <span className="flex size-14 items-center justify-center rounded-full border border-dashed border-primary/20 bg-primary/[0.035] text-primary">
                                 <ShoppingCart className="size-5" />
                             </span>
                             <h3 className="mt-4 text-xs font-semibold text-foreground">Ticket is empty</h3>
@@ -983,7 +983,7 @@ function ReviewPanel({
                                             </button>
                                         </div>
 
-                                        <div className="mt-3 rounded-xl border border-emerald-500/10 bg-emerald-500/[0.025] p-3">
+                                        <div className="mt-3 rounded-xl border border-primary/10 bg-primary/[0.025] p-3">
                                             <div className="mb-2 flex items-center justify-between gap-3">
                                                 <span className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Quantity</span>
                                                 <span className={cn('text-[8px] font-medium', remaining <= product.reorder_level ? 'text-amber-400' : 'text-emerald-400')}>
@@ -1019,8 +1019,8 @@ function ReviewPanel({
                     )}
                 </div>
 
-                <div className="border-t border-emerald-500/10 bg-emerald-500/[0.018] p-4">
-                    <div className="rounded-xl border border-emerald-500/10 bg-emerald-500/[0.025] p-3.5">
+                <div className="border-t border-primary/10 bg-primary/[0.018] p-4">
+                    <div className="rounded-xl border border-primary/10 bg-primary/[0.025] p-3.5">
                         <div className="flex items-center justify-between text-[9px] text-muted-foreground">
                             <span>Products</span>
                             <span className="font-semibold text-foreground">{entries.length}</span>
@@ -1034,7 +1034,7 @@ function ReviewPanel({
                                 <p className="text-[8px] uppercase tracking-[0.1em] text-muted-foreground">Stock value</p>
                                 <p className="mt-1 text-[9px] text-muted-foreground">Estimated at average cost</p>
                             </div>
-                            <p className="text-base font-semibold tabular-nums text-emerald-400">{formatMoney(estimatedCost)}</p>
+                            <p className="text-base font-semibold tabular-nums text-primary">{formatMoney(estimatedCost)}</p>
                         </div>
                     </div>
 
@@ -1044,7 +1044,7 @@ function ReviewPanel({
                     <Button
                         type="submit"
                         disabled={!canSubmit}
-                        className="mt-3 h-11 w-full rounded-xl bg-emerald-600 text-[10px] font-semibold text-white shadow-[0_10px_30px_-16px_rgba(16,185,129,0.9)] hover:bg-emerald-500"
+                        className="mt-3 h-11 w-full rounded-xl bg-primary text-[10px] font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
                     >
                         {processing ? 'Posting withdrawal...' : (
                             <>
@@ -1078,7 +1078,7 @@ function MobileReviewButton({
             <Button
                 type="button"
                 onClick={onOpen}
-                className="h-12 w-full rounded-xl border border-emerald-400/20 bg-emerald-600 text-xs font-semibold text-white shadow-2xl hover:bg-emerald-500"
+                className="h-12 w-full rounded-xl border border-primary/20 bg-primary text-xs font-semibold text-primary-foreground shadow-2xl hover:bg-primary/90"
             >
                 <ShoppingCart className="size-4" />
                 Open withdrawal ticket

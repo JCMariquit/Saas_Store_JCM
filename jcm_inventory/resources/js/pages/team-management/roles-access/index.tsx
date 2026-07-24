@@ -490,12 +490,12 @@ export default function RolesAccessIndex({
             <Head title="Roles & Access" />
 
             <PageContainer className="gap-4 md:gap-5">
-                <section className="relative min-w-0 overflow-hidden rounded-2xl border border-violet-500/15 bg-card/75 shadow-sm">
-                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_10%,rgba(139,92,246,0.10),transparent_30%),radial-gradient(circle_at_88%_18%,rgba(59,130,246,0.08),transparent_27%),linear-gradient(to_bottom_right,rgba(255,255,255,0.018),transparent_55%)]" />
+                <section className="relative min-w-0 overflow-hidden rounded-2xl border border-primary/15 bg-card/75 shadow-sm">
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_10%,var(--theme-glow),transparent_30%),linear-gradient(to_bottom_right,rgba(255,255,255,0.018),transparent_55%)]" />
 
                     <div className="relative flex flex-col gap-3 border-b border-border/60 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
-                            <div className="relative flex size-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-400 shadow-[0_0_24px_rgba(139,92,246,0.09)]">
+                            <div className="relative flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-[0_0_24px_var(--theme-glow)]">
                                 <ShieldCheck className="size-4.5" />
                                 <span className="absolute -right-1 -top-1 size-2 rounded-full border-2 border-card bg-emerald-400" />
                             </div>
@@ -576,9 +576,9 @@ export default function RolesAccessIndex({
                                 </div>
 
                                 {selectedRole?.code.toLowerCase() === 'manager' ? (
-                                    <UserCog className="size-5 shrink-0 text-violet-400" />
+                                    <UserCog className="size-5 shrink-0 text-primary" />
                                 ) : (
-                                    <CircleUserRound className="size-5 shrink-0 text-violet-400" />
+                                    <CircleUserRound className="size-5 shrink-0 text-primary" />
                                 )}
                             </div>
 
@@ -588,14 +588,14 @@ export default function RolesAccessIndex({
                                         Permission coverage
                                     </span>
 
-                                    <span className="font-semibold tabular-nums text-violet-400">
+                                    <span className="font-semibold tabular-nums text-primary">
                                         {accessPercentage}%
                                     </span>
                                 </div>
 
                                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
                                     <div
-                                        className="h-full rounded-full bg-violet-400 transition-all duration-500"
+                                        className="h-full rounded-full bg-primary transition-all duration-500"
                                         style={{ width: `${accessPercentage}%` }}
                                     />
                                 </div>
@@ -765,9 +765,9 @@ export default function RolesAccessIndex({
                                     </div>
 
                                     <div className="border-t border-border/60 p-3">
-                                        <div className="rounded-xl border border-violet-500/10 bg-violet-500/[0.045] p-3">
+                                        <div className="rounded-xl border border-primary/10 bg-primary/[0.045] p-3">
                                             <div className="flex items-center gap-2">
-                                                <span className="inline-flex size-7 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
+                                                <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
                                                     <ShieldCheck className="size-3.5" />
                                                 </span>
                                                 <div className="min-w-0">
@@ -859,14 +859,14 @@ export default function RolesAccessIndex({
                                                 <span className="text-muted-foreground">
                                                     Access coverage
                                                 </span>
-                                                <span className="font-semibold tabular-nums text-violet-400">
+                                                <span className="font-semibold tabular-nums text-primary">
                                                     {currentEnabledCount} of {allAssignableItems.length}
                                                 </span>
                                             </div>
 
                                             <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
                                                 <div
-                                                    className="h-full rounded-full bg-violet-400 transition-all duration-500"
+                                                    className="h-full rounded-full bg-primary transition-all duration-500"
                                                     style={{ width: `${accessPercentage}%` }}
                                                 />
                                             </div>
@@ -1013,7 +1013,7 @@ function PermissionSectionCard({
         <section className="overflow-hidden rounded-2xl border border-border/60 bg-card/70">
             <div className="flex flex-col gap-4 border-b border-border/60 bg-muted/[0.025] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
-                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/15 bg-blue-500/10 text-blue-400">
+                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
                         <Layers3 className="size-4" />
                     </span>
 
@@ -1034,7 +1034,7 @@ function PermissionSectionCard({
                         <div className="mt-1.5 flex items-center gap-2">
                             <div className="h-1 w-28 overflow-hidden rounded-full bg-muted">
                                 <div
-                                    className="h-full rounded-full bg-blue-400 transition-all duration-500"
+                                    className="h-full rounded-full bg-primary transition-all duration-500"
                                     style={{ width: `${coverage}%` }}
                                 />
                             </div>
@@ -1052,7 +1052,7 @@ function PermissionSectionCard({
                     className={cn(
                         'inline-flex h-9 items-center justify-center gap-2 rounded-xl border px-3 text-[10px] font-semibold transition disabled:opacity-50',
                         state === 'all'
-                            ? 'border-blue-500/25 bg-blue-500/10 text-blue-300'
+                            ? 'border-primary/25 bg-primary/10 text-primary'
                             : state === 'partial'
                               ? 'border-amber-500/25 bg-amber-500/10 text-amber-300'
                               : 'border-border/70 bg-background/60 hover:bg-muted',
@@ -1126,7 +1126,7 @@ function PermissionGroup({
                     onClick={() => onToggleExpanded(item.id)}
                     className="flex min-w-0 flex-1 items-center gap-3 text-left"
                 >
-                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/15 bg-violet-500/10 text-violet-400">
+                    <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
                         <Icon className="size-3.5" />
                     </span>
 
@@ -1153,7 +1153,7 @@ function PermissionGroup({
                     className={cn(
                         'inline-flex h-8 items-center justify-center gap-2 rounded-lg border px-2.5 text-[9px] font-semibold transition disabled:opacity-50',
                         state === 'all'
-                            ? 'border-violet-500/25 bg-violet-500/10 text-violet-300'
+                            ? 'border-primary/25 bg-primary/10 text-primary'
                             : state === 'partial'
                               ? 'border-amber-500/25 bg-amber-500/10 text-amber-300'
                               : 'border-border/70 hover:bg-muted',
@@ -1219,8 +1219,8 @@ function PermissionCard({
             className={cn(
                 'group flex w-full items-start gap-3 rounded-xl border p-3 text-left transition',
                 selected
-                    ? 'border-emerald-500/20 bg-emerald-500/[0.045]'
-                    : 'border-border/60 bg-background/55 hover:border-violet-500/20 hover:bg-muted/[0.03]',
+                    ? 'border-primary/20 bg-primary/[0.045]'
+                    : 'border-border/60 bg-background/55 hover:border-primary/20 hover:bg-muted/[0.03]',
                 item.required && 'cursor-default',
                 processing && 'opacity-60',
             )}
@@ -1229,7 +1229,7 @@ function PermissionCard({
                 className={cn(
                     'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border transition',
                     selected
-                        ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
+                        ? 'border-primary/20 bg-primary/10 text-primary'
                         : 'border-border/60 bg-muted/40 text-muted-foreground group-hover:text-foreground',
                 )}
             >
@@ -1261,7 +1261,7 @@ function PermissionCard({
             <span
                 className={cn(
                     'mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition',
-                    selected ? 'bg-emerald-500' : 'bg-muted-foreground/20',
+                    selected ? 'bg-primary' : 'bg-muted-foreground/20',
                 )}
             >
                 <span
@@ -1270,7 +1270,7 @@ function PermissionCard({
                         selected ? 'translate-x-4' : 'translate-x-0',
                     )}
                 >
-                    {selected && <Check className="size-2.5 text-emerald-600" />}
+                    {selected && <Check className="size-2.5 text-primary-foreground" />}
                 </span>
             </span>
         </button>
@@ -1302,8 +1302,8 @@ function RoleRailCard({
             className={cn(
                 'group w-full rounded-xl border p-3 text-left transition disabled:opacity-50',
                 selected
-                    ? 'border-violet-500/25 bg-violet-500/[0.06] shadow-sm'
-                    : 'border-border/60 bg-background/45 hover:border-violet-500/20 hover:bg-muted/[0.025]',
+                    ? 'border-primary/25 bg-primary/[0.06] shadow-sm'
+                    : 'border-border/60 bg-background/45 hover:border-primary/20 hover:bg-muted/[0.025]',
             )}
         >
             <div className="flex items-start gap-3">
@@ -1311,7 +1311,7 @@ function RoleRailCard({
                     className={cn(
                         'inline-flex size-9 shrink-0 items-center justify-center rounded-xl border transition',
                         selected
-                            ? 'border-violet-500/20 bg-violet-500/10 text-violet-400'
+                            ? 'border-primary/20 bg-primary/10 text-primary'
                             : 'border-border/60 bg-muted/35 text-muted-foreground group-hover:text-foreground',
                     )}
                 >
@@ -1368,13 +1368,13 @@ function RoleRailCard({
             <div className="mt-3">
                 <div className="flex items-center justify-between gap-2 text-[8px]">
                     <span className="text-muted-foreground">Coverage</span>
-                    <span className="font-semibold tabular-nums text-violet-400">
+                    <span className="font-semibold tabular-nums text-primary">
                         {percentage}%
                     </span>
                 </div>
                 <div className="mt-1 h-1 overflow-hidden rounded-full bg-muted">
                     <div
-                        className="h-full rounded-full bg-violet-400"
+                        className="h-full rounded-full bg-primary"
                         style={{ width: `${percentage}%` }}
                     />
                 </div>
@@ -1408,12 +1408,12 @@ function AccessStat({
         }
     > = {
         blue: {
-            icon: 'text-blue-400',
-            value: 'text-blue-400',
+            icon: 'text-primary',
+            value: 'text-primary',
         },
         violet: {
-            icon: 'text-violet-400',
-            value: 'text-violet-400',
+            icon: 'text-primary',
+            value: 'text-primary',
         },
         emerald: {
             icon: 'text-emerald-400',
@@ -1477,8 +1477,8 @@ function ControlSignal({
     tone: AccessTone;
 }) {
     const toneClass: Record<AccessTone, string> = {
-        blue: 'border-blue-500/10 bg-blue-500/[0.05] text-blue-400',
-        violet: 'border-violet-500/10 bg-violet-500/[0.05] text-violet-400',
+        blue: 'border-primary/10 bg-primary/[0.05] text-primary',
+        violet: 'border-primary/10 bg-primary/[0.05] text-primary',
         emerald: 'border-emerald-500/10 bg-emerald-500/[0.05] text-emerald-400',
         amber: 'border-amber-500/10 bg-amber-500/[0.05] text-amber-400',
     };

@@ -27,17 +27,12 @@ import {
 
 type StatusTone =
     | 'neutral'
+    | 'theme'
     | 'emerald'
-    | 'cyan'
     | 'amber'
-    | 'red'
-    | 'violet';
+    | 'red';
 
-type AccentTone =
-    | 'emerald'
-    | 'cyan'
-    | 'amber'
-    | 'violet';
+type AccentTone = 'theme' | 'amber';
 
 type StockOverviewProps = {
     context: {
@@ -148,21 +143,21 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const categoryColors = [
-    'rgb(52 211 153)',
-    'rgb(34 211 238)',
-    'rgb(96 165 250)',
-    'rgb(167 139 250)',
-    'rgb(251 191 36)',
-    'rgb(248 113 113)',
+    'var(--chart-1)',
+    'var(--chart-2)',
+    'var(--chart-3)',
+    'var(--chart-4)',
+    'var(--chart-5)',
+    'var(--primary)',
 ];
 
 const categoryDots = [
-    'bg-emerald-400',
-    'bg-cyan-400',
-    'bg-blue-400',
-    'bg-violet-400',
-    'bg-amber-400',
-    'bg-red-400',
+    'bg-chart-1',
+    'bg-chart-2',
+    'bg-chart-3',
+    'bg-chart-4',
+    'bg-chart-5',
+    'bg-primary',
 ];
 
 export default function StockOverviewIndex({
@@ -226,7 +221,7 @@ export default function StockOverviewIndex({
                         )}
                         description="Current cost valuation"
                         icon={TrendingUp}
-                        tone="emerald"
+                        tone="theme"
                         statusLabel={
                             summary.positions > 0
                                 ? `${formatNumber(
@@ -236,7 +231,7 @@ export default function StockOverviewIndex({
                         }
                         statusTone={
                             summary.positions > 0
-                                ? 'emerald'
+                                ? 'theme'
                                 : 'neutral'
                         }
                         sparkValues={
@@ -259,7 +254,7 @@ export default function StockOverviewIndex({
                         )}
                         description="Units across all warehouses"
                         icon={Boxes}
-                        tone="cyan"
+                        tone="theme"
                         statusLabel={
                             summary.productsWithStock > 0
                                 ? `${formatNumber(
@@ -269,7 +264,7 @@ export default function StockOverviewIndex({
                         }
                         statusTone={
                             summary.productsWithStock > 0
-                                ? 'cyan'
+                                ? 'theme'
                                 : 'neutral'
                         }
                         sparkValues={warehouseDistribution.map(
@@ -325,7 +320,7 @@ export default function StockOverviewIndex({
                         )}
                         description="No movement in 30 days"
                         icon={Clock3}
-                        tone="violet"
+                        tone="theme"
                         statusLabel={
                             summary.positions <= 0
                                 ? 'Ageing monitor ready'
@@ -338,7 +333,7 @@ export default function StockOverviewIndex({
                                 ? 'neutral'
                                 : summary.dormant <= 0
                                   ? 'emerald'
-                                  : 'violet'
+                                  : 'theme'
                         }
                         sparkValues={dormantStock.map(
                             (position) =>
@@ -359,7 +354,7 @@ export default function StockOverviewIndex({
                                   )} positions`
                                 : 'Monitoring ready'
                         }
-                        accent="emerald"
+                        accent="theme"
                     >
                         <StockHealthGauge
                             health={stockHealth}
@@ -378,7 +373,7 @@ export default function StockOverviewIndex({
                                   )} units`
                                 : 'Chart ready'
                         }
-                        accent="cyan"
+                        accent="theme"
                     >
                         <MovementTrendChart
                             points={movementActivity}
@@ -399,7 +394,7 @@ export default function StockOverviewIndex({
                                   )} warehouses`
                                 : 'Network ready'
                         }
-                        accent="cyan"
+                        accent="theme"
                     >
                         <WarehouseDistribution
                             warehouses={
@@ -419,7 +414,7 @@ export default function StockOverviewIndex({
                                   )} groups`
                                 : 'Mix ready'
                         }
-                        accent="emerald"
+                        accent="theme"
                     >
                         <CategoryDistribution
                             categories={
@@ -436,7 +431,7 @@ export default function StockOverviewIndex({
                         icon={TrendingUp}
                         href="/inventory/stocks"
                         actionLabel="Open Stock Management"
-                        accent="emerald"
+                        accent="theme"
                     >
                         {topValuePositions.length > 0 ? (
                             <div className="divide-y divide-border/50">
@@ -456,7 +451,7 @@ export default function StockOverviewIndex({
                                 description="Highest-value positions will rank automatically after tracked stock is added to warehouses."
                                 href="/inventory/stocks"
                                 actionLabel="Add inventory stock"
-                                tone="emerald"
+                                tone="theme"
                                 pattern="ranking"
                             />
                         )}
@@ -521,7 +516,7 @@ export default function StockOverviewIndex({
                     icon={Clock3}
                     href="/stock-movements"
                     actionLabel="View Movements"
-                    accent="violet"
+                    accent="theme"
                 >
                     {dormantStock.length > 0 ? (
                         <div className="grid divide-y divide-border/50 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
@@ -569,7 +564,7 @@ export default function StockOverviewIndex({
                             tone={
                                 summary.positions > 0
                                     ? 'emerald'
-                                    : 'violet'
+                                    : 'theme'
                             }
                             pattern="timeline"
                         />
@@ -590,13 +585,13 @@ function OverviewHeader({
     hasStockData: boolean;
 }) {
     return (
-        <section className="relative overflow-hidden rounded-2xl border border-emerald-500/15 bg-card/75 shadow-[0_12px_40px_rgba(16,185,129,0.055)]">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_12%,rgba(16,185,129,0.12),transparent_30%),radial-gradient(circle_at_92%_18%,rgba(34,211,238,0.08),transparent_28%)]" />
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/55 to-transparent" />
+        <section className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card/75 shadow-[0_12px_40px_var(--theme-glow)]">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_12%,var(--theme-soft),transparent_30%),radial-gradient(circle_at_92%_18%,var(--theme-soft),transparent_28%)]" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/55 to-transparent" />
 
             <div className="relative flex flex-col gap-4 p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-start gap-3">
-                    <span className="relative inline-flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+                    <span className="relative inline-flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-primary/20 bg-primary/10 text-primary">
                         <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.12),transparent_48%)]" />
                         <Boxes className="relative size-5" />
 
@@ -604,8 +599,8 @@ function OverviewHeader({
                             className={[
                                 'absolute -right-1 -top-1 size-2.5 rounded-full border-2 border-card',
                                 hasStockData
-                                    ? 'bg-cyan-400'
-                                    : 'bg-emerald-400',
+                                    ? 'bg-primary'
+                                    : 'bg-primary/55',
                             ].join(' ')}
                         />
                     </span>
@@ -620,8 +615,8 @@ function OverviewHeader({
                                 className={[
                                     'inline-flex h-5 items-center gap-1.5 rounded-full border px-2 text-[9px] font-semibold uppercase tracking-[0.12em]',
                                     hasStockData
-                                        ? 'border-cyan-500/20 bg-cyan-500/[0.07] text-cyan-300'
-                                        : 'border-emerald-500/20 bg-emerald-500/[0.07] text-emerald-300',
+                                        ? 'border-primary/20 bg-primary/[0.08] text-primary'
+                                        : 'border-primary/15 bg-primary/[0.05] text-primary/75',
                                 ].join(' ')}
                             >
                                 {hasStockData ? (
@@ -668,7 +663,7 @@ function OverviewHeader({
                     <Link
                         href="/stock-movements"
                         prefetch
-                        className="inline-flex h-9 items-center gap-2 rounded-xl border border-cyan-500/15 bg-cyan-500/[0.045] px-3 text-[10px] font-semibold text-cyan-300 transition hover:bg-cyan-500/10 hover:text-cyan-200"
+                        className="inline-flex h-9 items-center gap-2 rounded-xl border border-primary/15 bg-primary/[0.045] px-3 text-[10px] font-semibold text-primary transition hover:bg-primary/10"
                     >
                         <BarChart3 className="size-3.5" />
                         Stock Movements
@@ -677,7 +672,7 @@ function OverviewHeader({
                     <Link
                         href="/inventory/stocks"
                         prefetch
-                        className="inline-flex h-9 items-center gap-2 rounded-xl bg-emerald-500 px-3 text-[10px] font-semibold text-white shadow-[0_7px_22px_rgba(16,185,129,0.18)] transition hover:bg-emerald-500/90"
+                        className="inline-flex h-9 items-center gap-2 rounded-xl bg-primary px-3 text-[10px] font-semibold text-primary-foreground shadow-[0_7px_22px_var(--theme-glow)] transition hover:bg-primary/90"
                     >
                         <Boxes className="size-3.5" />
                         Manage Stock
@@ -696,8 +691,8 @@ function HeaderPill({
     label: string;
 }) {
     return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/10 bg-emerald-500/[0.035] px-2 py-1 text-[9px] text-muted-foreground">
-            <Icon className="size-3 text-emerald-400" />
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/10 bg-primary/[0.035] px-2 py-1 text-[9px] text-muted-foreground">
+            <Icon className="size-3 text-primary" />
             {label}
         </span>
     );
@@ -723,17 +718,11 @@ function MetricCard({
     sparkValues: number[];
 }) {
     const styles = {
-        emerald: {
-            icon: 'border-emerald-500/15 bg-emerald-500/10 text-emerald-400',
-            value: 'text-emerald-400',
-            glow: 'from-emerald-500/[0.075]',
-            line: 'text-emerald-400',
-        },
-        cyan: {
-            icon: 'border-cyan-500/15 bg-cyan-500/10 text-cyan-400',
-            value: 'text-cyan-400',
-            glow: 'from-cyan-500/[0.075]',
-            line: 'text-cyan-400',
+        theme: {
+            icon: 'border-primary/15 bg-primary/10 text-primary',
+            value: 'text-primary',
+            glow: 'from-primary/[0.075]',
+            line: 'text-primary',
         },
         amber: {
             icon: 'border-amber-500/15 bg-amber-500/10 text-amber-400',
@@ -741,16 +730,10 @@ function MetricCard({
             glow: 'from-amber-500/[0.075]',
             line: 'text-amber-400',
         },
-        violet: {
-            icon: 'border-violet-500/15 bg-violet-500/10 text-violet-400',
-            value: 'text-violet-400',
-            glow: 'from-violet-500/[0.075]',
-            line: 'text-violet-400',
-        },
     }[tone];
 
     return (
-        <article className="group relative min-h-[134px] overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-3.5 transition hover:border-emerald-500/15 sm:p-4">
+        <article className="group relative min-h-[134px] overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-3.5 transition hover:border-primary/15 sm:p-4">
             <div
                 className={[
                     'pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t to-transparent opacity-80',
@@ -858,7 +841,7 @@ function MetricSparkline({
                             cy="27"
                             r="2"
                             fill="currentColor"
-                            className="text-emerald-400/25"
+                            className="text-primary/25"
                         />
                     ),
                 )}
@@ -908,16 +891,14 @@ function StatusPill({
     > = {
         neutral:
             'border-border/60 bg-background/45 text-muted-foreground',
+        theme:
+            'border-primary/15 bg-primary/10 text-primary',
         emerald:
             'border-emerald-500/15 bg-emerald-500/10 text-emerald-400',
-        cyan:
-            'border-cyan-500/15 bg-cyan-500/10 text-cyan-300',
         amber:
             'border-amber-500/15 bg-amber-500/10 text-amber-400',
         red:
             'border-red-500/15 bg-red-500/10 text-red-400',
-        violet:
-            'border-violet-500/15 bg-violet-500/10 text-violet-400',
     };
 
     return (
@@ -948,25 +929,15 @@ function OverviewPanel({
     children: ReactNode;
 }) {
     const styles = {
-        emerald: {
-            icon: 'border-emerald-500/15 bg-emerald-500/[0.06] text-emerald-400',
-            badge: 'border-emerald-500/10 bg-emerald-500/[0.035] text-emerald-300/80',
-            line: 'via-emerald-400/45',
-        },
-        cyan: {
-            icon: 'border-cyan-500/15 bg-cyan-500/[0.06] text-cyan-400',
-            badge: 'border-cyan-500/10 bg-cyan-500/[0.035] text-cyan-300/80',
-            line: 'via-cyan-400/45',
+        theme: {
+            icon: 'border-primary/15 bg-primary/[0.06] text-primary',
+            badge: 'border-primary/10 bg-primary/[0.035] text-primary/80',
+            line: 'via-primary/45',
         },
         amber: {
             icon: 'border-amber-500/15 bg-amber-500/[0.06] text-amber-400',
             badge: 'border-amber-500/10 bg-amber-500/[0.035] text-amber-300/80',
             line: 'via-amber-400/45',
-        },
-        violet: {
-            icon: 'border-violet-500/15 bg-violet-500/[0.06] text-violet-400',
-            badge: 'border-violet-500/10 bg-violet-500/[0.035] text-violet-300/80',
-            line: 'via-violet-400/45',
         },
     }[accent];
 
@@ -1028,8 +999,6 @@ function StockHealthGauge({
         (health.healthy / total) * 100;
     const low =
         (health.lowStock / total) * 100;
-    const out =
-        (health.outOfStock / total) * 100;
     const hasData = health.total > 0;
 
     const ringBackground = hasData
@@ -1044,9 +1013,9 @@ function StockHealthGauge({
         )`
         : `conic-gradient(
             from 210deg,
-            rgba(16,185,129,0.62),
-            rgba(34,211,238,0.18),
-            rgba(16,185,129,0.62)
+            color-mix(in srgb, var(--primary) 62%, transparent),
+            color-mix(in srgb, var(--chart-2) 20%, transparent),
+            color-mix(in srgb, var(--primary) 62%, transparent)
         )`;
 
     return (
@@ -1057,7 +1026,7 @@ function StockHealthGauge({
                         'absolute inset-0 rounded-full',
                         hasData
                             ? 'shadow-[0_0_28px_rgba(52,211,153,0.10)]'
-                            : 'shadow-[0_0_30px_rgba(16,185,129,0.12)]',
+                            : 'shadow-[0_0_30px_var(--theme-glow)]',
                     ].join(' ')}
                     style={{
                         background: ringBackground,
@@ -1065,7 +1034,7 @@ function StockHealthGauge({
                 />
 
                 <div className="absolute inset-[11px] rounded-full border border-border/60 bg-card" />
-                <div className="absolute inset-[20px] rounded-full border border-dashed border-emerald-500/15" />
+                <div className="absolute inset-[20px] rounded-full border border-dashed border-primary/15" />
 
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                     <p className="text-3xl font-semibold tabular-nums">
@@ -1085,7 +1054,7 @@ function StockHealthGauge({
                             'mt-2 inline-flex rounded-full border px-2 py-1 text-[8px] font-medium',
                             hasData
                                 ? 'border-emerald-500/15 bg-emerald-500/10 text-emerald-400'
-                                : 'border-cyan-500/15 bg-cyan-500/10 text-cyan-300',
+                                : 'border-primary/15 bg-primary/10 text-primary',
                         ].join(' ')}
                     >
                         {hasData
@@ -1283,7 +1252,7 @@ function MovementTrendChart({
                     value={formatQuantity(
                         totals.stockIn,
                     )}
-                    tone="emerald"
+                    tone="chart-1"
                 />
 
                 <MovementSummary
@@ -1291,7 +1260,7 @@ function MovementTrendChart({
                     value={formatQuantity(
                         totals.stockOut,
                     )}
-                    tone="cyan"
+                    tone="chart-2"
                 />
 
                 <MovementSummary
@@ -1308,7 +1277,7 @@ function MovementTrendChart({
             </div>
 
             <div className="relative mt-3 overflow-hidden rounded-xl border border-border/50 bg-background/25">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(16,185,129,0.08),transparent_55%)]" />
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,var(--theme-soft),transparent_55%)]" />
 
                 <svg
                     viewBox={`0 0 ${chart.width} ${chart.height}`}
@@ -1326,12 +1295,12 @@ function MovementTrendChart({
                         >
                             <stop
                                 offset="0%"
-                                stopColor="rgb(52 211 153)"
+                                stopColor="var(--chart-1)"
                                 stopOpacity="0.22"
                             />
                             <stop
                                 offset="100%"
-                                stopColor="rgb(52 211 153)"
+                                stopColor="var(--chart-1)"
                                 stopOpacity="0"
                             />
                         </linearGradient>
@@ -1345,12 +1314,12 @@ function MovementTrendChart({
                         >
                             <stop
                                 offset="0%"
-                                stopColor="rgb(34 211 238)"
+                                stopColor="var(--chart-2)"
                                 stopOpacity="0.18"
                             />
                             <stop
                                 offset="100%"
-                                stopColor="rgb(34 211 238)"
+                                stopColor="var(--chart-2)"
                                 stopOpacity="0"
                             />
                         </linearGradient>
@@ -1461,7 +1430,7 @@ function MovementTrendChart({
                             <path
                                 d={chart.stockOutPath}
                                 fill="none"
-                                stroke="rgb(34 211 238)"
+                                stroke="var(--chart-2)"
                                 strokeWidth="2.5"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -1470,7 +1439,7 @@ function MovementTrendChart({
                             <path
                                 d={chart.stockInPath}
                                 fill="none"
-                                stroke="rgb(52 211 153)"
+                                stroke="var(--chart-1)"
                                 strokeWidth="2.7"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -1484,8 +1453,8 @@ function MovementTrendChart({
                                         cx={point.x}
                                         cy={point.y}
                                         r="4"
-                                        fill="rgb(10 16 24)"
-                                        stroke="rgb(52 211 153)"
+                                        fill="var(--card)"
+                                        stroke="var(--chart-1)"
                                         strokeWidth="2"
                                     >
                                         <title>
@@ -1508,8 +1477,8 @@ function MovementTrendChart({
                                         cx={point.x}
                                         cy={point.y}
                                         r="3.5"
-                                        fill="rgb(10 16 24)"
-                                        stroke="rgb(34 211 238)"
+                                        fill="var(--card)"
+                                        stroke="var(--chart-2)"
                                         strokeWidth="2"
                                     >
                                         <title>
@@ -1541,12 +1510,12 @@ function MovementTrendChart({
 
                 <div className="absolute bottom-2 right-3 flex items-center gap-3 text-[8px] text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
-                        <span className="size-1.5 rounded-full bg-emerald-400" />
+                        <span className="size-1.5 rounded-full bg-chart-1" />
                         Stock In
                     </span>
 
                     <span className="inline-flex items-center gap-1.5">
-                        <span className="size-1.5 rounded-full bg-cyan-400" />
+                        <span className="size-1.5 rounded-full bg-chart-2" />
                         Stock Out
                     </span>
                 </div>
@@ -1563,13 +1532,15 @@ function MovementSummary({
     label: string;
     value: string;
     tone:
+        | 'chart-1'
+        | 'chart-2'
         | 'emerald'
-        | 'cyan'
         | 'amber';
 }) {
     const toneClass = {
+        'chart-1': 'text-chart-1',
+        'chart-2': 'text-chart-2',
         emerald: 'text-emerald-400',
-        cyan: 'text-cyan-400',
         amber: 'text-amber-400',
     }[tone];
 
@@ -1614,7 +1585,7 @@ function MovementReadyState({
                     width - paddingRight
                 }`}
                 fill="none"
-                stroke="rgb(52 211 153)"
+                stroke="var(--chart-1)"
                 strokeWidth="1.5"
                 strokeDasharray="5 8"
                 opacity="0.35"
@@ -1634,7 +1605,7 @@ function MovementReadyState({
                             cx={x}
                             cy={baselineY}
                             r="5"
-                            fill="rgb(16 185 129)"
+                            fill="var(--chart-1)"
                             opacity="0.12"
                         />
 
@@ -1642,7 +1613,7 @@ function MovementReadyState({
                             cx={x}
                             cy={baselineY}
                             r="2"
-                            fill="rgb(34 211 238)"
+                            fill="var(--chart-2)"
                             opacity="0.45"
                         />
                     </g>
@@ -1660,9 +1631,9 @@ function MovementReadyState({
                     width="236"
                     height="62"
                     rx="14"
-                    fill="rgb(12 18 28)"
+                    fill="var(--card)"
                     fillOpacity="0.88"
-                    stroke="rgb(16 185 129)"
+                    stroke="var(--primary)"
                     strokeOpacity="0.18"
                 />
 
@@ -1670,14 +1641,14 @@ function MovementReadyState({
                     cx="-84"
                     cy="0"
                     r="14"
-                    fill="rgb(16 185 129)"
+                    fill="var(--chart-1)"
                     fillOpacity="0.12"
                 />
 
                 <path
                     d="M -91 3 L -86 -2 L -81 1 L -75 -7"
                     fill="none"
-                    stroke="rgb(34 211 238)"
+                    stroke="var(--chart-2)"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -1686,7 +1657,7 @@ function MovementReadyState({
                 <text
                     x="-58"
                     y="-3"
-                    fill="rgb(226 232 240)"
+                    fill="var(--foreground)"
                     fontSize="11"
                     fontWeight="600"
                 >
@@ -1696,7 +1667,7 @@ function MovementReadyState({
                 <text
                     x="-58"
                     y="13"
-                    fill="rgb(148 163 184)"
+                    fill="var(--muted-foreground)"
                     fontSize="8.5"
                 >
                     Stock activity will plot automatically
@@ -1733,7 +1704,7 @@ function WarehouseDistribution({
                 <DistributionSummary
                     label="Network Value"
                     value={formatCurrency(totalValue)}
-                    tone="emerald"
+                    tone="chart-1"
                 />
 
                 <DistributionSummary
@@ -1746,7 +1717,7 @@ function WarehouseDistribution({
                             0,
                         ),
                     )}
-                    tone="cyan"
+                    tone="chart-2"
                 />
 
                 <DistributionSummary
@@ -1759,7 +1730,7 @@ function WarehouseDistribution({
                             0,
                         ),
                     )}
-                    tone="violet"
+                    tone="chart-3"
                 />
             </div>
 
@@ -1782,7 +1753,7 @@ function WarehouseDistribution({
                             className="grid gap-3 rounded-xl border border-border/50 bg-background/30 p-3 lg:grid-cols-[minmax(190px,0.8fr)_minmax(0,1fr)_196px]"
                         >
                             <div className="flex min-w-0 items-center gap-2.5">
-                                <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-cyan-500/15 bg-cyan-500/10 text-cyan-400">
+                                <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
                                     <Warehouse className="size-4" />
                                 </span>
 
@@ -1793,7 +1764,7 @@ function WarehouseDistribution({
                                         </p>
 
                                         {warehouse.isMain && (
-                                            <span className="rounded-full border border-cyan-500/15 bg-cyan-500/[0.06] px-1.5 py-0.5 text-[7px] font-semibold text-cyan-300">
+                                            <span className="rounded-full border border-primary/15 bg-primary/[0.06] px-1.5 py-0.5 text-[7px] font-semibold text-primary">
                                                 MAIN
                                             </span>
                                         )}
@@ -1821,7 +1792,7 @@ function WarehouseDistribution({
 
                                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
                                     <div
-                                        className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400"
+                                        className="h-full rounded-full bg-gradient-to-r from-chart-1 to-chart-2"
                                         style={{
                                             width: `${
                                                 warehouse.value >
@@ -1896,14 +1867,14 @@ function DistributionSummary({
     label: string;
     value: string;
     tone:
-        | 'emerald'
-        | 'cyan'
-        | 'violet';
+        | 'chart-1'
+        | 'chart-2'
+        | 'chart-3';
 }) {
     const valueClass = {
-        emerald: 'text-emerald-400',
-        cyan: 'text-cyan-400',
-        violet: 'text-violet-400',
+        'chart-1': 'text-chart-1',
+        'chart-2': 'text-chart-2',
+        'chart-3': 'text-chart-3',
     }[tone];
 
     return (
@@ -1945,8 +1916,8 @@ function WarehouseReadyState() {
 
     return (
         <div className="grid min-h-[260px] items-center gap-5 lg:grid-cols-[minmax(240px,0.8fr)_minmax(0,1fr)]">
-            <div className="relative overflow-hidden rounded-2xl border border-emerald-500/10 bg-emerald-500/[0.025] p-4">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_115%,rgba(16,185,129,0.12),transparent_60%)]" />
+            <div className="relative overflow-hidden rounded-2xl border border-primary/10 bg-primary/[0.025] p-4">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_115%,var(--theme-soft),transparent_60%)]" />
 
                 <div className="relative mx-auto grid max-w-[250px] grid-cols-3 gap-2">
                     {[0, 1, 2].map((index) => (
@@ -1955,7 +1926,7 @@ function WarehouseReadyState() {
                             className="relative flex h-24 items-end justify-center overflow-hidden rounded-xl border border-border/50 bg-background/35 p-2"
                         >
                             <div
-                                className="w-full rounded-t-md bg-gradient-to-t from-emerald-500/20 to-cyan-400/45"
+                                className="w-full rounded-t-md bg-gradient-to-t from-primary/20 to-chart-2/45"
                                 style={{
                                     height: `${
                                         42 +
@@ -1973,11 +1944,11 @@ function WarehouseReadyState() {
 
                 <div className="relative mx-auto mt-3 flex max-w-[250px] items-center justify-between rounded-xl border border-border/50 bg-background/35 px-3 py-2">
                     <span className="inline-flex items-center gap-2 text-[9px] text-muted-foreground">
-                        <Warehouse className="size-3.5 text-emerald-400" />
+                        <Warehouse className="size-3.5 text-primary" />
                         Warehouse network
                     </span>
 
-                    <span className="rounded-full border border-emerald-500/15 bg-emerald-500/10 px-2 py-1 text-[8px] font-medium text-emerald-300">
+                    <span className="rounded-full border border-primary/15 bg-primary/10 px-2 py-1 text-[8px] font-medium text-primary">
                         Ready
                     </span>
                 </div>
@@ -2006,10 +1977,10 @@ function WarehouseReadyState() {
                                 key={label}
                                 href={href}
                                 prefetch
-                                className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/30 px-3 py-2 text-[9px] text-muted-foreground transition hover:border-emerald-500/15 hover:bg-emerald-500/[0.04] hover:text-emerald-300"
+                                className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/30 px-3 py-2 text-[9px] text-muted-foreground transition hover:border-primary/15 hover:bg-primary/[0.04] hover:text-primary"
                             >
                                 <span className="inline-flex items-center gap-2">
-                                    <Icon className="size-3.5 text-emerald-400" />
+                                    <Icon className="size-3.5 text-primary" />
                                     {label}
                                 </span>
 
@@ -2099,7 +2070,7 @@ function CategoryDistribution({
         <div className="grid items-center gap-5 sm:grid-cols-[154px_minmax(0,1fr)] xl:grid-cols-1 2xl:grid-cols-[154px_minmax(0,1fr)]">
             <div className="relative mx-auto size-[150px]">
                 <div
-                    className="absolute inset-0 rounded-full shadow-[0_0_26px_rgba(16,185,129,0.10)]"
+                    className="absolute inset-0 rounded-full shadow-[0_0_26px_var(--theme-glow)]"
                     style={{
                         background: `conic-gradient(${stops.join(
                             ', ',
@@ -2108,7 +2079,7 @@ function CategoryDistribution({
                 />
 
                 <div className="absolute inset-[13px] rounded-full border border-border/60 bg-card" />
-                <div className="absolute inset-[23px] flex items-center justify-center rounded-full border border-dashed border-emerald-500/15">
+                <div className="absolute inset-[23px] flex items-center justify-center rounded-full border border-dashed border-primary/15">
                     <div className="max-w-[86px] text-center">
                         <p className="truncate text-sm font-semibold tabular-nums">
                             {formatCurrency(totalValue)}
@@ -2118,7 +2089,7 @@ function CategoryDistribution({
                             Stock Value
                         </p>
 
-                        <p className="mt-1 text-[8px] font-medium text-emerald-400">
+                        <p className="mt-1 text-[8px] font-medium text-primary">
                             {formatNumber(
                                 totalPositions,
                             )}{' '}
@@ -2207,10 +2178,10 @@ function CategoryReadyState() {
     return (
         <div className="grid min-h-[245px] items-center gap-5 sm:grid-cols-[145px_minmax(0,1fr)] xl:grid-cols-1 2xl:grid-cols-[145px_minmax(0,1fr)]">
             <div className="relative mx-auto size-[142px]">
-                <div className="absolute inset-0 rounded-full bg-[conic-gradient(from_220deg,rgba(16,185,129,0.52),rgba(34,211,238,0.13),rgba(96,165,250,0.26),rgba(16,185,129,0.52))] shadow-[0_0_28px_rgba(16,185,129,0.10)]" />
+                <div className="absolute inset-0 rounded-full bg-[conic-gradient(from_220deg,var(--chart-1),var(--chart-2),var(--chart-3),var(--chart-1))] shadow-[0_0_28px_var(--theme-glow)]" />
                 <div className="absolute inset-[12px] rounded-full border border-border/60 bg-card" />
-                <div className="absolute inset-[23px] flex flex-col items-center justify-center rounded-full border border-dashed border-emerald-500/20 text-center">
-                    <Layers3 className="size-5 text-emerald-400" />
+                <div className="absolute inset-[23px] flex flex-col items-center justify-center rounded-full border border-dashed border-primary/20 text-center">
+                    <Layers3 className="size-5 text-primary" />
                     <p className="mt-2 text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                         Mix Ready
                     </p>
@@ -2239,10 +2210,10 @@ function CategoryReadyState() {
                                 key={label}
                                 href={href}
                                 prefetch
-                                className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/30 px-3 py-2 text-[9px] text-muted-foreground transition hover:border-emerald-500/15 hover:bg-emerald-500/[0.04] hover:text-emerald-300"
+                                className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/30 px-3 py-2 text-[9px] text-muted-foreground transition hover:border-primary/15 hover:bg-primary/[0.04] hover:text-primary"
                             >
                                 <span className="inline-flex items-center gap-2">
-                                    <Icon className="size-3.5 text-emerald-400" />
+                                    <Icon className="size-3.5 text-primary" />
                                     {label}
                                 </span>
 
@@ -2274,25 +2245,15 @@ function DashboardPanel({
     children: ReactNode;
 }) {
     const styles = {
-        emerald: {
-            icon: 'border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-400',
-            action: 'border-emerald-500/15 bg-emerald-500/[0.045] text-emerald-300 hover:bg-emerald-500/10 hover:text-emerald-200',
-            line: 'via-emerald-400/40',
-        },
-        cyan: {
-            icon: 'border-cyan-500/15 bg-cyan-500/[0.055] text-cyan-400',
-            action: 'border-cyan-500/15 bg-cyan-500/[0.045] text-cyan-300 hover:bg-cyan-500/10 hover:text-cyan-200',
-            line: 'via-cyan-400/40',
+        theme: {
+            icon: 'border-primary/15 bg-primary/[0.055] text-primary',
+            action: 'border-primary/15 bg-primary/[0.045] text-primary hover:bg-primary/10',
+            line: 'via-primary/40',
         },
         amber: {
             icon: 'border-amber-500/15 bg-amber-500/[0.055] text-amber-400',
             action: 'border-amber-500/15 bg-amber-500/[0.045] text-amber-300 hover:bg-amber-500/10 hover:text-amber-200',
             line: 'via-amber-400/40',
-        },
-        violet: {
-            icon: 'border-violet-500/15 bg-violet-500/[0.055] text-violet-400',
-            action: 'border-violet-500/15 bg-violet-500/[0.045] text-violet-300 hover:bg-violet-500/10 hover:text-violet-200',
-            line: 'via-violet-400/40',
         },
     }[accent];
 
@@ -2360,18 +2321,23 @@ function OperationalEmptyState({
     href: string;
     actionLabel: string;
     tone:
+        | 'theme'
         | 'emerald'
-        | 'amber'
-        | 'violet';
+        | 'amber';
     pattern:
         | 'ranking'
         | 'threshold'
         | 'timeline';
 }) {
     const styles = {
+        theme: {
+            icon: 'border-primary/15 bg-primary/[0.06] text-primary',
+            button: 'border-primary/15 bg-primary/[0.055] text-primary hover:bg-primary/10',
+            accent: 'bg-primary/40',
+        },
         emerald: {
             icon: 'border-emerald-500/15 bg-emerald-500/[0.06] text-emerald-400',
-            button: 'border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-300 hover:bg-emerald-500/10',
+            button: 'border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-400 hover:bg-emerald-500/10',
             accent: 'bg-emerald-400/40',
         },
         amber: {
@@ -2379,16 +2345,11 @@ function OperationalEmptyState({
             button: 'border-amber-500/15 bg-amber-500/[0.055] text-amber-300 hover:bg-amber-500/10',
             accent: 'bg-amber-400/40',
         },
-        violet: {
-            icon: 'border-violet-500/15 bg-violet-500/[0.06] text-violet-400',
-            button: 'border-violet-500/15 bg-violet-500/[0.055] text-violet-300 hover:bg-violet-500/10',
-            accent: 'bg-violet-400/40',
-        },
     }[tone];
 
     return (
         <div className="relative min-h-[220px] overflow-hidden px-5 py-6">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_110%,rgba(16,185,129,0.055),transparent_58%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_110%,var(--theme-soft),transparent_58%)]" />
 
             <div className="relative mx-auto max-w-md text-center">
                 <span
@@ -2516,7 +2477,7 @@ function ValuePositionRow({
 }) {
     return (
         <article className="flex items-center gap-3 px-4 py-3">
-            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-emerald-500/15 bg-emerald-500/10 text-emerald-400">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
                 <TrendingUp className="size-4" />
             </span>
 
@@ -2547,7 +2508,7 @@ function ValuePositionRow({
                 </p>
             </div>
 
-            <p className="min-w-[90px] text-right text-[11px] font-semibold tabular-nums text-emerald-400">
+            <p className="min-w-[90px] text-right text-[11px] font-semibold tabular-nums text-primary">
                 {formatCurrency(position.value)}
             </p>
         </article>
@@ -2631,7 +2592,7 @@ function DormantRow({
 }) {
     return (
         <article className="flex items-center gap-3 px-4 py-3">
-            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/15 bg-violet-500/10 text-violet-400">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
                 <Clock3 className="size-4" />
             </span>
 

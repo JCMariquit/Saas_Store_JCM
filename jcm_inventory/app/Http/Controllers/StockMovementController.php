@@ -545,7 +545,7 @@ class StockMovementController extends Controller
         */
 
         return Inertia::render(
-            'stock-movements/index',
+            'inventory/stock-movements/index',
             [
                 'movements' => $movements,
 

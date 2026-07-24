@@ -34,18 +34,12 @@ import {
 } from 'react';
 
 type RangeKey = '7d' | '30d' | '90d';
-type Tone =
-    | 'emerald'
-    | 'blue'
-    | 'violet'
-    | 'amber'
-    | 'red'
-    | 'cyan';
+type Tone = 'theme' | 'amber' | 'red';
 
 type StatusTone =
     | 'neutral'
+    | 'theme'
     | 'emerald'
-    | 'blue'
     | 'amber'
     | 'red';
 
@@ -140,17 +134,17 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const categoryColors = [
-    'rgb(96 165 250)',
-    'rgb(34 211 238)',
-    'rgb(167 139 250)',
-    'rgb(251 191 36)',
+    'var(--chart-1)',
+    'var(--chart-2)',
+    'var(--chart-3)',
+    'var(--chart-4)',
 ];
 
 const categoryDots = [
-    'bg-blue-400',
-    'bg-cyan-400',
-    'bg-violet-400',
-    'bg-amber-400',
+    'bg-chart-1',
+    'bg-chart-2',
+    'bg-chart-3',
+    'bg-chart-4',
 ];
 
 export default function Dashboard({
@@ -234,7 +228,7 @@ export default function Dashboard({
                         )}
                         description="Posted receipt value"
                         icon={CircleDollarSign}
-                        tone="cyan"
+                        tone="theme"
                         change={
                             summary.receivedValue > 0
                                 ? summary.receivedValueChange
@@ -247,7 +241,7 @@ export default function Dashboard({
                         }
                         statusTone={
                             summary.receivedValue > 0
-                                ? 'blue'
+                                ? 'theme'
                                 : 'neutral'
                         }
                         sparkValues={inventoryFlow.map(
@@ -264,7 +258,7 @@ export default function Dashboard({
                             summary.totalQuantity,
                         )} available units`}
                         icon={Boxes}
-                        tone="blue"
+                        tone="theme"
                         change={null}
                         statusLabel={
                             summary.inventoryPositions > 0
@@ -275,7 +269,7 @@ export default function Dashboard({
                         }
                         statusTone={
                             summary.inventoryPositions > 0
-                                ? 'blue'
+                                ? 'theme'
                                 : 'neutral'
                         }
                         sparkValues={buildInventoryPulse(
@@ -290,7 +284,7 @@ export default function Dashboard({
                         )}
                         description="Created in selected period"
                         icon={ClipboardList}
-                        tone="violet"
+                        tone="theme"
                         change={
                             summary.purchaseOrders > 0
                                 ? summary.purchaseOrdersChange
@@ -303,7 +297,7 @@ export default function Dashboard({
                         }
                         statusTone={
                             summary.purchaseOrders > 0
-                                ? 'blue'
+                                ? 'theme'
                                 : 'neutral'
                         }
                         sparkValues={procurementPipeline.map(
@@ -361,7 +355,6 @@ export default function Dashboard({
                                   )} recorded units`
                                 : 'Chart ready'
                         }
-                        accent="blue"
                     >
                         <InventoryFlowChart
                             points={inventoryFlow}
@@ -380,7 +373,6 @@ export default function Dashboard({
                                   )} positions`
                                 : 'Awaiting stock'
                         }
-                        accent="cyan"
                     >
                         <StockHealthGauge
                             health={stockHealth}
@@ -400,7 +392,6 @@ export default function Dashboard({
                                   )} groups`
                                 : 'Distribution ready'
                         }
-                        accent="cyan"
                     >
                         <CategoryDistribution
                             slices={categoryDistribution}
@@ -418,7 +409,6 @@ export default function Dashboard({
                                 0,
                             ),
                         )} orders`}
-                        accent="violet"
                     >
                         <ProcurementFlow
                             stages={procurementPipeline}
@@ -472,7 +462,7 @@ export default function Dashboard({
                                 tone={
                                     summary.inventoryPositions > 0
                                         ? 'emerald'
-                                        : 'blue'
+                                        : 'theme'
                                 }
                                 pattern="bars"
                             />
@@ -485,7 +475,7 @@ export default function Dashboard({
                         icon={RefreshCw}
                         actionLabel="View Stock Movements"
                         href="/stock-movements"
-                        accent="blue"
+                        accent="theme"
                     >
                         {recentMovements.length > 0 ? (
                             <div className="divide-y divide-border/50">
@@ -505,7 +495,7 @@ export default function Dashboard({
                                 description="Receiving, adjustments, transfers, and releases will automatically appear here."
                                 href="/inventory/stocks"
                                 actionLabel="Record stock activity"
-                                tone="blue"
+                                tone="theme"
                                 pattern="timeline"
                             />
                         )}
@@ -530,13 +520,13 @@ function DashboardHeader({
     onRangeChange: (range: RangeKey) => void;
 }) {
     return (
-        <section className="relative overflow-hidden rounded-2xl border border-blue-500/15 bg-card/75 shadow-[0_12px_40px_rgba(37,99,235,0.06)]">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_12%,rgba(59,130,246,0.12),transparent_30%),radial-gradient(circle_at_92%_18%,rgba(34,211,238,0.08),transparent_28%)]" />
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/55 to-transparent" />
+        <section className="relative overflow-hidden rounded-2xl border border-primary/15 bg-card/75 shadow-[0_12px_40px_var(--theme-glow)]">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_12%,var(--theme-soft),transparent_30%),radial-gradient(circle_at_92%_18%,var(--theme-soft),transparent_28%)]" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/55 to-transparent" />
 
             <div className="relative flex flex-col gap-3 p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-start gap-3">
-                    <span className="relative inline-flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400">
+                    <span className="relative inline-flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-primary/20 bg-primary/10 text-primary">
                         <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.12),transparent_48%)]" />
                         <DashboardGlyph className="relative size-5" />
 
@@ -544,8 +534,8 @@ function DashboardHeader({
                             className={[
                                 'absolute -right-1 -top-1 size-2.5 rounded-full border-2 border-card',
                                 hasOperationalData
-                                    ? 'bg-cyan-400'
-                                    : 'bg-blue-400',
+                                    ? 'bg-primary'
+                                    : 'bg-primary/55',
                             ].join(' ')}
                         />
                     </span>
@@ -560,8 +550,8 @@ function DashboardHeader({
                                 className={[
                                     'inline-flex h-5 items-center gap-1.5 rounded-full border px-2 text-[9px] font-semibold uppercase tracking-[0.12em]',
                                     hasOperationalData
-                                        ? 'border-cyan-500/20 bg-cyan-500/[0.07] text-cyan-300'
-                                        : 'border-blue-500/20 bg-blue-500/[0.07] text-blue-300',
+                                        ? 'border-primary/20 bg-primary/[0.08] text-primary'
+                                        : 'border-primary/15 bg-primary/[0.05] text-primary/75',
                                 ].join(' ')}
                             >
                                 {hasOperationalData ? (
@@ -600,8 +590,8 @@ function DashboardHeader({
                 </div>
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <div className="flex items-center gap-2 rounded-xl border border-blue-500/10 bg-blue-500/[0.035] px-3 py-2">
-                        <CalendarDays className="size-3.5 text-blue-400" />
+                    <div className="flex items-center gap-2 rounded-xl border border-primary/10 bg-primary/[0.035] px-3 py-2">
+                        <CalendarDays className="size-3.5 text-primary" />
 
                         <div>
                             <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
@@ -614,7 +604,7 @@ function DashboardHeader({
                         </div>
                     </div>
 
-                    <div className="inline-flex rounded-xl border border-blue-500/10 bg-blue-500/[0.035] p-1">
+                    <div className="inline-flex rounded-xl border border-primary/10 bg-primary/[0.035] p-1">
                         {(
                             [
                                 ['7d', '7D'],
@@ -631,8 +621,8 @@ function DashboardHeader({
                                 className={[
                                     'h-8 rounded-lg px-3 text-[10px] font-semibold transition',
                                     range === value
-                                        ? 'bg-blue-500 text-white shadow-[0_6px_18px_rgba(59,130,246,0.22)]'
-                                        : 'text-muted-foreground hover:bg-blue-500/[0.07] hover:text-blue-300',
+                                        ? 'bg-primary text-primary-foreground shadow-[0_6px_18px_var(--theme-glow)]'
+                                        : 'text-muted-foreground hover:bg-primary/[0.07] hover:text-primary',
                                 ].join(' ')}
                             >
                                 {label}
@@ -653,8 +643,8 @@ function ContextPill({
     label: string;
 }) {
     return (
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/10 bg-blue-500/[0.035] px-2 py-1">
-            <Icon className="size-3 text-blue-400" />
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/10 bg-primary/[0.035] px-2 py-1">
+            <Icon className="size-3 text-primary" />
             {label}
         </span>
     );
@@ -690,23 +680,11 @@ function MetricCard({
             line: string;
         }
     > = {
-        emerald: {
-            icon: 'border-emerald-500/15 bg-emerald-500/10 text-emerald-400',
-            value: 'text-emerald-400',
-            glow: 'from-emerald-500/[0.07]',
-            line: 'text-emerald-400',
-        },
-        blue: {
-            icon: 'border-blue-500/15 bg-blue-500/10 text-blue-400',
-            value: 'text-blue-400',
-            glow: 'from-blue-500/[0.075]',
-            line: 'text-blue-400',
-        },
-        violet: {
-            icon: 'border-violet-500/15 bg-violet-500/10 text-violet-400',
-            value: 'text-violet-400',
-            glow: 'from-violet-500/[0.075]',
-            line: 'text-violet-400',
+        theme: {
+            icon: 'border-primary/15 bg-primary/10 text-primary',
+            value: 'text-primary',
+            glow: 'from-primary/[0.075]',
+            line: 'text-primary',
         },
         amber: {
             icon: 'border-amber-500/15 bg-amber-500/10 text-amber-400',
@@ -720,19 +698,13 @@ function MetricCard({
             glow: 'from-red-500/[0.075]',
             line: 'text-red-400',
         },
-        cyan: {
-            icon: 'border-cyan-500/15 bg-cyan-500/10 text-cyan-400',
-            value: 'text-cyan-400',
-            glow: 'from-cyan-500/[0.075]',
-            line: 'text-cyan-400',
-        },
     };
 
     const styles = toneMap[tone];
     const positive = (change ?? 0) >= 0;
 
     return (
-        <article className="group relative min-h-[134px] overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-3.5 transition hover:border-blue-500/15 sm:p-4">
+        <article className="group relative min-h-[134px] overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-3.5 transition hover:border-primary/20 sm:p-4">
             <div
                 className={[
                     'pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t to-transparent opacity-80',
@@ -854,7 +826,7 @@ function MetricSparkline({
                         cy="27"
                         r="2"
                         fill="currentColor"
-                        className="text-blue-400/25"
+                        className="text-primary/25"
                     />
                 ))}
             </svg>
@@ -905,8 +877,8 @@ function StatusPill({
             'border-border/60 bg-background/45 text-muted-foreground',
         emerald:
             'border-emerald-500/15 bg-emerald-500/10 text-emerald-400',
-        blue:
-            'border-blue-500/15 bg-blue-500/10 text-blue-300',
+        theme:
+            'border-primary/15 bg-primary/10 text-primary',
         amber:
             'border-amber-500/15 bg-amber-500/10 text-amber-400',
         red:
@@ -930,33 +902,19 @@ function ChartCard({
     description,
     icon: Icon,
     badge,
-    accent,
     children,
 }: {
     title: string;
     description: string;
     icon: LucideIcon;
     badge: string;
-    accent: 'blue' | 'cyan' | 'violet';
     children: ReactNode;
 }) {
     const accentMap = {
-        blue: {
-            icon: 'border-blue-500/15 bg-blue-500/[0.06] text-blue-400',
-            badge: 'border-blue-500/10 bg-blue-500/[0.035] text-blue-300/80',
-            line: 'via-blue-400/45',
-        },
-        cyan: {
-            icon: 'border-cyan-500/15 bg-cyan-500/[0.06] text-cyan-400',
-            badge: 'border-cyan-500/10 bg-cyan-500/[0.035] text-cyan-300/80',
-            line: 'via-cyan-400/45',
-        },
-        violet: {
-            icon: 'border-violet-500/15 bg-violet-500/[0.06] text-violet-400',
-            badge: 'border-violet-500/10 bg-violet-500/[0.035] text-violet-300/80',
-            line: 'via-violet-400/45',
-        },
-    }[accent];
+        icon: 'border-primary/15 bg-primary/[0.06] text-primary',
+        badge: 'border-primary/10 bg-primary/[0.035] text-primary/80',
+        line: 'via-primary/45',
+    };
 
     return (
         <section className="relative min-w-0 overflow-hidden rounded-2xl border border-border/60 bg-card/70">
@@ -1107,7 +1065,7 @@ function InventoryFlowChart({
                     value={formatQuantity(
                         totals.stockIn,
                     )}
-                    tone="cyan"
+                    tone="chart-1"
                 />
 
                 <FlowSummary
@@ -1115,7 +1073,7 @@ function InventoryFlowChart({
                     value={formatQuantity(
                         totals.stockOut,
                     )}
-                    tone="blue"
+                    tone="chart-2"
                 />
 
                 <FlowSummary
@@ -1132,7 +1090,7 @@ function InventoryFlowChart({
             </div>
 
             <div className="relative mt-3 overflow-hidden rounded-xl border border-border/50 bg-background/25">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(59,130,246,0.08),transparent_55%)]" />
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,var(--theme-soft),transparent_55%)]" />
 
                 <svg
                     viewBox={`0 0 ${chart.width} ${chart.height}`}
@@ -1150,12 +1108,12 @@ function InventoryFlowChart({
                         >
                             <stop
                                 offset="0%"
-                                stopColor="rgb(34 211 238)"
+                                stopColor="var(--chart-1)"
                                 stopOpacity="0.22"
                             />
                             <stop
                                 offset="100%"
-                                stopColor="rgb(34 211 238)"
+                                stopColor="var(--chart-1)"
                                 stopOpacity="0"
                             />
                         </linearGradient>
@@ -1169,12 +1127,12 @@ function InventoryFlowChart({
                         >
                             <stop
                                 offset="0%"
-                                stopColor="rgb(96 165 250)"
+                                stopColor="var(--chart-2)"
                                 stopOpacity="0.18"
                             />
                             <stop
                                 offset="100%"
-                                stopColor="rgb(96 165 250)"
+                                stopColor="var(--chart-2)"
                                 stopOpacity="0"
                             />
                         </linearGradient>
@@ -1288,7 +1246,7 @@ function InventoryFlowChart({
                             <path
                                 d={chart.stockOutPath}
                                 fill="none"
-                                stroke="rgb(96 165 250)"
+                                stroke="var(--chart-2)"
                                 strokeWidth="2.5"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -1297,7 +1255,7 @@ function InventoryFlowChart({
                             <path
                                 d={chart.stockInPath}
                                 fill="none"
-                                stroke="rgb(34 211 238)"
+                                stroke="var(--chart-1)"
                                 strokeWidth="2.7"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -1313,8 +1271,8 @@ function InventoryFlowChart({
                                             cx={point.x}
                                             cy={point.y}
                                             r="4"
-                                            fill="rgb(10 16 24)"
-                                            stroke="rgb(34 211 238)"
+                                            fill="var(--card)"
+                                            stroke="var(--chart-1)"
                                             strokeWidth="2"
                                         >
                                             <title>
@@ -1339,8 +1297,8 @@ function InventoryFlowChart({
                                         cx={point.x}
                                         cy={point.y}
                                         r="3.5"
-                                        fill="rgb(10 16 24)"
-                                        stroke="rgb(96 165 250)"
+                                        fill="var(--card)"
+                                        stroke="var(--chart-2)"
                                         strokeWidth="2"
                                     >
                                         <title>
@@ -1372,12 +1330,12 @@ function InventoryFlowChart({
 
                 <div className="absolute bottom-2 right-3 flex items-center gap-3 text-[8px] text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
-                        <span className="size-1.5 rounded-full bg-cyan-400" />
+                        <span className="size-1.5 rounded-full bg-chart-1" />
                         Stock In
                     </span>
 
                     <span className="inline-flex items-center gap-1.5">
-                        <span className="size-1.5 rounded-full bg-blue-400" />
+                        <span className="size-1.5 rounded-full bg-chart-2" />
                         Stock Out
                     </span>
                 </div>
@@ -1394,14 +1352,14 @@ function FlowSummary({
     label: string;
     value: string;
     tone:
-        | 'cyan'
-        | 'blue'
+        | 'chart-1'
+        | 'chart-2'
         | 'emerald'
         | 'amber';
 }) {
     const toneClass = {
-        cyan: 'text-cyan-400',
-        blue: 'text-blue-400',
+        'chart-1': 'text-chart-1',
+        'chart-2': 'text-chart-2',
         emerald: 'text-emerald-400',
         amber: 'text-amber-400',
     }[tone];
@@ -1447,7 +1405,7 @@ function ChartReadyState({
                     width - paddingRight
                 }`}
                 fill="none"
-                stroke="rgb(96 165 250)"
+                stroke="var(--chart-2)"
                 strokeWidth="1.5"
                 strokeDasharray="5 8"
                 opacity="0.35"
@@ -1467,7 +1425,7 @@ function ChartReadyState({
                             cx={x}
                             cy={baselineY}
                             r="5"
-                            fill="rgb(59 130 246)"
+                            fill="var(--chart-1)"
                             opacity="0.12"
                         />
 
@@ -1475,7 +1433,7 @@ function ChartReadyState({
                             cx={x}
                             cy={baselineY}
                             r="2"
-                            fill="rgb(34 211 238)"
+                            fill="var(--chart-2)"
                             opacity="0.45"
                         />
                     </g>
@@ -1493,9 +1451,9 @@ function ChartReadyState({
                     width="236"
                     height="62"
                     rx="14"
-                    fill="rgb(12 18 28)"
+                    fill="var(--card)"
                     fillOpacity="0.88"
-                    stroke="rgb(59 130 246)"
+                    stroke="var(--primary)"
                     strokeOpacity="0.18"
                 />
 
@@ -1503,14 +1461,14 @@ function ChartReadyState({
                     cx="-84"
                     cy="0"
                     r="14"
-                    fill="rgb(59 130 246)"
+                    fill="var(--chart-1)"
                     fillOpacity="0.12"
                 />
 
                 <path
                     d="M -91 3 L -86 -2 L -81 1 L -75 -7"
                     fill="none"
-                    stroke="rgb(34 211 238)"
+                    stroke="var(--chart-1)"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -1519,7 +1477,7 @@ function ChartReadyState({
                 <text
                     x="-58"
                     y="-3"
-                    fill="rgb(226 232 240)"
+                    fill="var(--foreground)"
                     fontSize="11"
                     fontWeight="600"
                 >
@@ -1529,7 +1487,7 @@ function ChartReadyState({
                 <text
                     x="-58"
                     y="13"
-                    fill="rgb(148 163 184)"
+                    fill="var(--muted-foreground)"
                     fontSize="8.5"
                 >
                     Activity will plot automatically
@@ -1549,8 +1507,6 @@ function StockHealthGauge({
         (health.healthy / total) * 100;
     const low =
         (health.lowStock / total) * 100;
-    const out =
-        (health.outOfStock / total) * 100;
     const hasData = health.total > 0;
 
     const ringBackground = hasData
@@ -1565,9 +1521,9 @@ function StockHealthGauge({
         )`
         : `conic-gradient(
             from 210deg,
-            rgba(59,130,246,0.62),
-            rgba(34,211,238,0.20),
-            rgba(59,130,246,0.62)
+            color-mix(in srgb, var(--chart-1) 72%, transparent),
+            color-mix(in srgb, var(--chart-2) 24%, transparent),
+            color-mix(in srgb, var(--chart-1) 72%, transparent)
         )`;
 
     return (
@@ -1578,7 +1534,7 @@ function StockHealthGauge({
                         'absolute inset-0 rounded-full',
                         hasData
                             ? 'shadow-[0_0_28px_rgba(52,211,153,0.10)]'
-                            : 'shadow-[0_0_30px_rgba(59,130,246,0.12)]',
+                            : 'shadow-[0_0_30px_var(--theme-glow)]',
                     ].join(' ')}
                     style={{
                         background: ringBackground,
@@ -1586,7 +1542,7 @@ function StockHealthGauge({
                 />
 
                 <div className="absolute inset-[11px] rounded-full border border-border/60 bg-card" />
-                <div className="absolute inset-[20px] rounded-full border border-dashed border-blue-500/15" />
+                <div className="absolute inset-[20px] rounded-full border border-dashed border-primary/15" />
 
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                     <p className="text-3xl font-semibold tabular-nums">
@@ -1606,7 +1562,7 @@ function StockHealthGauge({
                             'mt-2 inline-flex rounded-full border px-2 py-1 text-[8px] font-medium',
                             hasData
                                 ? 'border-emerald-500/15 bg-emerald-500/10 text-emerald-400'
-                                : 'border-blue-500/15 bg-blue-500/10 text-blue-300',
+                                : 'border-primary/15 bg-primary/10 text-primary',
                         ].join(' ')}
                     >
                         {hasData
@@ -1740,7 +1696,7 @@ function CategoryDistribution({
         <div className="grid items-center gap-5 sm:grid-cols-[160px_minmax(0,1fr)]">
             <div className="relative mx-auto size-[154px]">
                 <div
-                    className="absolute inset-0 rounded-full shadow-[0_0_26px_rgba(59,130,246,0.10)]"
+                    className="absolute inset-0 rounded-full shadow-[0_0_26px_var(--theme-glow)]"
                     style={{
                         background: `conic-gradient(${gradientStops.join(
                             ', ',
@@ -1749,7 +1705,7 @@ function CategoryDistribution({
                 />
 
                 <div className="absolute inset-[13px] rounded-full border border-border/60 bg-card" />
-                <div className="absolute inset-[23px] flex items-center justify-center rounded-full border border-dashed border-blue-500/15">
+                <div className="absolute inset-[23px] flex items-center justify-center rounded-full border border-dashed border-primary/15">
                     <div className="max-w-[86px] text-center">
                         <p className="truncate text-sm font-semibold tabular-nums">
                             {formatCurrency(
@@ -1841,10 +1797,10 @@ function CategoryReadyState() {
     return (
         <div className="grid min-h-[230px] items-center gap-5 sm:grid-cols-[150px_minmax(0,1fr)]">
             <div className="relative mx-auto size-[142px]">
-                <div className="absolute inset-0 rounded-full bg-[conic-gradient(from_220deg,rgba(59,130,246,0.52),rgba(34,211,238,0.12),rgba(139,92,246,0.28),rgba(59,130,246,0.52))] shadow-[0_0_28px_rgba(59,130,246,0.10)]" />
+                <div className="absolute inset-0 rounded-full bg-[conic-gradient(from_220deg,var(--chart-1),var(--chart-2),var(--chart-3),var(--chart-1))] opacity-70 shadow-[0_0_28px_var(--theme-glow)]" />
                 <div className="absolute inset-[12px] rounded-full border border-border/60 bg-card" />
-                <div className="absolute inset-[23px] flex flex-col items-center justify-center rounded-full border border-dashed border-blue-500/20 text-center">
-                    <Layers3 className="size-5 text-blue-400" />
+                <div className="absolute inset-[23px] flex flex-col items-center justify-center rounded-full border border-dashed border-primary/20 text-center">
+                    <Layers3 className="size-5 text-primary" />
                     <p className="mt-2 text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                         Mix Ready
                     </p>
@@ -1873,10 +1829,10 @@ function CategoryReadyState() {
                                 key={label}
                                 href={href}
                                 prefetch
-                                className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/30 px-3 py-2 text-[9px] text-muted-foreground transition hover:border-blue-500/15 hover:bg-blue-500/[0.04] hover:text-blue-300"
+                                className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-background/30 px-3 py-2 text-[9px] text-muted-foreground transition hover:border-primary/15 hover:bg-primary/[0.04] hover:text-primary"
                             >
                                 <span className="inline-flex items-center gap-2">
-                                    <Icon className="size-3.5 text-blue-400" />
+                                    <Icon className="size-3.5 text-primary" />
                                     {label}
                                 </span>
 
@@ -1926,14 +1882,14 @@ function ProcurementFlow({
             index: '02',
         },
         approved: {
-            bar: 'bg-blue-400',
-            shell: 'border-blue-500/15 bg-blue-500/[0.05] text-blue-400',
+            bar: 'bg-primary',
+            shell: 'border-primary/15 bg-primary/[0.05] text-primary',
             icon: CheckCircle2,
             index: '03',
         },
         partially_received: {
-            bar: 'bg-violet-400',
-            shell: 'border-violet-500/15 bg-violet-500/[0.05] text-violet-400',
+            bar: 'bg-chart-2',
+            shell: 'border-chart-2/15 bg-chart-2/[0.05] text-chart-2',
             icon: Truck,
             index: '04',
         },
@@ -1953,7 +1909,7 @@ function ProcurementFlow({
 
     return (
         <div>
-            <div className="flex flex-col gap-3 rounded-xl border border-violet-500/10 bg-violet-500/[0.025] p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-xl border border-primary/10 bg-primary/[0.025] p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                         Current Pipeline
@@ -1968,7 +1924,7 @@ function ProcurementFlow({
                     </p>
                 </div>
 
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/15 bg-violet-500/[0.06] px-2.5 py-1 text-[9px] font-medium text-violet-300">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/[0.06] px-2.5 py-1 text-[9px] font-medium text-primary">
                     <Truck className="size-3" />
                     {total > 0
                         ? 'Live workload'
@@ -1977,7 +1933,7 @@ function ProcurementFlow({
             </div>
 
             <div className="relative mt-3 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-                <div className="pointer-events-none absolute left-6 right-6 top-[28px] hidden h-px bg-gradient-to-r from-slate-400/20 via-violet-400/30 to-emerald-400/20 xl:block" />
+                <div className="pointer-events-none absolute left-6 right-6 top-[28px] hidden h-px bg-gradient-to-r from-primary/10 via-primary/30 to-primary/10 xl:block" />
 
                 {stages.map((stage) => {
                     const style =
@@ -2073,14 +2029,14 @@ function DashboardPanel({
     icon: LucideIcon;
     actionLabel: string;
     href: string;
-    accent: 'blue' | 'amber';
+    accent: 'theme' | 'amber';
     children: ReactNode;
 }) {
     const accentMap = {
-        blue: {
-            icon: 'border-blue-500/15 bg-blue-500/[0.055] text-blue-400',
-            action: 'border-blue-500/15 bg-blue-500/[0.045] text-blue-300 hover:bg-blue-500/10 hover:text-blue-200',
-            line: 'via-blue-400/40',
+        theme: {
+            icon: 'border-primary/15 bg-primary/[0.055] text-primary',
+            action: 'border-primary/15 bg-primary/[0.045] text-primary hover:bg-primary/10',
+            line: 'via-primary/40',
         },
         amber: {
             icon: 'border-amber-500/15 bg-amber-500/[0.055] text-amber-400',
@@ -2152,14 +2108,14 @@ function OperationalEmptyState({
     description: string;
     href: string;
     actionLabel: string;
-    tone: 'blue' | 'emerald';
+    tone: 'theme' | 'emerald';
     pattern: 'bars' | 'timeline';
 }) {
     const toneMap = {
-        blue: {
-            icon: 'border-blue-500/15 bg-blue-500/[0.06] text-blue-400',
-            button: 'border-blue-500/15 bg-blue-500/[0.055] text-blue-300 hover:bg-blue-500/10',
-            accent: 'bg-blue-400/40',
+        theme: {
+            icon: 'border-primary/15 bg-primary/[0.06] text-primary',
+            button: 'border-primary/15 bg-primary/[0.055] text-primary hover:bg-primary/10',
+            accent: 'bg-primary/40',
         },
         emerald: {
             icon: 'border-emerald-500/15 bg-emerald-500/[0.06] text-emerald-400',
@@ -2170,7 +2126,7 @@ function OperationalEmptyState({
 
     return (
         <div className="relative min-h-[220px] overflow-hidden px-5 py-6">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_110%,rgba(59,130,246,0.06),transparent_58%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_110%,var(--theme-soft),transparent_58%)]" />
 
             <div className="relative mx-auto max-w-md text-center">
                 <span
@@ -2339,20 +2295,20 @@ function MovementRow({
             : ShoppingCart;
 
     const shell = isTransfer
-        ? 'border-violet-500/15 bg-violet-500/10 text-violet-400'
+        ? 'border-chart-2/15 bg-chart-2/10 text-chart-2'
         : isAdjustment
           ? 'border-amber-500/15 bg-amber-500/10 text-amber-400'
           : movement.direction === 'in'
             ? 'border-emerald-500/15 bg-emerald-500/10 text-emerald-400'
-            : 'border-blue-500/15 bg-blue-500/10 text-blue-400';
+            : 'border-primary/15 bg-primary/10 text-primary';
 
     const quantityClass = isTransfer
-        ? 'text-violet-400'
+        ? 'text-chart-2'
         : isAdjustment
           ? 'text-amber-400'
           : movement.direction === 'in'
             ? 'text-emerald-400'
-            : 'text-blue-400';
+            : 'text-primary';
 
     const prefix =
         movement.direction === 'in'

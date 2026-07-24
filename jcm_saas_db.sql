@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 21, 2026 at 10:17 AM
+-- Generation Time: Jul 23, 2026 at 08:04 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -62,12 +62,11 @@ INSERT INTO `account_role_sidebar_items` (`id`, `account_owner_id`, `product_id`
 (53, 1, 11, 1, 20, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25'),
 (54, 1, 11, 1, 21, 1, 1, '2026-07-16 05:49:25', '2026-07-16 05:49:25'),
 (55, 1, 11, 1, 34, 1, 1, '2026-07-21 03:09:47', '2026-07-21 03:09:47'),
-(56, 1, 11, 5, 35, 1, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
-(57, 1, 11, 1, 35, 1, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
 (59, 1, 11, 5, 36, 1, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
 (60, 1, 11, 1, 36, 1, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
 (62, 1, 11, 5, 37, 1, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
-(63, 1, 11, 1, 37, 1, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47');
+(63, 1, 11, 1, 37, 1, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
+(65, 1, 11, 1, 38, 1, 1, '2026-07-22 03:57:12', '2026-07-22 03:57:12');
 
 -- --------------------------------------------------------
 
@@ -109,8 +108,8 @@ INSERT INTO `app_features` (`id`, `product_id`, `feature_code`, `name`, `descrip
 (14, 11, 'team_overview', 'Team Overview', 'View team account summaries, role distribution, and team activity.', 1, 140, 'active', '2026-07-13 02:00:57', '2026-07-14 03:32:48'),
 (15, 11, 'staff_management', 'Team Members', 'Create and manage manager and staff accounts.', 1, 150, 'active', '2026-07-13 02:00:57', '2026-07-14 02:43:32'),
 (16, 11, 'roles_access', 'Roles & Access', 'Manage module access for inventory team roles.', 1, 160, 'active', '2026-07-13 02:00:57', '2026-07-14 02:43:32'),
-(33, 11, 'stock_issuance_terminal', 'Issuance Terminal', 'Release inventory for internal use, employee or department issuance, damaged, expired, lost, giveaway, and other authorized stock-out transactions.', 1, 55, 'active', '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
-(34, 11, 'stock_issuance_history', 'Issuance History', 'View completed, voided, and reversed stock issuance transactions with their item details and audit information.', 1, 56, 'active', '2026-07-21 06:04:47', '2026-07-21 06:04:47');
+(33, 11, 'stock_issuance_terminal', 'Withdraw Stock', 'Withdraw available inventory for internal use, employee or department use, damaged, expired, lost, giveaway, and other authorized stock-out transactions.', 1, 55, 'active', '2026-07-21 06:04:47', '2026-07-22 03:18:58'),
+(34, 11, 'stock_issuance_history', 'Withdrawal History', 'View posted, voided, and reversed inventory withdrawal transactions with item and audit details.', 1, 56, 'active', '2026-07-21 06:04:47', '2026-07-22 03:18:58');
 
 -- --------------------------------------------------------
 
@@ -625,15 +624,14 @@ INSERT INTO `product_user_type_sidebar_items` (`id`, `product_user_type_id`, `si
 (59, 3, 33, 1, '2026-07-20 04:29:27', '2026-07-20 04:29:27'),
 (60, 3, 34, 1, '2026-07-21 03:09:47', '2026-07-21 03:09:47'),
 (61, 1, 34, 1, '2026-07-21 03:09:47', '2026-07-21 03:09:47'),
-(63, 3, 35, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
-(64, 1, 35, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
-(65, 5, 35, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
 (66, 3, 36, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
 (67, 1, 36, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
 (68, 5, 36, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
 (69, 3, 37, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
 (70, 1, 37, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
-(71, 5, 37, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47');
+(71, 5, 37, 1, '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
+(72, 1, 38, 1, '2026-07-22 03:57:12', '2026-07-22 03:57:12'),
+(73, 3, 38, 1, '2026-07-22 03:57:12', '2026-07-22 03:57:12');
 
 -- --------------------------------------------------------
 
@@ -824,28 +822,28 @@ CREATE TABLE `sidebar_items` (
 --
 
 INSERT INTO `sidebar_items` (`id`, `product_id`, `parent_id`, `feature_id`, `item_key`, `section_key`, `item_type`, `label`, `route_name`, `url_override`, `icon_key`, `badge`, `badge_id`, `sort_order`, `is_developer_ready`, `is_visible`, `status`, `created_at`, `updated_at`) VALUES
-(1, 11, NULL, 1, 'dashboard', 'overview', 'link', 'Main Dashboard', 'dashboard', '/dashboard', 'LayoutDashboard', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 04:50:39'),
-(2, 11, NULL, 2, 'inventory-overview', 'overview', 'link', 'Stock Overview', 'inventory.overview', '/inventory/overview', 'BarChart3', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-16 08:44:47'),
-(3, 11, NULL, NULL, 'inventory-group', 'management', 'group', 'Inventory', NULL, NULL, 'Boxes', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-21 06:04:47'),
-(4, 11, NULL, 9, 'branches', 'management', 'link', 'Branches', 'branches.index', '/branches', 'Building2', 'DEV', 3, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-21 06:04:47'),
-(5, 11, NULL, 10, 'warehouses', 'management', 'link', 'Warehouse', 'warehouses.index', '/warehouses', 'Warehouse', 'DEV', 3, 40, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-21 06:04:47'),
-(6, 11, NULL, 8, 'stock-movements', 'management', 'link', 'Stock Movements', 'stock-movements.index', '/stock-movements', 'History', 'DEV', 3, 50, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-21 06:04:47'),
-(7, 11, NULL, NULL, 'suppliers-group', 'management', 'group', 'Procurement', NULL, NULL, 'ShoppingCart', 'DEV', 3, 60, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-21 06:04:47'),
-(8, 11, NULL, 14, 'team-overview', 'overview', 'link', 'Team Overview', 'team.overview', '/team/overview', 'Users', 'DEV', 3, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 03:32:48'),
-(9, 11, NULL, NULL, 'team-group', 'management', 'group', 'Team Management', NULL, NULL, 'Users', 'DEV', 3, 70, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-21 06:04:47'),
-(16, 11, 3, 3, 'categories', 'management', 'link', 'Categories', 'inventory.categories.index', '/inventory/categories', 'Tags', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
-(17, 11, 3, 4, 'products', 'management', 'link', 'Products', 'inventory.products.index', '/inventory/products', 'Package2', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
-(18, 11, 3, 5, 'stock-management', 'management', 'link', 'Stock Management', 'inventory.stocks.index', '/inventory/stocks', 'Boxes', 'DEV', 3, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-13 02:20:23'),
-(19, 11, 7, 11, 'suppliers', 'management', 'link', 'Supplier List', 'suppliers.index', '/suppliers', 'Truck', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-21 03:05:46'),
-(20, 11, 7, 12, 'purchase-orders', 'management', 'link', 'Purchase Orders', 'suppliers.purchase-orders.index', '/suppliers/purchase-orders', 'ClipboardCheck', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-21 03:05:46'),
-(21, 11, 7, 13, 'receiving', 'management', 'link', 'Receiving', 'suppliers.receiving.index', '/suppliers/receiving', 'PackageCheck', 'DEV', 3, 40, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-21 03:09:47'),
-(22, 11, 9, 15, 'staff-accounts', 'management', 'link', 'Team Members', 'team.members.index', '/team/members', 'Users', 'DEV', 3, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 02:43:32'),
-(23, 11, 9, 16, 'roles-access', 'management', 'link', 'Roles & Access', 'team.roles.index', '/team/roles', 'UserCog', 'DEV', 3, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-14 02:43:32'),
-(33, 11, 7, 12, 'purchase-approvals', 'management', 'link', 'Purchase Approvals', 'suppliers.purchase-approvals.index', '/suppliers/purchase-approvals', 'ClipboardCheck', 'DEV', 3, 30, 1, 1, 'active', '2026-07-20 04:29:27', '2026-07-21 03:05:46'),
-(34, 11, 7, 13, 'received-orders', 'management', 'link', 'Received Orders', 'procurement.received-orders.index', '/procurement/received-orders', 'History', 'DEV', 3, 50, 1, 1, 'active', '2026-07-21 03:09:47', '2026-07-21 06:35:21'),
-(35, 11, NULL, NULL, 'stock-issuance-group', 'management', 'group', 'Stock Issuance', NULL, NULL, 'PackageMinus', 'DEV', 3, 20, 1, 1, 'active', '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
-(36, 11, 35, 33, 'stock-issuance-terminal', 'management', 'link', 'Issuance Terminal', 'stock-issuance.terminal.index', '/stock-issuance/terminal', 'PackageMinus', 'DEV', 3, 10, 1, 1, 'active', '2026-07-21 06:04:47', '2026-07-21 06:04:47'),
-(37, 11, 35, 34, 'stock-issuance-history', 'management', 'link', 'Issuance History', 'stock-issuance.history.index', '/stock-issuance/history', 'History', 'DEV', 3, 20, 1, 1, 'active', '2026-07-21 06:04:47', '2026-07-21 06:04:47');
+(1, 11, NULL, 1, 'dashboard', 'overview', 'link', 'Main Dashboard', 'dashboard', '/dashboard', 'LayoutDashboard', 'TEST', 5, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-23 05:58:25'),
+(2, 11, NULL, 2, 'inventory-overview', 'overview', 'link', 'Stock Overview', 'inventory.overview', '/inventory/overview', 'BarChart3', 'TEST', 5, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-23 05:58:25'),
+(3, 11, NULL, NULL, 'inventory-group', 'management', 'group', 'Inventory', NULL, NULL, 'Boxes', 'TEST', 5, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-23 05:58:25'),
+(4, 11, 38, 9, 'branches', 'management', 'link', 'Branches', 'branches.index', '/branches', 'Building2', NULL, NULL, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
+(5, 11, 38, 10, 'warehouses', 'management', 'link', 'Warehouses', 'warehouses.index', '/warehouses', 'Warehouse', NULL, NULL, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
+(6, 11, 3, 8, 'stock-movements', 'management', 'link', 'Stock Movements', 'stock-movements.index', '/stock-movements', 'History', NULL, NULL, 60, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
+(7, 11, NULL, NULL, 'suppliers-group', 'management', 'group', 'Procurement', NULL, NULL, 'ShoppingCart', 'TEST', 5, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-23 05:58:25'),
+(8, 11, NULL, 14, 'team-overview', 'overview', 'link', 'Team Overview', 'team.overview', '/team/overview', 'Users', 'TEST', 5, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-23 05:58:25'),
+(9, 11, NULL, NULL, 'team-group', 'management', 'group', 'Team Management', NULL, NULL, 'Users', 'TEST', 5, 40, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-23 05:58:25'),
+(16, 11, 3, 3, 'categories', 'management', 'link', 'Categories', 'inventory.categories.index', '/inventory/categories', 'Tags', NULL, NULL, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
+(17, 11, 3, 4, 'products', 'management', 'link', 'Products', 'inventory.products.index', '/inventory/products', 'Package2', NULL, NULL, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
+(18, 11, 3, 5, 'stock-management', 'management', 'link', 'Stock Management', 'inventory.stocks.index', '/inventory/stocks', 'Boxes', NULL, NULL, 30, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
+(19, 11, 7, 11, 'suppliers', 'management', 'link', 'Suppliers', 'suppliers.index', '/suppliers', 'Truck', NULL, NULL, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
+(20, 11, 7, 12, 'purchase-orders', 'management', 'link', 'Purchase Orders', 'suppliers.purchase-orders.index', '/suppliers/purchase-orders', 'ClipboardCheck', NULL, NULL, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
+(21, 11, 7, 13, 'receiving', 'management', 'link', 'Receiving', 'suppliers.receiving.index', '/suppliers/receiving', 'PackageCheck', NULL, NULL, 40, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
+(22, 11, 9, 15, 'staff-accounts', 'management', 'link', 'Team Members', 'team.members.index', '/team/members', 'Users', NULL, NULL, 10, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
+(23, 11, 9, 16, 'roles-access', 'management', 'link', 'Roles & Access', 'team.roles.index', '/team/roles', 'UserCog', NULL, NULL, 20, 1, 1, 'active', '2026-07-13 02:00:58', '2026-07-22 03:57:12'),
+(33, 11, 7, 12, 'purchase-approvals', 'management', 'link', 'Purchase Approvals', 'suppliers.purchase-approvals.index', '/suppliers/purchase-approvals', 'ClipboardCheck', NULL, NULL, 30, 1, 1, 'active', '2026-07-20 04:29:27', '2026-07-22 03:57:12'),
+(34, 11, 7, 13, 'received-orders', 'management', 'link', 'Received Orders', 'procurement.received-orders.index', '/procurement/received-orders', 'History', NULL, NULL, 50, 1, 1, 'active', '2026-07-21 03:09:47', '2026-07-22 03:57:12'),
+(36, 11, 3, 33, 'stock-issuance-terminal', 'management', 'link', 'Withdraw Stock', 'inventory.withdraw.index', '/inventory/withdraw', 'PackageMinus', NULL, NULL, 40, 1, 1, 'active', '2026-07-21 06:04:47', '2026-07-22 03:57:12'),
+(37, 11, 3, 34, 'stock-issuance-history', 'management', 'link', 'Withdrawal History', 'inventory.history.index', '/inventory/history', 'History', NULL, NULL, 50, 1, 1, 'active', '2026-07-21 06:04:47', '2026-07-22 03:57:12'),
+(38, 11, NULL, NULL, 'locations-group', 'management', 'group', 'Locations', NULL, NULL, 'MapPin', 'TEST', 5, 20, 1, 1, 'active', '2026-07-22 03:57:12', '2026-07-23 05:58:25');
 
 -- --------------------------------------------------------
 
@@ -1013,7 +1011,7 @@ INSERT INTO `users` (`id`, `name`, `email`, `email_verified_at`, `password`, `tw
 (16, 'Store Staff 2', 'staff2@pos.com', '2026-06-05 01:41:18', '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-06-05 01:41:18', '2026-06-08 19:38:03', 'staff', 1, 1, 'pos', 1, 1),
 (17, 'Cashier 2', 'cashier2@pos.com', '2026-06-05 01:43:20', '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', NULL, NULL, NULL, NULL, '2026-06-05 01:43:20', '2026-06-05 01:43:20', 'cashier', 1, 1, 'pos', 1, 1),
 (18, 'cashier1', 'cashier1@pos.com', NULL, '$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO', NULL, NULL, NULL, NULL, '2026-05-29 18:52:57', '2026-05-29 18:52:57', 'cashier', 1, 1, 'pos', 1, 1),
-(19, 'staff', 'staff@inventory.com', NULL, '$2y$12$NdDKLmZaROoi/5YdtQeVYOE77wbMgLXLjAhHixLGlPC9VSUn0wfkK', NULL, NULL, NULL, NULL, '2026-07-14 03:59:29', '2026-07-14 03:59:29', 'staff', 1, 1, NULL, 1, 1);
+(19, 'staff', 'staff@inventory.com', NULL, '$2y$12$NdDKLmZaROoi/5YdtQeVYOE77wbMgLXLjAhHixLGlPC9VSUn0wfkK', NULL, NULL, NULL, NULL, '2026-07-14 03:59:29', '2026-07-23 01:00:53', 'staff', 1, 3, NULL, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -1042,7 +1040,7 @@ CREATE TABLE `user_product_access` (
 INSERT INTO `user_product_access` (`id`, `user_id`, `product_id`, `product_user_type_id`, `account_owner_id`, `subscription_id`, `status`, `assigned_by`, `joined_at`, `created_at`, `updated_at`) VALUES
 (1, 1, 10, 4, 1, 18, 'inactive', 1, NULL, '2026-07-13 02:00:57', '2026-07-13 02:00:57'),
 (2, 1, 11, 3, 1, 19, 'active', 1, '2026-07-13 02:33:41', '2026-07-13 02:33:41', '2026-07-13 02:33:41'),
-(3, 19, 11, 5, 1, 19, 'active', 1, '2026-07-14 03:59:29', '2026-07-14 03:59:29', '2026-07-14 03:59:29');
+(3, 19, 11, 5, 1, 19, 'active', 1, '2026-07-14 03:59:29', '2026-07-14 03:59:29', '2026-07-23 01:00:53');
 
 -- --------------------------------------------------------
 
@@ -1396,7 +1394,7 @@ ALTER TABLE `user_types`
 -- AUTO_INCREMENT for table `account_role_sidebar_items`
 --
 ALTER TABLE `account_role_sidebar_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
 
 --
 -- AUTO_INCREMENT for table `app_features`
@@ -1462,7 +1460,7 @@ ALTER TABLE `plans`
 -- AUTO_INCREMENT for table `plan_features`
 --
 ALTER TABLE `plan_features`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -1498,7 +1496,7 @@ ALTER TABLE `product_user_types`
 -- AUTO_INCREMENT for table `product_user_type_sidebar_items`
 --
 ALTER TABLE `product_user_type_sidebar_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=72;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
 
 --
 -- AUTO_INCREMENT for table `services`
@@ -1534,7 +1532,7 @@ ALTER TABLE `sidebar_badges`
 -- AUTO_INCREMENT for table `sidebar_items`
 --
 ALTER TABLE `sidebar_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT for table `subscriptions`

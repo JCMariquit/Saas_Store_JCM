@@ -72,15 +72,15 @@ export default function Profile({
 
             <SettingsLayout>
                 <div className="min-w-0 space-y-5">
-                    <section className="overflow-hidden rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.07] via-card/70 to-card/40">
+                    <section className="overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.08] via-card/70 to-card/40">
                         <div className="flex flex-col gap-4 border-b border-border/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex min-w-0 items-center gap-3.5">
-                                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+                                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary">
                                     <CircleUserRound className="size-5" />
                                 </span>
 
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-emerald-300">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-primary">
                                         Account settings
                                     </p>
                                     <h1 className="mt-1 text-lg font-semibold tracking-tight text-foreground">
@@ -114,7 +114,7 @@ export default function Profile({
                         <div className="grid min-w-0 lg:grid-cols-[280px_minmax(0,1fr)]">
                             <aside className="border-b border-border/60 bg-background/20 p-5 lg:border-b-0 lg:border-r">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-sm font-semibold text-emerald-300">
+                                    <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-sm font-semibold text-primary">
                                         {initials || 'U'}
                                     </div>
 

@@ -195,6 +195,460 @@
     --scrollbar-thumb-active: hsla(213, 94%, 68%, 0.92);
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| JCM Theme Presets
+|--------------------------------------------------------------------------
+|
+| Display mode is controlled by the `.dark` class. The complete visual
+| identity is controlled by `html[data-theme="..."]`.
+|
+*/
+
+/* JCM Inventory Dark — light display mode */
+html[data-theme='jcm-dark']:not(.dark) {
+    --background: hsl(150, 24%, 97%);
+    --foreground: hsl(158, 24%, 10%);
+    --card: hsl(0, 0%, 100%);
+    --card-foreground: hsl(158, 24%, 10%);
+    --popover: hsl(0, 0%, 100%);
+    --popover-foreground: hsl(158, 24%, 10%);
+    --primary: hsl(160, 84%, 35%);
+    --primary-foreground: hsl(0, 0%, 100%);
+    --secondary: hsl(154, 20%, 93%);
+    --secondary-foreground: hsl(158, 24%, 12%);
+    --muted: hsl(150, 18%, 94%);
+    --muted-foreground: hsl(158, 10%, 42%);
+    --accent: hsl(154, 38%, 91%);
+    --accent-foreground: hsl(160, 72%, 25%);
+    --border: hsl(154, 18%, 86%);
+    --input: hsl(154, 18%, 83%);
+    --ring: hsl(160, 84%, 35%);
+    --chart-1: hsl(160, 84%, 35%);
+    --chart-2: hsl(173, 80%, 34%);
+    --chart-3: hsl(142, 70%, 38%);
+    --chart-4: hsl(199, 75%, 45%);
+    --chart-5: hsl(38, 88%, 52%);
+    --sidebar-background: hsl(158, 28%, 94%);
+    --sidebar-foreground: hsl(158, 20%, 24%);
+    --sidebar-primary: hsl(160, 84%, 35%);
+    --sidebar-primary-foreground: hsl(0, 0%, 100%);
+    --sidebar-accent: hsl(154, 28%, 88%);
+    --sidebar-accent-foreground: hsl(158, 28%, 18%);
+    --sidebar-border: hsl(154, 18%, 82%);
+    --sidebar-ring: hsl(160, 84%, 35%);
+    --workspace-background: hsl(150, 22%, 96%);
+    --header-background: hsla(0, 0%, 100%, 0.82);
+    --header-border: hsla(158, 24%, 22%, 0.10);
+    --theme-glow: hsla(160, 84%, 39%, 0.12);
+    --theme-soft: hsla(160, 84%, 39%, 0.07);
+    --scrollbar-thumb-hover: hsla(160, 84%, 35%, 0.70);
+    --scrollbar-thumb-active: hsla(160, 84%, 30%, 0.92);
+}
+
+/* JCM Inventory Dark — default dark display mode */
+html.dark[data-theme='jcm-dark'] {
+    --background: hsl(156, 18%, 5%);
+    --foreground: hsl(150, 18%, 96%);
+    --card: hsl(156, 15%, 7%);
+    --card-foreground: hsl(150, 18%, 96%);
+    --popover: hsl(156, 15%, 7%);
+    --popover-foreground: hsl(150, 18%, 96%);
+    --primary: hsl(160, 84%, 39%);
+    --primary-foreground: hsl(158, 34%, 6%);
+    --secondary: hsl(156, 12%, 13%);
+    --secondary-foreground: hsl(150, 18%, 96%);
+    --muted: hsl(156, 12%, 10%);
+    --muted-foreground: hsl(154, 8%, 63%);
+    --accent: hsl(158, 28%, 14%);
+    --accent-foreground: hsl(153, 44%, 88%);
+    --border: hsl(156, 11%, 17%);
+    --input: hsl(156, 11%, 18%);
+    --ring: hsl(160, 84%, 39%);
+    --chart-1: hsl(160, 84%, 44%);
+    --chart-2: hsl(173, 80%, 44%);
+    --chart-3: hsl(142, 70%, 48%);
+    --chart-4: hsl(199, 80%, 56%);
+    --chart-5: hsl(38, 92%, 56%);
+    --sidebar-background: hsl(156, 24%, 4%);
+    --sidebar-foreground: hsl(150, 10%, 78%);
+    --sidebar-primary: hsl(160, 84%, 39%);
+    --sidebar-primary-foreground: hsl(158, 34%, 6%);
+    --sidebar-accent: hsl(156, 15%, 11%);
+    --sidebar-accent-foreground: hsl(150, 18%, 94%);
+    --sidebar-border: hsl(156, 12%, 15%);
+    --sidebar-ring: hsl(160, 84%, 39%);
+    --workspace-background: hsl(156, 19%, 4.5%);
+    --header-background: hsla(156, 18%, 5%, 0.82);
+    --header-border: hsla(150, 18%, 96%, 0.07);
+    --theme-glow: hsla(160, 84%, 39%, 0.13);
+    --theme-soft: hsla(160, 84%, 39%, 0.07);
+    --scrollbar-thumb-hover: hsla(160, 84%, 45%, 0.70);
+    --scrollbar-thumb-active: hsla(160, 84%, 52%, 0.92);
+}
+
+/* Ocean Enterprise */
+html[data-theme='ocean-enterprise']:not(.dark) {
+    --background: hsl(210, 36%, 97%);
+    --foreground: hsl(218, 38%, 12%);
+    --card: hsl(0, 0%, 100%);
+    --card-foreground: hsl(218, 38%, 12%);
+    --popover: hsl(0, 0%, 100%);
+    --popover-foreground: hsl(218, 38%, 12%);
+    --primary: hsl(217, 91%, 56%);
+    --primary-foreground: hsl(0, 0%, 100%);
+    --secondary: hsl(214, 32%, 93%);
+    --secondary-foreground: hsl(218, 38%, 14%);
+    --muted: hsl(214, 28%, 94%);
+    --muted-foreground: hsl(216, 15%, 43%);
+    --accent: hsl(211, 70%, 92%);
+    --accent-foreground: hsl(217, 72%, 36%);
+    --border: hsl(214, 24%, 85%);
+    --input: hsl(214, 24%, 82%);
+    --ring: hsl(217, 91%, 56%);
+    --chart-1: hsl(217, 91%, 56%);
+    --chart-2: hsl(190, 90%, 42%);
+    --chart-3: hsl(199, 89%, 48%);
+    --chart-4: hsl(231, 76%, 58%);
+    --chart-5: hsl(160, 70%, 40%);
+    --sidebar-background: hsl(218, 44%, 92%);
+    --sidebar-foreground: hsl(218, 34%, 23%);
+    --sidebar-primary: hsl(217, 91%, 56%);
+    --sidebar-primary-foreground: hsl(0, 0%, 100%);
+    --sidebar-accent: hsl(214, 42%, 86%);
+    --sidebar-accent-foreground: hsl(218, 44%, 18%);
+    --sidebar-border: hsl(214, 28%, 79%);
+    --sidebar-ring: hsl(217, 91%, 56%);
+    --workspace-background: hsl(212, 38%, 96%);
+    --header-background: hsla(0, 0%, 100%, 0.84);
+    --header-border: hsla(217, 48%, 22%, 0.10);
+    --theme-glow: hsla(217, 91%, 56%, 0.13);
+    --theme-soft: hsla(217, 91%, 56%, 0.07);
+    --scrollbar-thumb-hover: hsla(217, 91%, 56%, 0.72);
+    --scrollbar-thumb-active: hsla(217, 91%, 48%, 0.94);
+}
+
+html.dark[data-theme='ocean-enterprise'] {
+    --background: hsl(221, 38%, 6%);
+    --foreground: hsl(210, 40%, 96%);
+    --card: hsl(220, 34%, 8%);
+    --card-foreground: hsl(210, 40%, 96%);
+    --popover: hsl(220, 34%, 8%);
+    --popover-foreground: hsl(210, 40%, 96%);
+    --primary: hsl(217, 91%, 60%);
+    --primary-foreground: hsl(222, 48%, 7%);
+    --secondary: hsl(219, 25%, 15%);
+    --secondary-foreground: hsl(210, 40%, 96%);
+    --muted: hsl(220, 24%, 11%);
+    --muted-foreground: hsl(215, 18%, 65%);
+    --accent: hsl(217, 38%, 17%);
+    --accent-foreground: hsl(211, 72%, 88%);
+    --border: hsl(219, 22%, 18%);
+    --input: hsl(219, 22%, 19%);
+    --ring: hsl(217, 91%, 60%);
+    --chart-1: hsl(217, 91%, 62%);
+    --chart-2: hsl(190, 90%, 50%);
+    --chart-3: hsl(199, 89%, 56%);
+    --chart-4: hsl(231, 80%, 68%);
+    --chart-5: hsl(160, 70%, 47%);
+    --sidebar-background: hsl(222, 50%, 6%);
+    --sidebar-foreground: hsl(214, 24%, 80%);
+    --sidebar-primary: hsl(217, 91%, 60%);
+    --sidebar-primary-foreground: hsl(222, 48%, 7%);
+    --sidebar-accent: hsl(220, 32%, 13%);
+    --sidebar-accent-foreground: hsl(210, 40%, 96%);
+    --sidebar-border: hsl(219, 28%, 16%);
+    --sidebar-ring: hsl(217, 91%, 60%);
+    --workspace-background: hsl(222, 40%, 5%);
+    --header-background: hsla(221, 38%, 6%, 0.82);
+    --header-border: hsla(210, 40%, 96%, 0.07);
+    --theme-glow: hsla(217, 91%, 60%, 0.14);
+    --theme-soft: hsla(217, 91%, 60%, 0.08);
+    --scrollbar-thumb-hover: hsla(217, 91%, 64%, 0.72);
+    --scrollbar-thumb-active: hsla(199, 89%, 64%, 0.94);
+}
+
+/* Violet Command */
+html[data-theme='violet-command']:not(.dark) {
+    --background: hsl(270, 32%, 97%);
+    --foreground: hsl(270, 30%, 13%);
+    --card: hsl(0, 0%, 100%);
+    --card-foreground: hsl(270, 30%, 13%);
+    --popover: hsl(0, 0%, 100%);
+    --popover-foreground: hsl(270, 30%, 13%);
+    --primary: hsl(262, 83%, 58%);
+    --primary-foreground: hsl(0, 0%, 100%);
+    --secondary: hsl(270, 26%, 93%);
+    --secondary-foreground: hsl(270, 30%, 15%);
+    --muted: hsl(270, 22%, 94%);
+    --muted-foreground: hsl(270, 12%, 44%);
+    --accent: hsl(267, 62%, 92%);
+    --accent-foreground: hsl(262, 68%, 38%);
+    --border: hsl(270, 20%, 85%);
+    --input: hsl(270, 20%, 82%);
+    --ring: hsl(262, 83%, 58%);
+    --chart-1: hsl(262, 83%, 58%);
+    --chart-2: hsl(292, 84%, 52%);
+    --chart-3: hsl(238, 76%, 62%);
+    --chart-4: hsl(326, 78%, 56%);
+    --chart-5: hsl(190, 78%, 43%);
+    --sidebar-background: hsl(270, 34%, 92%);
+    --sidebar-foreground: hsl(270, 28%, 24%);
+    --sidebar-primary: hsl(262, 83%, 58%);
+    --sidebar-primary-foreground: hsl(0, 0%, 100%);
+    --sidebar-accent: hsl(267, 40%, 86%);
+    --sidebar-accent-foreground: hsl(270, 36%, 18%);
+    --sidebar-border: hsl(270, 22%, 79%);
+    --sidebar-ring: hsl(262, 83%, 58%);
+    --workspace-background: hsl(270, 30%, 96%);
+    --header-background: hsla(0, 0%, 100%, 0.78);
+    --header-border: hsla(270, 36%, 24%, 0.10);
+    --theme-glow: hsla(262, 83%, 58%, 0.14);
+    --theme-soft: hsla(262, 83%, 58%, 0.08);
+    --scrollbar-thumb-hover: hsla(262, 83%, 58%, 0.72);
+    --scrollbar-thumb-active: hsla(292, 84%, 52%, 0.94);
+}
+
+html.dark[data-theme='violet-command'] {
+    --background: hsl(270, 34%, 6%);
+    --foreground: hsl(270, 30%, 96%);
+    --card: hsl(270, 30%, 8%);
+    --card-foreground: hsl(270, 30%, 96%);
+    --popover: hsl(270, 30%, 8%);
+    --popover-foreground: hsl(270, 30%, 96%);
+    --primary: hsl(262, 83%, 65%);
+    --primary-foreground: hsl(270, 44%, 7%);
+    --secondary: hsl(270, 24%, 15%);
+    --secondary-foreground: hsl(270, 30%, 96%);
+    --muted: hsl(270, 22%, 11%);
+    --muted-foreground: hsl(270, 14%, 66%);
+    --accent: hsl(267, 34%, 18%);
+    --accent-foreground: hsl(267, 68%, 89%);
+    --border: hsl(270, 20%, 19%);
+    --input: hsl(270, 20%, 20%);
+    --ring: hsl(262, 83%, 65%);
+    --chart-1: hsl(262, 83%, 68%);
+    --chart-2: hsl(292, 84%, 62%);
+    --chart-3: hsl(238, 82%, 72%);
+    --chart-4: hsl(326, 78%, 66%);
+    --chart-5: hsl(190, 78%, 52%);
+    --sidebar-background: hsl(270, 44%, 6%);
+    --sidebar-foreground: hsl(270, 20%, 82%);
+    --sidebar-primary: hsl(262, 83%, 65%);
+    --sidebar-primary-foreground: hsl(270, 44%, 7%);
+    --sidebar-accent: hsl(270, 30%, 14%);
+    --sidebar-accent-foreground: hsl(270, 30%, 96%);
+    --sidebar-border: hsl(270, 24%, 17%);
+    --sidebar-ring: hsl(262, 83%, 65%);
+    --workspace-background: hsl(270, 36%, 5%);
+    --header-background: hsla(270, 34%, 7%, 0.76);
+    --header-border: hsla(270, 30%, 96%, 0.07);
+    --theme-glow: hsla(262, 83%, 65%, 0.15);
+    --theme-soft: hsla(262, 83%, 65%, 0.08);
+    --scrollbar-thumb-hover: hsla(262, 83%, 68%, 0.72);
+    --scrollbar-thumb-active: hsla(292, 84%, 66%, 0.94);
+}
+
+/* Amber Operations */
+html[data-theme='amber-operations']:not(.dark) {
+    --background: hsl(42, 35%, 97%);
+    --foreground: hsl(30, 24%, 12%);
+    --card: hsl(0, 0%, 100%);
+    --card-foreground: hsl(30, 24%, 12%);
+    --popover: hsl(0, 0%, 100%);
+    --popover-foreground: hsl(30, 24%, 12%);
+    --primary: hsl(38, 92%, 48%);
+    --primary-foreground: hsl(32, 42%, 9%);
+    --secondary: hsl(40, 28%, 92%);
+    --secondary-foreground: hsl(30, 24%, 14%);
+    --muted: hsl(40, 22%, 94%);
+    --muted-foreground: hsl(32, 12%, 43%);
+    --accent: hsl(42, 72%, 89%);
+    --accent-foreground: hsl(32, 82%, 30%);
+    --border: hsl(38, 22%, 84%);
+    --input: hsl(38, 22%, 81%);
+    --ring: hsl(38, 92%, 48%);
+    --chart-1: hsl(38, 92%, 48%);
+    --chart-2: hsl(24, 95%, 53%);
+    --chart-3: hsl(48, 92%, 45%);
+    --chart-4: hsl(160, 68%, 38%);
+    --chart-5: hsl(214, 72%, 48%);
+    --sidebar-background: hsl(38, 32%, 91%);
+    --sidebar-foreground: hsl(30, 26%, 23%);
+    --sidebar-primary: hsl(38, 92%, 48%);
+    --sidebar-primary-foreground: hsl(32, 42%, 9%);
+    --sidebar-accent: hsl(39, 42%, 84%);
+    --sidebar-accent-foreground: hsl(30, 32%, 17%);
+    --sidebar-border: hsl(38, 25%, 77%);
+    --sidebar-ring: hsl(38, 92%, 48%);
+    --workspace-background: hsl(42, 30%, 96%);
+    --header-background: hsla(0, 0%, 100%, 0.83);
+    --header-border: hsla(30, 30%, 22%, 0.10);
+    --theme-glow: hsla(38, 92%, 48%, 0.14);
+    --theme-soft: hsla(38, 92%, 48%, 0.08);
+    --scrollbar-thumb-hover: hsla(38, 92%, 48%, 0.72);
+    --scrollbar-thumb-active: hsla(24, 95%, 53%, 0.94);
+}
+
+html.dark[data-theme='amber-operations'] {
+    --background: hsl(32, 22%, 6%);
+    --foreground: hsl(42, 26%, 95%);
+    --card: hsl(32, 19%, 8%);
+    --card-foreground: hsl(42, 26%, 95%);
+    --popover: hsl(32, 19%, 8%);
+    --popover-foreground: hsl(42, 26%, 95%);
+    --primary: hsl(38, 92%, 54%);
+    --primary-foreground: hsl(32, 44%, 8%);
+    --secondary: hsl(32, 17%, 15%);
+    --secondary-foreground: hsl(42, 26%, 95%);
+    --muted: hsl(32, 15%, 11%);
+    --muted-foreground: hsl(38, 10%, 65%);
+    --accent: hsl(35, 36%, 17%);
+    --accent-foreground: hsl(42, 70%, 87%);
+    --border: hsl(32, 15%, 19%);
+    --input: hsl(32, 15%, 20%);
+    --ring: hsl(38, 92%, 54%);
+    --chart-1: hsl(38, 92%, 56%);
+    --chart-2: hsl(24, 95%, 60%);
+    --chart-3: hsl(48, 92%, 55%);
+    --chart-4: hsl(160, 68%, 46%);
+    --chart-5: hsl(214, 78%, 58%);
+    --sidebar-background: hsl(32, 29%, 5%);
+    --sidebar-foreground: hsl(40, 15%, 80%);
+    --sidebar-primary: hsl(38, 92%, 54%);
+    --sidebar-primary-foreground: hsl(32, 44%, 8%);
+    --sidebar-accent: hsl(32, 22%, 13%);
+    --sidebar-accent-foreground: hsl(42, 26%, 95%);
+    --sidebar-border: hsl(32, 18%, 16%);
+    --sidebar-ring: hsl(38, 92%, 54%);
+    --workspace-background: hsl(32, 23%, 5%);
+    --header-background: hsla(32, 22%, 6%, 0.82);
+    --header-border: hsla(42, 26%, 95%, 0.07);
+    --theme-glow: hsla(38, 92%, 54%, 0.15);
+    --theme-soft: hsla(38, 92%, 54%, 0.08);
+    --scrollbar-thumb-hover: hsla(38, 92%, 58%, 0.72);
+    --scrollbar-thumb-active: hsla(24, 95%, 62%, 0.94);
+}
+
+/* Slate Minimal */
+html[data-theme='slate-minimal']:not(.dark) {
+    --background: hsl(210, 20%, 98%);
+    --foreground: hsl(215, 25%, 12%);
+    --card: hsl(0, 0%, 100%);
+    --card-foreground: hsl(215, 25%, 12%);
+    --popover: hsl(0, 0%, 100%);
+    --popover-foreground: hsl(215, 25%, 12%);
+    --primary: hsl(215, 25%, 30%);
+    --primary-foreground: hsl(210, 40%, 98%);
+    --secondary: hsl(210, 18%, 93%);
+    --secondary-foreground: hsl(215, 25%, 14%);
+    --muted: hsl(210, 16%, 95%);
+    --muted-foreground: hsl(215, 12%, 44%);
+    --accent: hsl(212, 20%, 91%);
+    --accent-foreground: hsl(215, 25%, 24%);
+    --border: hsl(214, 16%, 85%);
+    --input: hsl(214, 16%, 82%);
+    --ring: hsl(215, 25%, 38%);
+    --chart-1: hsl(215, 25%, 38%);
+    --chart-2: hsl(199, 34%, 42%);
+    --chart-3: hsl(160, 26%, 38%);
+    --chart-4: hsl(38, 42%, 48%);
+    --chart-5: hsl(270, 24%, 48%);
+    --sidebar-background: hsl(210, 20%, 94%);
+    --sidebar-foreground: hsl(215, 22%, 25%);
+    --sidebar-primary: hsl(215, 25%, 30%);
+    --sidebar-primary-foreground: hsl(210, 40%, 98%);
+    --sidebar-accent: hsl(210, 18%, 88%);
+    --sidebar-accent-foreground: hsl(215, 28%, 18%);
+    --sidebar-border: hsl(214, 16%, 80%);
+    --sidebar-ring: hsl(215, 25%, 38%);
+    --workspace-background: hsl(210, 18%, 97%);
+    --header-background: hsla(0, 0%, 100%, 0.88);
+    --header-border: hsla(215, 25%, 16%, 0.09);
+    --theme-glow: hsla(215, 25%, 30%, 0.10);
+    --theme-soft: hsla(215, 25%, 30%, 0.06);
+    --scrollbar-thumb-hover: hsla(215, 25%, 38%, 0.68);
+    --scrollbar-thumb-active: hsla(215, 25%, 30%, 0.90);
+    --radius: 0.4rem;
+}
+
+html.dark[data-theme='slate-minimal'] {
+    --background: hsl(222, 19%, 7%);
+    --foreground: hsl(210, 20%, 95%);
+    --card: hsl(222, 17%, 9%);
+    --card-foreground: hsl(210, 20%, 95%);
+    --popover: hsl(222, 17%, 9%);
+    --popover-foreground: hsl(210, 20%, 95%);
+    --primary: hsl(215, 20%, 65%);
+    --primary-foreground: hsl(222, 24%, 9%);
+    --secondary: hsl(220, 14%, 16%);
+    --secondary-foreground: hsl(210, 20%, 95%);
+    --muted: hsl(220, 13%, 12%);
+    --muted-foreground: hsl(215, 12%, 65%);
+    --accent: hsl(218, 16%, 18%);
+    --accent-foreground: hsl(210, 24%, 90%);
+    --border: hsl(218, 14%, 20%);
+    --input: hsl(218, 14%, 21%);
+    --ring: hsl(215, 20%, 65%);
+    --chart-1: hsl(215, 20%, 68%);
+    --chart-2: hsl(199, 36%, 56%);
+    --chart-3: hsl(160, 28%, 52%);
+    --chart-4: hsl(38, 46%, 58%);
+    --chart-5: hsl(270, 28%, 62%);
+    --sidebar-background: hsl(222, 22%, 6%);
+    --sidebar-foreground: hsl(215, 14%, 79%);
+    --sidebar-primary: hsl(215, 20%, 65%);
+    --sidebar-primary-foreground: hsl(222, 24%, 9%);
+    --sidebar-accent: hsl(220, 16%, 14%);
+    --sidebar-accent-foreground: hsl(210, 20%, 95%);
+    --sidebar-border: hsl(218, 15%, 17%);
+    --sidebar-ring: hsl(215, 20%, 65%);
+    --workspace-background: hsl(222, 19%, 6%);
+    --header-background: hsla(222, 19%, 7%, 0.88);
+    --header-border: hsla(210, 20%, 95%, 0.06);
+    --theme-glow: hsla(215, 20%, 65%, 0.09);
+    --theme-soft: hsla(215, 20%, 65%, 0.05);
+    --scrollbar-thumb-hover: hsla(215, 20%, 68%, 0.66);
+    --scrollbar-thumb-active: hsla(215, 20%, 76%, 0.88);
+    --radius: 0.4rem;
+}
+
+/* Shared theme-aware surfaces */
+body,
+[data-slot='sidebar-inset'] {
+    background-color: var(--workspace-background, var(--background));
+}
+
+.app-theme-header {
+    border-color: var(--header-border, var(--border));
+    background: var(--header-background, var(--card));
+    box-shadow: 0 1px 0 var(--header-border, transparent);
+    backdrop-filter: blur(18px);
+}
+
+.app-theme-brand-card {
+    border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
+    background: color-mix(in srgb, var(--background) 38%, transparent);
+}
+
+.app-theme-brand-card:hover {
+    border-color: color-mix(in srgb, var(--primary) 34%, var(--border));
+    background: color-mix(in srgb, var(--primary) 7%, var(--background));
+    box-shadow: 0 0 28px var(--theme-glow, transparent);
+}
+
+.app-theme-access-card {
+    border-color: color-mix(in srgb, var(--primary) 18%, var(--border));
+    background: color-mix(in srgb, var(--background) 42%, transparent);
+}
+
+.app-theme-access-icon {
+    border-color: color-mix(in srgb, var(--primary) 26%, var(--border));
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    color: var(--primary);
+}
+
 /*
 |--------------------------------------------------------------------------
 | Base Styles

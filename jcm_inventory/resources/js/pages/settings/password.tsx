@@ -71,15 +71,15 @@ export default function Password() {
             <Head title="Password settings" />
 
             <SettingsLayout>
-                <section className="overflow-hidden rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.065] via-card/70 to-card/40">
+                <section className="overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.065] via-card/70 to-card/40">
                     <div className="flex flex-col gap-4 border-b border-border/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-3.5">
-                            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+                            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                                 <KeyRound className="size-5" />
                             </span>
 
                             <div className="min-w-0">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-emerald-300">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-primary">
                                     Security settings
                                 </p>
                                 <h1 className="mt-1 text-lg font-semibold tracking-tight text-foreground">
@@ -93,7 +93,7 @@ export default function Password() {
 
                         <Badge
                             variant="outline"
-                            className="h-7 w-fit rounded-full border-emerald-500/20 bg-emerald-500/[0.07] px-2.5 text-[10px] font-semibold text-emerald-300"
+                            className="h-7 w-fit rounded-full border-primary/20 bg-primary/[0.07] px-2.5 text-[10px] font-semibold text-primary"
                         >
                             <ShieldCheck className="mr-1.5 size-3.5" />
                             Protected access
@@ -103,7 +103,7 @@ export default function Password() {
                     <div className="grid min-w-0 lg:grid-cols-[280px_minmax(0,1fr)]">
                         <aside className="border-b border-border/60 bg-background/20 p-5 lg:border-b-0 lg:border-r">
                             <div className="flex items-start gap-3">
-                                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+                                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                                     <LockKeyhole className="size-4.5" />
                                 </span>
 
@@ -132,8 +132,8 @@ export default function Password() {
                                 />
                             </div>
 
-                            <div className="mt-4 border-l-2 border-emerald-400 bg-emerald-500/[0.04] px-3 py-2.5">
-                                <p className="text-[10px] font-semibold text-emerald-300">
+                            <div className="mt-4 border-l-2 border-primary bg-primary/[0.04] px-3 py-2.5">
+                                <p className="text-[10px] font-semibold text-primary">
                                     Security reminder
                                 </p>
                                 <p className="mt-1 text-[9px] leading-4 text-muted-foreground">
@@ -265,20 +265,20 @@ export default function Password() {
                                     <div
                                         className={
                                             passwordsMatch
-                                                ? 'border-l-2 border-emerald-400 bg-emerald-500/[0.04] px-3 py-2.5'
+                                                ? 'border-l-2 border-primary bg-primary/[0.04] px-3 py-2.5'
                                                 : 'border-l-2 border-amber-400 bg-amber-500/[0.04] px-3 py-2.5'
                                         }
                                     >
                                         <div className="flex items-center gap-2">
                                             {passwordsMatch ? (
-                                                <CheckCircle2 className="size-3.5 text-emerald-400" />
+                                                <CheckCircle2 className="size-3.5 text-primary" />
                                             ) : (
                                                 <KeyRound className="size-3.5 text-amber-400" />
                                             )}
                                             <p
                                                 className={
                                                     passwordsMatch
-                                                        ? 'text-[10px] font-semibold text-emerald-300'
+                                                        ? 'text-[10px] font-semibold text-primary'
                                                         : 'text-[10px] font-semibold text-amber-300'
                                                 }
                                             >
@@ -299,7 +299,7 @@ export default function Password() {
                                             leave="transition ease-in-out"
                                             leaveTo="opacity-0"
                                         >
-                                            <p className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400">
+                                            <p className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-primary">
                                                 <CheckCircle2 className="size-3.5" />
                                                 Password updated successfully
                                             </p>

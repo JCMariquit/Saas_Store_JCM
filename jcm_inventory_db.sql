@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 21, 2026 at 10:17 AM
+-- Generation Time: Jul 23, 2026 at 08:04 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -295,6 +295,17 @@ CREATE TABLE `stock_issuances` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ;
 
+--
+-- Dumping data for table `stock_issuances`
+--
+
+INSERT INTO `stock_issuances` (`id`, `tenant_id`, `branch_id`, `warehouse_id`, `issuance_number`, `issuance_date`, `reason`, `issued_to`, `department`, `purpose`, `reference_no`, `status`, `total_quantity`, `total_cost`, `notes`, `issued_by`, `posted_at`, `voided_by`, `voided_at`, `void_reason`, `created_at`, `updated_at`) VALUES
+(1, 1, 3, 2, 'ISS-20260721-UOEW3U', '2026-07-21', 'used_consumed', NULL, NULL, NULL, NULL, 'posted', 1.000, 25.00, NULL, 1, '2026-07-21 08:46:29', NULL, NULL, NULL, '2026-07-21 08:46:29', '2026-07-21 08:46:29'),
+(2, 1, 3, 2, 'ISS-20260721-JOSTEU', '2026-07-21', 'used_consumed', NULL, NULL, NULL, NULL, 'posted', 1.000, 25.00, NULL, 1, '2026-07-21 08:46:44', NULL, NULL, NULL, '2026-07-21 08:46:44', '2026-07-21 08:46:44'),
+(3, 1, 3, 2, 'ISS-20260723-P8RPMR', '2026-07-23', 'used_consumed', NULL, NULL, NULL, NULL, 'posted', 3.000, 75.00, NULL, 1, '2026-07-23 01:19:10', NULL, NULL, NULL, '2026-07-23 01:19:10', '2026-07-23 01:19:10'),
+(4, 1, 3, 2, 'ISS-20260723-C8KYGF', '2026-07-23', 'used_consumed', 'jc', 'jcjc', NULL, 'cjjjjc', 'posted', 2.000, 50.00, NULL, 1, '2026-07-23 01:19:39', NULL, NULL, NULL, '2026-07-23 01:19:39', '2026-07-23 01:19:39'),
+(5, 1, 3, 2, 'ISS-20260723-GGYKMP', '2026-07-23', 'used_consumed', NULL, NULL, NULL, NULL, 'posted', 1.000, 50.00, NULL, 1, '2026-07-23 03:26:50', NULL, NULL, NULL, '2026-07-23 03:26:50', '2026-07-23 03:26:50');
+
 -- --------------------------------------------------------
 
 --
@@ -318,6 +329,17 @@ CREATE TABLE `stock_issuance_items` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ;
+
+--
+-- Dumping data for table `stock_issuance_items`
+--
+
+INSERT INTO `stock_issuance_items` (`id`, `tenant_id`, `stock_issuance_id`, `product_id`, `stock_movement_id`, `void_stock_movement_id`, `product_name`, `product_sku`, `unit`, `quantity_issued`, `unit_cost`, `line_total`, `notes`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 2, 5, NULL, 'Safeguard', 'QW1', 'pcs', 1.000, 25.0000, 25.00, NULL, '2026-07-21 08:46:29', '2026-07-21 08:46:29'),
+(2, 1, 2, 2, 6, NULL, 'Safeguard', 'QW1', 'pcs', 1.000, 25.0000, 25.00, NULL, '2026-07-21 08:46:44', '2026-07-21 08:46:44'),
+(3, 1, 3, 2, 7, NULL, 'Safeguard', 'QW1', 'pcs', 3.000, 25.0000, 75.00, NULL, '2026-07-23 01:19:10', '2026-07-23 01:19:10'),
+(4, 1, 4, 2, 8, NULL, 'Safeguard', 'QW1', 'pcs', 2.000, 25.0000, 50.00, NULL, '2026-07-23 01:19:39', '2026-07-23 01:19:39'),
+(5, 1, 5, 1, 10, NULL, 'qw', 'QW', 'pcs', 1.000, 50.0000, 50.00, NULL, '2026-07-23 03:26:50', '2026-07-23 03:26:50');
 
 -- --------------------------------------------------------
 
@@ -357,7 +379,13 @@ CREATE TABLE `stock_movements` (
 INSERT INTO `stock_movements` (`id`, `tenant_id`, `warehouse_id`, `product_id`, `movement_type`, `quantity`, `quantity_before`, `quantity_after`, `unit_cost`, `total_cost`, `average_cost_before`, `average_cost_after`, `reference_type`, `reference_id`, `reference_no`, `related_warehouse_id`, `reversal_of_movement_id`, `remarks`, `movement_date`, `created_by`, `created_at`, `updated_at`) VALUES
 (2, 1, 2, 2, 'opening_stock', 50.000, 0.000, 50.000, 25.0000, 1250.00, NULL, NULL, 'opening_stock', NULL, 'OPEN-20260716091506-KN1VI1', NULL, NULL, NULL, '2026-07-16 09:15:06', 1, '2026-07-16 01:15:06', '2026-07-16 01:15:06'),
 (3, 1, 2, 2, 'purchase_receipt', 100.000, 50.000, 150.000, 25.0000, 2500.00, 25.0000, 25.0000, 'purchase_receipt', 1, 'RCV-20260720-6YEO6T', NULL, NULL, 'Received from PO PO-20260720-ZLP2ZW', '2026-07-20 13:48:37', 1, '2026-07-20 05:48:37', '2026-07-20 05:48:37'),
-(4, 1, 2, 2, 'purchase_receipt', 50.000, 150.000, 200.000, 25.0000, 1250.00, 25.0000, 25.0000, 'purchase_receipt', 2, 'RCV-20260721-QHE5FY', NULL, NULL, 'Received from PO PO-20260721-IRZAO3', '2026-07-21 11:54:45', 1, '2026-07-21 03:54:45', '2026-07-21 03:54:45');
+(4, 1, 2, 2, 'purchase_receipt', 50.000, 150.000, 200.000, 25.0000, 1250.00, 25.0000, 25.0000, 'purchase_receipt', 2, 'RCV-20260721-QHE5FY', NULL, NULL, 'Received from PO PO-20260721-IRZAO3', '2026-07-21 11:54:45', 1, '2026-07-21 03:54:45', '2026-07-21 03:54:45'),
+(5, 1, 2, 2, 'stock_out', 1.000, 200.000, 199.000, 25.0000, 25.00, 25.0000, 25.0000, 'stock_issuance', 1, 'ISS-20260721-UOEW3U', NULL, NULL, 'Stock issuance ISS-20260721-UOEW3U | Reason: Used / Consumed', '2026-07-21 16:46:29', 1, '2026-07-21 08:46:29', '2026-07-21 08:46:29'),
+(6, 1, 2, 2, 'stock_out', 1.000, 199.000, 198.000, 25.0000, 25.00, 25.0000, 25.0000, 'stock_issuance', 2, 'ISS-20260721-JOSTEU', NULL, NULL, 'Stock issuance ISS-20260721-JOSTEU | Reason: Used / Consumed', '2026-07-21 16:46:44', 1, '2026-07-21 08:46:44', '2026-07-21 08:46:44'),
+(7, 1, 2, 2, 'stock_out', 3.000, 198.000, 195.000, 25.0000, 75.00, 25.0000, 25.0000, 'stock_issuance', 3, 'ISS-20260723-P8RPMR', NULL, NULL, 'Stock issuance ISS-20260723-P8RPMR | Reason: Used / Consumed', '2026-07-23 09:19:10', 1, '2026-07-23 01:19:10', '2026-07-23 01:19:10'),
+(8, 1, 2, 2, 'stock_out', 2.000, 195.000, 193.000, 25.0000, 50.00, 25.0000, 25.0000, 'stock_issuance', 4, 'ISS-20260723-C8KYGF', NULL, NULL, 'Stock issuance ISS-20260723-C8KYGF | Reason: Used / Consumed | Issued to: jc | Department: jcjc | Reference: cjjjjc', '2026-07-23 09:19:39', 1, '2026-07-23 01:19:39', '2026-07-23 01:19:39'),
+(9, 1, 2, 1, 'opening_stock', 50.000, 0.000, 50.000, 50.0000, 2500.00, NULL, NULL, 'opening_stock', NULL, 'OPEN-20260723105039-C7QTY3', NULL, NULL, NULL, '2026-07-23 10:50:39', 1, '2026-07-23 02:50:39', '2026-07-23 02:50:39'),
+(10, 1, 2, 1, 'stock_out', 1.000, 50.000, 49.000, 50.0000, 50.00, 50.0000, 50.0000, 'stock_issuance', 5, 'ISS-20260723-GGYKMP', NULL, NULL, 'Stock issuance ISS-20260723-GGYKMP | Reason: Used / Consumed', '2026-07-23 11:26:50', 1, '2026-07-23 03:26:50', '2026-07-23 03:26:50');
 
 -- --------------------------------------------------------
 
@@ -451,7 +479,8 @@ CREATE TABLE `warehouse_stocks` (
 --
 
 INSERT INTO `warehouse_stocks` (`id`, `tenant_id`, `warehouse_id`, `product_id`, `quantity`, `reorder_level`, `max_stock_level`, `average_cost`, `last_movement_at`, `created_at`, `updated_at`) VALUES
-(2, 1, 2, 2, 200.000, 5.000, NULL, 25.0000, '2026-07-21 11:54:45', '2026-07-16 01:15:06', '2026-07-21 03:54:45');
+(2, 1, 2, 2, 193.000, 5.000, NULL, 25.0000, '2026-07-23 09:19:39', '2026-07-16 01:15:06', '2026-07-23 01:19:39'),
+(5, 1, 2, 1, 49.000, 5.000, NULL, 50.0000, '2026-07-23 11:26:50', '2026-07-23 02:50:39', '2026-07-23 03:26:50');
 
 --
 -- Indexes for dumped tables

@@ -4,6 +4,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\Reports\ProductReportController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseApprovalController;
 use App\Http\Controllers\ReceivingController;
@@ -309,6 +310,28 @@ Route::middleware(['auth'])->group(function () {
                         ->name('index');
                 });
 
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reports
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('reports/inventory/products')
+        ->name('reports.inventory.products.')
+        ->middleware('feature:products')
+        ->controller(ProductReportController::class)
+        ->group(function () {
+            Route::get('/pdf', 'pdf')
+                ->name('pdf');
+
+            Route::get('/excel-preview', 'excelPreview')
+                ->name('excel-preview');
+
+            Route::get('/excel', 'excel')
+                ->name('excel');
         });
 
     /*

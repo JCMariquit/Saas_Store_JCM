@@ -31,6 +31,9 @@ import {
     Barcode,
     Boxes,
     CheckCircle2,
+    ChevronRight,
+    FileSpreadsheet,
+    FileText,
     Package2,
     Pencil,
     Plus,
@@ -148,6 +151,12 @@ type ProductPageProps = {
     filters: ProductFilters;
 };
 
+type CatalogDrawerView =
+    | 'registered'
+    | 'active'
+    | 'tracked'
+    | 'not_tracked';
+
 /*
 |--------------------------------------------------------------------------
 | Configuration
@@ -223,6 +232,9 @@ export default function ProductIndex({
 
     const [detailsProduct, setDetailsProduct] =
         useState<Product | null>(null);
+
+    const [catalogDrawerView, setCatalogDrawerView] =
+        useState<CatalogDrawerView | null>(null);
 
     const [deleteTarget, setDeleteTarget] =
         useState<Product | null>(null);
@@ -329,6 +341,46 @@ export default function ProductIndex({
 
     function closeDetailsDrawer(): void {
         setDetailsProduct(null);
+    }
+
+    function openCatalogDrawer(
+        view: CatalogDrawerView,
+    ): void {
+        setCatalogDrawerView(view);
+    }
+
+    function closeCatalogDrawer(): void {
+        setCatalogDrawerView(null);
+    }
+
+    function openCatalogDirectory(
+        view: CatalogDrawerView,
+    ): void {
+        const query: Record<string, string> = {};
+
+        if (view === 'active') {
+            query.status = 'active';
+        }
+
+        if (view === 'tracked') {
+            query.stock_tracking = 'tracked';
+        }
+
+        if (view === 'not_tracked') {
+            query.stock_tracking = 'not_tracked';
+        }
+
+        closeCatalogDrawer();
+
+        router.get(
+            '/inventory/products',
+            query,
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
     }
 
     function openEditDialog(
@@ -442,6 +494,80 @@ export default function ProductIndex({
                 replace: true,
             },
         );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Directory exports
+    |--------------------------------------------------------------------------
+    */
+
+    function buildProductReportUrl(
+        format: 'pdf' | 'excel-preview',
+    ): string {
+        const params = new URLSearchParams();
+
+        if (filters.search?.trim()) {
+            params.set(
+                'search',
+                filters.search.trim(),
+            );
+        }
+
+        if (filters.status) {
+            params.set('status', filters.status);
+        }
+
+        if (filters.category_id) {
+            params.set(
+                'category_id',
+                String(filters.category_id),
+            );
+        }
+
+        if (filters.stock_tracking) {
+            params.set(
+                'stock_tracking',
+                filters.stock_tracking,
+            );
+        }
+
+        const query = params.toString();
+        const path = `/reports/inventory/products/${format}`;
+
+        return query ? `${path}?${query}` : path;
+    }
+
+    function exportProductsToPdf(): void {
+        if (products.total === 0) {
+            return;
+        }
+
+        const reportWindow = window.open(
+            buildProductReportUrl('pdf'),
+            '_blank',
+            'noopener,noreferrer',
+        );
+
+        if (reportWindow) {
+            reportWindow.opener = null;
+        }
+    }
+
+    function exportProductsToExcel(): void {
+        if (products.total === 0) {
+            return;
+        }
+
+        const reportWindow = window.open(
+            buildProductReportUrl('excel-preview'),
+            '_blank',
+            'noopener,noreferrer',
+        );
+
+        if (reportWindow) {
+            reportWindow.opener = null;
+        }
     }
 
     /*
@@ -677,14 +803,27 @@ export default function ProductIndex({
                                     </Badge>
                                 </div>
 
-                                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-background/70">
-                                    <div
-                                        className="h-full rounded-full bg-emerald-400 transition-all duration-500"
-                                        style={{
-                                            width: `${activePercentage}%`,
-                                        }}
-                                    />
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => openCatalogDrawer('active')}
+                                    aria-label="View active product records"
+                                    title="View active product records"
+                                    className="group mt-3 block w-full rounded-lg py-1.5 text-left outline-none transition hover:bg-primary/[0.025] focus-visible:ring-2 focus-visible:ring-primary/35"
+                                >
+                                    <span className="block h-1.5 overflow-hidden rounded-full bg-background/70 ring-1 ring-border/40 transition group-hover:ring-primary/20">
+                                        <span
+                                            className="block h-full rounded-full bg-emerald-400 transition-all duration-500 group-hover:brightness-110"
+                                            style={{
+                                                width: `${activePercentage}%`,
+                                            }}
+                                        />
+                                    </span>
+
+                                    <span className="mt-1.5 flex items-center justify-between gap-3 text-[8px] font-medium text-muted-foreground">
+                                        <span>Click the readiness bar to view active products</span>
+                                        <ChevronRight className="size-3 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                                    </span>
+                                </button>
 
                                 <div className="mt-5 grid border-t border-border/60 sm:grid-cols-3 sm:divide-x sm:divide-border/60">
                                     <div className="border-b border-border/60 py-3 sm:border-b-0 sm:pr-4">
@@ -756,6 +895,7 @@ export default function ProductIndex({
                                     value={summary.total}
                                     icon={<Package2 className="size-3.5" />}
                                     tone="emerald"
+                                    onClick={() => openCatalogDrawer('registered')}
                                 />
 
                                 <CatalogFactRow
@@ -764,6 +904,7 @@ export default function ProductIndex({
                                     value={summary.tracked}
                                     icon={<Boxes className="size-3.5" />}
                                     tone="teal"
+                                    onClick={() => openCatalogDrawer('tracked')}
                                 />
 
                                 <CatalogFactRow
@@ -772,6 +913,7 @@ export default function ProductIndex({
                                     value={summary.not_tracked}
                                     icon={<XCircle className="size-3.5" />}
                                     tone="amber"
+                                    onClick={() => openCatalogDrawer('not_tracked')}
                                 />
                             </dl>
                         </div>
@@ -793,6 +935,30 @@ export default function ProductIndex({
                                 {products.total} item
                                 {products.total === 1 ? '' : 's'}
                             </Badge>
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={exportProductsToPdf}
+                                disabled={products.total === 0}
+                                title="Open the complete filtered product report in a new PDF tab"
+                                className="h-9 rounded-lg px-3 text-xs"
+                            >
+                                <FileText className="size-3.5" />
+                                PDF
+                            </Button>
+
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={exportProductsToExcel}
+                                disabled={products.total === 0}
+                                title="Open the complete filtered product report in a new spreadsheet preview tab"
+                                className="h-9 rounded-lg px-3 text-xs"
+                            >
+                                <FileSpreadsheet className="size-3.5" />
+                                Excel
+                            </Button>
 
                             <Button
                                 type="button"
@@ -958,6 +1124,18 @@ export default function ProductIndex({
                 </SectionCard>
             </PageContainer>
 
+
+            <CatalogProductsDrawer
+                view={catalogDrawerView}
+                pagination={products}
+                summary={summary}
+                onClose={closeCatalogDrawer}
+                onSelect={(product) => {
+                    closeCatalogDrawer();
+                    openDetailsDrawer(product);
+                }}
+                onOpenDirectory={openCatalogDirectory}
+            />
 
             <ProductDetailsDrawer
                 product={detailsProduct}
@@ -1755,6 +1933,313 @@ function ProductFormPreviewRow({
     );
 }
 
+function CatalogProductsDrawer({
+    view,
+    pagination,
+    summary,
+    onClose,
+    onSelect,
+    onOpenDirectory,
+}: {
+    view: CatalogDrawerView | null;
+    pagination: PaginatedProducts;
+    summary: ProductSummary;
+    onClose: () => void;
+    onSelect: (product: Product) => void;
+    onOpenDirectory: (view: CatalogDrawerView) => void;
+}) {
+    const [drawerSearch, setDrawerSearch] = useState('');
+
+    useEffect(() => {
+        setDrawerSearch('');
+    }, [view]);
+
+    const activeView = view ?? 'registered';
+
+    const viewConfig: Record<
+        CatalogDrawerView,
+        {
+            title: string;
+            eyebrow: string;
+            description: string;
+            emptyLabel: string;
+            total: number;
+        }
+    > = {
+        registered: {
+            title: 'Registered Products',
+            eyebrow: 'Complete catalog',
+            description:
+                'Review product records currently loaded in the directory and open any item for complete details.',
+            emptyLabel: 'No registered products are loaded on this page.',
+            total: summary.total,
+        },
+        active: {
+            title: 'Active Products',
+            eyebrow: 'Catalog readiness',
+            description:
+                'Active products are available for stock setup, movement recording, and inventory transactions.',
+            emptyLabel: 'No active products are loaded on this page.',
+            total: summary.active,
+        },
+        tracked: {
+            title: 'Stock-Tracked Products',
+            eyebrow: 'Tracking coverage',
+            description:
+                'These products maintain warehouse balances and inventory movement history.',
+            emptyLabel: 'No stock-tracked products are loaded on this page.',
+            total: summary.tracked,
+        },
+        not_tracked: {
+            title: 'Not-Tracked Products',
+            eyebrow: 'Non-quantity catalog',
+            description:
+                'These products remain in the catalog but are excluded from warehouse quantity balances.',
+            emptyLabel: 'No not-tracked products are loaded on this page.',
+            total: summary.not_tracked,
+        },
+    };
+
+    const config = viewConfig[activeView];
+
+    const matchingProducts = pagination.data.filter((product) => {
+        if (activeView === 'active') {
+            return product.is_active;
+        }
+
+        if (activeView === 'tracked') {
+            return product.stock_tracking === 'tracked';
+        }
+
+        if (activeView === 'not_tracked') {
+            return product.stock_tracking === 'not_tracked';
+        }
+
+        return true;
+    });
+
+    const normalizedSearch = drawerSearch
+        .trim()
+        .toLowerCase();
+
+    const visibleProducts = normalizedSearch
+        ? matchingProducts.filter((product) => {
+              const searchable = [
+                  product.name,
+                  product.sku,
+                  product.barcode,
+                  product.category?.name,
+              ]
+                  .filter(Boolean)
+                  .join(' ')
+                  .toLowerCase();
+
+              return searchable.includes(normalizedSearch);
+          })
+        : matchingProducts;
+
+    const loadedRange =
+        pagination.from !== null &&
+        pagination.to !== null
+            ? `${pagination.from}-${pagination.to}`
+            : '0';
+
+    return (
+        <AppDrawer
+            open={view !== null}
+            onOpenChange={(open) => {
+                if (!open) {
+                    onClose();
+                }
+            }}
+            title={config.title}
+            description={config.description}
+            processing={false}
+        >
+            {view && (
+                <div className="flex min-h-full flex-col bg-card">
+                    <section className="shrink-0 border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
+                                    {config.eyebrow}
+                                </p>
+
+                                <h2 className="mt-1.5 text-lg font-semibold tracking-[-0.025em] text-foreground">
+                                    {config.title}
+                                </h2>
+
+                                <p className="mt-1 max-w-xl text-[10px] leading-5 text-muted-foreground">
+                                    Select a product below to open its complete product record.
+                                </p>
+                            </div>
+
+                            <div className="shrink-0 text-right">
+                                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                                    Catalog total
+                                </p>
+                                <p className="mt-1 text-2xl font-semibold leading-none tabular-nums text-primary">
+                                    {formatNumber(config.total)}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="mt-5 grid border-y border-border/60 sm:grid-cols-3">
+                            <ProductSummaryCell
+                                label="Loaded matches"
+                                value={formatNumber(matchingProducts.length)}
+                                helper="Matching rows on this page"
+                                className="border-b border-border/60 sm:border-b-0 sm:border-r"
+                            />
+                            <ProductSummaryCell
+                                label="Directory page"
+                                value={`${pagination.current_page} of ${pagination.last_page}`}
+                                helper={`Loaded range ${loadedRange}`}
+                                className="border-b border-border/60 sm:border-b-0 sm:border-r"
+                            />
+                            <ProductSummaryCell
+                                label="Catalog total"
+                                value={formatNumber(config.total)}
+                                helper="Across the complete catalog"
+                            />
+                        </div>
+                    </section>
+
+                    <div className="shrink-0 border-b border-border/60 px-5 py-4">
+                        <SearchInput
+                            value={drawerSearch}
+                            onChange={(event) =>
+                                setDrawerSearch(
+                                    event.target.value,
+                                )
+                            }
+                            onClear={() => setDrawerSearch('')}
+                            placeholder="Search the loaded product list..."
+                        />
+
+                        {config.total > matchingProducts.length && (
+                            <p className="mt-2 text-[9px] leading-4 text-muted-foreground">
+                                This drawer previews matching records loaded on page {pagination.current_page}. Use
+                                {' '}
+                                <span className="font-semibold text-foreground/80">
+                                    Open Full Directory
+                                </span>
+                                {' '}
+                                to view the complete paginated list.
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                        {visibleProducts.length === 0 ? (
+                            <div className="flex min-h-[260px] flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-background/20 px-6 text-center">
+                                <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.055] text-primary">
+                                    <Package2 className="size-5" />
+                                </span>
+
+                                <h3 className="mt-3 text-sm font-semibold text-foreground">
+                                    No matching products
+                                </h3>
+
+                                <p className="mt-1 max-w-sm text-[10px] leading-5 text-muted-foreground">
+                                    {normalizedSearch
+                                        ? 'Try another name, SKU, barcode, or category.'
+                                        : config.emptyLabel}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20">
+                                <div className="divide-y divide-border/60">
+                                    {visibleProducts.map((product) => (
+                                        <button
+                                            key={product.id}
+                                            type="button"
+                                            onClick={() => onSelect(product)}
+                                            className="group flex w-full items-center gap-3 px-4 py-3 text-left outline-none transition hover:bg-primary/[0.04] focus-visible:bg-primary/[0.045] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                                        >
+                                            <EntityAvatar
+                                                icon={
+                                                    product.stock_tracking === 'tracked'
+                                                        ? Boxes
+                                                        : Package2
+                                                }
+                                                className="border-primary/15 bg-primary/[0.065] text-primary transition group-hover:border-primary/25 group-hover:bg-primary/10"
+                                            />
+
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <p className="max-w-full truncate text-[11px] font-semibold text-foreground">
+                                                        {product.name}
+                                                    </p>
+
+                                                    <StatusBadge
+                                                        label={
+                                                            product.is_active
+                                                                ? 'Active'
+                                                                : 'Inactive'
+                                                        }
+                                                        variant={
+                                                            product.is_active
+                                                                ? 'success'
+                                                                : 'danger'
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <p className="mt-1 truncate font-mono text-[9px] text-muted-foreground">
+                                                    {product.sku ?? 'No SKU'}
+                                                    {' · '}
+                                                    {product.category?.name ?? 'Uncategorized'}
+                                                </p>
+
+                                                <p className="mt-1 text-[9px] text-muted-foreground">
+                                                    {product.stock_tracking === 'tracked'
+                                                        ? `${formatQuantity(product.total_stock)} ${product.unit} available`
+                                                        : 'Quantity not tracked'}
+                                                </p>
+                                            </div>
+
+                                            <div className="shrink-0 text-right">
+                                                <p className="text-[11px] font-semibold tabular-nums text-primary">
+                                                    {formatCurrency(product.selling_price)}
+                                                </p>
+
+                                                <ChevronRight className="ml-auto mt-1 size-3.5 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <footer className="flex shrink-0 flex-col gap-2 border-t border-border/60 bg-background/35 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                            className="h-9 rounded-lg text-xs"
+                        >
+                            Close
+                        </Button>
+
+                        <Button
+                            type="button"
+                            onClick={() =>
+                                onOpenDirectory(activeView)
+                            }
+                            className="h-9 rounded-lg bg-primary px-4 text-xs text-primary-foreground hover:bg-primary/90"
+                        >
+                            Open Full Directory
+                            <ChevronRight className="size-3.5" />
+                        </Button>
+                    </footer>
+                </div>
+            )}
+        </AppDrawer>
+    );
+}
+
 function ProductDetailsDrawer({
     product,
     statusProcessingId,
@@ -2165,12 +2650,14 @@ function CatalogFactRow({
     value,
     icon,
     tone,
+    onClick,
 }: {
     label: string;
     description: string;
     value: number;
     icon: ReactNode;
     tone: 'emerald' | 'lime' | 'teal' | 'amber';
+    onClick: () => void;
 }) {
     const toneStyles = {
         emerald: {
@@ -2194,10 +2681,25 @@ function CatalogFactRow({
     const styles = toneStyles[tone];
 
     return (
-        <div className="flex items-center gap-3 px-4 py-3.5">
+        <div
+            role="button"
+            tabIndex={0}
+            onClick={onClick}
+            onKeyDown={(event) => {
+                if (
+                    event.key === 'Enter' ||
+                    event.key === ' '
+                ) {
+                    event.preventDefault();
+                    onClick();
+                }
+            }}
+            aria-label={`View ${label.toLowerCase()} list`}
+            className="group flex cursor-pointer items-center gap-3 px-4 py-3.5 outline-none transition hover:bg-primary/[0.035] focus-visible:bg-primary/[0.045] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+        >
             <span
                 className={cn(
-                    'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border',
+                    'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border transition group-hover:scale-[1.03]',
                     styles.icon,
                 )}
             >
@@ -2205,7 +2707,7 @@ function CatalogFactRow({
             </span>
 
             <div className="min-w-0 flex-1">
-                <dt className="text-[10px] font-semibold text-foreground/90">
+                <dt className="text-[10px] font-semibold text-foreground/90 transition group-hover:text-foreground">
                     {label}
                 </dt>
                 <dd className="mt-0.5 truncate text-[9px] text-muted-foreground">
@@ -2213,14 +2715,18 @@ function CatalogFactRow({
                 </dd>
             </div>
 
-            <span
-                className={cn(
-                    'shrink-0 text-lg font-semibold tabular-nums',
-                    styles.value,
-                )}
-            >
-                {formatNumber(value)}
-            </span>
+            <div className="flex shrink-0 items-center gap-2">
+                <span
+                    className={cn(
+                        'text-lg font-semibold tabular-nums',
+                        styles.value,
+                    )}
+                >
+                    {formatNumber(value)}
+                </span>
+
+                <ChevronRight className="size-3.5 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+            </div>
         </div>
     );
 }
@@ -2230,6 +2736,11 @@ function CatalogFactRow({
 | Formatting
 |--------------------------------------------------------------------------
 */
+
+
+
+
+
 
 
 function formatNumber(value: number): string {

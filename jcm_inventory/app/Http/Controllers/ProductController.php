@@ -20,25 +20,36 @@ class ProductController extends Controller
     {
         $tenantId = $this->getTenantId($request);
 
-        $search = trim(
-            (string) $request->input('search', '')
-        );
+        $search = trim((string) $request->input('search', ''));
+        $status = trim((string) $request->input('status', ''));
+        $categoryId = max(0, (int) $request->input('category_id', 0));
+        $stockTracking = trim((string) $request->input('stock_tracking', ''));
+        $batchTracking = trim((string) $request->input('batch_tracking', ''));
 
-        $status = trim(
-            (string) $request->input('status', '')
-        );
+        if (! in_array($status, ['active', 'inactive'], true)) {
+            $status = '';
+        }
 
-        $categoryId = (int) $request->input(
-            'category_id',
-            0
-        );
+        if (! in_array($stockTracking, ['tracked', 'not_tracked'], true)) {
+            $stockTracking = '';
+        }
 
-        $stockTracking = trim(
-            (string) $request->input(
-                'stock_tracking',
-                ''
-            )
-        );
+        if (! in_array($batchTracking, ['enabled', 'disabled'], true)) {
+            $batchTracking = '';
+        }
+
+        $batchCountSubquery = DB::connection('mysql')
+            ->table('stock_batches')
+            ->selectRaw('COUNT(*)')
+            ->whereColumn('stock_batches.tenant_id', 'products.tenant_id')
+            ->whereColumn('stock_batches.product_id', 'products.id');
+
+        $availableBatchCountSubquery = DB::connection('mysql')
+            ->table('warehouse_batch_stocks')
+            ->selectRaw('COUNT(DISTINCT warehouse_batch_stocks.stock_batch_id)')
+            ->whereColumn('warehouse_batch_stocks.tenant_id', 'products.tenant_id')
+            ->whereColumn('warehouse_batch_stocks.product_id', 'products.id')
+            ->where('warehouse_batch_stocks.quantity', '>', 0);
 
         $products = Product::query()
             ->where('tenant_id', $tenantId)
@@ -53,73 +64,50 @@ class ProductController extends Controller
                 'warehouseStocks as total_stock',
                 'quantity'
             )
+            ->addSelect([
+                'stock_batches_count' => $batchCountSubquery,
+                'available_stock_batches_count' => $availableBatchCountSubquery,
+            ])
             ->when(
                 $search !== '',
-                function (
-                    Builder $query
-                ) use ($search): void {
+                function (Builder $query) use ($search): void {
                     $query->where(
-                        function (
-                            Builder $query
-                        ) use ($search): void {
+                        function (Builder $query) use ($search): void {
                             $query
-                                ->where(
-                                    'name',
-                                    'like',
-                                    "%{$search}%"
-                                )
-                                ->orWhere(
-                                    'sku',
-                                    'like',
-                                    "%{$search}%"
-                                )
-                                ->orWhere(
-                                    'barcode',
-                                    'like',
-                                    "%{$search}%"
-                                )
-                                ->orWhere(
-                                    'description',
-                                    'like',
-                                    "%{$search}%"
-                                );
+                                ->where('name', 'like', "%{$search}%")
+                                ->orWhere('sku', 'like', "%{$search}%")
+                                ->orWhere('barcode', 'like', "%{$search}%")
+                                ->orWhere('description', 'like', "%{$search}%");
                         }
                     );
                 }
             )
             ->when(
                 $categoryId > 0,
-                fn (Builder $query) => $query->where(
-                    'category_id',
-                    $categoryId
-                )
+                fn (Builder $query) => $query->where('category_id', $categoryId)
             )
             ->when(
                 $status === 'active',
-                fn (Builder $query) => $query->where(
-                    'is_active',
-                    true
-                )
+                fn (Builder $query) => $query->where('is_active', true)
             )
             ->when(
                 $status === 'inactive',
-                fn (Builder $query) => $query->where(
-                    'is_active',
-                    false
-                )
+                fn (Builder $query) => $query->where('is_active', false)
             )
             ->when(
-                in_array(
-                    $stockTracking,
-                    ['tracked', 'not_tracked'],
-                    true
-                ),
-                fn (Builder $query) => $query->where(
-                    'stock_tracking',
-                    $stockTracking
-                )
+                $stockTracking !== '',
+                fn (Builder $query) => $query->where('stock_tracking', $stockTracking)
+            )
+            ->when(
+                $batchTracking === 'enabled',
+                fn (Builder $query) => $query->where('batch_tracking_enabled', true)
+            )
+            ->when(
+                $batchTracking === 'disabled',
+                fn (Builder $query) => $query->where('batch_tracking_enabled', false)
             )
             ->orderByDesc('is_active')
+            ->orderByDesc('batch_tracking_enabled')
             ->orderBy('name')
             ->paginate(12)
             ->withQueryString();
@@ -145,133 +133,69 @@ class ProductController extends Controller
             'inventory/products/index',
             [
                 'products' => $products,
-
                 'categories' => $categories,
-
                 'summary' => [
-                    'total' => (clone $summaryQuery)
-                        ->count(),
-
+                    'total' => (clone $summaryQuery)->count(),
                     'active' => (clone $summaryQuery)
                         ->where('is_active', true)
                         ->count(),
-
                     'tracked' => (clone $summaryQuery)
-                        ->where(
-                            'stock_tracking',
-                            'tracked'
-                        )
+                        ->where('stock_tracking', 'tracked')
                         ->count(),
-
                     'not_tracked' => (clone $summaryQuery)
-                        ->where(
-                            'stock_tracking',
-                            'not_tracked'
-                        )
+                        ->where('stock_tracking', 'not_tracked')
+                        ->count(),
+                    'batch_enabled' => (clone $summaryQuery)
+                        ->where('batch_tracking_enabled', true)
+                        ->count(),
+                    'expiration_required' => (clone $summaryQuery)
+                        ->where('requires_expiration_date', true)
                         ->count(),
                 ],
-
                 'filters' => [
                     'search' => $search,
-
                     'status' => $status,
-
-                    'category_id' => $categoryId > 0
-                        ? $categoryId
-                        : null,
-
+                    'category_id' => $categoryId > 0 ? $categoryId : null,
                     'stock_tracking' => $stockTracking,
+                    'batch_tracking' => $batchTracking,
                 ],
             ]
         );
     }
 
-    public function store(
-        Request $request
-    ): RedirectResponse {
+    public function store(Request $request): RedirectResponse
+    {
         $tenantId = $this->getTenantId($request);
-
-        $validated = $request->validate(
-            $this->validationRules(
-                $tenantId
-            )
-        );
+        $validated = $request->validate($this->validationRules($tenantId));
+        $payload = $this->normalisePayload($validated);
 
         DB::connection('mysql')->transaction(
-            function () use (
-                $request,
-                $tenantId,
-                $validated
-            ): void {
-                $name = trim(
-                    $validated['name']
-                );
+            function () use ($request, $tenantId, $payload): void {
+                $name = trim($payload['name']);
 
-                Product::query()->create([
+                $product = new Product();
+                $product->forceFill([
                     'tenant_id' => $tenantId,
-
-                    'category_id' => filled(
-                        $validated['category_id']
-                            ?? null
-                    )
-                        ? (int) $validated['category_id']
-                        : null,
-
+                    'category_id' => $payload['category_id'],
                     'name' => $name,
-
-                    'slug' => $this->createUniqueSlug(
-                        $name,
-                        $tenantId
-                    ),
-
-                    'sku' => $this->nullableUppercaseString(
-                        $validated['sku'] ?? null
-                    ),
-
-                    'barcode' => $this->nullableString(
-                        $validated['barcode'] ?? null
-                    ),
-
-                    'description' => $this->nullableString(
-                        $validated['description'] ?? null
-                    ),
-
-                    'unit' => trim(
-                        $validated['unit']
-                    ),
-
-                    'cost_price' => $validated[
-                        'cost_price'
-                    ],
-
-                    'selling_price' => $validated[
-                        'selling_price'
-                    ],
-
-                    'wholesale_price' => filled(
-                        $validated['wholesale_price']
-                            ?? null
-                    )
-                        ? $validated['wholesale_price']
-                        : null,
-
-                    'stock_tracking' => $validated[
-                        'stock_tracking'
-                    ],
-
-                    'is_active' => (bool) $validated[
-                        'is_active'
-                    ],
-
+                    'slug' => $this->createUniqueSlug($name, $tenantId),
+                    'sku' => $this->nullableUppercaseString($payload['sku']),
+                    'barcode' => $this->nullableString($payload['barcode']),
+                    'description' => $this->nullableString($payload['description']),
+                    'unit' => trim($payload['unit']),
+                    'cost_price' => $payload['cost_price'],
+                    'stock_tracking' => $payload['stock_tracking'],
+                    'batch_tracking_enabled' => $payload['batch_tracking_enabled'],
+                    'batch_issue_policy' => $payload['batch_issue_policy'],
+                    'requires_expiration_date' => $payload['requires_expiration_date'],
+                    'expiry_warning_days' => $payload['expiry_warning_days'],
+                    'is_active' => $payload['is_active'],
                     'created_by' => $request->user()?->id,
-                ]);
+                ])->save();
             }
         );
 
-        return back()->with(
-            'success',
-            'Product created successfully.'
-        );
+        return back()->with('success', 'Product created successfully.');
     }
 
     public function update(
@@ -279,108 +203,68 @@ class ProductController extends Controller
         Product $product
     ): RedirectResponse {
         $tenantId = $this->getTenantId($request);
-
-        $this->ensureProductBelongsToTenant(
-            $product,
-            $tenantId
-        );
+        $this->ensureProductBelongsToTenant($product, $tenantId);
 
         $validated = $request->validate(
-            $this->validationRules(
-                $tenantId,
-                $product->id
-            )
+            $this->validationRules($tenantId, $product->id)
         );
-
-        $newStockTracking = $validated[
-            'stock_tracking'
-        ];
+        $payload = $this->normalisePayload($validated);
 
         if (
             $product->stock_tracking === 'tracked'
-            && $newStockTracking === 'not_tracked'
-            && (
-                $product->warehouseStocks()->exists()
-                || $product->stockMovements()->exists()
-            )
+            && $payload['stock_tracking'] === 'not_tracked'
+            && $this->productHasInventoryHistory($product)
         ) {
             throw ValidationException::withMessages([
-                'stock_tracking' => 'Stock tracking cannot be disabled because this product already has stock records or movement history.',
+                'stock_tracking' => 'Stock tracking cannot be disabled because this product already has warehouse stock, batch, or movement history.',
             ]);
         }
 
+        if (
+            (bool) $product->batch_tracking_enabled
+            && ! $payload['batch_tracking_enabled']
+            && $this->productHasBatchHistory($tenantId, $product->id)
+        ) {
+            throw ValidationException::withMessages([
+                'batch_tracking_enabled' => 'Batch tracking cannot be disabled because this product already has batch records or batch movement history.',
+            ]);
+        }
+
+        if (
+            ! (bool) $product->batch_tracking_enabled
+            && $payload['batch_tracking_enabled']
+        ) {
+            $this->ensureBatchBalancesAreReconciled($tenantId, $product->id);
+        }
+
         DB::connection('mysql')->transaction(
-            function () use (
-                $product,
-                $tenantId,
-                $validated
-            ): void {
-                $name = trim(
-                    $validated['name']
-                );
+            function () use ($product, $tenantId, $payload): void {
+                $name = trim($payload['name']);
 
-                $product->update([
-                    'category_id' => filled(
-                        $validated['category_id']
-                            ?? null
-                    )
-                        ? (int) $validated['category_id']
-                        : null,
-
+                $product->forceFill([
+                    'category_id' => $payload['category_id'],
                     'name' => $name,
-
                     'slug' => $this->createUniqueSlug(
                         $name,
                         $tenantId,
                         $product->id
                     ),
-
-                    'sku' => $this->nullableUppercaseString(
-                        $validated['sku'] ?? null
-                    ),
-
-                    'barcode' => $this->nullableString(
-                        $validated['barcode'] ?? null
-                    ),
-
-                    'description' => $this->nullableString(
-                        $validated['description'] ?? null
-                    ),
-
-                    'unit' => trim(
-                        $validated['unit']
-                    ),
-
-                    'cost_price' => $validated[
-                        'cost_price'
-                    ],
-
-                    'selling_price' => $validated[
-                        'selling_price'
-                    ],
-
-                    'wholesale_price' => filled(
-                        $validated['wholesale_price']
-                            ?? null
-                    )
-                        ? $validated['wholesale_price']
-                        : null,
-
-                    'stock_tracking' => $validated[
-                        'stock_tracking'
-                    ],
-
-                    'is_active' => (bool) $validated[
-                        'is_active'
-                    ],
-                ]);
+                    'sku' => $this->nullableUppercaseString($payload['sku']),
+                    'barcode' => $this->nullableString($payload['barcode']),
+                    'description' => $this->nullableString($payload['description']),
+                    'unit' => trim($payload['unit']),
+                    'cost_price' => $payload['cost_price'],
+                    'stock_tracking' => $payload['stock_tracking'],
+                    'batch_tracking_enabled' => $payload['batch_tracking_enabled'],
+                    'batch_issue_policy' => $payload['batch_issue_policy'],
+                    'requires_expiration_date' => $payload['requires_expiration_date'],
+                    'expiry_warning_days' => $payload['expiry_warning_days'],
+                    'is_active' => $payload['is_active'],
+                ])->save();
             }
         );
 
-        return back()->with(
-            'success',
-            'Product updated successfully.'
-        );
+        return back()->with('success', 'Product updated successfully.');
     }
 
     public function updateStatus(
@@ -388,26 +272,17 @@ class ProductController extends Controller
         Product $product
     ): RedirectResponse {
         $tenantId = $this->getTenantId($request);
-
-        $this->ensureProductBelongsToTenant(
-            $product,
-            $tenantId
-        );
+        $this->ensureProductBelongsToTenant($product, $tenantId);
 
         $validated = $request->validate([
-            'is_active' => [
-                'required',
-                'boolean',
-            ],
+            'is_active' => ['required', 'boolean'],
         ]);
 
-        $isActive = (bool) $validated[
-            'is_active'
-        ];
+        $isActive = (bool) $validated['is_active'];
 
-        $product->update([
+        $product->forceFill([
             'is_active' => $isActive,
-        ]);
+        ])->save();
 
         return back()->with(
             'success',
@@ -422,11 +297,7 @@ class ProductController extends Controller
         Product $product
     ): RedirectResponse {
         $tenantId = $this->getTenantId($request);
-
-        $this->ensureProductBelongsToTenant(
-            $product,
-            $tenantId
-        );
+        $this->ensureProductBelongsToTenant($product, $tenantId);
 
         if ($product->warehouseStocks()->exists()) {
             return back()->with(
@@ -442,12 +313,16 @@ class ProductController extends Controller
             );
         }
 
+        if ($this->productHasBatchHistory($tenantId, $product->id)) {
+            return back()->with(
+                'error',
+                'This product cannot be deleted because it has batch records or batch allocation history.'
+            );
+        }
+
         $product->delete();
 
-        return back()->with(
-            'success',
-            'Product deleted successfully.'
-        );
+        return back()->with('success', 'Product deleted successfully.');
     }
 
     private function validationRules(
@@ -458,117 +333,140 @@ class ProductController extends Controller
             'category_id' => [
                 'nullable',
                 'integer',
-
-                Rule::exists(
-                    'categories',
-                    'id'
-                )->where(
+                Rule::exists('categories', 'id')->where(
                     fn ($query) => $query
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        ->where('tenant_id', $tenantId)
                         ->whereNull('deleted_at')
                 ),
             ],
-
-            'name' => [
-                'required',
-                'string',
-                'max:180',
-            ],
-
+            'name' => ['required', 'string', 'max:180'],
             'sku' => [
                 'nullable',
                 'string',
                 'max:100',
-
-                Rule::unique(
-                    'products',
-                    'sku'
-                )
+                Rule::unique('products', 'sku')
                     ->ignore($ignoreProductId)
                     ->where(
-                        fn ($query) => $query->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        fn ($query) => $query->where('tenant_id', $tenantId)
                     ),
             ],
-
             'barcode' => [
                 'nullable',
                 'string',
                 'max:120',
-
-                Rule::unique(
-                    'products',
-                    'barcode'
-                )
+                Rule::unique('products', 'barcode')
                     ->ignore($ignoreProductId)
                     ->where(
-                        fn ($query) => $query->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        fn ($query) => $query->where('tenant_id', $tenantId)
                     ),
             ],
-
-            'description' => [
-                'nullable',
-                'string',
-            ],
-
-            'unit' => [
-                'required',
-                'string',
-                'max:50',
-            ],
-
-            'cost_price' => [
-                'required',
-                'numeric',
-                'min:0',
-            ],
-
-            'selling_price' => [
-                'required',
-                'numeric',
-                'min:0',
-            ],
-
-            'wholesale_price' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
+            'description' => ['nullable', 'string'],
+            'unit' => ['required', 'string', 'max:50'],
+            'cost_price' => ['required', 'numeric', 'min:0', 'max:99999999999999.9999'],
             'stock_tracking' => [
                 'required',
-                Rule::in([
-                    'tracked',
-                    'not_tracked',
-                ]),
+                Rule::in(['tracked', 'not_tracked']),
             ],
-
-            'is_active' => [
+            'batch_tracking_enabled' => ['required', 'boolean'],
+            'batch_issue_policy' => [
                 'required',
-                'boolean',
+                Rule::in(['fifo', 'fefo', 'manual']),
             ],
+            'requires_expiration_date' => ['required', 'boolean'],
+            'expiry_warning_days' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:3650',
+            ],
+            'is_active' => ['required', 'boolean'],
         ];
     }
 
-    private function getTenantId(
-        Request $request
-    ): int {
-        $tenantId = (int) (
-            $request->user()?->client_id ?? 0
-        );
+    private function normalisePayload(array $validated): array
+    {
+        $stockTracking = $validated['stock_tracking'];
+        $batchTrackingEnabled = $stockTracking === 'tracked'
+            && (bool) $validated['batch_tracking_enabled'];
 
-        if (
-            $tenantId <= 0
-            && app()->environment('local')
-        ) {
+        $requiresExpirationDate = $batchTrackingEnabled
+            && (bool) $validated['requires_expiration_date'];
+
+        $expiryWarningDays = $batchTrackingEnabled
+            && filled($validated['expiry_warning_days'] ?? null)
+                ? (int) $validated['expiry_warning_days']
+                : null;
+
+        return [
+            'category_id' => filled($validated['category_id'] ?? null)
+                ? (int) $validated['category_id']
+                : null,
+            'name' => trim($validated['name']),
+            'sku' => $validated['sku'] ?? null,
+            'barcode' => $validated['barcode'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'unit' => trim($validated['unit']),
+            'cost_price' => $validated['cost_price'],
+            'stock_tracking' => $stockTracking,
+            'batch_tracking_enabled' => $batchTrackingEnabled,
+            'batch_issue_policy' => $batchTrackingEnabled
+                ? $validated['batch_issue_policy']
+                : 'fifo',
+            'requires_expiration_date' => $requiresExpirationDate,
+            'expiry_warning_days' => $expiryWarningDays,
+            'is_active' => (bool) $validated['is_active'],
+        ];
+    }
+
+    private function productHasInventoryHistory(Product $product): bool
+    {
+        return $product->warehouseStocks()->exists()
+            || $product->stockMovements()->exists()
+            || $this->productHasBatchHistory(
+                (int) $product->tenant_id,
+                (int) $product->id
+            );
+    }
+
+    private function productHasBatchHistory(
+        int $tenantId,
+        int $productId
+    ): bool {
+        return DB::connection('mysql')
+            ->table('stock_batches')
+            ->where('tenant_id', $tenantId)
+            ->where('product_id', $productId)
+            ->exists()
+            || DB::connection('mysql')
+                ->table('stock_movement_batches')
+                ->where('tenant_id', $tenantId)
+                ->where('product_id', $productId)
+                ->exists();
+    }
+
+    private function ensureBatchBalancesAreReconciled(
+        int $tenantId,
+        int $productId
+    ): void {
+        $hasMismatch = DB::connection('mysql')
+            ->table('vw_batch_stock_reconciliation')
+            ->where('tenant_id', $tenantId)
+            ->where('product_id', $productId)
+            ->where('reconciliation_status', 'mismatch')
+            ->exists();
+
+        if ($hasMismatch) {
+            throw ValidationException::withMessages([
+                'batch_tracking_enabled' => 'Batch tracking cannot be enabled until every warehouse balance and batch balance for this product are reconciled.',
+            ]);
+        }
+    }
+
+    private function getTenantId(Request $request): int
+    {
+        $tenantId = (int) ($request->user()?->client_id ?? 0);
+
+        if ($tenantId <= 0 && app()->environment('local')) {
             return 1;
         }
 
@@ -585,10 +483,7 @@ class ProductController extends Controller
         Product $product,
         int $tenantId
     ): void {
-        abort_unless(
-            (int) $product->tenant_id === $tenantId,
-            404
-        );
+        abort_unless((int) $product->tenant_id === $tenantId, 404);
     }
 
     private function createUniqueSlug(
@@ -607,19 +502,11 @@ class ProductController extends Controller
 
         while (
             Product::withTrashed()
-                ->where(
-                    'tenant_id',
-                    $tenantId
-                )
+                ->where('tenant_id', $tenantId)
                 ->where('slug', $slug)
                 ->when(
                     $ignoreProductId !== null,
-                    fn (Builder $query) => $query
-                        ->where(
-                            'id',
-                            '!=',
-                            $ignoreProductId
-                        )
+                    fn (Builder $query) => $query->where('id', '!=', $ignoreProductId)
                 )
                 ->exists()
         ) {
@@ -630,27 +517,17 @@ class ProductController extends Controller
         return $slug;
     }
 
-    private function nullableString(
-        mixed $value
-    ): ?string {
-        $value = trim(
-            (string) $value
-        );
+    private function nullableString(mixed $value): ?string
+    {
+        $value = trim((string) $value);
 
-        return $value !== ''
-            ? $value
-            : null;
+        return $value !== '' ? $value : null;
     }
 
-    private function nullableUppercaseString(
-        mixed $value
-    ): ?string {
-        $value = trim(
-            (string) $value
-        );
+    private function nullableUppercaseString(mixed $value): ?string
+    {
+        $value = trim((string) $value);
 
-        return $value !== ''
-            ? Str::upper($value)
-            : null;
+        return $value !== '' ? Str::upper($value) : null;
     }
 }

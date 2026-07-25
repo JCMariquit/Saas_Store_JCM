@@ -34,6 +34,7 @@ import {
     ChevronRight,
     FileSpreadsheet,
     FileText,
+    Layers3,
     Package2,
     Pencil,
     Plus,
@@ -46,14 +47,9 @@ import {
     type FormEvent,
     type ReactNode,
     useEffect,
+    useMemo,
     useState,
 } from 'react';
-
-/*
-|--------------------------------------------------------------------------
-| Types
-|--------------------------------------------------------------------------
-*/
 
 type CategoryOption = {
     id: number;
@@ -70,6 +66,8 @@ type ProductCategory = {
     is_active: boolean;
 };
 
+type BatchIssuePolicy = 'fifo' | 'fefo' | 'manual';
+
 type Product = {
     id: number;
     tenant_id: number;
@@ -82,12 +80,16 @@ type Product = {
     image_path: string | null;
     unit: string;
     cost_price: string | number;
-    selling_price: string | number;
-    wholesale_price: string | number | null;
     stock_tracking: 'tracked' | 'not_tracked';
+    batch_tracking_enabled: boolean;
+    batch_issue_policy: BatchIssuePolicy;
+    requires_expiration_date: boolean;
+    expiry_warning_days: number | null;
     is_active: boolean;
     warehouse_stocks_count: number;
     stock_movements_count: number;
+    stock_batches_count: number;
+    available_stock_batches_count: number;
     total_stock: string | number | null;
     category: ProductCategory | null;
     created_at: string | null;
@@ -121,6 +123,8 @@ type ProductSummary = {
     active: number;
     tracked: number;
     not_tracked: number;
+    batch_enabled: number;
+    expiration_required: number;
 };
 
 type ProductFilters = {
@@ -128,6 +132,7 @@ type ProductFilters = {
     status: string;
     category_id: number | null;
     stock_tracking: string;
+    batch_tracking: string;
 };
 
 type ProductFormData = {
@@ -138,9 +143,11 @@ type ProductFormData = {
     description: string;
     unit: string;
     cost_price: string;
-    selling_price: string;
-    wholesale_price: string;
     stock_tracking: 'tracked' | 'not_tracked';
+    batch_tracking_enabled: boolean;
+    batch_issue_policy: BatchIssuePolicy;
+    requires_expiration_date: boolean;
+    expiry_warning_days: string;
     is_active: boolean;
 };
 
@@ -155,27 +162,12 @@ type CatalogDrawerView =
     | 'registered'
     | 'active'
     | 'tracked'
-    | 'not_tracked';
-
-/*
-|--------------------------------------------------------------------------
-| Configuration
-|--------------------------------------------------------------------------
-*/
+    | 'batch_enabled';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
-    {
-        title: 'Inventory',
-        href: '/inventory/overview',
-    },
-    {
-        title: 'Products',
-        href: '/inventory/products',
-    },
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Inventory', href: '/inventory/overview' },
+    { title: 'Products', href: '/inventory/products' },
 ];
 
 const emptyProductForm: ProductFormData = {
@@ -186,9 +178,11 @@ const emptyProductForm: ProductFormData = {
     description: '',
     unit: 'pcs',
     cost_price: '0.00',
-    selling_price: '0.00',
-    wholesale_price: '',
     stock_tracking: 'tracked',
+    batch_tracking_enabled: false,
+    batch_issue_policy: 'fifo',
+    requires_expiration_date: false,
+    expiry_warning_days: '30',
     is_active: true,
 };
 
@@ -212,94 +206,55 @@ const commonUnits = [
 const ALL_VALUE = 'all';
 const NO_CATEGORY_VALUE = 'none';
 
-/*
-|--------------------------------------------------------------------------
-| Page
-|--------------------------------------------------------------------------
-*/
-
 export default function ProductIndex({
     products,
     categories,
     summary,
     filters,
 }: ProductPageProps) {
-    const [isDialogOpen, setIsDialogOpen] =
-        useState(false);
-
-    const [editingProduct, setEditingProduct] =
-        useState<Product | null>(null);
-
-    const [detailsProduct, setDetailsProduct] =
-        useState<Product | null>(null);
-
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [detailsProduct, setDetailsProduct] = useState<Product | null>(null);
     const [catalogDrawerView, setCatalogDrawerView] =
         useState<CatalogDrawerView | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+    const [deleteProcessing, setDeleteProcessing] = useState(false);
+    const [statusProcessingId, setStatusProcessingId] =
+        useState<number | null>(null);
 
-    const [deleteTarget, setDeleteTarget] =
-        useState<Product | null>(null);
-
-    const [deleteProcessing, setDeleteProcessing] =
-        useState(false);
-
-    const [
-        statusProcessingId,
-        setStatusProcessingId,
-    ] = useState<number | null>(null);
-
-    const [search, setSearch] = useState(
-        filters.search ?? '',
-    );
-
-    const [status, setStatus] = useState(
-        filters.status ?? '',
-    );
-
+    const [search, setSearch] = useState(filters.search ?? '');
+    const [status, setStatus] = useState(filters.status ?? '');
     const [categoryId, setCategoryId] = useState(
-        filters.category_id
-            ? String(filters.category_id)
-            : '',
+        filters.category_id ? String(filters.category_id) : '',
+    );
+    const [stockTracking, setStockTracking] = useState(
+        filters.stock_tracking ?? '',
+    );
+    const [batchTracking, setBatchTracking] = useState(
+        filters.batch_tracking ?? '',
     );
 
-    const [stockTracking, setStockTracking] =
-        useState(filters.stock_tracking ?? '');
-
-    const form = useForm<ProductFormData>({
-        ...emptyProductForm,
-    });
+    const form = useForm<ProductFormData>({ ...emptyProductForm });
 
     useEffect(() => {
         setSearch(filters.search ?? '');
         setStatus(filters.status ?? '');
-
         setCategoryId(
-            filters.category_id
-                ? String(filters.category_id)
-                : '',
+            filters.category_id ? String(filters.category_id) : '',
         );
-
-        setStockTracking(
-            filters.stock_tracking ?? '',
-        );
+        setStockTracking(filters.stock_tracking ?? '');
+        setBatchTracking(filters.batch_tracking ?? '');
     }, [
         filters.search,
         filters.status,
         filters.category_id,
         filters.stock_tracking,
+        filters.batch_tracking,
     ]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Dialog
-    |--------------------------------------------------------------------------
-    */
 
     function resetProductForm(): void {
         form.clearErrors();
-
-        form.setData({
-            ...emptyProductForm,
-        });
+        form.setData({ ...emptyProductForm });
     }
 
     function resetAndCloseDialog(): void {
@@ -308,23 +263,15 @@ export default function ProductIndex({
         resetProductForm();
     }
 
-    function requestCloseDialog(): void {
-        if (form.processing) {
-            return;
-        }
-
-        resetAndCloseDialog();
-    }
-
-    function handleDialogOpenChange(
-        open: boolean,
-    ): void {
+    function handleDialogOpenChange(open: boolean): void {
         if (open) {
             setIsDialogOpen(true);
             return;
         }
 
-        requestCloseDialog();
+        if (!form.processing) {
+            resetAndCloseDialog();
+        }
     }
 
     function openCreateDialog(): void {
@@ -333,62 +280,9 @@ export default function ProductIndex({
         setIsDialogOpen(true);
     }
 
-    function openDetailsDrawer(
-        product: Product,
-    ): void {
-        setDetailsProduct(product);
-    }
-
-    function closeDetailsDrawer(): void {
-        setDetailsProduct(null);
-    }
-
-    function openCatalogDrawer(
-        view: CatalogDrawerView,
-    ): void {
-        setCatalogDrawerView(view);
-    }
-
-    function closeCatalogDrawer(): void {
-        setCatalogDrawerView(null);
-    }
-
-    function openCatalogDirectory(
-        view: CatalogDrawerView,
-    ): void {
-        const query: Record<string, string> = {};
-
-        if (view === 'active') {
-            query.status = 'active';
-        }
-
-        if (view === 'tracked') {
-            query.stock_tracking = 'tracked';
-        }
-
-        if (view === 'not_tracked') {
-            query.stock_tracking = 'not_tracked';
-        }
-
-        closeCatalogDrawer();
-
-        router.get(
-            '/inventory/products',
-            query,
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    }
-
-    function openEditDialog(
-        product: Product,
-    ): void {
+    function openEditDialog(product: Product): void {
         setEditingProduct(product);
         form.clearErrors();
-
         form.setData({
             category_id: product.category_id
                 ? String(product.category_id)
@@ -396,50 +290,32 @@ export default function ProductIndex({
             name: product.name,
             sku: product.sku ?? '',
             barcode: product.barcode ?? '',
-            description:
-                product.description ?? '',
+            description: product.description ?? '',
             unit: product.unit,
-            cost_price: String(
-                product.cost_price ?? '0.00',
+            cost_price: String(product.cost_price ?? '0.00'),
+            stock_tracking: product.stock_tracking,
+            batch_tracking_enabled: Boolean(product.batch_tracking_enabled),
+            batch_issue_policy: product.batch_issue_policy ?? 'fifo',
+            requires_expiration_date: Boolean(
+                product.requires_expiration_date,
             ),
-            selling_price: String(
-                product.selling_price ?? '0.00',
-            ),
-            wholesale_price:
-                product.wholesale_price !== null
-                    ? String(
-                          product.wholesale_price,
-                      )
+            expiry_warning_days:
+                product.expiry_warning_days !== null
+                    ? String(product.expiry_warning_days)
                     : '',
-            stock_tracking:
-                product.stock_tracking,
             is_active: product.is_active,
         });
-
         setIsDialogOpen(true);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Submit
-    |--------------------------------------------------------------------------
-    */
-
-    function submitProduct(
-        event: FormEvent<HTMLFormElement>,
-    ): void {
+    function submitProduct(event: FormEvent<HTMLFormElement>): void {
         event.preventDefault();
 
         if (editingProduct) {
-            form.put(
-                `/inventory/products/${editingProduct.id}`,
-                {
-                    preserveScroll: true,
-                    onSuccess:
-                        resetAndCloseDialog,
-                },
-            );
-
+            form.put(`/inventory/products/${editingProduct.id}`, {
+                preserveScroll: true,
+                onSuccess: resetAndCloseDialog,
+            });
             return;
         }
 
@@ -449,27 +325,17 @@ export default function ProductIndex({
         });
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Filters
-    |--------------------------------------------------------------------------
-    */
-
-    function applyFilters(
-        event: FormEvent<HTMLFormElement>,
-    ): void {
+    function applyFilters(event: FormEvent<HTMLFormElement>): void {
         event.preventDefault();
 
         router.get(
             '/inventory/products',
             {
-                search:
-                    search.trim() || undefined,
+                search: search.trim() || undefined,
                 status: status || undefined,
-                category_id:
-                    categoryId || undefined,
-                stock_tracking:
-                    stockTracking || undefined,
+                category_id: categoryId || undefined,
+                stock_tracking: stockTracking || undefined,
+                batch_tracking: batchTracking || undefined,
             },
             {
                 preserveState: true,
@@ -484,6 +350,7 @@ export default function ProductIndex({
         setStatus('');
         setCategoryId('');
         setStockTracking('');
+        setBatchTracking('');
 
         router.get(
             '/inventory/products',
@@ -496,40 +363,25 @@ export default function ProductIndex({
         );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Directory exports
-    |--------------------------------------------------------------------------
-    */
-
     function buildProductReportUrl(
         format: 'pdf' | 'excel-preview',
     ): string {
         const params = new URLSearchParams();
 
         if (filters.search?.trim()) {
-            params.set(
-                'search',
-                filters.search.trim(),
-            );
+            params.set('search', filters.search.trim());
         }
-
         if (filters.status) {
             params.set('status', filters.status);
         }
-
         if (filters.category_id) {
-            params.set(
-                'category_id',
-                String(filters.category_id),
-            );
+            params.set('category_id', String(filters.category_id));
         }
-
         if (filters.stock_tracking) {
-            params.set(
-                'stock_tracking',
-                filters.stock_tracking,
-            );
+            params.set('stock_tracking', filters.stock_tracking);
+        }
+        if (filters.batch_tracking) {
+            params.set('batch_tracking', filters.batch_tracking);
         }
 
         const query = params.toString();
@@ -538,13 +390,13 @@ export default function ProductIndex({
         return query ? `${path}?${query}` : path;
     }
 
-    function exportProductsToPdf(): void {
+    function openReport(format: 'pdf' | 'excel-preview'): void {
         if (products.total === 0) {
             return;
         }
 
         const reportWindow = window.open(
-            buildProductReportUrl('pdf'),
+            buildProductReportUrl(format),
             '_blank',
             'noopener,noreferrer',
         );
@@ -554,197 +406,132 @@ export default function ProductIndex({
         }
     }
 
-    function exportProductsToExcel(): void {
-        if (products.total === 0) {
-            return;
-        }
-
-        const reportWindow = window.open(
-            buildProductReportUrl('excel-preview'),
-            '_blank',
-            'noopener,noreferrer',
-        );
-
-        if (reportWindow) {
-            reportWindow.opener = null;
-        }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Status and delete
-    |--------------------------------------------------------------------------
-    */
-
-    function toggleStatus(
-        product: Product,
-    ): void {
-        if (
-            statusProcessingId === product.id
-        ) {
+    function toggleStatus(product: Product): void {
+        if (statusProcessingId === product.id) {
             return;
         }
 
         router.patch(
             `/inventory/products/${product.id}/status`,
-            {
-                is_active:
-                    !product.is_active,
-            },
+            { is_active: !product.is_active },
             {
                 preserveScroll: true,
-                onStart: () =>
-                    setStatusProcessingId(
-                        product.id,
-                    ),
-                onFinish: () =>
-                    setStatusProcessingId(null),
+                onStart: () => setStatusProcessingId(product.id),
+                onFinish: () => setStatusProcessingId(null),
             },
         );
-    }
-
-    function requestDelete(
-        product: Product,
-    ): void {
-        setDeleteTarget(product);
     }
 
     function deleteProduct(): void {
-        if (
-            !deleteTarget ||
-            deleteProcessing
-        ) {
+        if (!deleteTarget || deleteProcessing) {
             return;
         }
 
-        router.delete(
-            `/inventory/products/${deleteTarget.id}`,
-            {
-                preserveScroll: true,
-                onStart: () =>
-                    setDeleteProcessing(true),
-                onSuccess: () =>
-                    setDeleteTarget(null),
-                onFinish: () =>
-                    setDeleteProcessing(false),
-            },
-        );
+        router.delete(`/inventory/products/${deleteTarget.id}`, {
+            preserveScroll: true,
+            onStart: () => setDeleteProcessing(true),
+            onSuccess: () => setDeleteTarget(null),
+            onFinish: () => setDeleteProcessing(false),
+        });
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Derived values
-    |--------------------------------------------------------------------------
-    */
+    function openCatalogDirectory(view: CatalogDrawerView): void {
+        const query: Record<string, string> = {};
 
-    const deleteHasRelations = Boolean(
-        deleteTarget &&
-            (deleteTarget.warehouse_stocks_count >
-                0 ||
-                deleteTarget.stock_movements_count >
-                    0),
-    );
+        if (view === 'active') {
+            query.status = 'active';
+        }
+        if (view === 'tracked') {
+            query.stock_tracking = 'tracked';
+        }
+        if (view === 'batch_enabled') {
+            query.batch_tracking = 'enabled';
+        }
 
-    const inactiveProducts = Math.max(
-        0,
-        summary.total - summary.active,
-    );
+        setCatalogDrawerView(null);
+        router.get('/inventory/products', query, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    }
 
+    const inactiveProducts = Math.max(0, summary.total - summary.active);
     const activePercentage =
         summary.total > 0
-            ? Math.round(
-                  (summary.active / summary.total) *
-                      100,
-              )
+            ? Math.round((summary.active / summary.total) * 100)
             : 0;
-
-    const trackedPercentage =
-        summary.total > 0
-            ? Math.round(
-                  (summary.tracked / summary.total) *
-                      100,
-              )
+    const batchPercentage =
+        summary.tracked > 0
+            ? Math.round((summary.batch_enabled / summary.tracked) * 100)
             : 0;
-
     const activeCategoryCount = categories.filter(
         (category) => category.is_active,
     ).length;
-
     const hasActiveFilters = Boolean(
         search ||
             status ||
             categoryId ||
-            stockTracking,
+            stockTracking ||
+            batchTracking,
     );
-
-    const catalogHealthLabel =
-        summary.total === 0
-            ? 'No products configured'
-            : inactiveProducts === 0
-              ? 'Catalog operational'
-              : `${inactiveProducts} inactive product${inactiveProducts === 1 ? '' : 's'}`;
-
-    const catalogHealthClass =
-        summary.total === 0
-            ? 'border-slate-500/20 bg-slate-500/10 text-slate-300'
-            : inactiveProducts === 0
-              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
-              : 'border-amber-500/20 bg-amber-500/10 text-amber-300';
-
     const selectedFormCategory = categories.find(
-        (category) =>
-            String(category.id) === form.data.category_id,
+        (category) => String(category.id) === form.data.category_id,
+    );
+    const deleteHasRelations = Boolean(
+        deleteTarget &&
+            (deleteTarget.warehouse_stocks_count > 0 ||
+                deleteTarget.stock_movements_count > 0 ||
+                deleteTarget.stock_batches_count > 0),
     );
 
-    const rawFormCostPrice = Number(form.data.cost_price || 0);
-    const rawFormSellingPrice = Number(form.data.selling_price || 0);
-    const rawFormWholesalePrice = Number(form.data.wholesale_price || 0);
+    const formBatchMode = form.data.batch_tracking_enabled
+        ? formatPolicy(form.data.batch_issue_policy)
+        : 'Disabled';
 
-    const formCostPrice = Number.isFinite(rawFormCostPrice)
-        ? rawFormCostPrice
-        : 0;
+    function handleStockTrackingChange(value: string): void {
+        const nextValue = value as ProductFormData['stock_tracking'];
+        form.setData('stock_tracking', nextValue);
 
-    const formSellingPrice = Number.isFinite(rawFormSellingPrice)
-        ? rawFormSellingPrice
-        : 0;
+        if (nextValue === 'not_tracked') {
+            form.setData('batch_tracking_enabled', false);
+            form.setData('requires_expiration_date', false);
+            form.setData('expiry_warning_days', '');
+        }
+    }
 
-    const formWholesalePrice = Number.isFinite(rawFormWholesalePrice)
-        ? rawFormWholesalePrice
-        : 0;
+    function handleBatchTrackingChange(checked: boolean): void {
+        form.setData('batch_tracking_enabled', checked);
 
-    const formMargin = formSellingPrice - formCostPrice;
-    const formMarginPercentage =
-        formSellingPrice > 0
-            ? (formMargin / formSellingPrice) * 100
-            : 0;
+        if (!checked) {
+            form.setData('requires_expiration_date', false);
+            form.setData('expiry_warning_days', '');
+            form.setData('batch_issue_policy', 'fifo');
+            return;
+        }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Render
-    |--------------------------------------------------------------------------
-    */
+        if (!form.data.expiry_warning_days) {
+            form.setData('expiry_warning_days', '30');
+        }
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Products" />
 
             <PageContainer className="gap-4 md:gap-5">
-                {/* Product catalog control board */}
-
-                <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.055] via-primary/[0.018] to-transparent shadow-sm">
+                <section className="overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.055] via-primary/[0.018] to-transparent shadow-sm">
                     <div className="flex flex-col gap-3 border-b border-primary/10 bg-background/25 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
                             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/[0.075] text-primary">
                                 <Package2 className="size-4" />
                             </span>
-
                             <div className="min-w-0">
                                 <p className="text-[11px] font-semibold text-foreground">
                                     Product Catalog Overview
                                 </p>
-
                                 <p className="mt-0.5 text-[9px] leading-4 text-muted-foreground">
-                                    A concise view of catalog readiness, tracking coverage, and configuration health.
+                                    Product identity, stock tracking, and batch-control readiness.
                                 </p>
                             </div>
                         </div>
@@ -752,179 +539,123 @@ export default function ProductIndex({
                         <Badge
                             variant="outline"
                             className={cn(
-                                'h-6 w-fit shrink-0 gap-1.5 rounded-full px-2.5 text-[9px] font-semibold',
-                                catalogHealthClass,
+                                'h-6 w-fit rounded-full px-2.5 text-[9px] font-semibold',
+                                inactiveProducts === 0
+                                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+                                    : 'border-amber-500/20 bg-amber-500/10 text-amber-300',
                             )}
                         >
-                            {summary.total === 0 ? (
-                                <Package2 className="size-3" />
-                            ) : inactiveProducts === 0 ? (
-                                <CheckCircle2 className="size-3" />
+                            {inactiveProducts === 0 ? (
+                                <CheckCircle2 className="mr-1 size-3" />
                             ) : (
-                                <XCircle className="size-3" />
+                                <XCircle className="mr-1 size-3" />
                             )}
-
-                            {catalogHealthLabel}
+                            {inactiveProducts === 0
+                                ? 'Catalog operational'
+                                : `${inactiveProducts} inactive`}
                         </Badge>
                     </div>
 
-                    <div className="grid min-w-0 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
-                        <div className="relative min-w-0 overflow-hidden p-4 md:p-5">
-                            <div className="pointer-events-none absolute -left-20 -top-24 size-60 rounded-full bg-primary/[0.08] blur-3xl" />
-                            <Package2 className="pointer-events-none absolute -bottom-10 -right-6 size-36 text-primary opacity-[0.018]" />
-
-                            <div className="relative">
-                                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
-                                    Catalog readiness
+                    <div className="grid xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
+                        <div className="p-4 md:p-5">
+                            <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
+                                Catalog readiness
+                            </p>
+                            <div className="mt-3 flex items-end gap-3">
+                                <p className="text-[36px] font-semibold leading-none tracking-[-0.045em] text-primary">
+                                    {activePercentage}%
                                 </p>
-
-                                <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                                    <div className="flex min-w-0 items-end gap-3">
-                                        <p className="shrink-0 text-[34px] font-semibold leading-none tracking-[-0.045em] tabular-nums text-primary sm:text-[38px]">
-                                            {activePercentage}%
-                                        </p>
-
-                                        <div className="min-w-0 pb-0.5">
-                                            <p className="text-[12px] font-semibold text-foreground">
-                                                {summary.active} of {summary.total} products active
-                                            </p>
-
-                                            <p className="mt-1 max-w-xl text-[9px] leading-4 text-muted-foreground">
-                                                Active products are available for stock setup, movement recording, and other inventory transactions.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <Badge
-                                        variant="outline"
-                                        className="h-7 w-fit shrink-0 rounded-full border-emerald-500/15 bg-emerald-500/[0.055] px-2.5 text-[9px] font-semibold text-emerald-300"
-                                    >
-                                        {summary.active} active record{summary.active === 1 ? '' : 's'}
-                                    </Badge>
+                                <div className="pb-0.5">
+                                    <p className="text-[12px] font-semibold text-foreground">
+                                        {summary.active} of {summary.total} products active
+                                    </p>
+                                    <p className="mt-1 text-[9px] text-muted-foreground">
+                                        Active records may be used by inventory workflows.
+                                    </p>
                                 </div>
+                            </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => openCatalogDrawer('active')}
-                                    aria-label="View active product records"
-                                    title="View active product records"
-                                    className="group mt-3 block w-full rounded-lg py-1.5 text-left outline-none transition hover:bg-primary/[0.025] focus-visible:ring-2 focus-visible:ring-primary/35"
-                                >
-                                    <span className="block h-1.5 overflow-hidden rounded-full bg-background/70 ring-1 ring-border/40 transition group-hover:ring-primary/20">
-                                        <span
-                                            className="block h-full rounded-full bg-emerald-400 transition-all duration-500 group-hover:brightness-110"
-                                            style={{
-                                                width: `${activePercentage}%`,
-                                            }}
-                                        />
-                                    </span>
+                            <button
+                                type="button"
+                                onClick={() => setCatalogDrawerView('active')}
+                                className="group mt-3 block w-full rounded-lg py-1.5 text-left outline-none transition hover:bg-primary/[0.025] focus-visible:ring-2 focus-visible:ring-primary/35"
+                            >
+                                <span className="block h-1.5 overflow-hidden rounded-full bg-background/70 ring-1 ring-border/40">
+                                    <span
+                                        className="block h-full rounded-full bg-emerald-400 transition-all duration-500"
+                                        style={{ width: `${activePercentage}%` }}
+                                    />
+                                </span>
+                                <span className="mt-1.5 flex items-center justify-between text-[8px] text-muted-foreground">
+                                    <span>Open active product records</span>
+                                    <ChevronRight className="size-3" />
+                                </span>
+                            </button>
 
-                                    <span className="mt-1.5 flex items-center justify-between gap-3 text-[8px] font-medium text-muted-foreground">
-                                        <span>Click the readiness bar to view active products</span>
-                                        <ChevronRight className="size-3 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
-                                    </span>
-                                </button>
-
-                                <div className="mt-5 grid border-t border-border/60 sm:grid-cols-3 sm:divide-x sm:divide-border/60">
-                                    <div className="border-b border-border/60 py-3 sm:border-b-0 sm:pr-4">
-                                        <div className="flex items-center justify-between gap-3 sm:block">
-                                            <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                                Tracking coverage
-                                            </p>
-                                            <p className="text-sm font-semibold tabular-nums text-primary/85 sm:mt-1.5">
-                                                {trackedPercentage}%
-                                            </p>
-                                        </div>
-                                        <p className="mt-1 text-[9px] text-muted-foreground">
-                                            {summary.tracked} tracked · {summary.not_tracked} not tracked
-                                        </p>
-                                    </div>
-
-                                    <div className="border-b border-border/60 py-3 sm:border-b-0 sm:px-4">
-                                        <div className="flex items-center justify-between gap-3 sm:block">
-                                            <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                                Active categories
-                                            </p>
-                                            <p className="text-sm font-semibold tabular-nums text-primary sm:mt-1.5">
-                                                {activeCategoryCount}
-                                            </p>
-                                        </div>
-                                        <p className="mt-1 text-[9px] text-muted-foreground">
-                                            From {categories.length} available categor{categories.length === 1 ? 'y' : 'ies'}
-                                        </p>
-                                    </div>
-
-                                    <div className="py-3 sm:pl-4">
-                                        <div className="flex items-center justify-between gap-3 sm:block">
-                                            <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                                Needs attention
-                                            </p>
-                                            <p
-                                                className={cn(
-                                                    'text-sm font-semibold tabular-nums sm:mt-1.5',
-                                                    inactiveProducts > 0
-                                                        ? 'text-amber-400'
-                                                        : 'text-emerald-400',
-                                                )}
-                                            >
-                                                {inactiveProducts}
-                                            </p>
-                                        </div>
-                                        <p className="mt-1 text-[9px] text-muted-foreground">
-                                            Inactive product record{inactiveProducts === 1 ? '' : 's'}
-                                        </p>
-                                    </div>
-                                </div>
+                            <div className="mt-5 grid border-t border-border/60 sm:grid-cols-3 sm:divide-x sm:divide-border/60">
+                                <MetricCell
+                                    label="Stock tracked"
+                                    value={String(summary.tracked)}
+                                    helper={`${summary.not_tracked} not tracked`}
+                                />
+                                <MetricCell
+                                    label="Batch enabled"
+                                    value={`${batchPercentage}%`}
+                                    helper={`${summary.batch_enabled} batch-controlled products`}
+                                />
+                                <MetricCell
+                                    label="Active categories"
+                                    value={String(activeCategoryCount)}
+                                    helper={`${categories.length} total categories`}
+                                />
                             </div>
                         </div>
 
-                        <div className="min-w-0 border-t border-border/60 bg-background/20 xl:border-l xl:border-t-0">
+                        <div className="border-t border-border/60 bg-background/20 xl:border-l xl:border-t-0">
                             <div className="border-b border-border/60 px-4 py-3">
                                 <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                     Catalog facts
                                 </p>
                                 <p className="mt-1 text-[9px] text-muted-foreground">
-                                    Current configuration totals across the product directory.
+                                    Click any row to inspect the current product set.
                                 </p>
                             </div>
-
                             <dl className="divide-y divide-border/60">
                                 <CatalogFactRow
                                     label="Registered products"
-                                    description="Complete catalog records"
+                                    description="Complete product master records"
                                     value={summary.total}
                                     icon={<Package2 className="size-3.5" />}
-                                    tone="emerald"
-                                    onClick={() => openCatalogDrawer('registered')}
+                                    onClick={() =>
+                                        setCatalogDrawerView('registered')
+                                    }
                                 />
-
                                 <CatalogFactRow
                                     label="Stock tracked"
-                                    description="Warehouse balances monitored"
+                                    description="Warehouse quantities maintained"
                                     value={summary.tracked}
                                     icon={<Boxes className="size-3.5" />}
-                                    tone="teal"
-                                    onClick={() => openCatalogDrawer('tracked')}
+                                    onClick={() =>
+                                        setCatalogDrawerView('tracked')
+                                    }
                                 />
-
                                 <CatalogFactRow
-                                    label="Not tracked"
-                                    description="Excluded from quantity balances"
-                                    value={summary.not_tracked}
-                                    icon={<XCircle className="size-3.5" />}
-                                    tone="amber"
-                                    onClick={() => openCatalogDrawer('not_tracked')}
+                                    label="Batch controlled"
+                                    description="FIFO, FEFO, or manual allocation"
+                                    value={summary.batch_enabled}
+                                    icon={<Layers3 className="size-3.5" />}
+                                    onClick={() =>
+                                        setCatalogDrawerView('batch_enabled')
+                                    }
                                 />
                             </dl>
                         </div>
                     </div>
                 </section>
 
-                {/* Product directory */}
-
                 <SectionCard
                     title="Product Directory"
-                    description="Select any product row to open its complete catalog and inventory record."
+                    description="Select a product row to review its complete catalog and batch configuration."
                     actions={
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge
@@ -935,31 +666,26 @@ export default function ProductIndex({
                                 {products.total} item
                                 {products.total === 1 ? '' : 's'}
                             </Badge>
-
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={exportProductsToPdf}
                                 disabled={products.total === 0}
-                                title="Open the complete filtered product report in a new PDF tab"
+                                onClick={() => openReport('pdf')}
                                 className="h-9 rounded-lg px-3 text-xs"
                             >
                                 <FileText className="size-3.5" />
                                 PDF
                             </Button>
-
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={exportProductsToExcel}
                                 disabled={products.total === 0}
-                                title="Open the complete filtered product report in a new spreadsheet preview tab"
+                                onClick={() => openReport('excel-preview')}
                                 className="h-9 rounded-lg px-3 text-xs"
                             >
                                 <FileSpreadsheet className="size-3.5" />
                                 Excel
                             </Button>
-
                             <Button
                                 type="button"
                                 onClick={openCreateDialog}
@@ -973,7 +699,7 @@ export default function ProductIndex({
                 >
                     <FilterBar
                         onSubmit={applyFilters}
-                        contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_190px_170px_150px]"
+                        contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_170px_170px_150px_150px]"
                         actions={
                             <>
                                 <Button
@@ -983,7 +709,6 @@ export default function ProductIndex({
                                 >
                                     Apply Filters
                                 </Button>
-
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -999,80 +724,74 @@ export default function ProductIndex({
                     >
                         <SearchInput
                             value={search}
-                            onChange={(event) =>
-                                setSearch(
-                                    event.target.value,
-                                )
-                            }
-                            onClear={() =>
-                                setSearch('')
-                            }
-                            placeholder="Search product name, SKU, or barcode..."
-                            className="sm:col-span-2 xl:col-span-1"
+                            onChange={(event) => setSearch(event.target.value)}
+                            onClear={() => setSearch('')}
+                            placeholder="Search name, SKU, barcode, description..."
                         />
 
                         <Select
-                            value={
-                                categoryId || ALL_VALUE
-                            }
+                            value={categoryId || ALL_VALUE}
                             onValueChange={(value) =>
                                 setCategoryId(
-                                    value === ALL_VALUE
-                                        ? ''
-                                        : value,
+                                    value === ALL_VALUE ? '' : value,
                                 )
                             }
                         >
-                            <SelectTrigger className="h-10 w-full text-sm">
+                            <SelectTrigger>
                                 <SelectValue placeholder="All categories" />
                             </SelectTrigger>
-
                             <SelectContent>
                                 <SelectItem value={ALL_VALUE}>
                                     All categories
                                 </SelectItem>
-
-                                {categories.map(
-                                    (category) => (
-                                        <SelectItem
-                                            key={category.id}
-                                            value={String(
-                                                category.id,
-                                            )}
-                                        >
-                                            {category.parent_id
-                                                ? '— '
-                                                : ''}
-                                            {category.name}
-                                            {!category.is_active
-                                                ? ' — Inactive'
-                                                : ''}
-                                        </SelectItem>
-                                    ),
-                                )}
+                                {categories.map((category) => (
+                                    <SelectItem
+                                        key={category.id}
+                                        value={String(category.id)}
+                                    >
+                                        {category.name}
+                                        {!category.is_active
+                                            ? ' — Inactive'
+                                            : ''}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
 
                         <Select
-                            value={
-                                stockTracking ||
-                                ALL_VALUE
+                            value={status || ALL_VALUE}
+                            onValueChange={(value) =>
+                                setStatus(value === ALL_VALUE ? '' : value)
                             }
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="All statuses" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={ALL_VALUE}>
+                                    All statuses
+                                </SelectItem>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="inactive">
+                                    Inactive
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Select
+                            value={stockTracking || ALL_VALUE}
                             onValueChange={(value) =>
                                 setStockTracking(
-                                    value === ALL_VALUE
-                                        ? ''
-                                        : value,
+                                    value === ALL_VALUE ? '' : value,
                                 )
                             }
                         >
-                            <SelectTrigger className="h-10 w-full text-sm">
-                                <SelectValue placeholder="All tracking" />
+                            <SelectTrigger>
+                                <SelectValue placeholder="Stock mode" />
                             </SelectTrigger>
-
                             <SelectContent>
                                 <SelectItem value={ALL_VALUE}>
-                                    All tracking types
+                                    All stock modes
                                 </SelectItem>
                                 <SelectItem value="tracked">
                                     Stock tracked
@@ -1084,28 +803,25 @@ export default function ProductIndex({
                         </Select>
 
                         <Select
-                            value={status || ALL_VALUE}
+                            value={batchTracking || ALL_VALUE}
                             onValueChange={(value) =>
-                                setStatus(
-                                    value === ALL_VALUE
-                                        ? ''
-                                        : value,
+                                setBatchTracking(
+                                    value === ALL_VALUE ? '' : value,
                                 )
                             }
                         >
-                            <SelectTrigger className="h-10 w-full text-sm">
-                                <SelectValue placeholder="All statuses" />
+                            <SelectTrigger>
+                                <SelectValue placeholder="Batch mode" />
                             </SelectTrigger>
-
                             <SelectContent>
                                 <SelectItem value={ALL_VALUE}>
-                                    All statuses
+                                    All batch modes
                                 </SelectItem>
-                                <SelectItem value="active">
-                                    Active
+                                <SelectItem value="enabled">
+                                    Batch enabled
                                 </SelectItem>
-                                <SelectItem value="inactive">
-                                    Inactive
+                                <SelectItem value="disabled">
+                                    Batch disabled
                                 </SelectItem>
                             </SelectContent>
                         </Select>
@@ -1113,7 +829,7 @@ export default function ProductIndex({
 
                     <ProductDirectoryTable
                         products={products.data}
-                        onSelect={openDetailsDrawer}
+                        onSelect={setDetailsProduct}
                         onCreate={openCreateDialog}
                     />
 
@@ -1124,15 +840,14 @@ export default function ProductIndex({
                 </SectionCard>
             </PageContainer>
 
-
             <CatalogProductsDrawer
                 view={catalogDrawerView}
                 pagination={products}
                 summary={summary}
-                onClose={closeCatalogDrawer}
+                onClose={() => setCatalogDrawerView(null)}
                 onSelect={(product) => {
-                    closeCatalogDrawer();
-                    openDetailsDrawer(product);
+                    setCatalogDrawerView(null);
+                    setDetailsProduct(product);
                 }}
                 onOpenDirectory={openCatalogDirectory}
             />
@@ -1140,18 +855,18 @@ export default function ProductIndex({
             <ProductDetailsDrawer
                 product={detailsProduct}
                 statusProcessingId={statusProcessingId}
-                onClose={closeDetailsDrawer}
+                onClose={() => setDetailsProduct(null)}
                 onEdit={(product) => {
-                    closeDetailsDrawer();
+                    setDetailsProduct(null);
                     openEditDialog(product);
                 }}
                 onToggleStatus={(product) => {
-                    closeDetailsDrawer();
+                    setDetailsProduct(null);
                     toggleStatus(product);
                 }}
                 onDelete={(product) => {
-                    closeDetailsDrawer();
-                    requestDelete(product);
+                    setDetailsProduct(null);
+                    setDeleteTarget(product);
                 }}
             />
 
@@ -1165,15 +880,13 @@ export default function ProductIndex({
                 }
                 description={
                     editingProduct
-                        ? `Maintain the catalog, pricing, and inventory settings for ${editingProduct.name}.`
-                        : 'Create a complete product record for catalog and inventory operations.'
+                        ? `Maintain catalog and batch settings for ${editingProduct.name}.`
+                        : 'Create a product master record for inventory and batch operations.'
                 }
                 onSubmit={submitProduct}
                 processing={form.processing}
                 submitText={
-                    editingProduct
-                        ? 'Save Product Record'
-                        : 'Register Product'
+                    editingProduct ? 'Save Product Record' : 'Register Product'
                 }
                 processingText={
                     editingProduct
@@ -1188,34 +901,26 @@ export default function ProductIndex({
                             <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.06] text-primary">
                                 <Package2 className="size-4" />
                             </span>
-
                             <div className="min-w-0">
                                 <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-primary">
                                     {editingProduct
                                         ? 'Catalog maintenance'
                                         : 'New catalog record'}
                                 </p>
-
                                 <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
-                                    Complete the product identity first, then confirm pricing and inventory behavior.
+                                    Define identity, reference cost, stock behavior, and batch controls.
                                 </p>
                             </div>
                         </div>
-
                         <div className="flex flex-wrap items-center gap-2">
                             <StatusBadge
                                 label={
-                                    form.data.is_active
-                                        ? 'Active'
-                                        : 'Inactive'
+                                    form.data.is_active ? 'Active' : 'Inactive'
                                 }
                                 variant={
-                                    form.data.is_active
-                                        ? 'success'
-                                        : 'danger'
+                                    form.data.is_active ? 'success' : 'danger'
                                 }
                             />
-
                             <StatusBadge
                                 label={
                                     form.data.stock_tracking === 'tracked'
@@ -1228,31 +933,23 @@ export default function ProductIndex({
                                         : 'neutral'
                                 }
                             />
+                            {form.data.batch_tracking_enabled && (
+                                <StatusBadge
+                                    label={`Batch · ${formatPolicy(form.data.batch_issue_policy)}`}
+                                    variant="success"
+                                />
+                            )}
                         </div>
                     </div>
 
-                    <div className="grid lg:grid-cols-[minmax(0,1fr)_300px]">
+                    <div className="grid lg:grid-cols-[minmax(0,1fr)_320px]">
                         <div className="min-w-0">
                             <section className="p-5">
-                                <div className="mb-5 flex items-start justify-between gap-4">
-                                    <div>
-                                        <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
-                                            01 · Product identity
-                                        </p>
-
-                                        <h3 className="mt-1 text-sm font-semibold text-foreground">
-                                            Catalog information
-                                        </h3>
-
-                                        <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
-                                            Define how this product is identified and grouped throughout inventory operations.
-                                        </p>
-                                    </div>
-
-                                    <span className="hidden text-[9px] font-medium text-muted-foreground sm:block">
-                                        <span className="text-rose-400">*</span> Required fields
-                                    </span>
-                                </div>
+                                <SectionHeading
+                                    eyebrow="01 · Product identity"
+                                    title="Catalog information"
+                                    description="Define how this product is identified and grouped throughout inventory operations."
+                                />
 
                                 <div className="grid gap-4 md:grid-cols-12">
                                     <div className="md:col-span-8">
@@ -1264,7 +961,6 @@ export default function ProductIndex({
                                         >
                                             <Input
                                                 id="name"
-                                                type="text"
                                                 value={form.data.name}
                                                 disabled={form.processing}
                                                 onChange={(event) =>
@@ -1273,7 +969,7 @@ export default function ProductIndex({
                                                         event.target.value,
                                                     )
                                                 }
-                                                placeholder="Enter the product name"
+                                                placeholder="Enter product name"
                                                 autoComplete="off"
                                                 autoFocus
                                             />
@@ -1295,7 +991,8 @@ export default function ProductIndex({
                                                 onValueChange={(value) =>
                                                     form.setData(
                                                         'category_id',
-                                                        value === NO_CATEGORY_VALUE
+                                                        value ===
+                                                            NO_CATEGORY_VALUE
                                                             ? ''
                                                             : value,
                                                     )
@@ -1304,24 +1001,34 @@ export default function ProductIndex({
                                                 <SelectTrigger id="category_id">
                                                     <SelectValue placeholder="Select category" />
                                                 </SelectTrigger>
-
                                                 <SelectContent>
-                                                    <SelectItem value={NO_CATEGORY_VALUE}>
+                                                    <SelectItem
+                                                        value={
+                                                            NO_CATEGORY_VALUE
+                                                        }
+                                                    >
                                                         No category
                                                     </SelectItem>
-
-                                                    {categories.map((category) => (
-                                                        <SelectItem
-                                                            key={category.id}
-                                                            value={String(category.id)}
-                                                        >
-                                                            {category.parent_id ? '— ' : ''}
-                                                            {category.name}
-                                                            {!category.is_active
-                                                                ? ' — Inactive'
-                                                                : ''}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {categories.map(
+                                                        (category) => (
+                                                            <SelectItem
+                                                                key={
+                                                                    category.id
+                                                                }
+                                                                value={String(
+                                                                    category.id,
+                                                                )}
+                                                            >
+                                                                {category.parent_id
+                                                                    ? '— '
+                                                                    : ''}
+                                                                {category.name}
+                                                                {!category.is_active
+                                                                    ? ' — Inactive'
+                                                                    : ''}
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                         </FormField>
@@ -1336,7 +1043,6 @@ export default function ProductIndex({
                                         >
                                             <Input
                                                 id="sku"
-                                                type="text"
                                                 value={form.data.sku}
                                                 disabled={form.processing}
                                                 onChange={(event) =>
@@ -1356,15 +1062,13 @@ export default function ProductIndex({
                                         <FormField
                                             id="barcode"
                                             label="Barcode"
-                                            description="Scan or enter the retail barcode."
+                                            description="Scan or enter the product barcode."
                                             error={form.errors.barcode}
                                         >
                                             <div className="group relative">
-                                                <Barcode className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
-
+                                                <Barcode className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary" />
                                                 <Input
                                                     id="barcode"
-                                                    type="text"
                                                     value={form.data.barcode}
                                                     disabled={form.processing}
                                                     onChange={(event) =>
@@ -1385,13 +1089,12 @@ export default function ProductIndex({
                                         <FormField
                                             id="unit"
                                             label="Unit of Measure"
-                                            description="Standard inventory and selling unit."
+                                            description="Standard inventory unit."
                                             error={form.errors.unit}
                                             required
                                         >
                                             <Input
                                                 id="unit"
-                                                type="text"
                                                 list="product-units"
                                                 value={form.data.unit}
                                                 disabled={form.processing}
@@ -1404,7 +1107,6 @@ export default function ProductIndex({
                                                 placeholder="pcs"
                                                 autoComplete="off"
                                             />
-
                                             <datalist id="product-units">
                                                 {commonUnits.map((unit) => (
                                                     <option
@@ -1443,24 +1145,17 @@ export default function ProductIndex({
                             </section>
 
                             <section className="border-t border-border/70 p-5">
-                                <div className="mb-5">
-                                    <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
-                                        02 · Commercial profile
-                                    </p>
+                                <SectionHeading
+                                    eyebrow="02 · Cost reference"
+                                    title="Default unit cost"
+                                    description="This is a reference/default cost only. Actual stock valuation uses receiving, opening-stock, adjustment, and batch transaction costs."
+                                />
 
-                                    <h3 className="mt-1 text-sm font-semibold text-foreground">
-                                        Product pricing
-                                    </h3>
-
-                                    <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
-                                        Store the standard acquisition, selling, and optional wholesale prices.
-                                    </p>
-                                </div>
-
-                                <div className="grid gap-4 md:grid-cols-3">
+                                <div className="grid gap-4 md:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
                                     <FormField
                                         id="cost_price"
-                                        label="Cost Price"
+                                        label="Default Unit Cost"
+                                        description="Suggested cost for new stock transactions."
                                         error={form.errors.cost_price}
                                         required
                                     >
@@ -1469,106 +1164,162 @@ export default function ProductIndex({
                                             value={form.data.cost_price}
                                             disabled={form.processing}
                                             onValueChange={(value) =>
-                                                form.setData('cost_price', value)
+                                                form.setData(
+                                                    'cost_price',
+                                                    value,
+                                                )
                                             }
                                         />
                                     </FormField>
 
+                                    <div className="rounded-xl border border-primary/15 bg-primary/[0.035] px-4 py-3">
+                                        <p className="text-[10px] font-semibold text-foreground">
+                                            Inventory valuation rule
+                                        </p>
+                                        <p className="mt-1 text-[9px] leading-4 text-muted-foreground">
+                                            Product master cost does not overwrite batch or movement cost. Weighted average and batch costs remain the authoritative inventory values.
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="border-t border-border/70 p-5">
+                                <SectionHeading
+                                    eyebrow="03 · Batch configuration"
+                                    title="Lot and expiry controls"
+                                    description="Enable batch tracking only for products that require lot-level balances, expiry monitoring, or controlled issue allocation."
+                                />
+
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <BooleanField
+                                        id="batch_tracking_enabled"
+                                        checked={
+                                            form.data.batch_tracking_enabled
+                                        }
+                                        disabled={
+                                            form.processing ||
+                                            form.data.stock_tracking !==
+                                                'tracked'
+                                        }
+                                        onCheckedChange={
+                                            handleBatchTrackingChange
+                                        }
+                                        label="Enable Batch Tracking"
+                                        description="Maintain batch codes, lot numbers, expiry dates, and batch-level warehouse balances."
+                                        error={
+                                            form.errors
+                                                .batch_tracking_enabled
+                                        }
+                                    />
+
                                     <FormField
-                                        id="selling_price"
-                                        label="Selling Price"
-                                        error={form.errors.selling_price}
+                                        id="batch_issue_policy"
+                                        label="Batch Issue Policy"
+                                        description="Controls the default batch allocation order during stock-out transactions."
+                                        error={form.errors.batch_issue_policy}
                                         required
                                     >
-                                        <MoneyInput
-                                            id="selling_price"
-                                            value={form.data.selling_price}
-                                            disabled={form.processing}
-                                            onValueChange={(value) =>
-                                                form.setData('selling_price', value)
+                                        <Select
+                                            value={
+                                                form.data.batch_issue_policy
                                             }
-                                        />
+                                            disabled={
+                                                form.processing ||
+                                                !form.data
+                                                    .batch_tracking_enabled
+                                            }
+                                            onValueChange={(value) =>
+                                                form.setData(
+                                                    'batch_issue_policy',
+                                                    value as BatchIssuePolicy,
+                                                )
+                                            }
+                                        >
+                                            <SelectTrigger id="batch_issue_policy">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="fifo">
+                                                    FIFO — oldest received first
+                                                </SelectItem>
+                                                <SelectItem value="fefo">
+                                                    FEFO — earliest expiry first
+                                                </SelectItem>
+                                                <SelectItem value="manual">
+                                                    Manual batch selection
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </FormField>
+
+                                    <BooleanField
+                                        id="requires_expiration_date"
+                                        checked={
+                                            form.data
+                                                .requires_expiration_date
+                                        }
+                                        disabled={
+                                            form.processing ||
+                                            !form.data
+                                                .batch_tracking_enabled
+                                        }
+                                        onCheckedChange={(checked) =>
+                                            form.setData(
+                                                'requires_expiration_date',
+                                                checked,
+                                            )
+                                        }
+                                        label="Require Expiration Date"
+                                        description="Future receiving and stock-in transactions must provide an expiration date for each batch."
+                                        error={
+                                            form.errors
+                                                .requires_expiration_date
+                                        }
+                                    />
 
                                     <FormField
-                                        id="wholesale_price"
-                                        label="Wholesale Price"
-                                        error={form.errors.wholesale_price}
+                                        id="expiry_warning_days"
+                                        label="Expiry Warning Days"
+                                        description="Number of days before expiry to flag the batch. Leave blank to use the tenant default."
+                                        error={
+                                            form.errors.expiry_warning_days
+                                        }
                                     >
-                                        <MoneyInput
-                                            id="wholesale_price"
-                                            value={form.data.wholesale_price}
-                                            disabled={form.processing}
-                                            onValueChange={(value) =>
-                                                form.setData('wholesale_price', value)
+                                        <Input
+                                            id="expiry_warning_days"
+                                            type="number"
+                                            min={1}
+                                            max={3650}
+                                            step={1}
+                                            value={
+                                                form.data.expiry_warning_days
                                             }
-                                            placeholder="Optional"
+                                            disabled={
+                                                form.processing ||
+                                                !form.data
+                                                    .batch_tracking_enabled
+                                            }
+                                            onChange={(event) =>
+                                                form.setData(
+                                                    'expiry_warning_days',
+                                                    event.target.value,
+                                                )
+                                            }
+                                            placeholder="Use tenant default"
                                         />
                                     </FormField>
-                                </div>
-
-                                <div className="mt-5 grid border-y border-border/60 bg-background/20 sm:grid-cols-3">
-                                    <ProductFormSummaryCell
-                                        label="Gross margin"
-                                        value={formatCurrency(formMargin)}
-                                        helper={`${formatDecimal(formMarginPercentage)}% of selling price`}
-                                        valueClassName={
-                                            formMargin >= 0
-                                                ? 'text-emerald-400'
-                                                : 'text-rose-400'
-                                        }
-                                        className="border-b border-border/60 sm:border-b-0 sm:border-r"
-                                    />
-
-                                    <ProductFormSummaryCell
-                                        label="Wholesale"
-                                        value={
-                                            form.data.wholesale_price
-                                                ? formatCurrency(formWholesalePrice)
-                                                : 'Not set'
-                                        }
-                                        helper="Optional alternate price"
-                                        className="border-b border-border/60 sm:border-b-0 sm:border-r"
-                                    />
-
-                                    <ProductFormSummaryCell
-                                        label="Pricing status"
-                                        value={
-                                            formSellingPrice >= formCostPrice
-                                                ? 'Review complete'
-                                                : 'Below cost'
-                                        }
-                                        helper={
-                                            formSellingPrice >= formCostPrice
-                                                ? 'Selling price covers cost'
-                                                : 'Confirm the intended margin'
-                                        }
-                                        valueClassName={
-                                            formSellingPrice >= formCostPrice
-                                                ? 'text-emerald-400'
-                                                : 'text-amber-400'
-                                        }
-                                    />
                                 </div>
                             </section>
                         </div>
 
                         <aside className="border-t border-border/70 bg-muted/[0.018] p-5 lg:border-l lg:border-t-0">
-                            <div>
-                                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
-                                    03 · Operations
-                                </p>
+                            <SectionHeading
+                                eyebrow="04 · Operations"
+                                title="Inventory behavior"
+                                description="Control quantity tracking and whether the product may be used by inventory transactions."
+                            />
 
-                                <h3 className="mt-1 text-sm font-semibold text-foreground">
-                                    Inventory behavior
-                                </h3>
-
-                                <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
-                                    Control quantity tracking and whether the product can be used in transactions.
-                                </p>
-                            </div>
-
-                            <div className="mt-5 space-y-5">
+                            <div className="space-y-5">
                                 <FormField
                                     id="stock_tracking"
                                     label="Stock Tracking"
@@ -1579,22 +1330,17 @@ export default function ProductIndex({
                                     <Select
                                         value={form.data.stock_tracking}
                                         disabled={form.processing}
-                                        onValueChange={(value) =>
-                                            form.setData(
-                                                'stock_tracking',
-                                                value as ProductFormData['stock_tracking'],
-                                            )
+                                        onValueChange={
+                                            handleStockTrackingChange
                                         }
                                     >
                                         <SelectTrigger id="stock_tracking">
                                             <SelectValue />
                                         </SelectTrigger>
-
                                         <SelectContent>
                                             <SelectItem value="tracked">
                                                 Stock tracked
                                             </SelectItem>
-
                                             <SelectItem value="not_tracked">
                                                 Not tracked
                                             </SelectItem>
@@ -1617,53 +1363,62 @@ export default function ProductIndex({
 
                             <div className="my-5 h-px bg-border/70" />
 
-                            <div>
-                                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                    Record preview
-                                </p>
-
-                                <dl className="mt-3 divide-y divide-border/60 border-y border-border/60 text-[10px]">
-                                    <ProductFormPreviewRow
-                                        label="Category"
-                                        value={
-                                            selectedFormCategory
-                                                ? selectedFormCategory.name
-                                                : 'Uncategorized'
-                                        }
-                                    />
-
-                                    <ProductFormPreviewRow
-                                        label="Unit"
-                                        value={form.data.unit || 'Not set'}
-                                    />
-
-                                    <ProductFormPreviewRow
-                                        label="Stock mode"
-                                        value={
-                                            form.data.stock_tracking === 'tracked'
-                                                ? 'Warehouse tracked'
-                                                : 'Quantity not tracked'
-                                        }
-                                    />
-
-                                    <ProductFormPreviewRow
-                                        label="Availability"
-                                        value={
-                                            form.data.is_active
-                                                ? 'Available for use'
-                                                : 'Inactive record'
-                                        }
-                                    />
-                                </dl>
-                            </div>
+                            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                                Record preview
+                            </p>
+                            <dl className="mt-3 divide-y divide-border/60 border-y border-border/60 text-[10px]">
+                                <PreviewRow
+                                    label="Category"
+                                    value={
+                                        selectedFormCategory?.name ??
+                                        'Uncategorized'
+                                    }
+                                />
+                                <PreviewRow
+                                    label="Default cost"
+                                    value={formatCurrency(
+                                        form.data.cost_price,
+                                    )}
+                                />
+                                <PreviewRow
+                                    label="Stock mode"
+                                    value={
+                                        form.data.stock_tracking === 'tracked'
+                                            ? 'Warehouse tracked'
+                                            : 'Quantity not tracked'
+                                    }
+                                />
+                                <PreviewRow
+                                    label="Batch mode"
+                                    value={formBatchMode}
+                                />
+                                <PreviewRow
+                                    label="Expiry rule"
+                                    value={
+                                        form.data.batch_tracking_enabled
+                                            ? form.data
+                                                  .requires_expiration_date
+                                                ? 'Expiration required'
+                                                : 'Expiration optional'
+                                            : 'Not applicable'
+                                    }
+                                />
+                                <PreviewRow
+                                    label="Availability"
+                                    value={
+                                        form.data.is_active
+                                            ? 'Available for use'
+                                            : 'Inactive record'
+                                    }
+                                />
+                            </dl>
 
                             <div className="mt-5 border-l-2 border-primary/30 pl-3">
                                 <p className="text-[9px] font-semibold text-foreground/80">
-                                    Inventory note
+                                    Stock-entry note
                                 </p>
-
                                 <p className="mt-1 text-[9px] leading-4 text-muted-foreground">
-                                    Opening quantities are maintained separately in Stock Management after a tracked product is registered.
+                                    Quantities and real batch records are created later through Stock Management, Receiving, Adjustment, or Transfer—not from the Product form.
                                 </p>
                             </div>
                         </aside>
@@ -1681,7 +1436,7 @@ export default function ProductIndex({
                 title="Delete Product"
                 description={
                     deleteHasRelations
-                        ? `"${deleteTarget?.name}" has warehouse stock records or movement history. The system may prevent deletion to preserve inventory records.`
+                        ? `"${deleteTarget?.name}" has warehouse, movement, or batch history. The system will preserve related inventory records.`
                         : `Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`
                 }
                 confirmText="Delete Product"
@@ -1693,12 +1448,6 @@ export default function ProductIndex({
     );
 }
 
-/*
-|--------------------------------------------------------------------------
-| Clickable product directory
-|--------------------------------------------------------------------------
-*/
-
 function ProductDirectoryTable({
     products,
     onSelect,
@@ -1709,52 +1458,40 @@ function ProductDirectoryTable({
     onCreate: () => void;
 }) {
     return (
-        <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20 shadow-sm">
+        <div className="mt-4 overflow-hidden rounded-xl border border-border/70">
             <div className="overflow-x-auto">
-                <table className="w-full min-w-[880px] border-collapse">
-                    <thead className="border-b border-primary/10 bg-primary/[0.025]">
-                        <tr>
-                            <th className="min-w-[280px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
-                                Product
-                            </th>
-                            <th className="min-w-[175px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
-                                Category
-                            </th>
-                            <th className="min-w-[145px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
-                                Selling Price
-                            </th>
-                            <th className="min-w-[185px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
-                                Inventory
-                            </th>
-                            <th className="min-w-[135px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
-                                Status
-                            </th>
+                <table className="w-full min-w-[980px] text-left">
+                    <thead className="border-b border-border/70 bg-muted/35">
+                        <tr className="text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
+                            <th className="px-4 py-3 font-semibold">Product</th>
+                            <th className="px-4 py-3 font-semibold">Category</th>
+                            <th className="px-4 py-3 font-semibold">Default Cost</th>
+                            <th className="px-4 py-3 font-semibold">Stock</th>
+                            <th className="px-4 py-3 font-semibold">Batch Control</th>
+                            <th className="px-4 py-3 font-semibold">Status</th>
                         </tr>
                     </thead>
-
                     <tbody className="divide-y divide-border/60">
                         {products.length === 0 ? (
                             <tr>
-                                <td colSpan={5} className="px-6 py-14">
-                                    <div className="mx-auto flex max-w-sm flex-col items-center text-center">
-                                        <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.045] text-primary">
-                                            <Package2 className="size-5" />
-                                        </span>
-                                        <h3 className="mt-3 text-sm font-semibold text-foreground">
-                                            No products found
-                                        </h3>
-                                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                                            Try changing the filters or add your first inventory product.
-                                        </p>
-                                        <Button
-                                            type="button"
-                                            onClick={onCreate}
-                                            className="mt-4 h-9 rounded-lg px-4 text-xs"
-                                        >
-                                            <Plus className="size-4" />
-                                            Add Product
-                                        </Button>
-                                    </div>
+                                <td colSpan={6} className="px-6 py-14 text-center">
+                                    <span className="mx-auto flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.045] text-primary">
+                                        <Package2 className="size-5" />
+                                    </span>
+                                    <h3 className="mt-3 text-sm font-semibold text-foreground">
+                                        No products found
+                                    </h3>
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        Change the filters or register your first product.
+                                    </p>
+                                    <Button
+                                        type="button"
+                                        onClick={onCreate}
+                                        className="mt-4 h-9 rounded-lg px-4 text-xs"
+                                    >
+                                        <Plus className="size-4" />
+                                        Add Product
+                                    </Button>
                                 </td>
                             </tr>
                         ) : (
@@ -1763,7 +1500,6 @@ function ProductDirectoryTable({
                                     key={product.id}
                                     role="button"
                                     tabIndex={0}
-                                    aria-label={`View details for ${product.name}`}
                                     onClick={() => onSelect(product)}
                                     onKeyDown={(event) => {
                                         if (
@@ -1781,7 +1517,7 @@ function ProductDirectoryTable({
                                             avatar={
                                                 <EntityAvatar
                                                     icon={Package2}
-                                                    className="border-primary/15 bg-primary/[0.07] text-primary transition-colors group-hover:border-primary/25 group-hover:bg-primary/10"
+                                                    className="border-primary/15 bg-primary/[0.07] text-primary"
                                                 />
                                             }
                                             title={product.name}
@@ -1792,74 +1528,111 @@ function ProductDirectoryTable({
                                             }
                                         />
                                     </td>
-
                                     <td className="px-4 py-2.5">
-                                        <div className="min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <Tags className="size-3.5 shrink-0 text-primary" />
-                                                <p className="max-w-[145px] truncate text-[11px] font-semibold text-foreground/90">
-                                                    {product.category?.name ?? 'Uncategorized'}
+                                        <div className="flex items-center gap-2">
+                                            <Tags className="size-3.5 shrink-0 text-primary" />
+                                            <div className="min-w-0">
+                                                <p className="max-w-[155px] truncate text-[11px] font-semibold text-foreground/90">
+                                                    {product.category?.name ??
+                                                        'Uncategorized'}
+                                                </p>
+                                                <p className="mt-1 max-w-[160px] truncate font-mono text-[9px] text-muted-foreground">
+                                                    {product.barcode ??
+                                                        'No barcode'}
                                                 </p>
                                             </div>
-                                            <p className="mt-1 max-w-[160px] truncate font-mono text-[9px] text-muted-foreground">
-                                                {product.category?.slug ?? 'No category assigned'}
-                                            </p>
                                         </div>
                                     </td>
-
                                     <td className="px-4 py-2.5">
-                                        <p className="text-[13px] font-semibold tabular-nums text-primary">
-                                            {formatCurrency(product.selling_price)}
+                                        <p className="text-[12px] font-semibold tabular-nums text-foreground">
+                                            {formatCurrency(
+                                                product.cost_price,
+                                            )}
                                         </p>
                                         <p className="mt-1 text-[9px] text-muted-foreground">
-                                            Cost {formatCurrency(product.cost_price)}
+                                            Reference cost only
                                         </p>
                                     </td>
-
                                     <td className="px-4 py-2.5">
                                         {product.stock_tracking === 'tracked' ? (
                                             <div>
                                                 <p className="text-[13px] font-semibold tabular-nums text-foreground">
-                                                    {formatQuantity(product.total_stock)}{' '}
+                                                    {formatQuantity(
+                                                        product.total_stock,
+                                                    )}{' '}
                                                     <span className="text-[9px] font-medium text-muted-foreground">
                                                         {product.unit}
                                                     </span>
                                                 </p>
                                                 <p className="mt-1 text-[9px] text-muted-foreground">
-                                                    {product.warehouse_stocks_count} warehouse record
-                                                    {product.warehouse_stocks_count === 1 ? '' : 's'} ·{' '}
-                                                    {product.stock_movements_count} movement
-                                                    {product.stock_movements_count === 1 ? '' : 's'}
+                                                    {product.warehouse_stocks_count}{' '}
+                                                    warehouse ·{' '}
+                                                    {product.stock_movements_count}{' '}
+                                                    movement
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <p className="text-[10px] font-semibold text-muted-foreground">
+                                                Quantity not tracked
+                                            </p>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-2.5">
+                                        {product.batch_tracking_enabled ? (
+                                            <div>
+                                                <p className="text-[11px] font-semibold text-primary">
+                                                    {formatPolicy(
+                                                        product.batch_issue_policy,
+                                                    )}
+                                                </p>
+                                                <p className="mt-1 text-[9px] text-muted-foreground">
+                                                    {product.available_stock_batches_count}{' '}
+                                                    available /{' '}
+                                                    {product.stock_batches_count}{' '}
+                                                    recorded batches
                                                 </p>
                                             </div>
                                         ) : (
                                             <div>
                                                 <p className="text-[10px] font-semibold text-muted-foreground">
-                                                    Quantity not tracked
+                                                    Batch disabled
                                                 </p>
                                                 <p className="mt-1 text-[9px] text-muted-foreground">
-                                                    Excluded from warehouse balances
+                                                    Product-level balance only
                                                 </p>
                                             </div>
                                         )}
                                     </td>
-
                                     <td className="px-4 py-2.5">
                                         <div className="flex flex-col items-start gap-1.5">
                                             <StatusBadge
-                                                label={product.is_active ? 'Active' : 'Inactive'}
-                                                variant={product.is_active ? 'success' : 'danger'}
+                                                label={
+                                                    product.is_active
+                                                        ? 'Active'
+                                                        : 'Inactive'
+                                                }
+                                                variant={
+                                                    product.is_active
+                                                        ? 'success'
+                                                        : 'danger'
+                                                }
                                             />
                                             <StatusBadge
                                                 label={
-                                                    product.stock_tracking === 'tracked'
-                                                        ? 'Tracked'
-                                                        : 'Not tracked'
+                                                    product.batch_tracking_enabled
+                                                        ? 'Batch tracked'
+                                                        : product.stock_tracking ===
+                                                            'tracked'
+                                                          ? 'Quantity tracked'
+                                                          : 'Not tracked'
                                                 }
                                                 variant={
-                                                    product.stock_tracking === 'tracked'
-                                                        ? 'info'
-                                                        : 'neutral'
+                                                    product.batch_tracking_enabled
+                                                        ? 'success'
+                                                        : product.stock_tracking ===
+                                                            'tracked'
+                                                          ? 'info'
+                                                          : 'neutral'
                                                 }
                                             />
                                         </div>
@@ -1870,65 +1643,6 @@ function ProductDirectoryTable({
                     </tbody>
                 </table>
             </div>
-        </div>
-    );
-}
-
-/*
-|--------------------------------------------------------------------------
-| Local presentation helpers
-|--------------------------------------------------------------------------
-*/
-
-
-function ProductFormSummaryCell({
-    label,
-    value,
-    helper,
-    valueClassName,
-    className,
-}: {
-    label: string;
-    value: string;
-    helper: string;
-    valueClassName?: string;
-    className?: string;
-}) {
-    return (
-        <div className={cn('min-w-0 px-3.5 py-3', className)}>
-            <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
-                {label}
-            </p>
-
-            <p
-                className={cn(
-                    'mt-1.5 truncate text-[12px] font-semibold tabular-nums text-foreground',
-                    valueClassName,
-                )}
-            >
-                {value}
-            </p>
-
-            <p className="mt-1 truncate text-[8px] text-muted-foreground">
-                {helper}
-            </p>
-        </div>
-    );
-}
-
-function ProductFormPreviewRow({
-    label,
-    value,
-}: {
-    label: string;
-    value: string;
-}) {
-    return (
-        <div className="flex items-start justify-between gap-4 py-2.5">
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd className="max-w-[160px] text-right font-medium text-foreground/85">
-                {value}
-            </dd>
         </div>
     );
 }
@@ -1955,94 +1669,59 @@ function CatalogProductsDrawer({
     }, [view]);
 
     const activeView = view ?? 'registered';
-
-    const viewConfig: Record<
-        CatalogDrawerView,
-        {
-            title: string;
-            eyebrow: string;
-            description: string;
-            emptyLabel: string;
-            total: number;
-        }
-    > = {
+    const config = {
         registered: {
             title: 'Registered Products',
-            eyebrow: 'Complete catalog',
-            description:
-                'Review product records currently loaded in the directory and open any item for complete details.',
-            emptyLabel: 'No registered products are loaded on this page.',
+            description: 'Product master records loaded in the directory.',
             total: summary.total,
         },
         active: {
             title: 'Active Products',
-            eyebrow: 'Catalog readiness',
-            description:
-                'Active products are available for stock setup, movement recording, and inventory transactions.',
-            emptyLabel: 'No active products are loaded on this page.',
+            description: 'Products available to inventory workflows.',
             total: summary.active,
         },
         tracked: {
             title: 'Stock-Tracked Products',
-            eyebrow: 'Tracking coverage',
-            description:
-                'These products maintain warehouse balances and inventory movement history.',
-            emptyLabel: 'No stock-tracked products are loaded on this page.',
+            description: 'Products maintaining warehouse quantities.',
             total: summary.tracked,
         },
-        not_tracked: {
-            title: 'Not-Tracked Products',
-            eyebrow: 'Non-quantity catalog',
-            description:
-                'These products remain in the catalog but are excluded from warehouse quantity balances.',
-            emptyLabel: 'No not-tracked products are loaded on this page.',
-            total: summary.not_tracked,
+        batch_enabled: {
+            title: 'Batch-Controlled Products',
+            description: 'Products configured for FIFO, FEFO, or manual batches.',
+            total: summary.batch_enabled,
         },
-    };
+    }[activeView];
 
-    const config = viewConfig[activeView];
+    const normalizedSearch = drawerSearch.trim().toLowerCase();
+    const visibleProducts = useMemo(() => {
+        return pagination.data.filter((product) => {
+            const matchesView =
+                activeView === 'registered' ||
+                (activeView === 'active' && product.is_active) ||
+                (activeView === 'tracked' &&
+                    product.stock_tracking === 'tracked') ||
+                (activeView === 'batch_enabled' &&
+                    product.batch_tracking_enabled);
 
-    const matchingProducts = pagination.data.filter((product) => {
-        if (activeView === 'active') {
-            return product.is_active;
-        }
+            if (!matchesView) {
+                return false;
+            }
 
-        if (activeView === 'tracked') {
-            return product.stock_tracking === 'tracked';
-        }
+            if (!normalizedSearch) {
+                return true;
+            }
 
-        if (activeView === 'not_tracked') {
-            return product.stock_tracking === 'not_tracked';
-        }
-
-        return true;
-    });
-
-    const normalizedSearch = drawerSearch
-        .trim()
-        .toLowerCase();
-
-    const visibleProducts = normalizedSearch
-        ? matchingProducts.filter((product) => {
-              const searchable = [
-                  product.name,
-                  product.sku,
-                  product.barcode,
-                  product.category?.name,
-              ]
-                  .filter(Boolean)
-                  .join(' ')
-                  .toLowerCase();
-
-              return searchable.includes(normalizedSearch);
-          })
-        : matchingProducts;
-
-    const loadedRange =
-        pagination.from !== null &&
-        pagination.to !== null
-            ? `${pagination.from}-${pagination.to}`
-            : '0';
+            return [
+                product.name,
+                product.sku ?? '',
+                product.barcode ?? '',
+                product.category?.name ?? '',
+            ]
+                .join(' ')
+                .toLowerCase()
+                .includes(normalizedSearch);
+        });
+    }, [activeView, normalizedSearch, pagination.data]);
 
     return (
         <AppDrawer
@@ -2058,120 +1737,76 @@ function CatalogProductsDrawer({
         >
             {view && (
                 <div className="flex min-h-full flex-col bg-card">
-                    <section className="shrink-0 border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
+                    <section className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
                         <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
+                            <div>
                                 <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
-                                    {config.eyebrow}
+                                    Product catalog
                                 </p>
-
-                                <h2 className="mt-1.5 text-lg font-semibold tracking-[-0.025em] text-foreground">
+                                <h2 className="mt-1.5 text-lg font-semibold text-foreground">
                                     {config.title}
                                 </h2>
-
-                                <p className="mt-1 max-w-xl text-[10px] leading-5 text-muted-foreground">
-                                    Select a product below to open its complete product record.
+                                <p className="mt-1 text-[10px] text-muted-foreground">
+                                    Select a record to open complete details.
                                 </p>
                             </div>
-
-                            <div className="shrink-0 text-right">
-                                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                    Catalog total
-                                </p>
-                                <p className="mt-1 text-2xl font-semibold leading-none tabular-nums text-primary">
-                                    {formatNumber(config.total)}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="mt-5 grid border-y border-border/60 sm:grid-cols-3">
-                            <ProductSummaryCell
-                                label="Loaded matches"
-                                value={formatNumber(matchingProducts.length)}
-                                helper="Matching rows on this page"
-                                className="border-b border-border/60 sm:border-b-0 sm:border-r"
-                            />
-                            <ProductSummaryCell
-                                label="Directory page"
-                                value={`${pagination.current_page} of ${pagination.last_page}`}
-                                helper={`Loaded range ${loadedRange}`}
-                                className="border-b border-border/60 sm:border-b-0 sm:border-r"
-                            />
-                            <ProductSummaryCell
-                                label="Catalog total"
-                                value={formatNumber(config.total)}
-                                helper="Across the complete catalog"
-                            />
+                            <Badge
+                                variant="outline"
+                                className="rounded-full border-primary/15 bg-primary/[0.06] text-primary"
+                            >
+                                {formatNumber(config.total)} total
+                            </Badge>
                         </div>
                     </section>
 
-                    <div className="shrink-0 border-b border-border/60 px-5 py-4">
+                    <div className="border-b border-border/60 px-5 py-4">
                         <SearchInput
                             value={drawerSearch}
                             onChange={(event) =>
-                                setDrawerSearch(
-                                    event.target.value,
-                                )
+                                setDrawerSearch(event.target.value)
                             }
                             onClear={() => setDrawerSearch('')}
-                            placeholder="Search the loaded product list..."
+                            placeholder="Search loaded products..."
                         />
-
-                        {config.total > matchingProducts.length && (
-                            <p className="mt-2 text-[9px] leading-4 text-muted-foreground">
-                                This drawer previews matching records loaded on page {pagination.current_page}. Use
-                                {' '}
-                                <span className="font-semibold text-foreground/80">
-                                    Open Full Directory
-                                </span>
-                                {' '}
-                                to view the complete paginated list.
-                            </p>
-                        )}
                     </div>
 
-                    <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                    <div className="min-h-0 flex-1 overflow-y-auto p-5">
                         {visibleProducts.length === 0 ? (
-                            <div className="flex min-h-[260px] flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-background/20 px-6 text-center">
-                                <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.055] text-primary">
-                                    <Package2 className="size-5" />
-                                </span>
-
+                            <div className="rounded-xl border border-dashed border-border/70 px-5 py-12 text-center">
+                                <Package2 className="mx-auto size-6 text-muted-foreground" />
                                 <h3 className="mt-3 text-sm font-semibold text-foreground">
                                     No matching products
                                 </h3>
-
-                                <p className="mt-1 max-w-sm text-[10px] leading-5 text-muted-foreground">
-                                    {normalizedSearch
-                                        ? 'Try another name, SKU, barcode, or category.'
-                                        : config.emptyLabel}
+                                <p className="mt-1 text-[10px] text-muted-foreground">
+                                    Try another product name, SKU, barcode, or category.
                                 </p>
                             </div>
                         ) : (
-                            <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20">
+                            <div className="overflow-hidden rounded-xl border border-border/70">
                                 <div className="divide-y divide-border/60">
                                     {visibleProducts.map((product) => (
                                         <button
                                             key={product.id}
                                             type="button"
                                             onClick={() => onSelect(product)}
-                                            className="group flex w-full items-center gap-3 px-4 py-3 text-left outline-none transition hover:bg-primary/[0.04] focus-visible:bg-primary/[0.045] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                                            className="group flex w-full items-center gap-3 px-4 py-3 text-left outline-none transition hover:bg-primary/[0.04] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
                                         >
                                             <EntityAvatar
                                                 icon={
-                                                    product.stock_tracking === 'tracked'
-                                                        ? Boxes
-                                                        : Package2
+                                                    product.batch_tracking_enabled
+                                                        ? Layers3
+                                                        : product.stock_tracking ===
+                                                            'tracked'
+                                                          ? Boxes
+                                                          : Package2
                                                 }
-                                                className="border-primary/15 bg-primary/[0.065] text-primary transition group-hover:border-primary/25 group-hover:bg-primary/10"
+                                                className="border-primary/15 bg-primary/[0.065] text-primary"
                                             />
-
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                    <p className="max-w-full truncate text-[11px] font-semibold text-foreground">
+                                                    <p className="truncate text-[11px] font-semibold text-foreground">
                                                         {product.name}
                                                     </p>
-
                                                     <StatusBadge
                                                         label={
                                                             product.is_active
@@ -2185,26 +1820,27 @@ function CatalogProductsDrawer({
                                                         }
                                                     />
                                                 </div>
-
                                                 <p className="mt-1 truncate font-mono text-[9px] text-muted-foreground">
-                                                    {product.sku ?? 'No SKU'}
-                                                    {' · '}
-                                                    {product.category?.name ?? 'Uncategorized'}
+                                                    {product.sku ?? 'No SKU'} ·{' '}
+                                                    {product.category?.name ??
+                                                        'Uncategorized'}
                                                 </p>
-
                                                 <p className="mt-1 text-[9px] text-muted-foreground">
-                                                    {product.stock_tracking === 'tracked'
-                                                        ? `${formatQuantity(product.total_stock)} ${product.unit} available`
-                                                        : 'Quantity not tracked'}
+                                                    {product.batch_tracking_enabled
+                                                        ? `${formatPolicy(product.batch_issue_policy)} · ${product.available_stock_batches_count} available batches`
+                                                        : product.stock_tracking ===
+                                                            'tracked'
+                                                          ? `${formatQuantity(product.total_stock)} ${product.unit}`
+                                                          : 'Quantity not tracked'}
                                                 </p>
                                             </div>
-
                                             <div className="shrink-0 text-right">
-                                                <p className="text-[11px] font-semibold tabular-nums text-primary">
-                                                    {formatCurrency(product.selling_price)}
+                                                <p className="text-[10px] font-semibold text-foreground">
+                                                    {formatCurrency(
+                                                        product.cost_price,
+                                                    )}
                                                 </p>
-
-                                                <ChevronRight className="ml-auto mt-1 size-3.5 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                                                <ChevronRight className="ml-auto mt-1 size-3.5 text-muted-foreground" />
                                             </div>
                                         </button>
                                     ))}
@@ -2213,7 +1849,7 @@ function CatalogProductsDrawer({
                         )}
                     </div>
 
-                    <footer className="flex shrink-0 flex-col gap-2 border-t border-border/60 bg-background/35 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <footer className="flex items-center justify-between gap-3 border-t border-border/60 bg-background/35 px-5 py-4">
                         <Button
                             type="button"
                             variant="outline"
@@ -2222,16 +1858,12 @@ function CatalogProductsDrawer({
                         >
                             Close
                         </Button>
-
                         <Button
                             type="button"
-                            onClick={() =>
-                                onOpenDirectory(activeView)
-                            }
-                            className="h-9 rounded-lg bg-primary px-4 text-xs text-primary-foreground hover:bg-primary/90"
+                            onClick={() => onOpenDirectory(activeView)}
+                            className="h-9 rounded-lg text-xs"
                         >
-                            Open Full Directory
-                            <ChevronRight className="size-3.5" />
+                            Open Filtered Directory
                         </Button>
                     </footer>
                 </div>
@@ -2256,11 +1888,6 @@ function ProductDetailsDrawer({
     onDelete: (product: Product) => void;
 }) {
     const tracked = product?.stock_tracking === 'tracked';
-    const costPrice = Number(product?.cost_price ?? 0);
-    const sellingPrice = Number(product?.selling_price ?? 0);
-    const margin = sellingPrice - costPrice;
-    const marginPercentage =
-        sellingPrice > 0 ? (margin / sellingPrice) * 100 : 0;
 
     return (
         <AppDrawer
@@ -2271,7 +1898,7 @@ function ProductDetailsDrawer({
                 }
             }}
             title="Product Record"
-            description="Review catalog identity, pricing, inventory configuration, and product activity."
+            description="Review product identity, cost reference, inventory behavior, and batch configuration."
             processing={false}
         >
             {product && (
@@ -2285,63 +1912,63 @@ function ProductDetailsDrawer({
                                             Catalog product
                                         </p>
                                         <StatusBadge
-                                            label={product.is_active ? 'Active' : 'Inactive'}
-                                            variant={product.is_active ? 'success' : 'danger'}
+                                            label={
+                                                product.is_active
+                                                    ? 'Active'
+                                                    : 'Inactive'
+                                            }
+                                            variant={
+                                                product.is_active
+                                                    ? 'success'
+                                                    : 'danger'
+                                            }
                                         />
                                         <StatusBadge
-                                            label={tracked ? 'Stock tracked' : 'Not tracked'}
-                                            variant={tracked ? 'info' : 'neutral'}
+                                            label={
+                                                product.batch_tracking_enabled
+                                                    ? 'Batch tracked'
+                                                    : tracked
+                                                      ? 'Quantity tracked'
+                                                      : 'Not tracked'
+                                            }
+                                            variant={
+                                                product.batch_tracking_enabled
+                                                    ? 'success'
+                                                    : tracked
+                                                      ? 'info'
+                                                      : 'neutral'
+                                            }
                                         />
                                     </div>
-
-                                    <h2 className="mt-2 text-lg font-semibold tracking-[-0.025em] text-foreground">
+                                    <h2 className="mt-2 break-words text-xl font-semibold tracking-[-0.025em] text-foreground">
                                         {product.name}
                                     </h2>
-
                                     <p className="mt-1 font-mono text-[10px] text-muted-foreground">
-                                        {product.sku ?? 'No SKU'}
-                                        {product.barcode
-                                            ? ` · ${product.barcode}`
-                                            : ' · No barcode'}
+                                        {product.sku ?? 'No SKU'} ·{' '}
+                                        {product.barcode ?? 'No barcode'}
                                     </p>
-
-                                    <p className="mt-2 max-w-xl text-[10px] leading-5 text-muted-foreground">
-                                        {product.description ??
-                                            'No internal product description was provided.'}
-                                    </p>
+                                    {product.description && (
+                                        <p className="mt-3 max-w-2xl text-[10px] leading-5 text-muted-foreground">
+                                            {product.description}
+                                        </p>
+                                    )}
                                 </div>
-
-                                <div className="shrink-0 text-left sm:text-right">
-                                    <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                        Selling price
+                                <div className="rounded-xl border border-primary/15 bg-primary/[0.045] px-4 py-3 text-right">
+                                    <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                                        Default unit cost
                                     </p>
-                                    <p className="mt-1 text-2xl font-semibold leading-none tabular-nums text-primary">
-                                        {formatCurrency(product.selling_price)}
+                                    <p className="mt-1 text-lg font-semibold tabular-nums text-primary">
+                                        {formatCurrency(product.cost_price)}
                                     </p>
-                                    <p className="mt-1 text-[9px] text-muted-foreground">
-                                        per {product.unit}
+                                    <p className="mt-1 text-[8px] text-muted-foreground">
+                                        Reference only
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="mt-5 grid border-y border-border/60 sm:grid-cols-4">
-                                <ProductSummaryCell
-                                    label="Cost price"
-                                    value={formatCurrency(product.cost_price)}
-                                    helper="Standard unit cost"
-                                    className="border-b border-border/60 sm:border-b-0 sm:border-r"
-                                />
-                                <ProductSummaryCell
-                                    label="Gross margin"
-                                    value={formatCurrency(margin)}
-                                    helper={`${formatDecimal(marginPercentage)}% of selling price`}
-                                    valueClassName={
-                                        margin >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                                    }
-                                    className="border-b border-border/60 sm:border-b-0 sm:border-r"
-                                />
-                                <ProductSummaryCell
-                                    label="Available stock"
+                            <div className="mt-5 grid border-y border-border/60 sm:grid-cols-4 sm:divide-x sm:divide-border/60">
+                                <SummaryCell
+                                    label="Total stock"
                                     value={
                                         tracked
                                             ? `${formatQuantity(product.total_stock)} ${product.unit}`
@@ -2352,155 +1979,211 @@ function ProductDetailsDrawer({
                                             ? `${product.warehouse_stocks_count} warehouse records`
                                             : 'No quantity balance'
                                     }
-                                    className="border-b border-border/60 sm:border-b-0 sm:border-r"
                                 />
-                                <ProductSummaryCell
-                                    label="Movement records"
-                                    value={formatNumber(product.stock_movements_count)}
+                                <SummaryCell
+                                    label="Available batches"
+                                    value={
+                                        product.batch_tracking_enabled
+                                            ? formatNumber(
+                                                  product.available_stock_batches_count,
+                                              )
+                                            : '—'
+                                    }
+                                    helper={
+                                        product.batch_tracking_enabled
+                                            ? `${product.stock_batches_count} total batch records`
+                                            : 'Batch tracking disabled'
+                                    }
+                                />
+                                <SummaryCell
+                                    label="Issue policy"
+                                    value={
+                                        product.batch_tracking_enabled
+                                            ? formatPolicy(
+                                                  product.batch_issue_policy,
+                                              )
+                                            : 'Not applicable'
+                                    }
+                                    helper="Stock-out allocation rule"
+                                />
+                                <SummaryCell
+                                    label="Movements"
+                                    value={formatNumber(
+                                        product.stock_movements_count,
+                                    )}
                                     helper="Inventory activity links"
                                 />
                             </div>
                         </section>
 
-                        <div className="grid min-w-0 lg:grid-cols-[minmax(0,1.15fr)_minmax(270px,0.85fr)]">
+                        <div className="grid min-w-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
                             <div className="min-w-0 divide-y divide-border/60 lg:border-r lg:border-border/60">
-                                <ProductDocumentSection
+                                <DocumentSection
                                     title="Product Information"
                                     description="Core identity and catalog placement."
                                 >
-                                    <ProductDetailRow
+                                    <DetailRow
                                         label="Product ID"
                                         value={`#${product.id}`}
                                         mono
                                     />
-                                    <ProductDetailRow
+                                    <DetailRow
                                         label="Product name"
                                         value={product.name}
                                     />
-                                    <ProductDetailRow
+                                    <DetailRow
                                         label="Slug"
                                         value={product.slug}
                                         mono
                                     />
-                                    <ProductDetailRow
+                                    <DetailRow
                                         label="SKU"
                                         value={product.sku ?? 'Not assigned'}
                                         mono
                                     />
-                                    <ProductDetailRow
+                                    <DetailRow
                                         label="Barcode"
-                                        value={product.barcode ?? 'Not assigned'}
+                                        value={
+                                            product.barcode ?? 'Not assigned'
+                                        }
                                         mono
                                     />
-                                    <ProductDetailRow
+                                    <DetailRow
                                         label="Unit"
                                         value={product.unit}
                                     />
-                                </ProductDocumentSection>
-
-                                <ProductDocumentSection
-                                    title="Commercial Profile"
-                                    description="Standard prices used for purchasing and selling."
-                                >
-                                    <ProductDetailRow
-                                        label="Cost price"
-                                        value={formatCurrency(product.cost_price)}
+                                    <DetailRow
+                                        label="Category"
+                                        value={
+                                            product.category?.name ??
+                                            'Uncategorized'
+                                        }
                                     />
-                                    <ProductDetailRow
-                                        label="Selling price"
-                                        value={formatCurrency(product.selling_price)}
+                                </DocumentSection>
+
+                                <DocumentSection
+                                    title="Cost Reference"
+                                    description="Default suggestion only; transaction and batch costs remain authoritative."
+                                >
+                                    <DetailRow
+                                        label="Default unit cost"
+                                        value={formatCurrency(
+                                            product.cost_price,
+                                        )}
                                         valueClassName="text-primary"
                                     />
-                                    <ProductDetailRow
-                                        label="Wholesale price"
-                                        value={
-                                            product.wholesale_price !== null
-                                                ? formatCurrency(product.wholesale_price)
-                                                : 'Not set'
-                                        }
+                                    <DetailRow
+                                        label="Valuation source"
+                                        value="Warehouse average and batch movement costs"
                                     />
-                                    <ProductDetailRow
-                                        label="Gross margin"
-                                        value={`${formatCurrency(margin)} · ${formatDecimal(
-                                            marginPercentage,
-                                        )}%`}
-                                        valueClassName={
-                                            margin >= 0
-                                                ? 'text-emerald-400'
-                                                : 'text-rose-400'
-                                        }
-                                    />
-                                </ProductDocumentSection>
+                                </DocumentSection>
                             </div>
 
                             <aside className="min-w-0 divide-y divide-border/60 bg-muted/[0.018]">
-                                <ProductDocumentSection
-                                    title="Catalog and Inventory"
-                                    description="Category and warehouse configuration."
+                                <DocumentSection
+                                    title="Inventory and Batch Control"
+                                    description="Quantity, lot, allocation, and expiry rules."
                                 >
-                                    <ProductDetailRow
-                                        label="Category"
-                                        value={product.category?.name ?? 'Uncategorized'}
-                                    />
-                                    <ProductDetailRow
-                                        label="Category status"
+                                    <DetailRow
+                                        label="Stock tracking"
                                         value={
-                                            product.category
-                                                ? product.category.is_active
-                                                    ? 'Active category'
-                                                    : 'Inactive category'
+                                            tracked
+                                                ? 'Tracked inventory'
+                                                : 'Not tracked'
+                                        }
+                                    />
+                                    <DetailRow
+                                        label="Batch tracking"
+                                        value={
+                                            product.batch_tracking_enabled
+                                                ? 'Enabled'
+                                                : 'Disabled'
+                                        }
+                                        valueClassName={
+                                            product.batch_tracking_enabled
+                                                ? 'text-emerald-400'
+                                                : undefined
+                                        }
+                                    />
+                                    <DetailRow
+                                        label="Issue policy"
+                                        value={
+                                            product.batch_tracking_enabled
+                                                ? formatPolicy(
+                                                      product.batch_issue_policy,
+                                                  )
                                                 : 'Not applicable'
                                         }
                                     />
-                                    <ProductDetailRow
-                                        label="Stock tracking"
-                                        value={tracked ? 'Tracked inventory' : 'Not tracked'}
-                                    />
-                                    <ProductDetailRow
-                                        label="Total stock"
+                                    <DetailRow
+                                        label="Expiration date"
                                         value={
-                                            tracked
-                                                ? `${formatQuantity(product.total_stock)} ${product.unit}`
-                                                : 'Not maintained'
+                                            product.batch_tracking_enabled
+                                                ? product.requires_expiration_date
+                                                    ? 'Required per batch'
+                                                    : 'Optional per batch'
+                                                : 'Not applicable'
                                         }
                                     />
-                                    <ProductDetailRow
-                                        label="Warehouse records"
-                                        value={formatNumber(product.warehouse_stocks_count)}
+                                    <DetailRow
+                                        label="Expiry warning"
+                                        value={
+                                            product.batch_tracking_enabled
+                                                ? product.expiry_warning_days
+                                                    ? `${product.expiry_warning_days} days before expiry`
+                                                    : 'Tenant default'
+                                                : 'Not applicable'
+                                        }
                                     />
-                                    <ProductDetailRow
-                                        label="Movement records"
-                                        value={formatNumber(product.stock_movements_count)}
+                                    <DetailRow
+                                        label="Recorded batches"
+                                        value={formatNumber(
+                                            product.stock_batches_count,
+                                        )}
                                     />
-                                </ProductDocumentSection>
+                                    <DetailRow
+                                        label="Available batches"
+                                        value={formatNumber(
+                                            product.available_stock_batches_count,
+                                        )}
+                                    />
+                                </DocumentSection>
 
-                                <ProductDocumentSection
+                                <DocumentSection
                                     title="Record Audit"
                                     description="System status and timestamps."
                                 >
-                                    <ProductDetailRow
+                                    <DetailRow
                                         label="Product status"
-                                        value={product.is_active ? 'Active' : 'Inactive'}
+                                        value={
+                                            product.is_active
+                                                ? 'Active'
+                                                : 'Inactive'
+                                        }
                                         valueClassName={
                                             product.is_active
                                                 ? 'text-emerald-400'
                                                 : 'text-rose-400'
                                         }
                                     />
-                                    <ProductDetailRow
+                                    <DetailRow
                                         label="Tenant ID"
                                         value={`#${product.tenant_id}`}
                                         mono
                                     />
-                                    <ProductDetailRow
+                                    <DetailRow
                                         label="Created"
-                                        value={formatDateTime(product.created_at)}
+                                        value={formatDateTime(
+                                            product.created_at,
+                                        )}
                                     />
-                                    <ProductDetailRow
+                                    <DetailRow
                                         label="Updated"
-                                        value={formatDateTime(product.updated_at)}
+                                        value={formatDateTime(
+                                            product.updated_at,
+                                        )}
                                     />
-                                </ProductDocumentSection>
+                                </DocumentSection>
                             </aside>
                         </div>
                     </div>
@@ -2514,37 +2197,38 @@ function ProductDetailsDrawer({
                         >
                             Close
                         </Button>
-
                         <div className="flex flex-col gap-2 sm:flex-row">
                             <Button
                                 type="button"
                                 variant="outline"
-                                disabled={statusProcessingId === product.id}
+                                disabled={
+                                    statusProcessingId === product.id
+                                }
                                 onClick={() => onToggleStatus(product)}
                                 className={cn(
                                     'h-9 rounded-lg text-xs',
                                     product.is_active
-                                        ? 'border-amber-500/20 text-amber-400 hover:bg-amber-500/[0.07] hover:text-amber-300'
-                                        : 'border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/[0.07] hover:text-emerald-300',
+                                        ? 'border-amber-500/20 text-amber-400'
+                                        : 'border-emerald-500/20 text-emerald-400',
                                 )}
                             >
-                                {product.is_active ? 'Deactivate' : 'Activate'}
+                                {product.is_active
+                                    ? 'Deactivate'
+                                    : 'Activate'}
                             </Button>
-
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => onDelete(product)}
-                                className="h-9 rounded-lg border-rose-500/20 text-xs text-rose-400 hover:bg-rose-500/[0.07] hover:text-rose-300"
+                                className="h-9 rounded-lg border-rose-500/20 text-xs text-rose-400"
                             >
                                 <Trash2 className="size-3.5" />
                                 Delete
                             </Button>
-
                             <Button
                                 type="button"
                                 onClick={() => onEdit(product)}
-                                className="h-9 rounded-lg bg-primary px-4 text-xs text-primary-foreground hover:bg-primary/90"
+                                className="h-9 rounded-lg px-4 text-xs"
                             >
                                 <Pencil className="size-3.5" />
                                 Edit Product
@@ -2557,31 +2241,80 @@ function ProductDetailsDrawer({
     );
 }
 
-function ProductSummaryCell({
+function SectionHeading({
+    eyebrow,
+    title,
+    description,
+}: {
+    eyebrow: string;
+    title: string;
+    description: string;
+}) {
+    return (
+        <div className="mb-5">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
+                {eyebrow}
+            </p>
+            <h3 className="mt-1 text-sm font-semibold text-foreground">
+                {title}
+            </h3>
+            <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                {description}
+            </p>
+        </div>
+    );
+}
+
+function MetricCell({
     label,
     value,
     helper,
-    className,
-    valueClassName,
 }: {
     label: string;
     value: string;
     helper: string;
-    className?: string;
-    valueClassName?: string;
 }) {
     return (
-        <div className={cn('min-w-0 px-0 py-3 sm:px-3.5', className)}>
+        <div className="py-3 sm:px-4 first:pl-0 last:pr-0">
             <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 {label}
             </p>
-            <p
-                className={cn(
-                    'mt-1.5 truncate text-[11px] font-semibold tabular-nums text-foreground',
-                    valueClassName,
-                )}
-                title={value}
-            >
+            <p className="mt-1.5 text-sm font-semibold tabular-nums text-primary">
+                {value}
+            </p>
+            <p className="mt-1 text-[9px] text-muted-foreground">
+                {helper}
+            </p>
+        </div>
+    );
+}
+
+function PreviewRow({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="flex items-start justify-between gap-4 py-2.5">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="max-w-[170px] text-right font-medium text-foreground/85">
+                {value}
+            </dd>
+        </div>
+    );
+}
+
+function SummaryCell({
+    label,
+    value,
+    helper,
+}: {
+    label: string;
+    value: string;
+    helper: string;
+}) {
+    return (
+        <div className="min-w-0 px-0 py-3 sm:px-3.5">
+            <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                {label}
+            </p>
+            <p className="mt-1.5 truncate text-[11px] font-semibold tabular-nums text-foreground">
                 {value}
             </p>
             <p className="mt-1 truncate text-[8px] text-muted-foreground">
@@ -2591,7 +2324,7 @@ function ProductSummaryCell({
     );
 }
 
-function ProductDocumentSection({
+function DocumentSection({
     title,
     description,
     children,
@@ -2617,7 +2350,7 @@ function ProductDocumentSection({
     );
 }
 
-function ProductDetailRow({
+function DetailRow({
     label,
     value,
     mono = false,
@@ -2649,111 +2382,62 @@ function CatalogFactRow({
     description,
     value,
     icon,
-    tone,
     onClick,
 }: {
     label: string;
     description: string;
     value: number;
     icon: ReactNode;
-    tone: 'emerald' | 'lime' | 'teal' | 'amber';
     onClick: () => void;
 }) {
-    const toneStyles = {
-        emerald: {
-            icon: 'border-primary/15 bg-primary/[0.055] text-primary',
-            value: 'text-primary',
-        },
-        lime: {
-            icon: 'border-primary/15 bg-primary/[0.055] text-primary',
-            value: 'text-primary',
-        },
-        teal: {
-            icon: 'border-primary/15 bg-primary/[0.055] text-primary',
-            value: 'text-primary',
-        },
-        amber: {
-            icon: 'border-amber-500/15 bg-amber-500/[0.055] text-amber-400',
-            value: 'text-amber-400',
-        },
-    } as const;
-
-    const styles = toneStyles[tone];
-
     return (
         <div
             role="button"
             tabIndex={0}
             onClick={onClick}
             onKeyDown={(event) => {
-                if (
-                    event.key === 'Enter' ||
-                    event.key === ' '
-                ) {
+                if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
                     onClick();
                 }
             }}
-            aria-label={`View ${label.toLowerCase()} list`}
-            className="group flex cursor-pointer items-center gap-3 px-4 py-3.5 outline-none transition hover:bg-primary/[0.035] focus-visible:bg-primary/[0.045] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+            className="group flex cursor-pointer items-center gap-3 px-4 py-3.5 outline-none transition hover:bg-primary/[0.035] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
         >
-            <span
-                className={cn(
-                    'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border transition group-hover:scale-[1.03]',
-                    styles.icon,
-                )}
-            >
+            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.055] text-primary">
                 {icon}
             </span>
-
             <div className="min-w-0 flex-1">
-                <dt className="text-[10px] font-semibold text-foreground/90 transition group-hover:text-foreground">
+                <dt className="text-[10px] font-semibold text-foreground/90">
                     {label}
                 </dt>
                 <dd className="mt-0.5 truncate text-[9px] text-muted-foreground">
                     {description}
                 </dd>
             </div>
-
             <div className="flex shrink-0 items-center gap-2">
-                <span
-                    className={cn(
-                        'text-lg font-semibold tabular-nums',
-                        styles.value,
-                    )}
-                >
+                <span className="text-lg font-semibold tabular-nums text-primary">
                     {formatNumber(value)}
                 </span>
-
-                <ChevronRight className="size-3.5 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                <ChevronRight className="size-3.5 text-muted-foreground" />
             </div>
         </div>
     );
 }
 
-/*
-|--------------------------------------------------------------------------
-| Formatting
-|--------------------------------------------------------------------------
-*/
-
-
-
-
-
-
+function formatPolicy(policy: BatchIssuePolicy): string {
+    if (policy === 'fefo') {
+        return 'FEFO';
+    }
+    if (policy === 'manual') {
+        return 'Manual';
+    }
+    return 'FIFO';
+}
 
 function formatNumber(value: number): string {
     return new Intl.NumberFormat('en-PH', {
         maximumFractionDigits: 0,
     }).format(Number(value || 0));
-}
-
-function formatDecimal(value: number): string {
-    return new Intl.NumberFormat('en-PH', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 1,
-    }).format(Number.isFinite(value) ? value : 0);
 }
 
 function formatDateTime(value: string | null): string {
@@ -2776,33 +2460,21 @@ function formatDateTime(value: string | null): string {
     }).format(date);
 }
 
-function formatCurrency(
-    value: string | number | null,
-): string {
+function formatCurrency(value: string | number | null): string {
     const amount = Number(value ?? 0);
 
     return new Intl.NumberFormat('en-PH', {
         style: 'currency',
         currency: 'PHP',
         minimumFractionDigits: 2,
-    }).format(
-        Number.isFinite(amount)
-            ? amount
-            : 0,
-    );
+    }).format(Number.isFinite(amount) ? amount : 0);
 }
 
-function formatQuantity(
-    value: string | number | null,
-): string {
+function formatQuantity(value: string | number | null): string {
     const quantity = Number(value ?? 0);
 
     return new Intl.NumberFormat('en-PH', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 3,
-    }).format(
-        Number.isFinite(quantity)
-            ? quantity
-            : 0,
-    );
+    }).format(Number.isFinite(quantity) ? quantity : 0);
 }

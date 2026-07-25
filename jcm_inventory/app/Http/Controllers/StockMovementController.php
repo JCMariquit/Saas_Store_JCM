@@ -21,7 +21,7 @@ class StockMovementController extends Controller
     | - Opening stock
     | - Stock in
     | - Stock out
-    | - Adjustment
+    | - Adjustment 
     | - Transfer
     | - Sale
     | - Return

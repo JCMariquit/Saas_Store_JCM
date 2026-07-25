@@ -30,9 +30,6 @@ class ProductReportController extends Controller
         );
     }
 
-    /**
-     * Spreadsheet-style browser preview opened in a new tab.
-     */
     public function excelPreview(Request $request): View
     {
         $report = $this->buildReportData($request);
@@ -53,12 +50,6 @@ class ProductReportController extends Controller
         );
     }
 
-    /**
-     * Download the same plain spreadsheet table shown in the browser preview.
-     *
-     * This is an HTML-based .xls response. It does not require PhpSpreadsheet,
-     * GD, ZIP, or browser-side JavaScript.
-     */
     public function excel(Request $request): Response
     {
         $report = $this->buildReportData($request);
@@ -93,43 +84,18 @@ class ProductReportController extends Controller
         );
     }
 
-    /**
-     * @return array{
-     *     products: EloquentCollection<int, Product>,
-     *     summary: array<string, int>,
-     *     filterLabels: array<int, string>,
-     *     filters: array{
-     *         search: string,
-     *         status: string,
-     *         category_id: int,
-     *         stock_tracking: string
-     *     },
-     *     generatedAt: \Illuminate\Support\Carbon,
-     *     generatedBy: string
-     * }
-     */
     private function buildReportData(Request $request): array
     {
         $tenantId = $this->getTenantId($request);
         $filters = $this->readFilters($request);
 
-        $products = $this->productQuery(
-            $tenantId,
-            $filters
-        )->get();
-
-        $this->attachWarehouseLocations(
-            $tenantId,
-            $products
-        );
+        $products = $this->productQuery($tenantId, $filters)->get();
+        $this->attachWarehouseLocations($tenantId, $products);
 
         return [
             'products' => $products,
             'summary' => $this->buildSummary($products),
-            'filterLabels' => $this->filterLabels(
-                $tenantId,
-                $filters
-            ),
+            'filterLabels' => $this->filterLabels($tenantId, $filters),
             'filters' => $filters,
             'generatedAt' => now(),
             'generatedBy' => $request->user()?->name
@@ -138,44 +104,28 @@ class ProductReportController extends Controller
         ];
     }
 
-    /**
-     * Build catalog-only summary values.
-     *
-     * No quantity, movement, or inventory-value metrics are included here.
-     *
-     * @param EloquentCollection<int, Product> $products
-     * @return array<string, int>
-     */
-    private function buildSummary(
-        EloquentCollection $products
-    ): array {
+    private function buildSummary(EloquentCollection $products): array
+    {
         $withWarehouse = $products->filter(
             fn (Product $product): bool =>
                 $this->warehouseLocations($product)->isNotEmpty()
         )->count();
 
-        $categoryCount = $products
-            ->pluck('category_id')
-            ->filter()
-            ->unique()
-            ->count();
-
-        $warehouseCount = $products
-            ->flatMap(
-                fn (Product $product): Collection =>
-                    $this->warehouseLocations($product)
-            )
-            ->pluck('warehouse_id')
-            ->unique()
-            ->count();
-
         return [
             'total' => $products->count(),
-            'active' => $products
-                ->where('is_active', true)
+            'active' => $products->where('is_active', true)->count(),
+            'inactive' => $products->where('is_active', false)->count(),
+            'tracked' => $products
+                ->where('stock_tracking', 'tracked')
                 ->count(),
-            'inactive' => $products
-                ->where('is_active', false)
+            'not_tracked' => $products
+                ->where('stock_tracking', 'not_tracked')
+                ->count(),
+            'batch_enabled' => $products
+                ->where('batch_tracking_enabled', true)
+                ->count(),
+            'expiration_required' => $products
+                ->where('requires_expiration_date', true)
                 ->count(),
             'categorized' => $products
                 ->whereNotNull('category_id')
@@ -183,28 +133,14 @@ class ProductReportController extends Controller
             'uncategorized' => $products
                 ->whereNull('category_id')
                 ->count(),
-            'categories_used' => $categoryCount,
             'with_warehouse' => $withWarehouse,
             'without_warehouse' => max(
                 0,
                 $products->count() - $withWarehouse
             ),
-            'warehouses_used' => $warehouseCount,
         ];
     }
 
-    /**
-     * Product-directory query only.
-     *
-     * Deliberately excludes stock totals, movement counts, and stock valuation.
-     *
-     * @param array{
-     *     search: string,
-     *     status: string,
-     *     category_id: int,
-     *     stock_tracking: string
-     * } $filters
-     */
     private function productQuery(
         int $tenantId,
         array $filters
@@ -212,7 +148,7 @@ class ProductReportController extends Controller
         return Product::query()
             ->where('tenant_id', $tenantId)
             ->with([
-                'category:id,name,slug,is_active',
+                'category:id,name,slug,is_active,description',
             ])
             ->when(
                 $filters['search'] !== '',
@@ -222,26 +158,10 @@ class ProductReportController extends Controller
                     $query->where(
                         function (Builder $query) use ($search): void {
                             $query
-                                ->where(
-                                    'name',
-                                    'like',
-                                    "%{$search}%"
-                                )
-                                ->orWhere(
-                                    'sku',
-                                    'like',
-                                    "%{$search}%"
-                                )
-                                ->orWhere(
-                                    'barcode',
-                                    'like',
-                                    "%{$search}%"
-                                )
-                                ->orWhere(
-                                    'description',
-                                    'like',
-                                    "%{$search}%"
-                                );
+                                ->where('name', 'like', "%{$search}%")
+                                ->orWhere('sku', 'like', "%{$search}%")
+                                ->orWhere('barcode', 'like', "%{$search}%")
+                                ->orWhere('description', 'like', "%{$search}%");
                         }
                     );
                 }
@@ -255,41 +175,38 @@ class ProductReportController extends Controller
             )
             ->when(
                 $filters['status'] === 'active',
-                fn (Builder $query) => $query->where(
-                    'is_active',
-                    true
-                )
+                fn (Builder $query) => $query->where('is_active', true)
             )
             ->when(
                 $filters['status'] === 'inactive',
-                fn (Builder $query) => $query->where(
-                    'is_active',
-                    false
-                )
+                fn (Builder $query) => $query->where('is_active', false)
             )
             ->when(
-                in_array(
-                    $filters['stock_tracking'],
-                    ['tracked', 'not_tracked'],
-                    true
-                ),
+                $filters['stock_tracking'] !== '',
                 fn (Builder $query) => $query->where(
                     'stock_tracking',
                     $filters['stock_tracking']
                 )
             )
+            ->when(
+                $filters['batch_tracking'] === 'enabled',
+                fn (Builder $query) => $query->where(
+                    'batch_tracking_enabled',
+                    true
+                )
+            )
+            ->when(
+                $filters['batch_tracking'] === 'disabled',
+                fn (Builder $query) => $query->where(
+                    'batch_tracking_enabled',
+                    false
+                )
+            )
             ->orderByDesc('is_active')
+            ->orderByDesc('batch_tracking_enabled')
             ->orderBy('name');
     }
 
-    /**
-     * Attach warehouse and branch names without exposing stock quantities.
-     *
-     * The location is based on the product's warehouse_stocks records, but the
-     * quantity and movement fields are intentionally not selected.
-     *
-     * @param EloquentCollection<int, Product> $products
-     */
     private function attachWarehouseLocations(
         int $tenantId,
         EloquentCollection $products
@@ -309,32 +226,16 @@ class ProductReportController extends Controller
                 'warehouses as warehouse',
                 function ($join): void {
                     $join
-                        ->on(
-                            'warehouse.id',
-                            '=',
-                            'stock.warehouse_id'
-                        )
-                        ->on(
-                            'warehouse.tenant_id',
-                            '=',
-                            'stock.tenant_id'
-                        );
+                        ->on('warehouse.id', '=', 'stock.warehouse_id')
+                        ->on('warehouse.tenant_id', '=', 'stock.tenant_id');
                 }
             )
             ->join(
                 'branches as branch',
                 function ($join): void {
                     $join
-                        ->on(
-                            'branch.id',
-                            '=',
-                            'warehouse.branch_id'
-                        )
-                        ->on(
-                            'branch.tenant_id',
-                            '=',
-                            'warehouse.tenant_id'
-                        );
+                        ->on('branch.id', '=', 'warehouse.branch_id')
+                        ->on('branch.tenant_id', '=', 'warehouse.tenant_id');
                 }
             )
             ->where('stock.tenant_id', $tenantId)
@@ -350,11 +251,9 @@ class ProductReportController extends Controller
                 'warehouse.id as warehouse_id',
                 'warehouse.code as warehouse_code',
                 'warehouse.name as warehouse_name',
-                'warehouse.is_main as warehouse_is_main',
                 'branch.id as branch_id',
                 'branch.code as branch_code',
                 'branch.name as branch_name',
-                'branch.is_main as branch_is_main',
             ])
             ->unique(
                 fn ($row): string =>
@@ -363,38 +262,30 @@ class ProductReportController extends Controller
             ->groupBy('product_id');
 
         foreach ($products as $product) {
+            $locations = collect(
+                $locationsByProduct->get($product->id, collect())
+            )->values();
+
+            $product->setAttribute('report_warehouses', $locations);
             $product->setAttribute(
-                'report_warehouses',
-                collect(
-                    $locationsByProduct->get(
-                        $product->id,
-                        collect()
-                    )
-                )->values()
+                'report_warehouse_text',
+                $this->warehouseLocationTextFromCollection($locations)
             );
         }
     }
 
-    /**
-     * @return Collection<int, object>
-     */
-    private function warehouseLocations(
-        Product $product
-    ): Collection {
-        $locations = $product->getAttribute(
-            'report_warehouses'
-        );
+    private function warehouseLocations(Product $product): Collection
+    {
+        $locations = $product->getAttribute('report_warehouses');
 
         return $locations instanceof Collection
             ? $locations
             : collect($locations ?? []);
     }
 
-    private function warehouseLocationText(
-        Product $product
+    private function warehouseLocationTextFromCollection(
+        Collection $locations
     ): string {
-        $locations = $this->warehouseLocations($product);
-
         if ($locations->isEmpty()) {
             return 'No warehouse assigned';
         }
@@ -402,61 +293,38 @@ class ProductReportController extends Controller
         return $locations
             ->map(
                 function ($location): string {
-                    $branch = trim(
-                        (string) ($location->branch_name ?? '')
-                    );
-
-                    $branchCode = trim(
-                        (string) ($location->branch_code ?? '')
-                    );
-
-                    $warehouse = trim(
-                        (string) ($location->warehouse_name ?? '')
-                    );
-
-                    $warehouseCode = trim(
-                        (string) ($location->warehouse_code ?? '')
-                    );
+                    $branch = trim((string) ($location->branch_name ?? ''));
+                    $branchCode = trim((string) ($location->branch_code ?? ''));
+                    $warehouse = trim((string) ($location->warehouse_name ?? ''));
+                    $warehouseCode = trim((string) ($location->warehouse_code ?? ''));
 
                     $branchLabel = $branchCode !== ''
                         ? "{$branch} ({$branchCode})"
                         : $branch;
-
                     $warehouseLabel = $warehouseCode !== ''
                         ? "{$warehouse} ({$warehouseCode})"
                         : $warehouse;
 
-                    return trim(
-                        $branchLabel.' / '.$warehouseLabel,
-                        ' /'
-                    );
+                    return trim($branchLabel.' / '.$warehouseLabel, ' /');
                 }
             )
             ->filter()
             ->implode('; ');
     }
 
-    /**
-     * @return array{
-     *     search: string,
-     *     status: string,
-     *     category_id: int,
-     *     stock_tracking: string
-     * }
-     */
     private function readFilters(Request $request): array
     {
-        $status = trim(
-            (string) $request->input('status', '')
+        $status = trim((string) $request->input('status', ''));
+        $stockTracking = trim(
+            (string) $request->input('stock_tracking', '')
+        );
+        $batchTracking = trim(
+            (string) $request->input('batch_tracking', '')
         );
 
         if (! in_array($status, ['active', 'inactive'], true)) {
             $status = '';
         }
-
-        $stockTracking = trim(
-            (string) $request->input('stock_tracking', '')
-        );
 
         if (! in_array(
             $stockTracking,
@@ -466,28 +334,26 @@ class ProductReportController extends Controller
             $stockTracking = '';
         }
 
+        if (! in_array(
+            $batchTracking,
+            ['enabled', 'disabled'],
+            true
+        )) {
+            $batchTracking = '';
+        }
+
         return [
-            'search' => trim(
-                (string) $request->input('search', '')
-            ),
+            'search' => trim((string) $request->input('search', '')),
             'status' => $status,
             'category_id' => max(
                 0,
                 (int) $request->input('category_id', 0)
             ),
             'stock_tracking' => $stockTracking,
+            'batch_tracking' => $batchTracking,
         ];
     }
 
-    /**
-     * @param array{
-     *     search: string,
-     *     status: string,
-     *     category_id: int,
-     *     stock_tracking: string
-     * } $filters
-     * @return array<int, string>
-     */
     private function filterLabels(
         int $tenantId,
         array $filters
@@ -499,9 +365,7 @@ class ProductReportController extends Controller
         }
 
         if ($filters['status'] !== '') {
-            $labels[] = 'Status: '.ucfirst(
-                $filters['status']
-            );
+            $labels[] = 'Status: '.ucfirst($filters['status']);
         }
 
         if ($filters['category_id'] > 0) {
@@ -515,24 +379,19 @@ class ProductReportController extends Controller
         }
 
         if ($filters['stock_tracking'] !== '') {
-            $labels[] = 'Tracking: '
+            $labels[] = 'Stock: '
                 .($filters['stock_tracking'] === 'tracked'
-                    ? 'Stock tracked'
+                    ? 'Tracked'
                     : 'Not tracked');
+        }
+
+        if ($filters['batch_tracking'] !== '') {
+            $labels[] = 'Batch: '.ucfirst($filters['batch_tracking']);
         }
 
         return $labels;
     }
 
-    /**
-     * @param array{
-     *     search: string,
-     *     status: string,
-     *     category_id: int,
-     *     stock_tracking: string
-     * } $filters
-     * @return array<string, string|int>
-     */
     private function filterQuery(array $filters): array
     {
         return array_filter(
@@ -541,6 +400,7 @@ class ProductReportController extends Controller
                 'status' => $filters['status'],
                 'category_id' => $filters['category_id'],
                 'stock_tracking' => $filters['stock_tracking'],
+                'batch_tracking' => $filters['batch_tracking'],
             ],
             fn (string|int $value): bool =>
                 $value !== '' && $value !== 0
@@ -549,14 +409,9 @@ class ProductReportController extends Controller
 
     private function getTenantId(Request $request): int
     {
-        $tenantId = (int) (
-            $request->user()?->client_id ?? 0
-        );
+        $tenantId = (int) ($request->user()?->client_id ?? 0);
 
-        if (
-            $tenantId <= 0
-            && app()->environment('local')
-        ) {
+        if ($tenantId <= 0 && app()->environment('local')) {
             return 1;
         }
 
@@ -567,19 +422,5 @@ class ProductReportController extends Controller
         );
 
         return $tenantId;
-    }
-
-    private function spreadsheetSafe(mixed $value): string
-    {
-        $value = trim((string) ($value ?? ''));
-
-        if (
-            $value !== ''
-            && preg_match('/^[=+\-@]/', $value) === 1
-        ) {
-            return "'{$value}";
-        }
-
-        return $value;
     }
 }

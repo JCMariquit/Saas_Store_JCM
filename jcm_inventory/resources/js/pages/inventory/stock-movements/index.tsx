@@ -6,7 +6,7 @@ import { SearchInput } from '@/components/shared/search-input';
 import { SectionCard } from '@/components/shared/section-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
+import { 
     Select,
     SelectContent,
     SelectItem,

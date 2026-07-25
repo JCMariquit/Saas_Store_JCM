@@ -1,18 +1,11 @@
-@php
-    $filterText = count($filterLabels)
-        ? implode('  •  ', $filterLabels)
-        : 'All product records';
-@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Product Directory Report</title>
-
+    <title>Product Directory</title>
     <style>
         @page {
-            size: A4 landscape;
-            margin: 10mm 9mm 14mm 9mm;
+            margin: 10mm 8mm 14mm 8mm;
         }
 
         * {
@@ -22,176 +15,129 @@
         body {
             margin: 0;
             color: #172033;
-            background: #ffffff;
-            font-family: DejaVu Sans, Arial, sans-serif;
-            font-size: 7.1px;
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 7.4px;
             line-height: 1.35;
         }
 
-        .page-footer {
-            position: fixed;
-            right: 0;
-            bottom: -9mm;
-            left: 0;
-            padding-top: 4px;
-            border-top: 1px solid #d7e0e8;
-            color: #7b8794;
-            font-size: 5.8px;
-            text-align: center;
-        }
-
-        .header-table {
+        .header {
+            display: table;
             width: 100%;
             margin-bottom: 7px;
-            border-collapse: collapse;
+            border-bottom: 2px solid #166534;
+            padding-bottom: 6px;
         }
 
-        .header-table td {
-            padding: 0;
-            vertical-align: bottom;
+        .header-left,
+        .header-right {
+            display: table-cell;
+            vertical-align: top;
+        }
+
+        .header-right {
+            width: 33%;
+            text-align: right;
         }
 
         .brand {
-            margin: 0 0 2px;
-            color: #0f766e;
-            font-size: 6.2px;
+            margin: 0;
+            color: #166534;
+            font-size: 15px;
             font-weight: 700;
-            letter-spacing: 1.2px;
-            text-transform: uppercase;
+            letter-spacing: -0.2px;
         }
 
         .title {
-            margin: 0;
-            color: #0f172a;
-            font-size: 17px;
-            line-height: 1.05;
+            margin: 2px 0 0;
+            font-size: 10px;
+            font-weight: 700;
         }
 
-        .subtitle {
-            margin: 4px 0 0;
-            max-width: 600px;
+        .subtitle,
+        .meta {
+            margin: 2px 0 0;
             color: #64748b;
             font-size: 6.8px;
         }
 
-        .meta {
-            width: 270px;
-            color: #475569;
-            font-size: 6.4px;
-            line-height: 1.65;
-            text-align: right;
-        }
-
-        .meta strong {
-            color: #0f172a;
-        }
-
-        .accent-line {
-            height: 3px;
+        .filter-line {
             margin-bottom: 7px;
-            background: #0f766e;
-        }
-
-        .filter-bar {
-            width: 100%;
-            margin-bottom: 7px;
-            border: 1px solid #d7e0e8;
-            border-collapse: collapse;
-            background: #f8fafc;
-        }
-
-        .filter-bar td {
+            border: 1px solid #dbe4dc;
+            background: #f5faf6;
             padding: 5px 7px;
-            vertical-align: middle;
         }
 
         .filter-label {
-            width: 86px;
-            color: #0f172a;
-            font-size: 6px;
+            color: #166534;
             font-weight: 700;
-            letter-spacing: .45px;
-            text-transform: uppercase;
         }
 
-        .filter-value {
-            color: #475569;
-        }
-
-        .summary-table {
+        .summary {
+            display: table;
             width: 100%;
-            margin: 0 0 7px;
-            border-collapse: separate;
-            border-spacing: 4px 0;
+            margin-bottom: 7px;
+            table-layout: fixed;
+            border: 1px solid #dbe4dc;
         }
 
-        .summary-table td {
-            width: 20%;
-            padding: 5px 7px;
-            border: 1px solid #d7e0e8;
-            background: #ffffff;
-            vertical-align: top;
+        .summary-cell {
+            display: table-cell;
+            padding: 5px 6px;
+            border-right: 1px solid #dbe4dc;
+            background: #fbfdfb;
+        }
+
+        .summary-cell:last-child {
+            border-right: 0;
         }
 
         .summary-label {
             color: #64748b;
-            font-size: 5.7px;
-            font-weight: 700;
-            letter-spacing: .45px;
+            font-size: 6.2px;
             text-transform: uppercase;
         }
 
         .summary-value {
-            margin-top: 2px;
-            color: #0f172a;
-            font-size: 10.5px;
+            margin-top: 1px;
+            color: #166534;
+            font-size: 10px;
             font-weight: 700;
         }
 
-        .summary-note {
-            margin-top: 1px;
-            color: #94a3b8;
-            font-size: 5.5px;
-        }
-
-        .directory-table {
+        table {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
         }
 
-        .directory-table thead {
+        thead {
             display: table-header-group;
         }
 
-        .directory-table tr {
+        tr {
             page-break-inside: avoid;
         }
 
-        .directory-table th,
-        .directory-table td {
-            padding: 4px 3.6px;
-            border: 1px solid #d7e0e8;
-            vertical-align: top;
-            overflow-wrap: anywhere;
-        }
-
-        .directory-table th {
+        th {
+            border: 1px solid #b7c8ba;
+            background: #166534;
             color: #ffffff;
-            background: #0f766e;
-            font-size: 5.8px;
+            padding: 4px 3px;
+            font-size: 6.2px;
             font-weight: 700;
-            letter-spacing: .25px;
             text-align: left;
             text-transform: uppercase;
         }
 
-        .directory-table tbody tr:nth-child(even) td {
-            background: #f8fafc;
+        td {
+            border: 1px solid #d9e1db;
+            padding: 4px 3px;
+            vertical-align: top;
+            word-wrap: break-word;
         }
 
-        .directory-table tbody tr:nth-child(odd) td {
-            background: #ffffff;
+        tbody tr:nth-child(even) td {
+            background: #f8faf8;
         }
 
         .center {
@@ -200,280 +146,219 @@
 
         .right {
             text-align: right;
-            white-space: nowrap;
         }
 
-        .product-name {
-            color: #0f172a;
-            font-size: 7.4px;
+        .strong {
             font-weight: 700;
         }
 
-        .detail {
-            margin-top: 1.5px;
+        .muted {
             color: #64748b;
-            font-size: 5.9px;
-            line-height: 1.35;
         }
 
         .mono {
             font-family: DejaVu Sans Mono, monospace;
-            font-size: 5.8px;
-        }
-
-        .location + .location {
-            margin-top: 3px;
-            padding-top: 3px;
-            border-top: 1px dotted #cbd5e1;
-        }
-
-        .location-branch {
-            color: #0f172a;
-            font-weight: 700;
-        }
-
-        .location-warehouse {
-            margin-top: 1px;
-            color: #475569;
+            font-size: 6.4px;
         }
 
         .tag {
             display: inline-block;
-            padding: 1px 4px;
+            margin: 0 2px 2px 0;
             border: 1px solid #cbd5e1;
-            border-radius: 7px;
-            font-size: 5.4px;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .tag-active {
-            color: #166534;
-            border-color: #bbf7d0;
-            background: #f0fdf4;
-        }
-
-        .tag-inactive {
-            color: #991b1b;
-            border-color: #fecaca;
-            background: #fef2f2;
-        }
-
-        .tag-tracked {
-            color: #075985;
-            border-color: #bae6fd;
-            background: #f0f9ff;
-        }
-
-        .tag-not-tracked {
-            color: #92400e;
-            border-color: #fde68a;
-            background: #fffbeb;
-        }
-
-        .empty {
-            padding: 24px !important;
-            color: #64748b;
-            text-align: center;
-        }
-
-        .report-note {
-            margin-top: 6px;
-            padding: 5px 7px;
-            color: #64748b;
+            border-radius: 8px;
+            padding: 1px 4px;
             background: #f8fafc;
-            border-left: 2px solid #0f766e;
+            color: #334155;
             font-size: 5.8px;
+            font-weight: 700;
+        }
+
+        .tag-green {
+            border-color: #86c89a;
+            background: #eef9f1;
+            color: #166534;
+        }
+
+        .tag-amber {
+            border-color: #e6c56c;
+            background: #fff8df;
+            color: #92400e;
+        }
+
+        .tag-gray {
+            border-color: #cbd5e1;
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .footer {
+            position: fixed;
+            right: 0;
+            bottom: -9mm;
+            left: 0;
+            border-top: 1px solid #dbe4dc;
+            padding-top: 3px;
+            color: #64748b;
+            font-size: 6.2px;
+        }
+
+        .page-number::after {
+            content: counter(page);
         }
     </style>
 </head>
 <body>
-    <footer class="page-footer">
-        JCM Inventory · Product Directory · Generated {{ $generatedAt->format('M d, Y h:i A') }}
-    </footer>
+    <div class="header">
+        <div class="header-left">
+            <p class="brand">JCM Inventory</p>
+            <p class="title">Product Directory and Batch Configuration</p>
+            <p class="subtitle">
+                Product identity, default cost reference, stock tracking, batch policy, expiry rules, and warehouse assignment.
+            </p>
+        </div>
+        <div class="header-right">
+            <p class="meta"><span class="strong">Generated:</span> {{ $generatedAt->format('M d, Y h:i A') }}</p>
+            <p class="meta"><span class="strong">Prepared by:</span> {{ $generatedBy }}</p>
+            <p class="meta"><span class="strong">Records:</span> {{ number_format($summary['total']) }}</p>
+        </div>
+    </div>
 
-    <table class="header-table">
-        <tr>
-            <td>
-                <p class="brand">JCM Inventory</p>
-                <h1 class="title">Product Directory</h1>
-                <p class="subtitle">
-                    Product identity, classification, pricing, tracking configuration, and assigned branch or warehouse locations.
-                </p>
-            </td>
-            <td class="meta">
-                <strong>Generated:</strong> {{ $generatedAt->format('F d, Y h:i A') }}<br>
-                <strong>Generated by:</strong> {{ $generatedBy }}<br>
-                <strong>Matching records:</strong> {{ number_format($summary['total']) }}
-            </td>
-        </tr>
-    </table>
+    <div class="filter-line">
+        <span class="filter-label">Applied filters:</span>
+        {{ count($filterLabels) > 0 ? implode(' · ', $filterLabels) : 'All product records' }}
+    </div>
 
-    <div class="accent-line"></div>
+    <div class="summary">
+        <div class="summary-cell">
+            <div class="summary-label">Products</div>
+            <div class="summary-value">{{ number_format($summary['total']) }}</div>
+        </div>
+        <div class="summary-cell">
+            <div class="summary-label">Active</div>
+            <div class="summary-value">{{ number_format($summary['active']) }}</div>
+        </div>
+        <div class="summary-cell">
+            <div class="summary-label">Stock tracked</div>
+            <div class="summary-value">{{ number_format($summary['tracked']) }}</div>
+        </div>
+        <div class="summary-cell">
+            <div class="summary-label">Batch enabled</div>
+            <div class="summary-value">{{ number_format($summary['batch_enabled']) }}</div>
+        </div>
+        <div class="summary-cell">
+            <div class="summary-label">Expiry required</div>
+            <div class="summary-value">{{ number_format($summary['expiration_required']) }}</div>
+        </div>
+        <div class="summary-cell">
+            <div class="summary-label">With warehouse</div>
+            <div class="summary-value">{{ number_format($summary['with_warehouse']) }}</div>
+        </div>
+    </div>
 
-    <table class="filter-bar">
-        <tr>
-            <td class="filter-label">Filters</td>
-            <td class="filter-value">{{ $filterText }}</td>
-        </tr>
-    </table>
-
-    <table class="summary-table">
-        <tr>
-            <td>
-                <div class="summary-label">Products</div>
-                <div class="summary-value">{{ number_format($summary['total']) }}</div>
-                <div class="summary-note">Matching records</div>
-            </td>
-            <td>
-                <div class="summary-label">Active / Inactive</div>
-                <div class="summary-value">
-                    {{ number_format($summary['active']) }} / {{ number_format($summary['inactive']) }}
-                </div>
-                <div class="summary-note">Catalog availability</div>
-            </td>
-            <td>
-                <div class="summary-label">Categories Used</div>
-                <div class="summary-value">{{ number_format($summary['categories_used']) }}</div>
-                <div class="summary-note">
-                    {{ number_format($summary['uncategorized']) }} uncategorized
-                </div>
-            </td>
-            <td>
-                <div class="summary-label">Warehouse Assigned</div>
-                <div class="summary-value">{{ number_format($summary['with_warehouse']) }}</div>
-                <div class="summary-note">
-                    {{ number_format($summary['without_warehouse']) }} unassigned
-                </div>
-            </td>
-            <td>
-                <div class="summary-label">Warehouses Used</div>
-                <div class="summary-value">{{ number_format($summary['warehouses_used']) }}</div>
-                <div class="summary-note">Distinct locations</div>
-            </td>
-        </tr>
-    </table>
-
-    <table class="directory-table">
+    <table>
         <colgroup>
-            <col style="width: 3%;">
-            <col style="width: 17%;">
-            <col style="width: 10%;">
-            <col style="width: 12%;">
-            <col style="width: 5%;">
-            <col style="width: 7.5%;">
-            <col style="width: 7.5%;">
-            <col style="width: 7.5%;">
-            <col style="width: 8%;">
-            <col style="width: 15%;">
-            <col style="width: 7.5%;">
+            <col style="width: 2.5%">
+            <col style="width: 10.5%">
+            <col style="width: 8.5%">
+            <col style="width: 7.5%">
+            <col style="width: 7.5%">
+            <col style="width: 6.5%">
+            <col style="width: 4%">
+            <col style="width: 6.5%">
+            <col style="width: 6%">
+            <col style="width: 7%">
+            <col style="width: 5.5%">
+            <col style="width: 8%">
+            <col style="width: 13.5%">
+            <col style="width: 6.5%">
         </colgroup>
         <thead>
             <tr>
-                <th class="center">No.</th>
+                <th class="center">#</th>
                 <th>Product</th>
-                <th>SKU / Barcode</th>
+                <th>Description</th>
+                <th>SKU</th>
+                <th>Barcode</th>
                 <th>Category</th>
-                <th class="center">Unit</th>
-                <th class="right">Cost Price</th>
-                <th class="right">Selling Price</th>
-                <th class="right">Wholesale</th>
-                <th>Tracking</th>
-                <th>Branch / Warehouse</th>
-                <th>Status</th>
+                <th>Unit</th>
+                <th class="right">Default Cost</th>
+                <th>Stock</th>
+                <th>Batch</th>
+                <th>Policy</th>
+                <th>Expiry Rule</th>
+                <th>Branch / Warehouse Assignment</th>
+                <th>Status / Updated</th>
             </tr>
         </thead>
         <tbody>
             @forelse ($products as $index => $product)
-                @php
-                    $warehouseLocations = collect(
-                        $product->getAttribute('report_warehouses') ?? []
-                    );
-                @endphp
                 <tr>
                     <td class="center">{{ $index + 1 }}</td>
                     <td>
-                        <div class="product-name">{{ $product->name }}</div>
-                        <div class="detail">
-                            {{ $product->description ?: 'No description provided' }}
-                        </div>
+                        <div class="strong">{{ $product->name }}</div>
+                        <div class="muted mono">ID #{{ $product->id }}</div>
                     </td>
+                    <td>{{ $product->description ?: '—' }}</td>
+                    <td class="mono">{{ $product->sku ?: '—' }}</td>
+                    <td class="mono">{{ $product->barcode ?: '—' }}</td>
                     <td>
-                        <div class="mono">SKU: {{ $product->sku ?: '—' }}</div>
-                        <div class="detail mono">Barcode: {{ $product->barcode ?: '—' }}</div>
-                    </td>
-                    <td>
-                        <div class="product-name">
-                            {{ $product->category?->name ?? 'Uncategorized' }}
-                        </div>
-                        @if ($product->category)
-                            <div class="detail mono">
-                                {{ $product->category->slug ?: 'No slug' }}
-                            </div>
-                            <div class="detail">
-                                Category {{ $product->category->is_active ? 'active' : 'inactive' }}
-                            </div>
-                        @else
-                            <div class="detail">No category assigned</div>
+                        <div>{{ $product->category?->name ?? 'Uncategorized' }}</div>
+                        @if ($product->category?->description)
+                            <div class="muted">{{ $product->category->description }}</div>
                         @endif
                     </td>
-                    <td class="center">{{ $product->unit ?: '—' }}</td>
+                    <td class="center">{{ $product->unit }}</td>
                     <td class="right">{{ number_format((float) $product->cost_price, 2) }}</td>
-                    <td class="right">{{ number_format((float) $product->selling_price, 2) }}</td>
-                    <td class="right">
-                        {{ $product->wholesale_price !== null
-                            ? number_format((float) $product->wholesale_price, 2)
-                            : '—' }}
-                    </td>
                     <td>
-                        <span class="tag {{ $product->stock_tracking === 'tracked' ? 'tag-tracked' : 'tag-not-tracked' }}">
+                        <span class="tag {{ $product->stock_tracking === 'tracked' ? 'tag-green' : 'tag-gray' }}">
                             {{ $product->stock_tracking === 'tracked' ? 'Tracked' : 'Not tracked' }}
                         </span>
                     </td>
                     <td>
-                        @forelse ($warehouseLocations as $location)
-                            <div class="location">
-                                <div class="location-branch">
-                                    {{ $location->branch_name }}
-                                    @if ($location->branch_code)
-                                        ({{ $location->branch_code }})
-                                    @endif
-                                </div>
-                                <div class="location-warehouse">
-                                    {{ $location->warehouse_name }}
-                                    @if ($location->warehouse_code)
-                                        ({{ $location->warehouse_code }})
-                                    @endif
-                                    @if ($location->warehouse_is_main)
-                                        · Main warehouse
-                                    @endif
-                                </div>
-                            </div>
-                        @empty
-                            <span class="detail">No warehouse assigned</span>
-                        @endforelse
+                        <span class="tag {{ $product->batch_tracking_enabled ? 'tag-green' : 'tag-gray' }}">
+                            {{ $product->batch_tracking_enabled ? 'Enabled' : 'Disabled' }}
+                        </span>
                     </td>
                     <td>
-                        <span class="tag {{ $product->is_active ? 'tag-active' : 'tag-inactive' }}">
+                        {{ $product->batch_tracking_enabled
+                            ? strtoupper($product->batch_issue_policy)
+                            : '—' }}
+                    </td>
+                    <td>
+                        @if ($product->batch_tracking_enabled)
+                            <span class="tag {{ $product->requires_expiration_date ? 'tag-amber' : 'tag-gray' }}">
+                                {{ $product->requires_expiration_date ? 'Required' : 'Optional' }}
+                            </span>
+                            <div class="muted">
+                                Warning: {{ $product->expiry_warning_days
+                                    ? $product->expiry_warning_days.' days'
+                                    : 'Tenant default' }}
+                            </div>
+                        @else
+                            —
+                        @endif
+                    </td>
+                    <td>{{ $product->report_warehouse_text }}</td>
+                    <td>
+                        <span class="tag {{ $product->is_active ? 'tag-green' : 'tag-gray' }}">
                             {{ $product->is_active ? 'Active' : 'Inactive' }}
                         </span>
-                        <div class="detail">
-                            Created {{ optional($product->created_at)->format('M d, Y') ?: '—' }}
+                        <div class="muted">
+                            {{ optional($product->updated_at)->format('M d, Y') ?? '—' }}
                         </div>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="11" class="empty">
-                        No product records matched the selected filters.
-                    </td>
+                    <td colspan="14" class="center">No products matched the selected filters.</td>
                 </tr>
             @endforelse
         </tbody>
     </table>
 
-    <div class="report-note">
-        Product-directory report only. Current quantities, stock movements, and inventory valuation are intentionally excluded and remain available in their dedicated inventory pages.
+    <div class="footer">
+        <span>JCM Inventory · Product master report · No current stock quantities, movements, or valuation totals are included.</span>
+        <span style="float: right;">Page <span class="page-number"></span></span>
     </div>
 </body>
 </html>

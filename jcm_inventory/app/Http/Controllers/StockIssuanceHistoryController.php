@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Inventory\InventoryAccessContext;
+use App\Services\Inventory\InventoryLedgerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -14,6 +16,13 @@ use Inertia\Response;
 class StockIssuanceHistoryController extends Controller
 {
     private const PRODUCT_CODE = 'JCM-INVENTORY-001';
+
+
+    public function __construct(
+        private readonly InventoryAccessContext $access,
+        private readonly InventoryLedgerService $ledger
+    ) {
+    }
 
     private const REASONS = [
         'used_consumed' => 'Used / Consumed',
@@ -290,6 +299,41 @@ class StockIssuanceHistoryController extends Controller
                     'stock_issuance_id'
                 );
 
+        $itemIds = $items
+            ->flatten(1)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->values();
+
+        $itemBatches = $itemIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql')
+                ->table('stock_issuance_item_batches as item_batch')
+                ->join('stock_batches as batch', function ($join): void {
+                    $join
+                        ->on('batch.id', '=', 'item_batch.stock_batch_id')
+                        ->on('batch.tenant_id', '=', 'item_batch.tenant_id');
+                })
+                ->where('item_batch.tenant_id', $tenantId)
+                ->whereIn('item_batch.stock_issuance_item_id', $itemIds)
+                ->orderBy('item_batch.id')
+                ->get([
+                    'item_batch.id',
+                    'item_batch.stock_issuance_item_id',
+                    'item_batch.stock_batch_id',
+                    'item_batch.stock_movement_batch_id',
+                    'item_batch.void_stock_movement_batch_id',
+                    'item_batch.quantity_issued',
+                    'item_batch.unit_cost',
+                    'item_batch.line_total',
+                    'batch.batch_code',
+                    'batch.lot_number',
+                    'batch.received_date',
+                    'batch.expiration_date',
+                    'batch.status',
+                ])
+                ->groupBy('stock_issuance_item_id');
+
         $userIds = $issuances
             ->getCollection()
             ->flatMap(
@@ -315,6 +359,7 @@ class StockIssuanceHistoryController extends Controller
                 ->map(
                     function ($issuance) use (
                         $items,
+                        $itemBatches,
                         $users
                     ): array {
                         return [
@@ -453,6 +498,38 @@ class StockIssuanceHistoryController extends Controller
                                                 ? (int) $item
                                                     ->void_stock_movement_id
                                                 : null,
+                                        'batches' => $itemBatches
+                                            ->get((int) $item->id, collect())
+                                            ->map(fn ($batch): array => [
+                                                'id' => (int) $batch->id,
+                                                'stock_batch_id' =>
+                                                    (int) $batch->stock_batch_id,
+                                                'batch_code' =>
+                                                    $batch->batch_code,
+                                                'lot_number' =>
+                                                    $batch->lot_number,
+                                                'quantity_issued' =>
+                                                    (float) $batch->quantity_issued,
+                                                'unit_cost' =>
+                                                    (float) $batch->unit_cost,
+                                                'line_total' =>
+                                                    (float) $batch->line_total,
+                                                'received_date' =>
+                                                    $batch->received_date,
+                                                'expiration_date' =>
+                                                    $batch->expiration_date,
+                                                'status' => $batch->status,
+                                                'stock_movement_batch_id' =>
+                                                    $batch->stock_movement_batch_id
+                                                        ? (int) $batch->stock_movement_batch_id
+                                                        : null,
+                                                'void_stock_movement_batch_id' =>
+                                                    $batch->void_stock_movement_batch_id
+                                                        ? (int) $batch->void_stock_movement_batch_id
+                                                        : null,
+                                            ])
+                                            ->values()
+                                            ->all(),
                                     ]
                                 )
                                 ->values()
@@ -595,7 +672,7 @@ class StockIssuanceHistoryController extends Controller
         Request $request,
         int $issuance
     ): RedirectResponse {
-        $context = $this->userContext($request);
+        $context = $this->access->resolve($request);
         $tenantId = $context['account_owner_id'];
 
         abort_unless(
@@ -605,414 +682,181 @@ class StockIssuanceHistoryController extends Controller
         );
 
         $validated = $request->validate([
-            'reason' => [
-                'required',
-                'string',
-                'min:3',
-                'max:1000',
-            ],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ]);
 
-        $issuanceNumber = DB::connection('mysql')
-            ->transaction(
-                function () use (
-                    $request,
-                    $tenantId,
-                    $issuance,
-                    $validated
-                ): string {
-                    $database =
-                        DB::connection('mysql');
+        $issuanceNumber = DB::connection('mysql')->transaction(
+            function () use (
+                $context,
+                $tenantId,
+                $issuance,
+                $validated
+            ): string {
+                $database = DB::connection('mysql');
+                $issuanceRecord = $database
+                    ->table('stock_issuances')
+                    ->where('id', $issuance)
+                    ->where('tenant_id', $tenantId)
+                    ->lockForUpdate()
+                    ->first();
 
-                    $issuanceRecord = $database
-                        ->table('stock_issuances')
-                        ->where(
-                            'id',
-                            $issuance
-                        )
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->lockForUpdate()
-                        ->first();
+                if (! $issuanceRecord) {
+                    abort(404);
+                }
 
-                    if (! $issuanceRecord) {
-                        abort(404);
-                    }
+                if ($issuanceRecord->status !== 'posted') {
+                    throw ValidationException::withMessages([
+                        'issuance' =>
+                            'This stock issuance has already been voided.',
+                    ]);
+                }
 
-                    if (
-                        $issuanceRecord->status
-                        !== 'posted'
-                    ) {
-                        throw ValidationException::withMessages([
-                            'issuance' =>
-                                'This stock issuance has already been voided.',
-                        ]);
-                    }
+                $items = $database
+                    ->table('stock_issuance_items')
+                    ->where('tenant_id', $tenantId)
+                    ->where('stock_issuance_id', $issuanceRecord->id)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
 
-                    $items = $database
-                        ->table(
-                            'stock_issuance_items'
-                        )
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->where(
-                            'stock_issuance_id',
-                            $issuanceRecord->id
-                        )
+                if ($items->isEmpty()) {
+                    throw ValidationException::withMessages([
+                        'issuance' =>
+                            'This stock issuance has no items to reverse.',
+                    ]);
+                }
+
+                if (
+                    $items->contains(
+                        fn ($item): bool =>
+                            ! $item->stock_movement_id
+                            || $item->void_stock_movement_id
+                    )
+                ) {
+                    throw ValidationException::withMessages([
+                        'issuance' =>
+                            'This issuance has incomplete or already-reversed movement links.',
+                    ]);
+                }
+
+                $now = now();
+                $voidReason = trim((string) $validated['reason']);
+
+                foreach ($items as $item) {
+                    $itemBatches = $database
+                        ->table('stock_issuance_item_batches')
+                        ->where('tenant_id', $tenantId)
+                        ->where('stock_issuance_item_id', $item->id)
                         ->orderBy('id')
                         ->lockForUpdate()
                         ->get();
 
-                    if ($items->isEmpty()) {
+                    if ($itemBatches->isEmpty()) {
                         throw ValidationException::withMessages([
                             'issuance' =>
-                                'This stock issuance has no items to reverse.',
+                                "{$item->product_name} has no exact batch allocation. A legacy issuance cannot be safely voided automatically.",
                         ]);
                     }
 
                     if (
-                        $items->contains(
-                            fn ($item): bool =>
-                                ! $item
-                                    ->stock_movement_id
-                                || $item
-                                    ->void_stock_movement_id
+                        $itemBatches->contains(
+                            fn ($batch): bool =>
+                                ! $batch->stock_movement_batch_id
+                                || $batch->void_stock_movement_batch_id
                         )
                     ) {
                         throw ValidationException::withMessages([
                             'issuance' =>
-                                'This stock issuance cannot be safely voided because its movement links are incomplete or already reversed.',
+                                "{$item->product_name} has incomplete or already-reversed batch links.",
                         ]);
                     }
 
-                    $movementIds = $items
-                        ->pluck(
-                            'stock_movement_id'
-                        )
-                        ->map(
-                            fn ($id): int => (int) $id
-                        )
-                        ->unique()
-                        ->values();
+                    $reversal = $this->ledger->reverseMovement([
+                        'tenant_id' => $tenantId,
+                        'original_movement_id' =>
+                            (int) $item->stock_movement_id,
+                        'expected_reference_type' => 'stock_issuance',
+                        'expected_reference_id' =>
+                            (int) $issuanceRecord->id,
+                        'movement_type' => 'return_in',
+                        'reference_type' => 'stock_issuance_void',
+                        'reference_id' => (int) $issuanceRecord->id,
+                        'reference_no' =>
+                            (string) $issuanceRecord->issuance_number,
+                        'remarks' =>
+                            "Voided stock issuance {$issuanceRecord->issuance_number}: {$voidReason}",
+                        'movement_date' => $now,
+                        'user_id' => $context['user_id'],
+                    ]);
 
-                    $movements = $database
-                        ->table('stock_movements')
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->whereIn(
-                            'id',
-                            $movementIds
-                        )
-                        ->lockForUpdate()
-                        ->get()
-                        ->keyBy('id');
-
-                    if (
-                        $movements->count()
-                        !== $movementIds->count()
-                    ) {
-                        throw ValidationException::withMessages([
-                            'issuance' =>
-                                'One or more original stock movements could not be found.',
-                        ]);
-                    }
-
-                    $now = now();
-
-                    $voidReason = trim(
-                        (string) $validated['reason']
+                    $voidBatchByOriginal = collect(
+                        $reversal['allocations']
+                    )->keyBy(
+                        fn (array $allocation): int =>
+                            (int) $allocation[
+                                'original_stock_movement_batch_id'
+                            ]
                     );
 
-                    foreach ($items as $item) {
-                        $movement = $movements->get(
-                            (int) $item
-                                ->stock_movement_id
+                    foreach ($itemBatches as $itemBatch) {
+                        $voidAllocation = $voidBatchByOriginal->get(
+                            (int) $itemBatch->stock_movement_batch_id
                         );
 
-                        if (
-                            ! $movement
-                            || ! in_array(
-                                $movement
-                                    ->movement_type,
-                                [
-                                    'stock_out',
-                                    'damage',
-                                    'expired',
-                                ],
-                                true
-                            )
-                            || $movement
-                                ->reference_type
-                                !== 'stock_issuance'
-                            || (int) $movement
-                                ->reference_id
-                                !== (int) $issuanceRecord
-                                    ->id
-                            || (int) $movement
-                                ->warehouse_id
-                                !== (int) $issuanceRecord
-                                    ->warehouse_id
-                            || (int) $movement
-                                ->product_id
-                                !== (int) $item
-                                    ->product_id
-                            || $movement
-                                ->average_cost_before
-                                === null
-                            || $movement
-                                ->average_cost_after
-                                === null
-                        ) {
+                        if (! $voidAllocation) {
                             throw ValidationException::withMessages([
                                 'issuance' =>
-                                    "{$item->product_name} does not have a complete reversible movement record.",
+                                    "The reversal batch link for {$item->product_name} is incomplete.",
                             ]);
                         }
-
-                        $alreadyReversed = $database
-                            ->table('stock_movements')
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->where(
-                                'reversal_of_movement_id',
-                                $movement->id
-                            )
-                            ->exists();
-
-                        if ($alreadyReversed) {
-                            throw ValidationException::withMessages([
-                                'issuance' =>
-                                    "{$item->product_name} has already been reversed.",
-                            ]);
-                        }
-
-                        $hasLaterMovement = $database
-                            ->table('stock_movements')
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->where(
-                                'warehouse_id',
-                                $movement->warehouse_id
-                            )
-                            ->where(
-                                'product_id',
-                                $movement->product_id
-                            )
-                            ->where(
-                                'id',
-                                '>',
-                                $movement->id
-                            )
-                            ->exists();
-
-                        if ($hasLaterMovement) {
-                            throw ValidationException::withMessages([
-                                'issuance' =>
-                                    "{$item->product_name} has later stock activity. Void that later activity first or use a controlled adjustment instead.",
-                            ]);
-                        }
-
-                        $stock = $database
-                            ->table('warehouse_stocks')
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->where(
-                                'warehouse_id',
-                                $movement->warehouse_id
-                            )
-                            ->where(
-                                'product_id',
-                                $movement->product_id
-                            )
-                            ->lockForUpdate()
-                            ->first();
-
-                        if (! $stock) {
-                            throw ValidationException::withMessages([
-                                'issuance' =>
-                                    "The warehouse stock for {$item->product_name} could not be found.",
-                            ]);
-                        }
-
-                        $currentQuantity = round(
-                            (float) $stock->quantity,
-                            3
-                        );
-
-                        $currentAverageCost = round(
-                            (float) $stock->average_cost,
-                            4
-                        );
-
-                        if (
-                            ! $this->almostEqual(
-                                $currentQuantity,
-                                (float) $movement
-                                    ->quantity_after,
-                                0.0005
-                            )
-                            || ! $this->almostEqual(
-                                $currentAverageCost,
-                                (float) $movement
-                                    ->average_cost_after,
-                                0.00005
-                            )
-                        ) {
-                            throw ValidationException::withMessages([
-                                'issuance' =>
-                                    "Current stock for {$item->product_name} no longer matches the posted issuance state.",
-                            ]);
-                        }
-
-                        $restoredQuantity = round(
-                            (float) $movement
-                                ->quantity_before,
-                            3
-                        );
-
-                        $restoredAverageCost = round(
-                            (float) $movement
-                                ->average_cost_before,
-                            4
-                        );
 
                         $database
-                            ->table('warehouse_stocks')
-                            ->where(
-                                'id',
-                                $stock->id
-                            )
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
+                            ->table('stock_issuance_item_batches')
+                            ->where('tenant_id', $tenantId)
+                            ->where('id', $itemBatch->id)
                             ->update([
-                                'quantity' =>
-                                    $restoredQuantity,
-                                'average_cost' =>
-                                    $restoredAverageCost,
-                                'last_movement_at' =>
-                                    $now,
-                                'updated_at' => $now,
-                            ]);
-
-                        $voidMovementId = $database
-                            ->table('stock_movements')
-                            ->insertGetId([
-                                'tenant_id' => $tenantId,
-                                'warehouse_id' =>
-                                    $movement->warehouse_id,
-                                'product_id' =>
-                                    $movement->product_id,
-                                'movement_type' =>
-                                    'adjustment_in',
-                                'quantity' =>
-                                    round(
-                                        (float) $movement
-                                            ->quantity,
-                                        3
-                                    ),
-                                'quantity_before' =>
-                                    $currentQuantity,
-                                'quantity_after' =>
-                                    $restoredQuantity,
-                                'unit_cost' =>
-                                    round(
-                                        (float) $movement
-                                            ->unit_cost,
-                                        4
-                                    ),
-                                'total_cost' =>
-                                    round(
-                                        (float) $movement
-                                            ->total_cost,
-                                        2
-                                    ),
-                                'average_cost_before' =>
-                                    $currentAverageCost,
-                                'average_cost_after' =>
-                                    $restoredAverageCost,
-                                'reference_type' =>
-                                    'stock_issuance_void',
-                                'reference_id' =>
-                                    $issuanceRecord->id,
-                                'reference_no' =>
-                                    $issuanceRecord
-                                        ->issuance_number,
-                                'related_warehouse_id' =>
-                                    null,
-                                'reversal_of_movement_id' =>
-                                    $movement->id,
-                                'remarks' =>
-                                    "Voided stock issuance {$issuanceRecord->issuance_number}: {$voidReason}",
-                                'movement_date' => $now,
-                                'created_by' =>
-                                    $request->user()->id,
-                                'created_at' => $now,
-                                'updated_at' => $now,
-                            ]);
-
-                        $database
-                            ->table(
-                                'stock_issuance_items'
-                            )
-                            ->where(
-                                'id',
-                                $item->id
-                            )
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->update([
-                                'void_stock_movement_id' =>
-                                    $voidMovementId,
+                                'void_stock_movement_batch_id' =>
+                                    $voidAllocation[
+                                        'stock_movement_batch_id'
+                                    ],
                                 'updated_at' => $now,
                             ]);
                     }
 
                     $database
-                        ->table('stock_issuances')
-                        ->where(
-                            'id',
-                            $issuanceRecord->id
-                        )
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        ->table('stock_issuance_items')
+                        ->where('tenant_id', $tenantId)
+                        ->where('id', $item->id)
                         ->update([
-                            'status' => 'voided',
-                            'voided_by' =>
-                                $request->user()->id,
-                            'voided_at' => $now,
-                            'void_reason' =>
-                                $voidReason,
+                            'void_stock_movement_id' =>
+                                $reversal['movement_id'],
                             'updated_at' => $now,
                         ]);
-
-                    return $issuanceRecord
-                        ->issuance_number;
                 }
-            );
+
+                $database
+                    ->table('stock_issuances')
+                    ->where('tenant_id', $tenantId)
+                    ->where('id', $issuanceRecord->id)
+                    ->update([
+                        'status' => 'voided',
+                        'voided_by' => $context['user_id'],
+                        'voided_at' => $now,
+                        'void_reason' => $voidReason,
+                        'updated_at' => $now,
+                    ]);
+
+                return (string) $issuanceRecord->issuance_number;
+            },
+            5
+        );
 
         return back()->with(
             'success',
-            "Stock issuance {$issuanceNumber} was voided and its stock was safely restored."
+            "Stock issuance {$issuanceNumber} was voided and its exact batches were restored."
         );
     }
+
 
     /*
     |--------------------------------------------------------------------------
@@ -1174,161 +1018,9 @@ class StockIssuanceHistoryController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    private function userContext(
-        Request $request
-    ): array {
-        $userId = (int) (
-            $request->user()?->id
-        );
-
-        abort_unless(
-            $userId > 0,
-            401
-        );
-
-        $context = DB::connection('saas')
-            ->table(
-                'user_product_access as access'
-            )
-            ->join(
-                'products as product',
-                'product.id',
-                '=',
-                'access.product_id'
-            )
-            ->join(
-                'product_user_types as product_role',
-                function ($join): void {
-                    $join
-                        ->on(
-                            'product_role.id',
-                            '=',
-                            'access.product_user_type_id'
-                        )
-                        ->on(
-                            'product_role.product_id',
-                            '=',
-                            'access.product_id'
-                        );
-                }
-            )
-            ->join(
-                'user_types as user_type',
-                'user_type.id',
-                '=',
-                'product_role.user_type_id'
-            )
-            ->join(
-                'subscriptions as subscription',
-                function ($join): void {
-                    $join
-                        ->on(
-                            'subscription.id',
-                            '=',
-                            'access.subscription_id'
-                        )
-                        ->on(
-                            'subscription.product_id',
-                            '=',
-                            'access.product_id'
-                        );
-                }
-            )
-            ->where(
-                'access.user_id',
-                $userId
-            )
-            ->where(
-                'access.status',
-                'active'
-            )
-            ->where(
-                'product.product_code',
-                self::PRODUCT_CODE
-            )
-            ->whereIn(
-                'product.status',
-                [
-                    'development',
-                    'active',
-                ]
-            )
-            ->where(
-                'product_role.status',
-                'active'
-            )
-            ->where(
-                'user_type.status',
-                'active'
-            )
-            ->whereIn(
-                'subscription.status',
-                [
-                    'trial',
-                    'active',
-                ]
-            )
-            ->orderByDesc(
-                'subscription.id'
-            )
-            ->select([
-                'access.account_owner_id',
-                'access.product_id',
-                'access.subscription_id',
-                'product_role.display_name as role_name',
-                'user_type.type_code as role_code',
-                'user_type.is_owner_type',
-            ])
-            ->first();
-
-        abort_unless(
-            $context,
-            403,
-            'Your account does not have active access to JCM Inventory.'
-        );
-
-        $isOwner =
-            (bool) $context->is_owner_type;
-
-        $assignedBranchId = $isOwner
-            ? null
-            : (int) (
-                $request->user()
-                    ?->branch_id
-                ?? 0
-            );
-
-        if (
-            ! $isOwner
-            && $assignedBranchId <= 0
-        ) {
-            abort(
-                403,
-                'No branch is assigned to your inventory account.'
-            );
-        }
-
-        return [
-            'user_id' => $userId,
-            'account_owner_id' =>
-                (int) $context
-                    ->account_owner_id,
-            'product_id' =>
-                (int) $context->product_id,
-            'subscription_id' =>
-                (int) $context
-                    ->subscription_id,
-            'role_code' =>
-                (string) $context->role_code,
-            'role_name' =>
-                (string) (
-                    $context->role_name
-                    ?: $context->role_code
-                ),
-            'is_owner' => $isOwner,
-            'branch_id' => $isOwner
-                ? null
-                : $assignedBranchId,
-        ];
+    private function userContext(Request $request): array
+    {
+        return $this->access->resolve($request);
     }
+
 }

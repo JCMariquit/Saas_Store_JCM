@@ -241,7 +241,7 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
   {
     title: "Received Orders",
-    href: "/suppliers/received-orders",
+    href: "/procurement/received-orders",
   },
 ];
 
@@ -286,7 +286,7 @@ export default function ReceivedOrderIndex({
     event.preventDefault();
 
     router.get(
-      "/suppliers/received-orders",
+      "/procurement/received-orders",
       {
         search: search.trim() || undefined,
         supplier_id: supplierId || undefined,
@@ -311,7 +311,7 @@ export default function ReceivedOrderIndex({
     setExpandedOrderId(null);
 
     router.get(
-      "/suppliers/received-orders",
+      "/procurement/received-orders",
       {},
       {
         preserveState: true,

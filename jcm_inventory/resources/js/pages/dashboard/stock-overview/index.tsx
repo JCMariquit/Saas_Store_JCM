@@ -999,6 +999,8 @@ function StockHealthGauge({
         (health.healthy / total) * 100;
     const low =
         (health.lowStock / total) * 100;
+    const out =
+        (health.outOfStock / total) * 100;
     const hasData = health.total > 0;
 
     const ringBackground = hasData

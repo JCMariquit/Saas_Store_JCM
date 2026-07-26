@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Inventory\InventoryAccessContext;
 use App\Models\Category;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -15,6 +16,11 @@ use Inertia\Response;
 
 class CategoryController extends Controller
 {
+    public function __construct(
+        private readonly InventoryAccessContext $access
+    ) {
+    }
+
     public function index(Request $request): Response
     {
         $tenantId = $this->getTenantId($request);
@@ -395,25 +401,9 @@ class CategoryController extends Controller
 
     private function getTenantId(Request $request): int
     {
-        $tenantId = (int) (
-            $request->user()?->client_id ?? 0
-        );
-
-        if (
-            $tenantId <= 0
-            && app()->environment('local')
-        ) {
-            return 1;
-        }
-
-        abort_if(
-            $tenantId <= 0,
-            403,
-            'Your account is not assigned to a client.'
-        );
-
-        return $tenantId;
+        return $this->access->tenantId($request);
     }
+
 
     private function ensureCategoryBelongsToTenant(
         Category $category,

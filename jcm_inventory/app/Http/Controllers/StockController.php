@@ -7,6 +7,8 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Warehouse;
 use App\Models\WarehouseStock;
+use App\Services\Inventory\InventoryAccessContext;
+use App\Services\Inventory\InventoryLedgerService;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -35,16 +37,28 @@ class StockController extends Controller
         'expired',
     ];
 
+    public function __construct(
+        private readonly InventoryAccessContext $access,
+        private readonly InventoryLedgerService $ledger
+    ) {
+    }
+
     public function index(Request $request): Response
     {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->access->resolve($request);
+        $tenantId = $context['account_owner_id'];
         $db = DB::connection('mysql');
         $inventorySettings = $this->getInventorySettings($db, $tenantId);
 
         $search = trim((string) $request->input('search', ''));
         $status = trim((string) $request->input('status', ''));
         $batchStatus = trim((string) $request->input('batch_status', ''));
-        $branchId = (int) $request->input('branch_id', 0);
+        $branchId = (int) (
+            $this->access->selectedBranchId(
+                $context,
+                $request->input('branch_id')
+            ) ?? 0
+        );
         $warehouseId = (int) $request->input('warehouse_id', 0);
         $categoryId = (int) $request->input('category_id', 0);
 
@@ -219,7 +233,15 @@ class StockController extends Controller
         $this->attachBatchDetails($db, $stocks->getCollection(), $tenantId);
 
         $summaryQuery = WarehouseStock::query()
-            ->where('tenant_id', $tenantId);
+            ->where('tenant_id', $tenantId)
+            ->when(
+                $branchId > 0,
+                fn (Builder $query) => $query->whereHas(
+                    'warehouse',
+                    fn (Builder $query) =>
+                        $query->where('branch_id', $branchId)
+                )
+            );
 
         $totalQuantity = (float) ((clone $summaryQuery)->sum('quantity') ?? 0);
 
@@ -231,6 +253,10 @@ class StockController extends Controller
 
         $activeBatchQuery = $db->table('vw_batch_inventory')
             ->where('tenant_id', $tenantId)
+            ->when(
+                $branchId > 0,
+                fn ($query) => $query->where('branch_id', $branchId)
+            )
             ->where('quantity', '>', 0);
 
         $recordsCount = (clone $summaryQuery)->count();
@@ -246,16 +272,20 @@ class StockController extends Controller
             ->distinct()
             ->count('warehouse_batch_stock_id');
         $expiringBatchCount = (clone $activeBatchQuery)
-            ->whereIn('expiry_state', ['warning', 'critical'])
+            ->whereRaw('BINARY `expiry_state` IN (?, ?)', ['warning', 'critical'])
             ->distinct()
             ->count('warehouse_batch_stock_id');
         $expiredBatchCount = (clone $activeBatchQuery)
-            ->where('expiry_state', 'expired')
+            ->whereRaw('BINARY `expiry_state` = ?', ['expired'])
             ->distinct()
             ->count('warehouse_batch_stock_id');
         $reconciliationMismatchCount = $db
             ->table('vw_batch_stock_reconciliation')
             ->where('tenant_id', $tenantId)
+            ->when(
+                $branchId > 0,
+                fn ($query) => $query->where('branch_id', $branchId)
+            )
             ->where('reconciliation_status', 'mismatch')
             ->count();
 
@@ -276,6 +306,10 @@ class StockController extends Controller
                     ->on('b.id', '=', 'w.branch_id');
             })
             ->where('ws.tenant_id', $tenantId)
+            ->when(
+                $branchId > 0,
+                fn ($query) => $query->where('w.branch_id', $branchId)
+            )
             ->select([
                 'ws.id',
                 'ws.warehouse_id',
@@ -353,6 +387,10 @@ class StockController extends Controller
                     ->on('b.id', '=', 'w.branch_id');
             })
             ->where('ws.tenant_id', $tenantId)
+            ->when(
+                $branchId > 0,
+                fn ($query) => $query->where('w.branch_id', $branchId)
+            )
             ->groupBy('w.id', 'w.name', 'w.code', 'b.name')
             ->select([
                 'w.id as warehouse_id',
@@ -423,7 +461,10 @@ class StockController extends Controller
             ->values();
 
         $expiryOverview = (clone $activeBatchQuery)
-            ->whereIn('expiry_state', ['warning', 'critical', 'expired'])
+            ->whereRaw(
+                'BINARY `expiry_state` IN (?, ?, ?)',
+                ['warning', 'critical', 'expired']
+            )
             ->select([
                 'stock_batch_id',
                 'product_name',
@@ -457,6 +498,10 @@ class StockController extends Controller
 
         $branches = Branch::query()
             ->where('tenant_id', $tenantId)
+            ->when(
+                $branchId > 0,
+                fn (Builder $query) => $query->whereKey($branchId)
+            )
             ->where('is_active', true)
             ->select(['id', 'name', 'code', 'is_main'])
             ->orderByDesc('is_main')
@@ -465,6 +510,11 @@ class StockController extends Controller
 
         $warehouses = Warehouse::query()
             ->where('tenant_id', $tenantId)
+            ->when(
+                $branchId > 0,
+                fn (Builder $query) =>
+                    $query->where('branch_id', $branchId)
+            )
             ->where('is_active', true)
             ->with(['branch:id,name,code'])
             ->select(['id', 'branch_id', 'name', 'code', 'is_main'])
@@ -514,6 +564,13 @@ class StockController extends Controller
 
         $positionKeys = $db->table('warehouse_stocks')
             ->where('tenant_id', $tenantId)
+            ->when(
+                $branchId > 0,
+                fn ($query) => $query->whereIn(
+                    'warehouse_id',
+                    $warehouses->pluck('id')
+                )
+            )
             ->select(['warehouse_id', 'product_id'])
             ->get()
             ->map(fn ($row) => "{$row->warehouse_id}:{$row->product_id}")
@@ -574,262 +631,188 @@ class StockController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $tenantId = $this->getTenantId($request);
-        $db = DB::connection('mysql');
-        $settings = $this->getInventorySettings($db, $tenantId);
-
+        $context = $this->access->resolve($request);
+        $tenantId = $context['account_owner_id'];
         $validated = $request->validate($this->openingStockRules($tenantId));
+
         $warehouseId = (int) $validated['warehouse_id'];
         $productId = (int) $validated['product_id'];
-        $quantityToAdd = $this->quantity($validated['opening_quantity']);
+        $quantity = $this->quantity($validated['opening_quantity']);
         $reorderLevel = $this->quantity($validated['reorder_level']);
         $maxStockLevel = filled($validated['max_stock_level'] ?? null)
             ? $this->quantity($validated['max_stock_level'])
             : null;
 
         $this->validateStockLevels($reorderLevel, $maxStockLevel);
-
-        $product = Product::query()
-            ->where('tenant_id', $tenantId)
-            ->whereKey($productId)
-            ->firstOrFail();
-
-        $this->validateIncomingBatchData(
-            $db,
-            $tenantId,
-            $product,
-            $validated,
-            $quantityToAdd,
-            $settings
-        );
-
         $createdNewPosition = false;
 
-        $db->transaction(function () use (
+        DB::connection('mysql')->transaction(function () use (
             $request,
-            $db,
+            $context,
             $tenantId,
             $validated,
             $warehouseId,
             $productId,
-            $quantityToAdd,
+            $quantity,
             $reorderLevel,
             $maxStockLevel,
-            $product,
-            $settings,
             &$createdNewPosition
         ): void {
-            $warehouse = $db->table('warehouses')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $warehouseId)
-                ->where('is_active', true)
-                ->whereNull('deleted_at')
-                ->lockForUpdate()
-                ->first();
+            $database = DB::connection('mysql');
+            $movementDate = now();
+            $warehouse = $this->ledger->lockWarehouse(
+                $tenantId,
+                $warehouseId
+            );
+            $this->access->assertBranch($context, (int) $warehouse->branch_id);
 
-            abort_unless($warehouse, 404);
-
-            $lockedStock = $db->table('warehouse_stocks')
+            $product = $this->ledger->lockProduct($tenantId, $productId);
+            $existingStock = $database
+                ->table('warehouse_stocks')
                 ->where('tenant_id', $tenantId)
                 ->where('warehouse_id', $warehouseId)
                 ->where('product_id', $productId)
                 ->lockForUpdate()
                 ->first();
 
-            $movementDate = now();
-            $userId = $request->user()?->id;
-            $createdNewPosition = ! $lockedStock;
+            $createdNewPosition = ! $existingStock;
+            $averageCostBefore = $existingStock
+                ? $this->cost($existingStock->average_cost)
+                : 0.0;
+            $unitCost = filled($validated['unit_cost'] ?? null)
+                ? $this->cost($validated['unit_cost'])
+                : ($averageCostBefore > 0
+                    ? $averageCostBefore
+                    : $this->cost($product->cost_price));
 
-            if ($lockedStock) {
-                $this->ensureBatchReconciled(
-                    $db,
-                    $tenantId,
-                    $warehouseId,
-                    $productId,
-                    $this->quantity($lockedStock->quantity)
-                );
+            $adjustmentNumber = $this->generateReferenceNumber(
+                $createdNewPosition ? 'OPEN' : 'STK'
+            );
+            $movementType = $createdNewPosition
+                ? 'opening_stock'
+                : 'stock_in';
+            $adjustmentType = $createdNewPosition
+                ? 'opening_stock'
+                : 'stock_in';
+            $reason = $createdNewPosition
+                ? 'Initial warehouse stock position'
+                : 'Additional warehouse stock';
+            $remarks = $this->nullableString($validated['remarks'] ?? null);
+            $userId = (int) $request->user()->id;
 
-                $stockId = (int) $lockedStock->id;
-                $quantityBefore = $this->quantity($lockedStock->quantity);
-                $averageCostBefore = $this->cost($lockedStock->average_cost);
-
-                $unitCost = filled($validated['unit_cost'] ?? null)
-                    ? $this->cost($validated['unit_cost'])
-                    : (
-                        $averageCostBefore > 0
-                            ? $averageCostBefore
-                            : $this->cost($product->cost_price)
-                    );
-
-                $adjustmentNumber = $this->generateReferenceNumber('STK');
-                $adjustmentType = 'stock_in';
-                $movementType = 'stock_in';
-                $batchSourceType = 'adjustment';
-                $reason = 'Additional warehouse stock';
-            } else {
-                $unitCost = filled($validated['unit_cost'] ?? null)
-                    ? $this->cost($validated['unit_cost'])
-                    : $this->cost($product->cost_price);
-
-                $stockId = $db->table('warehouse_stocks')->insertGetId([
+            $adjustmentId = $database
+                ->table('stock_adjustments')
+                ->insertGetId([
                     'tenant_id' => $tenantId,
+                    'branch_id' => (int) $warehouse->branch_id,
                     'warehouse_id' => $warehouseId,
-                    'product_id' => $productId,
-                    'quantity' => 0,
-                    'reorder_level' => $reorderLevel,
-                    'max_stock_level' => $maxStockLevel,
-                    'average_cost' => $unitCost,
-                    'last_movement_at' => null,
+                    'adjustment_number' => $adjustmentNumber,
+                    'adjustment_date' => $movementDate->toDateString(),
+                    'adjustment_type' => $adjustmentType,
+                    'status' => 'posted',
+                    'reference_no' => null,
+                    'reason' => $reason,
+                    'notes' => $remarks,
+                    'total_quantity' => $quantity,
+                    'total_cost' => 0,
+                    'created_by' => $userId,
+                    'posted_by' => $userId,
+                    'posted_at' => $movementDate,
                     'created_at' => $movementDate,
                     'updated_at' => $movementDate,
                 ]);
 
-                $quantityBefore = 0;
-                $averageCostBefore = 0;
-                $adjustmentNumber = $this->generateReferenceNumber('OPEN');
-                $adjustmentType = 'opening_stock';
-                $movementType = 'opening_stock';
-                $batchSourceType = 'opening_stock';
-                $reason = 'Initial warehouse stock position';
-            }
-
-            $totalCost = $this->money($quantityToAdd * $unitCost);
-
-            $adjustmentId = $db->table('stock_adjustments')->insertGetId([
-                'tenant_id' => $tenantId,
-                'branch_id' => $warehouse->branch_id,
-                'warehouse_id' => $warehouseId,
-                'adjustment_number' => $adjustmentNumber,
-                'adjustment_date' => $movementDate->toDateString(),
-                'adjustment_type' => $adjustmentType,
-                'status' => 'posted',
-                'reference_no' => null,
-                'reason' => $reason,
-                'notes' => $this->nullableString($validated['remarks'] ?? null),
-                'total_quantity' => $quantityToAdd,
-                'total_cost' => $totalCost,
-                'created_by' => $userId,
-                'posted_by' => $userId,
-                'posted_at' => $movementDate,
-                'created_at' => $movementDate,
-                'updated_at' => $movementDate,
-            ]);
-
-            $adjustmentItemId = $db->table('stock_adjustment_items')->insertGetId([
-                'tenant_id' => $tenantId,
-                'stock_adjustment_id' => $adjustmentId,
-                'product_id' => $productId,
-                'direction' => 'in',
-                'quantity' => $quantityToAdd,
-                'unit_cost' => $unitCost,
-                'line_total' => $totalCost,
-                'notes' => $this->nullableString($validated['remarks'] ?? null),
-                'created_at' => $movementDate,
-                'updated_at' => $movementDate,
-            ]);
-
-            $batchId = $this->createIncomingBatch(
-                $db,
-                $tenantId,
-                $product,
-                $validated,
-                $quantityToAdd,
-                $unitCost,
-                $batchSourceType,
-                $adjustmentNumber,
-                $userId,
-                $settings,
-                $movementDate
-            );
-
-            $batchBalance = $this->addToBatchBalance(
-                $db,
-                $tenantId,
-                $warehouseId,
-                $productId,
-                $batchId,
-                $quantityToAdd,
-                $movementDate
-            );
-
-            $aggregate = $this->syncWarehouseStockFromBatches(
-                $db,
-                $stockId,
-                $tenantId,
-                $warehouseId,
-                $productId,
-                $movementDate
-            );
-
-            $movementId = $this->createStockMovement($db, [
-                'tenant_id' => $tenantId,
-                'warehouse_id' => $warehouseId,
-                'product_id' => $productId,
-                'movement_type' => $movementType,
-                'quantity' => $quantityToAdd,
-                'quantity_before' => $quantityBefore,
-                'quantity_after' => $aggregate['quantity'],
-                'unit_cost' => $unitCost,
-                'total_cost' => $totalCost,
-                'average_cost_before' => $averageCostBefore,
-                'average_cost_after' => $aggregate['average_cost'],
-                'reference_type' => 'stock_adjustment',
-                'reference_id' => $adjustmentId,
-                'reference_no' => $adjustmentNumber,
-                'related_warehouse_id' => null,
-                'remarks' => $this->nullableString($validated['remarks'] ?? null),
-                'movement_date' => $movementDate,
-                'created_by' => $userId,
-            ]);
-
-            $movementBatchId = $this->createMovementBatch($db, [
-                'tenant_id' => $tenantId,
-                'stock_movement_id' => $movementId,
-                'warehouse_id' => $warehouseId,
-                'product_id' => $productId,
-                'stock_batch_id' => $batchId,
-                'direction' => 'in',
-                'quantity' => $quantityToAdd,
-                'batch_quantity_before' => $batchBalance['before'],
-                'batch_quantity_after' => $batchBalance['after'],
-                'unit_cost' => $unitCost,
-                'total_cost' => $totalCost,
-                'created_at' => $movementDate,
-            ]);
-
-            $db->table('stock_adjustment_items')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $adjustmentItemId)
-                ->update([
-                    'stock_movement_id' => $movementId,
+            $adjustmentItemId = $database
+                ->table('stock_adjustment_items')
+                ->insertGetId([
+                    'tenant_id' => $tenantId,
+                    'stock_adjustment_id' => $adjustmentId,
+                    'product_id' => $productId,
+                    'direction' => 'in',
+                    'quantity' => $quantity,
+                    'unit_cost' => $unitCost,
+                    'line_total' => 0,
+                    'stock_movement_id' => null,
+                    'void_stock_movement_id' => null,
+                    'notes' => $remarks,
+                    'created_at' => $movementDate,
                     'updated_at' => $movementDate,
                 ]);
 
-            $db->table('stock_adjustment_item_batches')->insert([
+            $ledgerResult = $this->ledger->postIncoming([
                 'tenant_id' => $tenantId,
-                'stock_adjustment_item_id' => $adjustmentItemId,
                 'warehouse_id' => $warehouseId,
                 'product_id' => $productId,
-                'stock_batch_id' => $batchId,
-                'direction' => 'in',
-                'quantity' => $quantityToAdd,
+                'quantity' => $quantity,
                 'unit_cost' => $unitCost,
-                'line_total' => $totalCost,
-                'stock_movement_batch_id' => $movementBatchId,
-                'created_at' => $movementDate,
-                'updated_at' => $movementDate,
+                'movement_type' => $movementType,
+                'reference_type' => 'stock_adjustment',
+                'reference_id' => $adjustmentId,
+                'reference_no' => $adjustmentNumber,
+                'source_type' => $createdNewPosition
+                    ? 'opening_stock'
+                    : 'adjustment',
+                'source_reference' => $adjustmentNumber,
+                'user_id' => $userId,
+                'movement_date' => $movementDate,
+                'remarks' => $remarks,
+                'reorder_level' => $reorderLevel,
+                'max_stock_level' => $maxStockLevel,
+                'layers' => [[
+                    'quantity' => $quantity,
+                    'unit_cost' => $unitCost,
+                    'batch_code' => $validated['batch_code'] ?? null,
+                    'lot_number' => $validated['lot_number'] ?? null,
+                    'received_date' => $validated['received_date']
+                        ?? $movementDate->toDateString(),
+                    'manufactured_date' =>
+                        $validated['manufactured_date'] ?? null,
+                    'expiration_date' =>
+                        $validated['expiration_date'] ?? null,
+                    'notes' => $validated['batch_notes'] ?? null,
+                ]],
             ]);
 
-            $this->refreshBatchStatus(
-                $db,
-                $tenantId,
-                $batchId,
-                $userId,
-                'stock_adjustment',
-                $adjustmentId,
-                $adjustmentNumber,
-                $movementDate
-            );
+            $database
+                ->table('stock_adjustments')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $adjustmentId)
+                ->update([
+                    'total_cost' => $ledgerResult['total_cost'],
+                    'updated_at' => $movementDate,
+                ]);
+
+            $database
+                ->table('stock_adjustment_items')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $adjustmentItemId)
+                ->update([
+                    'unit_cost' => $ledgerResult['unit_cost'],
+                    'line_total' => $ledgerResult['total_cost'],
+                    'stock_movement_id' => $ledgerResult['movement_id'],
+                    'updated_at' => $movementDate,
+                ]);
+
+            foreach ($ledgerResult['allocations'] as $allocation) {
+                $database
+                    ->table('stock_adjustment_item_batches')
+                    ->insert([
+                        'tenant_id' => $tenantId,
+                        'stock_adjustment_item_id' => $adjustmentItemId,
+                        'warehouse_id' => $warehouseId,
+                        'product_id' => $productId,
+                        'stock_batch_id' => $allocation['stock_batch_id'],
+                        'direction' => 'in',
+                        'quantity' => $allocation['quantity'],
+                        'unit_cost' => $allocation['unit_cost'],
+                        'line_total' => $allocation['total_cost'],
+                        'stock_movement_batch_id' =>
+                            $allocation['stock_movement_batch_id'],
+                        'void_stock_movement_batch_id' => null,
+                        'created_at' => $movementDate,
+                        'updated_at' => $movementDate,
+                    ]);
+            }
         });
 
         return back()->with(
@@ -840,12 +823,22 @@ class StockController extends Controller
         );
     }
 
+
     public function updateSettings(
         Request $request,
         WarehouseStock $stock
     ): RedirectResponse {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->access->resolve($request);
+        $tenantId = $context['account_owner_id'];
         $this->ensureStockBelongsToTenant($stock, $tenantId);
+
+        $warehouse = DB::connection('mysql')
+            ->table('warehouses')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $stock->warehouse_id)
+            ->first();
+        abort_unless($warehouse, 404);
+        $this->access->assertBranch($context, (int) $warehouse->branch_id);
 
         $validated = $request->validate([
             'reorder_level' => ['required', 'numeric', 'min:0'],
@@ -856,26 +849,30 @@ class StockController extends Controller
         $maxStockLevel = filled($validated['max_stock_level'] ?? null)
             ? $this->quantity($validated['max_stock_level'])
             : null;
-
         $this->validateStockLevels($reorderLevel, $maxStockLevel);
 
-        $stock->update([
-            'reorder_level' => $reorderLevel,
-            'max_stock_level' => $maxStockLevel,
-        ]);
+        DB::connection('mysql')
+            ->table('warehouse_stocks')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $stock->id)
+            ->update([
+                'reorder_level' => $reorderLevel,
+                'max_stock_level' => $maxStockLevel,
+                'updated_at' => now(),
+            ]);
 
         return back()->with('success', 'Stock thresholds updated successfully.');
     }
+
 
     public function adjust(
         Request $request,
         WarehouseStock $stock
     ): RedirectResponse {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->access->resolve($request);
+        $tenantId = $context['account_owner_id'];
         $this->ensureStockBelongsToTenant($stock, $tenantId);
 
-        $db = DB::connection('mysql');
-        $settings = $this->getInventorySettings($db, $tenantId);
         $allowedTypes = [
             ...self::INCOMING_MOVEMENT_TYPES,
             ...self::OUTGOING_MOVEMENT_TYPES,
@@ -889,8 +886,16 @@ class StockController extends Controller
             'remarks' => ['nullable', 'string', 'max:1000'],
             ...$this->batchInputRules(),
             'batch_allocations' => ['nullable', 'array'],
-            'batch_allocations.*.stock_batch_id' => ['required', 'integer', 'distinct'],
-            'batch_allocations.*.quantity' => ['nullable', 'numeric', 'gt:0'],
+            'batch_allocations.*.stock_batch_id' => [
+                'required',
+                'integer',
+                'distinct',
+            ],
+            'batch_allocations.*.quantity' => [
+                'nullable',
+                'numeric',
+                'gt:0',
+            ],
         ]);
 
         $quantity = $this->quantity($validated['quantity']);
@@ -900,389 +905,196 @@ class StockController extends Controller
             true
         );
 
-        $product = Product::query()
-            ->where('tenant_id', $tenantId)
-            ->whereKey($stock->product_id)
-            ->firstOrFail();
-
-        if ($isIncoming) {
-            $this->validateIncomingBatchData(
-                $db,
-                $tenantId,
-                $product,
-                $validated,
-                $quantity,
-                $settings
-            );
-        }
-
-        $db->transaction(function () use (
+        DB::connection('mysql')->transaction(function () use (
             $request,
-            $db,
+            $context,
             $tenantId,
             $stock,
             $validated,
             $quantity,
-            $isIncoming,
-            $settings
+            $isIncoming
         ): void {
-            $lockedStock = $db->table('warehouse_stocks')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $stock->id)
-                ->lockForUpdate()
-                ->first();
-
-            abort_unless($lockedStock, 404);
-
-            $this->ensureBatchReconciled(
-                $db,
+            $database = DB::connection('mysql');
+            $movementDate = now();
+            $lockedStock = $this->ledger->lockExistingStockPosition(
                 $tenantId,
-                (int) $lockedStock->warehouse_id,
-                (int) $lockedStock->product_id,
-                $this->quantity($lockedStock->quantity)
+                (int) $stock->warehouse_id,
+                (int) $stock->product_id
+            );
+            $warehouse = $this->ledger->lockWarehouse(
+                $tenantId,
+                (int) $lockedStock->warehouse_id
+            );
+            $this->access->assertBranch($context, (int) $warehouse->branch_id);
+            $product = $this->ledger->lockProduct(
+                $tenantId,
+                (int) $lockedStock->product_id
             );
 
-            $product = Product::query()
-                ->where('tenant_id', $tenantId)
-                ->whereKey($lockedStock->product_id)
-                ->firstOrFail();
-
-            $warehouse = $db->table('warehouses')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $lockedStock->warehouse_id)
-                ->first();
-
-            abort_unless($warehouse, 404);
-
-            $movementType = $validated['movement_type'];
-            $movementDate = now();
-            $userId = $request->user()?->id;
+            $movementType = (string) $validated['movement_type'];
             $adjustmentNumber = $this->generateReferenceNumber('ADJ');
-            $averageCostBefore = $this->cost($lockedStock->average_cost);
-            $quantityBefore = $this->quantity($lockedStock->quantity);
+            $remarks = $this->nullableString($validated['remarks'] ?? null);
+            $userId = (int) $request->user()->id;
 
-            $adjustmentId = $db->table('stock_adjustments')->insertGetId([
-                'tenant_id' => $tenantId,
-                'branch_id' => $warehouse->branch_id,
-                'warehouse_id' => $lockedStock->warehouse_id,
-                'adjustment_number' => $adjustmentNumber,
-                'adjustment_date' => $movementDate->toDateString(),
-                'adjustment_type' => $this->mapAdjustmentType($movementType),
-                'status' => 'posted',
-                'reference_no' => $this->nullableString($validated['reference_no'] ?? null),
-                'reason' => $this->movementReason($movementType),
-                'notes' => $this->nullableString($validated['remarks'] ?? null),
-                'total_quantity' => $quantity,
-                'total_cost' => 0,
-                'created_by' => $userId,
-                'posted_by' => $userId,
-                'posted_at' => $movementDate,
-                'created_at' => $movementDate,
-                'updated_at' => $movementDate,
-            ]);
-
-            if ($isIncoming) {
-                $unitCost = filled($validated['unit_cost'] ?? null)
-                    ? $this->cost($validated['unit_cost'])
-                    : ($averageCostBefore > 0
-                        ? $averageCostBefore
-                        : $this->cost($product->cost_price));
-
-                $totalCost = $this->money($quantity * $unitCost);
-
-                $adjustmentItemId = $db->table('stock_adjustment_items')->insertGetId([
+            $adjustmentId = $database
+                ->table('stock_adjustments')
+                ->insertGetId([
                     'tenant_id' => $tenantId,
-                    'stock_adjustment_id' => $adjustmentId,
-                    'product_id' => $lockedStock->product_id,
-                    'direction' => 'in',
-                    'quantity' => $quantity,
-                    'unit_cost' => $unitCost,
-                    'line_total' => $totalCost,
-                    'notes' => $this->nullableString($validated['remarks'] ?? null),
+                    'branch_id' => (int) $warehouse->branch_id,
+                    'warehouse_id' => (int) $lockedStock->warehouse_id,
+                    'adjustment_number' => $adjustmentNumber,
+                    'adjustment_date' => $movementDate->toDateString(),
+                    'adjustment_type' => $this->mapAdjustmentType($movementType),
+                    'status' => 'posted',
+                    'reference_no' => $this->nullableString(
+                        $validated['reference_no'] ?? null
+                    ),
+                    'reason' => $this->movementReason($movementType),
+                    'notes' => $remarks,
+                    'total_quantity' => $quantity,
+                    'total_cost' => 0,
+                    'created_by' => $userId,
+                    'posted_by' => $userId,
+                    'posted_at' => $movementDate,
                     'created_at' => $movementDate,
                     'updated_at' => $movementDate,
                 ]);
 
-                $batchId = $this->createIncomingBatch(
-                    $db,
-                    $tenantId,
-                    $product,
-                    $validated,
-                    $quantity,
-                    $unitCost,
-                    $this->incomingBatchSourceType($movementType),
-                    $adjustmentNumber,
-                    $userId,
-                    $settings,
-                    $movementDate
-                );
-
-                $batchBalance = $this->addToBatchBalance(
-                    $db,
-                    $tenantId,
-                    $lockedStock->warehouse_id,
-                    $lockedStock->product_id,
-                    $batchId,
-                    $quantity,
-                    $movementDate
-                );
-
-                $aggregate = $this->syncWarehouseStockFromBatches(
-                    $db,
-                    $lockedStock->id,
-                    $tenantId,
-                    $lockedStock->warehouse_id,
-                    $lockedStock->product_id,
-                    $movementDate
-                );
-
-                $movementId = $this->createStockMovement($db, [
+            $direction = $isIncoming ? 'in' : 'out';
+            $adjustmentItemId = $database
+                ->table('stock_adjustment_items')
+                ->insertGetId([
                     'tenant_id' => $tenantId,
-                    'warehouse_id' => $lockedStock->warehouse_id,
-                    'product_id' => $lockedStock->product_id,
-                    'movement_type' => $movementType,
+                    'stock_adjustment_id' => $adjustmentId,
+                    'product_id' => (int) $lockedStock->product_id,
+                    'direction' => $direction,
                     'quantity' => $quantity,
-                    'quantity_before' => $quantityBefore,
-                    'quantity_after' => $aggregate['quantity'],
+                    'unit_cost' => 0,
+                    'line_total' => 0,
+                    'stock_movement_id' => null,
+                    'void_stock_movement_id' => null,
+                    'notes' => $remarks,
+                    'created_at' => $movementDate,
+                    'updated_at' => $movementDate,
+                ]);
+
+            if ($isIncoming) {
+                $averageCost = $this->cost($lockedStock->average_cost);
+                $unitCost = filled($validated['unit_cost'] ?? null)
+                    ? $this->cost($validated['unit_cost'])
+                    : ($averageCost > 0
+                        ? $averageCost
+                        : $this->cost($product->cost_price));
+
+                $result = $this->ledger->postIncoming([
+                    'tenant_id' => $tenantId,
+                    'warehouse_id' => (int) $lockedStock->warehouse_id,
+                    'product_id' => (int) $lockedStock->product_id,
+                    'quantity' => $quantity,
                     'unit_cost' => $unitCost,
-                    'total_cost' => $totalCost,
-                    'average_cost_before' => $averageCostBefore,
-                    'average_cost_after' => $aggregate['average_cost'],
+                    'movement_type' => $movementType,
                     'reference_type' => 'stock_adjustment',
                     'reference_id' => $adjustmentId,
                     'reference_no' => $adjustmentNumber,
-                    'related_warehouse_id' => null,
-                    'remarks' => $this->nullableString($validated['remarks'] ?? null),
+                    'source_type' => $this->incomingBatchSourceType(
+                        $movementType
+                    ),
+                    'source_reference' => $adjustmentNumber,
+                    'user_id' => $userId,
                     'movement_date' => $movementDate,
-                    'created_by' => $userId,
+                    'remarks' => $remarks,
+                    'layers' => [[
+                        'quantity' => $quantity,
+                        'unit_cost' => $unitCost,
+                        'batch_code' => $validated['batch_code'] ?? null,
+                        'lot_number' => $validated['lot_number'] ?? null,
+                        'received_date' => $validated['received_date']
+                            ?? $movementDate->toDateString(),
+                        'manufactured_date' =>
+                            $validated['manufactured_date'] ?? null,
+                        'expiration_date' =>
+                            $validated['expiration_date'] ?? null,
+                        'notes' => $validated['batch_notes'] ?? null,
+                    ]],
                 ]);
-
-                $movementBatchId = $this->createMovementBatch($db, [
+            } else {
+                $result = $this->ledger->postOutgoing([
                     'tenant_id' => $tenantId,
-                    'stock_movement_id' => $movementId,
-                    'warehouse_id' => $lockedStock->warehouse_id,
-                    'product_id' => $lockedStock->product_id,
-                    'stock_batch_id' => $batchId,
-                    'direction' => 'in',
+                    'warehouse_id' => (int) $lockedStock->warehouse_id,
+                    'product_id' => (int) $lockedStock->product_id,
                     'quantity' => $quantity,
-                    'batch_quantity_before' => $batchBalance['before'],
-                    'batch_quantity_after' => $batchBalance['after'],
-                    'unit_cost' => $unitCost,
-                    'total_cost' => $totalCost,
-                    'created_at' => $movementDate,
-                ]);
-
-                $db->table('stock_adjustment_items')
-                    ->where('tenant_id', $tenantId)
-                    ->where('id', $adjustmentItemId)
-                    ->update([
-                        'stock_movement_id' => $movementId,
-                        'updated_at' => $movementDate,
-                    ]);
-
-                $db->table('stock_adjustment_item_batches')->insert([
-                    'tenant_id' => $tenantId,
-                    'stock_adjustment_item_id' => $adjustmentItemId,
-                    'warehouse_id' => $lockedStock->warehouse_id,
-                    'product_id' => $lockedStock->product_id,
-                    'stock_batch_id' => $batchId,
-                    'direction' => 'in',
-                    'quantity' => $quantity,
-                    'unit_cost' => $unitCost,
-                    'line_total' => $totalCost,
-                    'stock_movement_batch_id' => $movementBatchId,
-                    'created_at' => $movementDate,
-                    'updated_at' => $movementDate,
-                ]);
-
-                $db->table('stock_adjustments')
-                    ->where('tenant_id', $tenantId)
-                    ->where('id', $adjustmentId)
-                    ->update([
-                        'total_cost' => $totalCost,
-                        'updated_at' => $movementDate,
-                    ]);
-
-                $this->refreshBatchStatus(
-                    $db,
-                    $tenantId,
-                    $batchId,
-                    $userId,
-                    'stock_adjustment',
-                    $adjustmentId,
-                    $adjustmentNumber,
-                    $movementDate
-                );
-
-                return;
-            }
-
-            if ($quantity > $quantityBefore + 0.0001) {
-                throw ValidationException::withMessages([
-                    'quantity' => 'The requested quantity is greater than the aggregate stock balance.',
+                    'movement_type' => $movementType,
+                    'reference_type' => 'stock_adjustment',
+                    'reference_id' => $adjustmentId,
+                    'reference_no' => $adjustmentNumber,
+                    'user_id' => $userId,
+                    'movement_date' => $movementDate,
+                    'remarks' => $remarks,
+                    'purpose' => $movementType,
+                    'batch_allocations' =>
+                        $validated['batch_allocations'] ?? [],
                 ]);
             }
 
-            $allocations = $this->allocateOutgoingBatches(
-                $db,
-                $tenantId,
-                $lockedStock->warehouse_id,
-                $lockedStock->product_id,
-                $product,
-                $quantity,
-                $validated['batch_allocations'] ?? [],
-                $movementType,
-                $settings
-            );
-
-            $totalCost = $this->money(
-                collect($allocations)->sum(
-                    fn (array $allocation) => $allocation['quantity'] * $allocation['unit_cost']
-                )
-            );
-
-            $movementUnitCost = $quantity > 0
-                ? $this->cost($totalCost / $quantity)
-                : 0;
-
-            $adjustmentItemId = $db->table('stock_adjustment_items')->insertGetId([
-                'tenant_id' => $tenantId,
-                'stock_adjustment_id' => $adjustmentId,
-                'product_id' => $lockedStock->product_id,
-                'direction' => 'out',
-                'quantity' => $quantity,
-                'unit_cost' => $movementUnitCost,
-                'line_total' => $totalCost,
-                'notes' => $this->nullableString($validated['remarks'] ?? null),
-                'created_at' => $movementDate,
-                'updated_at' => $movementDate,
-            ]);
-
-            foreach ($allocations as &$allocation) {
-                $allocation['after'] = $this->quantity(
-                    $allocation['before'] - $allocation['quantity']
-                );
-
-                $db->table('warehouse_batch_stocks')
-                    ->where('tenant_id', $tenantId)
-                    ->where('id', $allocation['warehouse_batch_stock_id'])
-                    ->update([
-                        'quantity' => $allocation['after'],
-                        'last_movement_at' => $movementDate,
-                        'updated_at' => $movementDate,
-                    ]);
-            }
-            unset($allocation);
-
-            $aggregate = $this->syncWarehouseStockFromBatches(
-                $db,
-                $lockedStock->id,
-                $tenantId,
-                $lockedStock->warehouse_id,
-                $lockedStock->product_id,
-                $movementDate
-            );
-
-            $movementId = $this->createStockMovement($db, [
-                'tenant_id' => $tenantId,
-                'warehouse_id' => $lockedStock->warehouse_id,
-                'product_id' => $lockedStock->product_id,
-                'movement_type' => $movementType,
-                'quantity' => -$quantity,
-                'quantity_before' => $quantityBefore,
-                'quantity_after' => $aggregate['quantity'],
-                'unit_cost' => $movementUnitCost,
-                'total_cost' => $totalCost,
-                'average_cost_before' => $averageCostBefore,
-                'average_cost_after' => $aggregate['average_cost'],
-                'reference_type' => 'stock_adjustment',
-                'reference_id' => $adjustmentId,
-                'reference_no' => $adjustmentNumber,
-                'related_warehouse_id' => null,
-                'remarks' => $this->nullableString($validated['remarks'] ?? null),
-                'movement_date' => $movementDate,
-                'created_by' => $userId,
-            ]);
-
-            foreach ($allocations as $allocation) {
-                $allocationTotal = $this->money(
-                    $allocation['quantity'] * $allocation['unit_cost']
-                );
-
-                $movementBatchId = $this->createMovementBatch($db, [
-                    'tenant_id' => $tenantId,
-                    'stock_movement_id' => $movementId,
-                    'warehouse_id' => $lockedStock->warehouse_id,
-                    'product_id' => $lockedStock->product_id,
-                    'stock_batch_id' => $allocation['stock_batch_id'],
-                    'direction' => 'out',
-                    'quantity' => $allocation['quantity'],
-                    'batch_quantity_before' => $allocation['before'],
-                    'batch_quantity_after' => $allocation['after'],
-                    'unit_cost' => $allocation['unit_cost'],
-                    'total_cost' => $allocationTotal,
-                    'created_at' => $movementDate,
-                ]);
-
-                $db->table('stock_adjustment_item_batches')->insert([
-                    'tenant_id' => $tenantId,
-                    'stock_adjustment_item_id' => $adjustmentItemId,
-                    'warehouse_id' => $lockedStock->warehouse_id,
-                    'product_id' => $lockedStock->product_id,
-                    'stock_batch_id' => $allocation['stock_batch_id'],
-                    'direction' => 'out',
-                    'quantity' => $allocation['quantity'],
-                    'unit_cost' => $allocation['unit_cost'],
-                    'line_total' => $allocationTotal,
-                    'stock_movement_batch_id' => $movementBatchId,
-                    'created_at' => $movementDate,
-                    'updated_at' => $movementDate,
-                ]);
-
-                $this->refreshBatchStatus(
-                    $db,
-                    $tenantId,
-                    $allocation['stock_batch_id'],
-                    $userId,
-                    'stock_adjustment',
-                    $adjustmentId,
-                    $adjustmentNumber,
-                    $movementDate
-                );
-            }
-
-            $db->table('stock_adjustment_items')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $adjustmentItemId)
-                ->update([
-                    'stock_movement_id' => $movementId,
-                    'updated_at' => $movementDate,
-                ]);
-
-            $db->table('stock_adjustments')
+            $database
+                ->table('stock_adjustments')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $adjustmentId)
                 ->update([
-                    'total_cost' => $totalCost,
+                    'total_cost' => $result['total_cost'],
                     'updated_at' => $movementDate,
                 ]);
+
+            $database
+                ->table('stock_adjustment_items')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $adjustmentItemId)
+                ->update([
+                    'unit_cost' => $result['unit_cost'],
+                    'line_total' => $result['total_cost'],
+                    'stock_movement_id' => $result['movement_id'],
+                    'updated_at' => $movementDate,
+                ]);
+
+            foreach ($result['allocations'] as $allocation) {
+                $database
+                    ->table('stock_adjustment_item_batches')
+                    ->insert([
+                        'tenant_id' => $tenantId,
+                        'stock_adjustment_item_id' => $adjustmentItemId,
+                        'warehouse_id' => (int) $lockedStock->warehouse_id,
+                        'product_id' => (int) $lockedStock->product_id,
+                        'stock_batch_id' => $allocation['stock_batch_id'],
+                        'direction' => $direction,
+                        'quantity' => $allocation['quantity'],
+                        'unit_cost' => $allocation['unit_cost'],
+                        'line_total' => $allocation['total_cost'],
+                        'stock_movement_batch_id' =>
+                            $allocation['stock_movement_batch_id'],
+                        'void_stock_movement_batch_id' => null,
+                        'created_at' => $movementDate,
+                        'updated_at' => $movementDate,
+                    ]);
+            }
         });
 
-        return back()->with('success', 'Stock adjustment posted with batch allocations.');
+        return back()->with(
+            'success',
+            'Stock adjustment posted with exact batch allocations.'
+        );
     }
+
 
     public function transfer(
         Request $request,
         WarehouseStock $stock
     ): RedirectResponse {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->access->resolve($request);
+        $tenantId = $context['account_owner_id'];
         $this->ensureStockBelongsToTenant($stock, $tenantId);
 
-        $db = DB::connection('mysql');
-        $settings = $this->getInventorySettings($db, $tenantId);
-
         $validated = $request->validate([
-            'destination_warehouse_id' => [
+            'to_warehouse_id' => [
                 'required',
                 'integer',
                 Rule::exists('warehouses', 'id')->where(
@@ -1291,348 +1103,216 @@ class StockController extends Controller
                         ->where('is_active', true)
                         ->whereNull('deleted_at')
                 ),
+                Rule::notIn([(int) $stock->warehouse_id]),
             ],
             'quantity' => ['required', 'numeric', 'gt:0'],
             'reference_no' => ['nullable', 'string', 'max:120'],
             'remarks' => ['nullable', 'string', 'max:1000'],
             'batch_allocations' => ['nullable', 'array'],
-            'batch_allocations.*.stock_batch_id' => ['required', 'integer', 'distinct'],
-            'batch_allocations.*.quantity' => ['nullable', 'numeric', 'gt:0'],
+            'batch_allocations.*.stock_batch_id' => [
+                'required',
+                'integer',
+                'distinct',
+            ],
+            'batch_allocations.*.quantity' => [
+                'nullable',
+                'numeric',
+                'gt:0',
+            ],
         ]);
 
-        $destinationWarehouseId = (int) $validated['destination_warehouse_id'];
-
-        if ($destinationWarehouseId === (int) $stock->warehouse_id) {
-            throw ValidationException::withMessages([
-                'destination_warehouse_id' => 'The destination warehouse must be different from the source warehouse.',
-            ]);
-        }
-
-        $quantity = $this->quantity($validated['quantity']);
-
-        $db->transaction(function () use (
+        DB::connection('mysql')->transaction(function () use (
             $request,
-            $db,
+            $context,
             $tenantId,
             $stock,
-            $validated,
-            $destinationWarehouseId,
-            $quantity,
-            $settings
+            $validated
         ): void {
-            $sourceStock = $db->table('warehouse_stocks')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $stock->id)
-                ->lockForUpdate()
-                ->first();
+            $database = DB::connection('mysql');
+            $movementDate = now();
+            $sourceWarehouseId = (int) $stock->warehouse_id;
+            $destinationWarehouseId =
+                (int) $validated['to_warehouse_id'];
+            $warehouseIds = [
+                $sourceWarehouseId,
+                $destinationWarehouseId,
+            ];
+            sort($warehouseIds, SORT_NUMERIC);
 
-            abort_unless($sourceStock, 404);
-
-            $this->ensureBatchReconciled(
-                $db,
-                $tenantId,
-                (int) $sourceStock->warehouse_id,
-                (int) $sourceStock->product_id,
-                $this->quantity($sourceStock->quantity)
-            );
-
-            if ($quantity > $this->quantity($sourceStock->quantity) + 0.0001) {
-                throw ValidationException::withMessages([
-                    'quantity' => 'The transfer quantity is greater than the aggregate stock balance.',
-                ]);
+            $lockedWarehouses = [];
+            foreach ($warehouseIds as $warehouseId) {
+                $lockedWarehouses[$warehouseId] =
+                    $this->ledger->lockWarehouse(
+                        $tenantId,
+                        $warehouseId
+                    );
             }
 
-            $sourceWarehouse = $db->table('warehouses')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $sourceStock->warehouse_id)
-                ->first();
-
-            $destinationWarehouse = $db->table('warehouses')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $destinationWarehouseId)
-                ->where('is_active', true)
-                ->whereNull('deleted_at')
-                ->first();
-
-            abort_unless($sourceWarehouse && $destinationWarehouse, 404);
-
-            $product = Product::query()
-                ->where('tenant_id', $tenantId)
-                ->whereKey($sourceStock->product_id)
-                ->firstOrFail();
-
-            $allocations = $this->allocateOutgoingBatches(
-                $db,
-                $tenantId,
-                $sourceStock->warehouse_id,
-                $sourceStock->product_id,
-                $product,
-                $quantity,
-                $validated['batch_allocations'] ?? [],
-                'transfer',
-                $settings
+            $sourceWarehouse =
+                $lockedWarehouses[$sourceWarehouseId];
+            $destinationWarehouse =
+                $lockedWarehouses[$destinationWarehouseId];
+            $this->access->assertBranch(
+                $context,
+                (int) $sourceWarehouse->branch_id
+            );
+            $this->access->assertBranch(
+                $context,
+                (int) $destinationWarehouse->branch_id
             );
 
-            $movementDate = now();
-            $userId = $request->user()?->id;
+            $quantity = $this->quantity($validated['quantity']);
             $transferNumber = $this->generateReferenceNumber('TRF');
-            $sourceQuantityBefore = $this->quantity($sourceStock->quantity);
-            $sourceAverageBefore = $this->cost($sourceStock->average_cost);
+            $remarks = $this->nullableString($validated['remarks'] ?? null);
+            $userId = (int) $request->user()->id;
 
-            $destinationStock = $db->table('warehouse_stocks')
-                ->where('tenant_id', $tenantId)
-                ->where('warehouse_id', $destinationWarehouseId)
-                ->where('product_id', $sourceStock->product_id)
-                ->lockForUpdate()
-                ->first();
-
-            if (! $destinationStock) {
-                $destinationStockId = $db->table('warehouse_stocks')->insertGetId([
+            $transferId = $database
+                ->table('stock_transfers')
+                ->insertGetId([
                     'tenant_id' => $tenantId,
-                    'warehouse_id' => $destinationWarehouseId,
-                    'product_id' => $sourceStock->product_id,
-                    'quantity' => 0,
-                    'reorder_level' => $sourceStock->reorder_level,
-                    'max_stock_level' => $sourceStock->max_stock_level,
-                    'average_cost' => 0,
-                    'last_movement_at' => null,
+                    'from_branch_id' => (int) $sourceWarehouse->branch_id,
+                    'from_warehouse_id' => (int) $stock->warehouse_id,
+                    'to_branch_id' => (int) $destinationWarehouse->branch_id,
+                    'to_warehouse_id' =>
+                        (int) $validated['to_warehouse_id'],
+                    'transfer_number' => $transferNumber,
+                    'transfer_date' => $movementDate->toDateString(),
+                    'expected_receive_date' =>
+                        $movementDate->toDateString(),
+                    'status' => 'received',
+                    'reference_no' => $this->nullableString(
+                        $validated['reference_no'] ?? null
+                    ),
+                    'notes' => $remarks,
+                    'total_quantity_sent' => $quantity,
+                    'total_quantity_received' => $quantity,
+                    'total_cost' => 0,
+                    'created_by' => $userId,
+                    'submitted_by' => $userId,
+                    'submitted_at' => $movementDate,
+                    'approved_by' => $userId,
+                    'approved_at' => $movementDate,
+                    'dispatched_by' => $userId,
+                    'dispatched_at' => $movementDate,
+                    'received_by' => $userId,
+                    'received_at' => $movementDate,
                     'created_at' => $movementDate,
                     'updated_at' => $movementDate,
                 ]);
 
-                $destinationStock = $db->table('warehouse_stocks')
-                    ->where('tenant_id', $tenantId)
-                    ->where('id', $destinationStockId)
-                    ->lockForUpdate()
-                    ->first();
-            }
+            $transferItemId = $database
+                ->table('stock_transfer_items')
+                ->insertGetId([
+                    'tenant_id' => $tenantId,
+                    'stock_transfer_id' => $transferId,
+                    'product_id' => (int) $stock->product_id,
+                    'quantity_requested' => $quantity,
+                    'quantity_sent' => $quantity,
+                    'quantity_received' => $quantity,
+                    'unit_cost' => 0,
+                    'line_total' => 0,
+                    'transfer_out_stock_movement_id' => null,
+                    'transfer_in_stock_movement_id' => null,
+                    'void_out_stock_movement_id' => null,
+                    'void_in_stock_movement_id' => null,
+                    'notes' => $remarks,
+                    'created_at' => $movementDate,
+                    'updated_at' => $movementDate,
+                ]);
 
-            $destinationQuantityBefore = $this->quantity($destinationStock->quantity);
-            $destinationAverageBefore = $this->cost($destinationStock->average_cost);
-            $totalCost = $this->money(
-                collect($allocations)->sum(
-                    fn (array $allocation) => $allocation['quantity'] * $allocation['unit_cost']
-                )
-            );
-            $movementUnitCost = $quantity > 0
-                ? $this->cost($totalCost / $quantity)
-                : 0;
-
-            $transferId = $db->table('stock_transfers')->insertGetId([
+            $result = $this->ledger->transfer([
                 'tenant_id' => $tenantId,
-                'from_branch_id' => $sourceWarehouse->branch_id,
-                'from_warehouse_id' => $sourceStock->warehouse_id,
-                'to_branch_id' => $destinationWarehouse->branch_id,
-                'to_warehouse_id' => $destinationWarehouseId,
-                'transfer_number' => $transferNumber,
-                'transfer_date' => $movementDate->toDateString(),
-                'expected_receive_date' => $movementDate->toDateString(),
-                'status' => 'received',
-                'reference_no' => $this->nullableString($validated['reference_no'] ?? null),
-                'notes' => $this->nullableString($validated['remarks'] ?? null),
-                'total_quantity_sent' => $quantity,
-                'total_quantity_received' => $quantity,
-                'total_cost' => $totalCost,
-                'created_by' => $userId,
-                'submitted_by' => $userId,
-                'submitted_at' => $movementDate,
-                'approved_by' => $userId,
-                'approved_at' => $movementDate,
-                'dispatched_by' => $userId,
-                'dispatched_at' => $movementDate,
-                'received_by' => $userId,
-                'received_at' => $movementDate,
-                'created_at' => $movementDate,
-                'updated_at' => $movementDate,
-            ]);
-
-            $transferItemId = $db->table('stock_transfer_items')->insertGetId([
-                'tenant_id' => $tenantId,
-                'stock_transfer_id' => $transferId,
-                'product_id' => $sourceStock->product_id,
-                'quantity_requested' => $quantity,
-                'quantity_sent' => $quantity,
-                'quantity_received' => $quantity,
-                'unit_cost' => $movementUnitCost,
-                'line_total' => $totalCost,
-                'notes' => $this->nullableString($validated['remarks'] ?? null),
-                'created_at' => $movementDate,
-                'updated_at' => $movementDate,
-            ]);
-
-            foreach ($allocations as &$allocation) {
-                $allocation['source_after'] = $this->quantity(
-                    $allocation['before'] - $allocation['quantity']
-                );
-
-                $db->table('warehouse_batch_stocks')
-                    ->where('tenant_id', $tenantId)
-                    ->where('id', $allocation['warehouse_batch_stock_id'])
-                    ->update([
-                        'quantity' => $allocation['source_after'],
-                        'last_movement_at' => $movementDate,
-                        'updated_at' => $movementDate,
-                    ]);
-
-                $destinationBatch = $this->addToBatchBalance(
-                    $db,
-                    $tenantId,
-                    $destinationWarehouseId,
-                    $sourceStock->product_id,
-                    $allocation['stock_batch_id'],
-                    $allocation['quantity'],
-                    $movementDate
-                );
-
-                $allocation['destination_before'] = $destinationBatch['before'];
-                $allocation['destination_after'] = $destinationBatch['after'];
-            }
-            unset($allocation);
-
-            $sourceAggregate = $this->syncWarehouseStockFromBatches(
-                $db,
-                $sourceStock->id,
-                $tenantId,
-                $sourceStock->warehouse_id,
-                $sourceStock->product_id,
-                $movementDate
-            );
-
-            $destinationAggregate = $this->syncWarehouseStockFromBatches(
-                $db,
-                $destinationStock->id,
-                $tenantId,
-                $destinationWarehouseId,
-                $sourceStock->product_id,
-                $movementDate
-            );
-
-            $outMovementId = $this->createStockMovement($db, [
-                'tenant_id' => $tenantId,
-                'warehouse_id' => $sourceStock->warehouse_id,
-                'product_id' => $sourceStock->product_id,
-                'movement_type' => 'transfer_out',
-                'quantity' => -$quantity,
-                'quantity_before' => $sourceQuantityBefore,
-                'quantity_after' => $sourceAggregate['quantity'],
-                'unit_cost' => $movementUnitCost,
-                'total_cost' => $totalCost,
-                'average_cost_before' => $sourceAverageBefore,
-                'average_cost_after' => $sourceAggregate['average_cost'],
-                'reference_type' => 'stock_transfer',
-                'reference_id' => $transferId,
-                'reference_no' => $transferNumber,
-                'related_warehouse_id' => $destinationWarehouseId,
-                'remarks' => $this->nullableString($validated['remarks'] ?? null),
-                'movement_date' => $movementDate,
-                'created_by' => $userId,
-            ]);
-
-            $inMovementId = $this->createStockMovement($db, [
-                'tenant_id' => $tenantId,
-                'warehouse_id' => $destinationWarehouseId,
-                'product_id' => $sourceStock->product_id,
-                'movement_type' => 'transfer_in',
+                'from_warehouse_id' => (int) $stock->warehouse_id,
+                'to_warehouse_id' => (int) $validated['to_warehouse_id'],
+                'product_id' => (int) $stock->product_id,
                 'quantity' => $quantity,
-                'quantity_before' => $destinationQuantityBefore,
-                'quantity_after' => $destinationAggregate['quantity'],
-                'unit_cost' => $movementUnitCost,
-                'total_cost' => $totalCost,
-                'average_cost_before' => $destinationAverageBefore,
-                'average_cost_after' => $destinationAggregate['average_cost'],
                 'reference_type' => 'stock_transfer',
                 'reference_id' => $transferId,
                 'reference_no' => $transferNumber,
-                'related_warehouse_id' => $sourceStock->warehouse_id,
-                'remarks' => $this->nullableString($validated['remarks'] ?? null),
+                'user_id' => $userId,
                 'movement_date' => $movementDate,
-                'created_by' => $userId,
+                'remarks' => $remarks,
+                'batch_allocations' =>
+                    $validated['batch_allocations'] ?? [],
             ]);
 
-            $db->table('stock_transfer_items')
+            $database
+                ->table('stock_transfers')
+                ->where('tenant_id', $tenantId)
+                ->where('id', $transferId)
+                ->update([
+                    'total_cost' => $result['total_cost'],
+                    'updated_at' => $movementDate,
+                ]);
+
+            $database
+                ->table('stock_transfer_items')
                 ->where('tenant_id', $tenantId)
                 ->where('id', $transferItemId)
                 ->update([
-                    'transfer_out_stock_movement_id' => $outMovementId,
-                    'transfer_in_stock_movement_id' => $inMovementId,
+                    'unit_cost' => $result['unit_cost'],
+                    'line_total' => $result['total_cost'],
+                    'transfer_out_stock_movement_id' =>
+                        $result['out_movement_id'],
+                    'transfer_in_stock_movement_id' =>
+                        $result['in_movement_id'],
                     'updated_at' => $movementDate,
                 ]);
 
-            foreach ($allocations as $allocation) {
-                $allocationTotal = $this->money(
-                    $allocation['quantity'] * $allocation['unit_cost']
-                );
-
-                $outMovementBatchId = $this->createMovementBatch($db, [
-                    'tenant_id' => $tenantId,
-                    'stock_movement_id' => $outMovementId,
-                    'warehouse_id' => $sourceStock->warehouse_id,
-                    'product_id' => $sourceStock->product_id,
-                    'stock_batch_id' => $allocation['stock_batch_id'],
-                    'direction' => 'out',
-                    'quantity' => $allocation['quantity'],
-                    'batch_quantity_before' => $allocation['before'],
-                    'batch_quantity_after' => $allocation['source_after'],
-                    'unit_cost' => $allocation['unit_cost'],
-                    'total_cost' => $allocationTotal,
-                    'created_at' => $movementDate,
-                ]);
-
-                $inMovementBatchId = $this->createMovementBatch($db, [
-                    'tenant_id' => $tenantId,
-                    'stock_movement_id' => $inMovementId,
-                    'warehouse_id' => $destinationWarehouseId,
-                    'product_id' => $sourceStock->product_id,
-                    'stock_batch_id' => $allocation['stock_batch_id'],
-                    'direction' => 'in',
-                    'quantity' => $allocation['quantity'],
-                    'batch_quantity_before' => $allocation['destination_before'],
-                    'batch_quantity_after' => $allocation['destination_after'],
-                    'unit_cost' => $allocation['unit_cost'],
-                    'total_cost' => $allocationTotal,
-                    'created_at' => $movementDate,
-                ]);
-
-                $db->table('stock_transfer_item_batches')->insert([
-                    'tenant_id' => $tenantId,
-                    'stock_transfer_item_id' => $transferItemId,
-                    'product_id' => $sourceStock->product_id,
-                    'stock_batch_id' => $allocation['stock_batch_id'],
-                    'from_warehouse_id' => $sourceStock->warehouse_id,
-                    'to_warehouse_id' => $destinationWarehouseId,
-                    'quantity_sent' => $allocation['quantity'],
-                    'quantity_received' => $allocation['quantity'],
-                    'unit_cost' => $allocation['unit_cost'],
-                    'line_total' => $allocationTotal,
-                    'transfer_out_stock_movement_batch_id' => $outMovementBatchId,
-                    'transfer_in_stock_movement_batch_id' => $inMovementBatchId,
-                    'created_at' => $movementDate,
-                    'updated_at' => $movementDate,
-                ]);
-
-                $this->refreshBatchStatus(
-                    $db,
-                    $tenantId,
-                    $allocation['stock_batch_id'],
-                    $userId,
-                    'stock_transfer',
-                    $transferId,
-                    $transferNumber,
-                    $movementDate
-                );
+            foreach ($result['allocations'] as $allocation) {
+                $database
+                    ->table('stock_transfer_item_batches')
+                    ->insert([
+                        'tenant_id' => $tenantId,
+                        'stock_transfer_item_id' => $transferItemId,
+                        'product_id' => (int) $stock->product_id,
+                        'stock_batch_id' => $allocation['stock_batch_id'],
+                        'from_warehouse_id' => (int) $stock->warehouse_id,
+                        'to_warehouse_id' =>
+                            (int) $validated['to_warehouse_id'],
+                        'quantity_sent' => $allocation['quantity'],
+                        'quantity_received' => $allocation['quantity'],
+                        'unit_cost' => $allocation['unit_cost'],
+                        'line_total' => $allocation['total_cost'],
+                        'transfer_out_stock_movement_batch_id' =>
+                            $allocation[
+                                'transfer_out_stock_movement_batch_id'
+                            ],
+                        'transfer_in_stock_movement_batch_id' =>
+                            $allocation[
+                                'transfer_in_stock_movement_batch_id'
+                            ],
+                        'void_out_stock_movement_batch_id' => null,
+                        'void_in_stock_movement_batch_id' => null,
+                        'created_at' => $movementDate,
+                        'updated_at' => $movementDate,
+                    ]);
             }
         });
 
-        return back()->with('success', 'Stock transferred with exact batch allocations.');
+        return back()->with(
+            'success',
+            'Stock transferred with exact batch allocations.'
+        );
     }
+
 
     public function destroy(
         Request $request,
         WarehouseStock $stock
     ): RedirectResponse {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->access->resolve($request);
+        $tenantId = $context['account_owner_id'];
         $this->ensureStockBelongsToTenant($stock, $tenantId);
-        $db = DB::connection('mysql');
+        $database = DB::connection('mysql');
+
+        $warehouse = $database
+            ->table('warehouses')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $stock->warehouse_id)
+            ->first();
+        abort_unless($warehouse, 404);
+        $this->access->assertBranch($context, (int) $warehouse->branch_id);
 
         if (abs((float) $stock->quantity) > 0.0001) {
             return back()->with(
@@ -1641,7 +1321,8 @@ class StockController extends Controller
             );
         }
 
-        $hasMovementHistory = $db->table('stock_movements')
+        $hasMovementHistory = $database
+            ->table('stock_movements')
             ->where('tenant_id', $tenantId)
             ->where('warehouse_id', $stock->warehouse_id)
             ->where('product_id', $stock->product_id)
@@ -1654,7 +1335,8 @@ class StockController extends Controller
             );
         }
 
-        $hasBatchBalanceRows = $db->table('warehouse_batch_stocks')
+        $hasBatchBalanceRows = $database
+            ->table('warehouse_batch_stocks')
             ->where('tenant_id', $tenantId)
             ->where('warehouse_id', $stock->warehouse_id)
             ->where('product_id', $stock->product_id)
@@ -1667,10 +1349,18 @@ class StockController extends Controller
             );
         }
 
-        $stock->delete();
+        $database
+            ->table('warehouse_stocks')
+            ->where('tenant_id', $tenantId)
+            ->where('id', $stock->id)
+            ->delete();
 
-        return back()->with('success', 'Empty stock position deleted successfully.');
+        return back()->with(
+            'success',
+            'Empty stock position deleted successfully.'
+        );
     }
+
 
     private function openingStockRules(int $tenantId): array
     {
@@ -1717,90 +1407,7 @@ class StockController extends Controller
         ];
     }
 
-    private function validateIncomingBatchData(
-        Connection $db,
-        int $tenantId,
-        Product $product,
-        array $validated,
-        float $quantity,
-        array $settings
-    ): void {
-        if ($quantity <= 0) {
-            return;
-        }
 
-        $batchEnabled = (bool) $product->batch_tracking_enabled;
-        $batchCode = $this->nullableUppercaseString($validated['batch_code'] ?? null);
-        $manufacturedDate = $validated['manufactured_date'] ?? null;
-        $expirationDate = $validated['expiration_date'] ?? null;
-
-        if (
-            $batchEnabled
-            && ! (bool) $settings['auto_generate_batch_code']
-            && $batchCode === null
-        ) {
-            throw ValidationException::withMessages([
-                'batch_code' => 'A batch code is required because automatic batch code generation is disabled.',
-            ]);
-        }
-
-        if (
-            $batchEnabled
-            && (bool) $product->requires_expiration_date
-            && blank($expirationDate)
-        ) {
-            throw ValidationException::withMessages([
-                'expiration_date' => 'An expiration date is required for this product.',
-            ]);
-        }
-
-        if (
-            filled($manufacturedDate)
-            && filled($expirationDate)
-            && $expirationDate < $manufacturedDate
-        ) {
-            throw ValidationException::withMessages([
-                'expiration_date' => 'The expiration date must be on or after the manufactured date.',
-            ]);
-        }
-
-        if (
-            $batchCode !== null
-            && $db->table('stock_batches')
-                ->where('tenant_id', $tenantId)
-                ->where('batch_code', $batchCode)
-                ->exists()
-        ) {
-            throw ValidationException::withMessages([
-                'batch_code' => 'This batch code is already in use.',
-            ]);
-        }
-    }
-
-    private function ensureBatchReconciled(
-        Connection $db,
-        int $tenantId,
-        int $warehouseId,
-        int $productId,
-        float $aggregateQuantity
-    ): void {
-        $batchQuantity = $this->quantity(
-            $db->table('warehouse_batch_stocks')
-                ->where('tenant_id', $tenantId)
-                ->where('warehouse_id', $warehouseId)
-                ->where('product_id', $productId)
-                ->select('quantity')
-                ->lockForUpdate()
-                ->get()
-                ->sum('quantity')
-        );
-
-        if (abs($aggregateQuantity - $batchQuantity) > 0.0001) {
-            throw ValidationException::withMessages([
-                'quantity' => 'This stock position has a batch reconciliation mismatch. Repair the aggregate and batch balances before posting another transaction.',
-            ]);
-        }
-    }
 
     private function validateStockLevels(
         float $reorderLevel,
@@ -1816,469 +1423,13 @@ class StockController extends Controller
         }
     }
 
-    private function createIncomingBatch(
-        Connection $db,
-        int $tenantId,
-        Product $product,
-        array $validated,
-        float $quantity,
-        float $unitCost,
-        string $sourceType,
-        string $sourceReference,
-        ?int $userId,
-        array $settings,
-        mixed $movementDate
-    ): int {
-        $batchEnabled = (bool) $product->batch_tracking_enabled;
-        $providedCode = $this->nullableUppercaseString($validated['batch_code'] ?? null);
-        $batchCode = $providedCode ?? $this->generateBatchCode(
-            $db,
-            $tenantId,
-            $settings
-        );
 
-        $receivedDate = filled($validated['received_date'] ?? null)
-            ? $validated['received_date']
-            : $movementDate->toDateString();
 
-        $manufacturedDate = $batchEnabled
-            ? ($validated['manufactured_date'] ?? null)
-            : null;
 
-        $expirationDate = $batchEnabled
-            ? ($validated['expiration_date'] ?? null)
-            : null;
 
-        $status = filled($expirationDate)
-            && $expirationDate < $movementDate->toDateString()
-                ? 'expired'
-                : 'active';
 
-        return $db->table('stock_batches')->insertGetId([
-            'tenant_id' => $tenantId,
-            'product_id' => $product->id,
-            'supplier_id' => null,
-            'purchase_receipt_item_id' => null,
-            'batch_code' => $batchCode,
-            'lot_number' => $batchEnabled
-                ? $this->nullableString($validated['lot_number'] ?? null)
-                : null,
-            'source_type' => $sourceType,
-            'source_reference' => $sourceReference,
-            'received_date' => $receivedDate,
-            'manufactured_date' => $manufacturedDate,
-            'expiration_date' => $expirationDate,
-            'unit_cost' => $unitCost,
-            'original_quantity' => $quantity,
-            'status' => $status,
-            'notes' => $batchEnabled
-                ? $this->nullableString($validated['batch_notes'] ?? null)
-                : 'System-generated internal cost layer for a non-batch-managed product.',
-            'created_by' => $userId,
-            'created_at' => $movementDate,
-            'updated_at' => $movementDate,
-        ]);
-    }
 
-    private function allocateOutgoingBatches(
-        Connection $db,
-        int $tenantId,
-        int $warehouseId,
-        int $productId,
-        Product $product,
-        float $requiredQuantity,
-        array $manualAllocations,
-        string $purpose,
-        array $settings
-    ): array {
-        $query = $db->table('warehouse_batch_stocks as wbs')
-            ->join('stock_batches as sb', function ($join): void {
-                $join
-                    ->on('sb.tenant_id', '=', 'wbs.tenant_id')
-                    ->on('sb.id', '=', 'wbs.stock_batch_id')
-                    ->on('sb.product_id', '=', 'wbs.product_id');
-            })
-            ->where('wbs.tenant_id', $tenantId)
-            ->where('wbs.warehouse_id', $warehouseId)
-            ->where('wbs.product_id', $productId)
-            ->where('wbs.quantity', '>', 0)
-            ->whereNotIn('sb.status', ['quarantined', 'recalled', 'closed'])
-            ->select([
-                'wbs.id as warehouse_batch_stock_id',
-                'wbs.stock_batch_id',
-                'wbs.quantity as available_quantity',
-                'sb.batch_code',
-                'sb.lot_number',
-                'sb.received_date',
-                'sb.expiration_date',
-                'sb.unit_cost',
-                'sb.status',
-            ]);
 
-        if ($purpose === 'expired') {
-            $query->where(function ($query): void {
-                $query
-                    ->where('sb.status', 'expired')
-                    ->orWhereDate('sb.expiration_date', '<', now()->toDateString());
-            });
-        } elseif (
-            ! (bool) $settings['allow_expired_issue']
-            && ! in_array($purpose, ['damage', 'return_out'], true)
-        ) {
-            $query
-                ->where('sb.status', '!=', 'expired')
-                ->where(function ($query): void {
-                    $query
-                        ->whereNull('sb.expiration_date')
-                        ->orWhereDate('sb.expiration_date', '>=', now()->toDateString());
-                });
-        }
-
-        $policy = (bool) $product->batch_tracking_enabled
-            ? (string) $product->batch_issue_policy
-            : 'fifo';
-
-        if ($policy === 'fefo') {
-            $query
-                ->orderByRaw('CASE WHEN sb.expiration_date IS NULL THEN 1 ELSE 0 END')
-                ->orderBy('sb.expiration_date')
-                ->orderBy('sb.received_date')
-                ->orderBy('sb.id');
-        } else {
-            $query
-                ->orderBy('sb.received_date')
-                ->orderBy('sb.id');
-        }
-
-        $availableRows = $query
-            ->lockForUpdate()
-            ->get();
-
-        if ($policy === 'manual' && (bool) $product->batch_tracking_enabled) {
-            return $this->buildManualAllocations(
-                $availableRows,
-                $manualAllocations,
-                $requiredQuantity
-            );
-        }
-
-        $remaining = $requiredQuantity;
-        $allocations = [];
-
-        foreach ($availableRows as $row) {
-            if ($remaining <= 0.0001) {
-                break;
-            }
-
-            $available = $this->quantity($row->available_quantity);
-            $allocated = min($available, $remaining);
-
-            if ($allocated <= 0) {
-                continue;
-            }
-
-            $allocations[] = [
-                'warehouse_batch_stock_id' => (int) $row->warehouse_batch_stock_id,
-                'stock_batch_id' => (int) $row->stock_batch_id,
-                'batch_code' => $row->batch_code,
-                'quantity' => $this->quantity($allocated),
-                'before' => $available,
-                'unit_cost' => $this->cost($row->unit_cost),
-            ];
-
-            $remaining = $this->quantity($remaining - $allocated);
-        }
-
-        if ($remaining > 0.0001) {
-            throw ValidationException::withMessages([
-                'quantity' => $purpose === 'expired'
-                    ? 'The requested quantity is greater than the available expired batch stock.'
-                    : 'The requested quantity is greater than the eligible batch stock.',
-            ]);
-        }
-
-        return $allocations;
-    }
-
-    private function buildManualAllocations(
-        Collection $availableRows,
-        array $manualAllocations,
-        float $requiredQuantity
-    ): array {
-        $normalized = collect($manualAllocations)
-            ->map(function (array $allocation): array {
-                return [
-                    'stock_batch_id' => (int) ($allocation['stock_batch_id'] ?? 0),
-                    'quantity' => $this->quantity($allocation['quantity'] ?? 0),
-                ];
-            })
-            ->filter(fn (array $allocation) => $allocation['quantity'] > 0)
-            ->values();
-
-        if ($normalized->isEmpty()) {
-            throw ValidationException::withMessages([
-                'batch_allocations' => 'Select at least one batch and enter its allocation quantity.',
-            ]);
-        }
-
-        $allocatedTotal = $this->quantity($normalized->sum('quantity'));
-
-        if (abs($allocatedTotal - $requiredQuantity) > 0.0001) {
-            throw ValidationException::withMessages([
-                'batch_allocations' => 'Manual batch allocations must exactly match the requested quantity.',
-            ]);
-        }
-
-        $availableByBatch = $availableRows->keyBy(
-            fn ($row) => (int) $row->stock_batch_id
-        );
-
-        return $normalized->map(function (array $allocation) use ($availableByBatch): array {
-            $row = $availableByBatch->get($allocation['stock_batch_id']);
-
-            if (! $row) {
-                throw ValidationException::withMessages([
-                    'batch_allocations' => 'One of the selected batches is unavailable or not eligible.',
-                ]);
-            }
-
-            $available = $this->quantity($row->available_quantity);
-
-            if ($allocation['quantity'] > $available + 0.0001) {
-                throw ValidationException::withMessages([
-                    'batch_allocations' => "Allocation for batch {$row->batch_code} exceeds its available quantity.",
-                ]);
-            }
-
-            return [
-                'warehouse_batch_stock_id' => (int) $row->warehouse_batch_stock_id,
-                'stock_batch_id' => (int) $row->stock_batch_id,
-                'batch_code' => $row->batch_code,
-                'quantity' => $allocation['quantity'],
-                'before' => $available,
-                'unit_cost' => $this->cost($row->unit_cost),
-            ];
-        })->all();
-    }
-
-    private function addToBatchBalance(
-        Connection $db,
-        int $tenantId,
-        int $warehouseId,
-        int $productId,
-        int $batchId,
-        float $quantity,
-        mixed $movementDate
-    ): array {
-        $row = $db->table('warehouse_batch_stocks')
-            ->where('tenant_id', $tenantId)
-            ->where('warehouse_id', $warehouseId)
-            ->where('product_id', $productId)
-            ->where('stock_batch_id', $batchId)
-            ->lockForUpdate()
-            ->first();
-
-        $before = $row
-            ? $this->quantity($row->quantity)
-            : 0.0;
-
-        $after = $this->quantity($before + $quantity);
-
-        if ($row) {
-            $db->table('warehouse_batch_stocks')
-                ->where('tenant_id', $tenantId)
-                ->where('id', $row->id)
-                ->update([
-                    'quantity' => $after,
-                    'last_movement_at' => $movementDate,
-                    'updated_at' => $movementDate,
-                ]);
-        } else {
-            $db->table('warehouse_batch_stocks')->insert([
-                'tenant_id' => $tenantId,
-                'warehouse_id' => $warehouseId,
-                'product_id' => $productId,
-                'stock_batch_id' => $batchId,
-                'quantity' => $after,
-                'last_movement_at' => $movementDate,
-                'created_at' => $movementDate,
-                'updated_at' => $movementDate,
-            ]);
-        }
-
-        return [
-            'before' => $before,
-            'after' => $after,
-        ];
-    }
-
-    private function syncWarehouseStockFromBatches(
-        Connection $db,
-        int $stockId,
-        int $tenantId,
-        int $warehouseId,
-        int $productId,
-        mixed $movementDate
-    ): array {
-        $totals = $db->table('warehouse_batch_stocks as wbs')
-            ->join('stock_batches as sb', function ($join): void {
-                $join
-                    ->on('sb.tenant_id', '=', 'wbs.tenant_id')
-                    ->on('sb.id', '=', 'wbs.stock_batch_id')
-                    ->on('sb.product_id', '=', 'wbs.product_id');
-            })
-            ->where('wbs.tenant_id', $tenantId)
-            ->where('wbs.warehouse_id', $warehouseId)
-            ->where('wbs.product_id', $productId)
-            ->selectRaw(
-                'COALESCE(SUM(wbs.quantity), 0) AS total_quantity,
-                 COALESCE(SUM(wbs.quantity * sb.unit_cost), 0) AS total_value'
-            )
-            ->first();
-
-        $quantity = $this->quantity($totals->total_quantity ?? 0);
-        $totalValue = (float) ($totals->total_value ?? 0);
-        $averageCost = $quantity > 0
-            ? $this->cost($totalValue / $quantity)
-            : 0.0;
-
-        $db->table('warehouse_stocks')
-            ->where('tenant_id', $tenantId)
-            ->where('id', $stockId)
-            ->update([
-                'quantity' => $quantity,
-                'average_cost' => $averageCost,
-                'last_movement_at' => $movementDate,
-                'updated_at' => $movementDate,
-            ]);
-
-        return [
-            'quantity' => $quantity,
-            'average_cost' => $averageCost,
-            'total_value' => $this->money($totalValue),
-        ];
-    }
-
-    private function createStockMovement(
-        Connection $db,
-        array $data
-    ): int {
-        return $db->table('stock_movements')->insertGetId([
-            'tenant_id' => $data['tenant_id'],
-            'warehouse_id' => $data['warehouse_id'],
-            'product_id' => $data['product_id'],
-            'is_batch_tracked' => true,
-            'batch_allocation_status' => 'allocated',
-            'movement_type' => $data['movement_type'],
-            'quantity' => $data['quantity'],
-            'quantity_before' => $data['quantity_before'],
-            'quantity_after' => $data['quantity_after'],
-            'unit_cost' => $data['unit_cost'],
-            'total_cost' => $data['total_cost'],
-            'average_cost_before' => $data['average_cost_before'],
-            'average_cost_after' => $data['average_cost_after'],
-            'reference_type' => $data['reference_type'],
-            'reference_id' => $data['reference_id'],
-            'reference_no' => $data['reference_no'],
-            'related_warehouse_id' => $data['related_warehouse_id'],
-            'reversal_of_movement_id' => null,
-            'remarks' => $data['remarks'],
-            'movement_date' => $data['movement_date'],
-            'created_by' => $data['created_by'],
-            'created_at' => $data['movement_date'],
-            'updated_at' => $data['movement_date'],
-        ]);
-    }
-
-    private function createMovementBatch(
-        Connection $db,
-        array $data
-    ): int {
-        return $db->table('stock_movement_batches')->insertGetId([
-            'tenant_id' => $data['tenant_id'],
-            'stock_movement_id' => $data['stock_movement_id'],
-            'warehouse_id' => $data['warehouse_id'],
-            'product_id' => $data['product_id'],
-            'stock_batch_id' => $data['stock_batch_id'],
-            'reversal_of_stock_movement_batch_id' => null,
-            'direction' => $data['direction'],
-            'quantity' => $data['quantity'],
-            'batch_quantity_before' => $data['batch_quantity_before'],
-            'batch_quantity_after' => $data['batch_quantity_after'],
-            'unit_cost' => $data['unit_cost'],
-            'total_cost' => $data['total_cost'],
-            'created_at' => $data['created_at'],
-            'updated_at' => $data['created_at'],
-        ]);
-    }
-
-    private function refreshBatchStatus(
-        Connection $db,
-        int $tenantId,
-        int $batchId,
-        ?int $userId,
-        string $referenceType,
-        int $referenceId,
-        string $referenceNo,
-        mixed $changedAt
-    ): void {
-        $batch = $db->table('stock_batches')
-            ->where('tenant_id', $tenantId)
-            ->where('id', $batchId)
-            ->lockForUpdate()
-            ->first();
-
-        if (! $batch) {
-            return;
-        }
-
-        if (in_array($batch->status, ['quarantined', 'recalled', 'closed'], true)) {
-            return;
-        }
-
-        $totalQuantity = $this->quantity(
-            $db->table('warehouse_batch_stocks')
-                ->where('tenant_id', $tenantId)
-                ->where('stock_batch_id', $batchId)
-                ->sum('quantity')
-        );
-
-        $newStatus = $totalQuantity <= 0.0001
-            ? 'depleted'
-            : (
-                filled($batch->expiration_date)
-                && $batch->expiration_date < $changedAt->toDateString()
-                    ? 'expired'
-                    : 'active'
-            );
-
-        if ($newStatus === $batch->status) {
-            return;
-        }
-
-        $db->table('stock_batches')
-            ->where('tenant_id', $tenantId)
-            ->where('id', $batchId)
-            ->update([
-                'status' => $newStatus,
-                'updated_at' => $changedAt,
-            ]);
-
-        $db->table('stock_batch_status_histories')->insert([
-            'tenant_id' => $tenantId,
-            'stock_batch_id' => $batchId,
-            'previous_status' => $batch->status,
-            'new_status' => $newStatus,
-            'reason' => 'Status synchronized from the remaining warehouse batch quantity.',
-            'reference_type' => $referenceType,
-            'reference_id' => $referenceId,
-            'reference_no' => $referenceNo,
-            'changed_by' => $userId,
-            'changed_at' => $changedAt,
-            'created_at' => $changedAt,
-            'updated_at' => $changedAt,
-        ]);
-    }
 
     private function attachBatchDetails(
         Connection $db,
@@ -2393,40 +1544,6 @@ class StockController extends Controller
         ];
     }
 
-    private function generateBatchCode(
-        Connection $db,
-        int $tenantId,
-        array $settings
-    ): string {
-        $prefix = Str::upper(
-            preg_replace(
-                '/[^A-Za-z0-9]/',
-                '',
-                (string) $settings['batch_code_prefix']
-            ) ?: 'BAT'
-        );
-
-        $padding = max(
-            3,
-            min(12, (int) $settings['batch_code_sequence_padding'])
-        );
-
-        do {
-            $code = sprintf(
-                '%s-%s-%s',
-                $prefix,
-                now()->format('Ymd'),
-                Str::upper(Str::random($padding))
-            );
-        } while (
-            $db->table('stock_batches')
-                ->where('tenant_id', $tenantId)
-                ->where('batch_code', $code)
-                ->exists()
-        );
-
-        return $code;
-    }
 
     private function mapAdjustmentType(string $movementType): string
     {
@@ -2466,22 +1583,6 @@ class StockController extends Controller
         };
     }
 
-    private function getTenantId(Request $request): int
-    {
-        $tenantId = (int) ($request->user()?->client_id ?? 0);
-
-        if ($tenantId <= 0 && app()->environment('local')) {
-            return 1;
-        }
-
-        abort_if(
-            $tenantId <= 0,
-            403,
-            'Your account is not assigned to a client.'
-        );
-
-        return $tenantId;
-    }
 
     private function ensureStockBelongsToTenant(
         WarehouseStock $stock,
@@ -2489,6 +1590,7 @@ class StockController extends Controller
     ): void {
         abort_unless((int) $stock->tenant_id === $tenantId, 404);
     }
+
 
     private function generateReferenceNumber(string $prefix): string
     {
@@ -2522,10 +1624,5 @@ class StockController extends Controller
         return $value !== '' ? $value : null;
     }
 
-    private function nullableUppercaseString(mixed $value): ?string
-    {
-        $value = $this->nullableString($value);
 
-        return $value !== null ? Str::upper($value) : null;
-    }
 }

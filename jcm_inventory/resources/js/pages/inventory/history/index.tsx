@@ -72,6 +72,21 @@ type SelectOption = {
     label: string;
 };
 
+type IssuanceItemBatch = {
+    id: number;
+    stock_batch_id: number;
+    batch_code: string;
+    lot_number: string | null;
+    quantity_issued: number;
+    unit_cost: number;
+    line_total: number;
+    received_date: string | null;
+    expiration_date: string | null;
+    status: string;
+    stock_movement_batch_id: number | null;
+    void_stock_movement_batch_id: number | null;
+};
+
 type IssuanceItem = {
     id: number;
     product_id: number;
@@ -84,6 +99,7 @@ type IssuanceItem = {
     notes: string | null;
     stock_movement_id: number | null;
     void_stock_movement_id: number | null;
+    batches: IssuanceItemBatch[];
 };
 
 type StockIssuance = {
@@ -548,7 +564,11 @@ export default function StockWithdrawalHistory({
                 handleKeyDown,
             );
         };
-    }, );
+    }, [
+        selectedIssuance,
+        voidTarget,
+        voidForm.processing,
+    ]);
 
     const hasActiveFilters =
         Boolean(
@@ -2009,6 +2029,49 @@ function ProfessionalItemRow({
                     </span>
                 )}
             </div>
+
+            {item.batches.length > 0 && (
+                <div className="mt-3 rounded-xl border border-primary/10 bg-primary/[0.025] p-3">
+                    <div className="flex items-center justify-between gap-3">
+                        <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-primary">
+                            Exact batch allocation
+                        </p>
+                        <Badge
+                            variant="outline"
+                            className="h-5 rounded-full border-primary/15 bg-primary/[0.04] px-2 text-[8px] text-primary"
+                        >
+                            {item.batches.length} batch{item.batches.length === 1 ? '' : 'es'}
+                        </Badge>
+                    </div>
+
+                    <div className="mt-2 space-y-2">
+                        {item.batches.map((batch) => (
+                            <div
+                                key={batch.id}
+                                className="grid gap-2 rounded-lg border border-border/60 bg-background/35 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_100px_110px]"
+                            >
+                                <div className="min-w-0">
+                                    <p className="truncate font-mono text-[8px] font-semibold text-foreground">
+                                        {batch.batch_code}
+                                    </p>
+                                    <p className="mt-0.5 truncate text-[7px] text-muted-foreground">
+                                        {batch.lot_number ? `Lot ${batch.lot_number}` : 'No lot'}
+                                        {batch.expiration_date
+                                            ? ` · Exp ${formatDate(batch.expiration_date)}`
+                                            : ' · No expiry'}
+                                    </p>
+                                </div>
+                                <p className="text-right text-[8px] font-semibold tabular-nums text-rose-300">
+                                    −{formatNumber(batch.quantity_issued)}
+                                </p>
+                                <p className="text-right text-[8px] font-semibold tabular-nums text-foreground">
+                                    {formatMoney(batch.line_total)}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {item.notes && (
                 <p className="mt-2 text-[9px] leading-4 text-muted-foreground">

@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Inventory\InventoryAccessContext;
+use App\Services\Inventory\InventoryLedgerService;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -12,10 +15,18 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class StockIssuanceController extends Controller
 {
     private const PRODUCT_CODE = 'JCM-INVENTORY-001';
+
+
+    public function __construct(
+        private readonly InventoryAccessContext $access,
+        private readonly InventoryLedgerService $ledger
+    ) {
+    }
 
     private const REASONS = [
         'used_consumed' => 'Used / Consumed',
@@ -242,6 +253,10 @@ class StockIssuanceController extends Controller
                 'product.barcode',
                 'product.unit',
                 'product.category_id',
+                'product.batch_tracking_enabled',
+                'product.batch_issue_policy',
+                'product.requires_expiration_date',
+                'product.expiry_warning_days',
 
                 'category.name as category_name',
 
@@ -305,8 +320,50 @@ class StockIssuanceController extends Controller
                             (float) $stock->average_cost,
                             4
                         ),
+                    'batch_tracking_enabled' =>
+                        (bool) $stock->batch_tracking_enabled,
+                    'batch_issue_policy' =>
+                        (string) $stock->batch_issue_policy,
+                    'requires_expiration_date' =>
+                        (bool) $stock->requires_expiration_date,
+                    'expiry_warning_days' =>
+                        $stock->expiry_warning_days !== null
+                            ? (int) $stock->expiry_warning_days
+                            : null,
                 ]
             )
+            ->values();
+
+        $availableStocks = $availableStocks
+            ->map(function (array $stock) use ($tenantId): array {
+                $stock['eligible_batches'] = $this->ledger
+                    ->eligibleBatches(
+                        $tenantId,
+                        $stock['warehouse_id'],
+                        $stock['product_id'],
+                        'issue'
+                    )
+                    ->map(fn ($batch): array => [
+                        'stock_batch_id' => (int) $batch->stock_batch_id,
+                        'batch_code' => (string) $batch->batch_code,
+                        'lot_number' => $batch->lot_number,
+                        'available_quantity' => round(
+                            (float) $batch->available_quantity,
+                            3
+                        ),
+                        'unit_cost' => round(
+                            (float) $batch->unit_cost,
+                            4
+                        ),
+                        'received_date' => $batch->received_date,
+                        'expiration_date' => $batch->expiration_date,
+                        'status' => $batch->status,
+                    ])
+                    ->values()
+                    ->all();
+
+                return $stock;
+            })
             ->values();
 
         $recentIssuances = $this->issuanceBaseQuery(
@@ -1043,393 +1100,162 @@ class StockIssuanceController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function store(
-        Request $request
-    ): RedirectResponse {
-        $context = $this->userContext($request);
-        $tenantId = $context['account_owner_id'];
-        $branchId = $context['branch_id'];
+    public function store(Request $request): RedirectResponse
+    {
+        try {
+            $context = $this->access->resolve($request);
+            $tenantId = $context['account_owner_id'];
 
-        $validated = $request->validate([
-            'warehouse_id' => [
-                'required',
-                'integer',
-                Rule::exists(
-                    'warehouses',
-                    'id'
-                )->where(
-                    fn ($query) => $query
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->where(
-                            'is_active',
-                            true
-                        )
-                        ->whereNull(
-                            'deleted_at'
-                        )
-                ),
-            ],
-            'issuance_date' => [
-                'required',
-                'date_format:Y-m-d',
-                'before_or_equal:today',
-            ],
-            'reason' => [
-                'required',
-                'string',
-                Rule::in(
-                    array_keys(
-                        self::REASONS
-                    )
-                ),
-            ],
-            'issued_to' => [
-                'nullable',
-                'string',
-                'max:150',
-            ],
-            'department' => [
-                'nullable',
-                'string',
-                'max:150',
-            ],
-            'purpose' => [
-                'nullable',
-                'string',
-                'max:500',
-            ],
-            'reference_no' => [
-                'nullable',
-                'string',
-                'max:120',
-            ],
-            'notes' => [
-                'nullable',
-                'string',
-                'max:5000',
-            ],
-            'items' => [
-                'required',
-                'array',
-                'min:1',
-                'max:100',
-            ],
-            'items.*.product_id' => [
-                'required',
-                'integer',
-                'distinct',
-            ],
-            'items.*.quantity_issued' => [
-                'required',
-                'numeric',
-                'gt:0',
-                'max:99999999999.999',
-            ],
-            'items.*.notes' => [
-                'nullable',
-                'string',
-                'max:500',
-            ],
-        ]);
+            $validated = $request->validate([
+                'warehouse_id' => [
+                    'required',
+                    'integer',
+                    Rule::exists('warehouses', 'id')->where(
+                        fn ($query) => $query
+                            ->where('tenant_id', $tenantId)
+                            ->where('is_active', true)
+                            ->whereNull('deleted_at')
+                    ),
+                ],
+                'issuance_date' => [
+                    'required',
+                    'date_format:Y-m-d',
+                    'before_or_equal:today',
+                ],
+                'reason' => [
+                    'required',
+                    'string',
+                    Rule::in(array_keys(self::REASONS)),
+                ],
+                'issued_to' => ['nullable', 'string', 'max:150'],
+                'department' => ['nullable', 'string', 'max:150'],
+                'purpose' => ['nullable', 'string', 'max:500'],
+                'reference_no' => ['nullable', 'string', 'max:120'],
+                'notes' => ['nullable', 'string', 'max:5000'],
+                'items' => ['required', 'array', 'min:1', 'max:100'],
+                'items.*.product_id' => [
+                    'required',
+                    'integer',
+                    'distinct',
+                ],
+                'items.*.quantity_issued' => [
+                    'required',
+                    'numeric',
+                    'gt:0',
+                    'max:99999999999.999',
+                ],
+                'items.*.notes' => ['nullable', 'string', 'max:500'],
+                // FIFO/FEFO products legitimately submit no manual allocations.
+                // Exact manual allocation requirements are enforced by
+                // InventoryLedgerService after the product policy is locked.
+                'items.*.batch_allocations' => ['sometimes', 'array'],
+                'items.*.batch_allocations.*.stock_batch_id' => [
+                    'required_with:items.*.batch_allocations',
+                    'integer',
+                    'distinct',
+                ],
+                'items.*.batch_allocations.*.quantity' => [
+                    'required_with:items.*.batch_allocations',
+                    'numeric',
+                    'gt:0',
+                    'max:99999999999.999',
+                ],
+            ]);
 
-        $this->validateReasonDetails(
-            $validated
-        );
+            $this->validateReasonDetails($validated);
 
-        $issuanceNumber = DB::connection('mysql')
-            ->transaction(
-                function () use (
-                    $request,
-                    $context,
-                    $tenantId,
-                    $branchId,
-                    $validated
-                ): string {
-                    $database =
-                        DB::connection('mysql');
+            $issuanceNumber = DB::connection('mysql')->transaction(
+                function () use ($request, $context, $tenantId, $validated): string {
+                    $database = DB::connection('mysql');
+                    $warehouse = $this->ledger->lockWarehouse(
+                        $tenantId,
+                        (int) $validated['warehouse_id']
+                    );
 
-                    $warehouse = $database
-                        ->table('warehouses')
-                        ->where(
-                            'id',
-                            (int) $validated[
-                                'warehouse_id'
-                            ]
-                        )
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->where(
-                            'is_active',
-                            true
-                        )
-                        ->whereNull(
-                            'deleted_at'
-                        )
+                    $this->access->assertBranch(
+                        $context,
+                        (int) $warehouse->branch_id
+                    );
+
+                    $branchExists = $database
+                        ->table('branches')
+                        ->where('tenant_id', $tenantId)
+                        ->where('id', (int) $warehouse->branch_id)
+                        ->where('is_active', true)
+                        ->whereNull('deleted_at')
                         ->lockForUpdate()
-                        ->first([
-                            'id',
-                            'branch_id',
-                            'code',
-                            'name',
-                        ]);
+                        ->exists();
 
-                    if (! $warehouse) {
+                    if (! $branchExists) {
                         throw ValidationException::withMessages([
                             'warehouse_id' =>
-                                'The selected warehouse is unavailable.',
+                                'The warehouse branch is inactive or unavailable.',
                         ]);
                     }
 
-                    if (
-                        $branchId !== null
-                        && (int) $warehouse->branch_id
-                            !== $branchId
-                    ) {
-                        abort(
-                            403,
-                            'You can only issue stock from your assigned branch.'
-                        );
-                    }
-
-                    $productIds = collect(
-                        $validated['items']
-                    )
+                    $productIds = collect($validated['items'])
                         ->pluck('product_id')
-                        ->map(
-                            fn ($id): int => (int) $id
-                        )
+                        ->map(fn ($id): int => (int) $id)
                         ->unique()
                         ->values();
 
-                    $stocks = $database
-                        ->table(
-                            'warehouse_stocks as stock'
-                        )
-                        ->join(
-                            'products as product',
-                            function ($join): void {
-                                $join
-                                    ->on(
-                                        'product.id',
-                                        '=',
-                                        'stock.product_id'
-                                    )
-                                    ->on(
-                                        'product.tenant_id',
-                                        '=',
-                                        'stock.tenant_id'
-                                    );
-                            }
-                        )
-                        ->where(
-                            'stock.tenant_id',
-                            $tenantId
-                        )
-                        ->where(
-                            'stock.warehouse_id',
-                            $warehouse->id
-                        )
-                        ->whereIn(
-                            'stock.product_id',
-                            $productIds
-                        )
-                        ->where(
-                            'product.is_active',
-                            true
-                        )
-                        ->whereNull(
-                            'product.deleted_at'
-                        )
+                    $products = $database
+                        ->table('products')
+                        ->where('tenant_id', $tenantId)
+                        ->whereIn('id', $productIds)
+                        ->where('is_active', true)
+                        ->where('stock_tracking', 'tracked')
+                        ->whereNull('deleted_at')
                         ->lockForUpdate()
-                        ->get([
-                            'stock.id as stock_id',
-                            'stock.product_id',
-                            'stock.quantity',
-                            'stock.average_cost',
+                        ->get()
+                        ->keyBy('id');
 
-                            'product.name',
-                            'product.sku',
-                            'product.unit',
-                        ])
-                        ->keyBy('product_id');
-
-                    if (
-                        $stocks->count()
-                        !== $productIds->count()
-                    ) {
+                    if ($products->count() !== $productIds->count()) {
                         throw ValidationException::withMessages([
                             'items' =>
-                                'One or more selected products are unavailable in the warehouse.',
+                                'One or more selected products are unavailable or not stock-tracked.',
                         ]);
                     }
-
-                    $preparedItems = collect();
-
-                    foreach (
-                        $validated['items']
-                        as $index => $input
-                    ) {
-                        $stock = $stocks->get(
-                            (int) $input[
-                                'product_id'
-                            ]
-                        );
-
-                        $rawQuantity = (float) $input[
-                            'quantity_issued'
-                        ];
-
-                        $quantity = round(
-                            $rawQuantity,
-                            3
-                        );
-
-                        if (
-                            abs(
-                                $rawQuantity - $quantity
-                            ) > 0.0000001
-                        ) {
-                            throw ValidationException::withMessages([
-                                "items.{$index}.quantity_issued" =>
-                                    'Quantity may only contain up to three decimal places.',
-                            ]);
-                        }
-
-                        $availableQuantity = round(
-                            (float) $stock->quantity,
-                            3
-                        );
-
-                        if (
-                            $quantity
-                            > $availableQuantity
-                        ) {
-                            throw ValidationException::withMessages([
-                                "items.{$index}.quantity_issued" =>
-                                    "Only {$availableQuantity} {$stock->unit} are available for {$stock->name}.",
-                            ]);
-                        }
-
-                        $unitCost = round(
-                            (float) $stock->average_cost,
-                            4
-                        );
-
-                        $lineTotal = round(
-                            $quantity * $unitCost,
-                            2
-                        );
-
-                        $preparedItems->push([
-                            'stock' => $stock,
-                            'quantity' => $quantity,
-                            'unit_cost' => $unitCost,
-                            'line_total' => $lineTotal,
-                            'notes' =>
-                                $this->nullableString(
-                                    $input['notes']
-                                    ?? null
-                                ),
-                        ]);
-                    }
-
-                    $totalQuantity = round(
-                        (float) $preparedItems->sum(
-                            'quantity'
-                        ),
-                        3
-                    );
-
-                    $totalCost = round(
-                        (float) $preparedItems->sum(
-                            'line_total'
-                        ),
-                        2
-                    );
 
                     $now = now();
-
                     $movementDate = Carbon::parse(
-                        $validated[
-                            'issuance_date'
-                        ]
-                        .' '
-                        .$now->format('H:i:s')
+                        $validated['issuance_date'].' '.$now->format('H:i:s')
                     );
-
-                    $issuanceNumber =
-                        $this->generateIssuanceNumber(
-                            $tenantId
-                        );
-
-                    $issuedTo =
-                        $this->nullableString(
-                            $validated['issued_to']
-                            ?? null
-                        );
-
-                    $department =
-                        $this->nullableString(
-                            $validated['department']
-                            ?? null
-                        );
-
-                    $purpose =
-                        $this->nullableString(
-                            $validated['purpose']
-                            ?? null
-                        );
-
-                    $referenceNo =
-                        $this->nullableString(
-                            $validated[
-                                'reference_no'
-                            ] ?? null
-                        );
-
-                    $reason =
-                        (string) $validated[
-                            'reason'
-                        ];
+                    $issuanceNumber = $this->generateIssuanceNumber($tenantId);
+                    $reason = (string) $validated['reason'];
+                    $issuedTo = $this->nullableString(
+                        $validated['issued_to'] ?? null
+                    );
+                    $department = $this->nullableString(
+                        $validated['department'] ?? null
+                    );
+                    $purpose = $this->nullableString(
+                        $validated['purpose'] ?? null
+                    );
+                    $referenceNo = $this->nullableString(
+                        $validated['reference_no'] ?? null
+                    );
 
                     $issuanceId = $database
                         ->table('stock_issuances')
                         ->insertGetId([
                             'tenant_id' => $tenantId,
-                            'branch_id' =>
-                                $warehouse->branch_id,
-                            'warehouse_id' =>
-                                $warehouse->id,
-                            'issuance_number' =>
-                                $issuanceNumber,
-                            'issuance_date' =>
-                                $validated[
-                                    'issuance_date'
-                                ],
+                            'branch_id' => (int) $warehouse->branch_id,
+                            'warehouse_id' => (int) $warehouse->id,
+                            'issuance_number' => $issuanceNumber,
+                            'issuance_date' => $validated['issuance_date'],
                             'reason' => $reason,
                             'issued_to' => $issuedTo,
-                            'department' =>
-                                $department,
+                            'department' => $department,
                             'purpose' => $purpose,
-                            'reference_no' =>
-                                $referenceNo,
+                            'reference_no' => $referenceNo,
                             'status' => 'posted',
-                            'total_quantity' =>
-                                $totalQuantity,
-                            'total_cost' =>
-                                $totalCost,
-                            'notes' =>
-                                $this->nullableString(
-                                    $validated['notes']
-                                    ?? null
-                                ),
-                            'issued_by' =>
-                                $context['user_id'],
+                            'total_quantity' => 0,
+                            'total_cost' => 0,
+                            'notes' => $this->nullableString(
+                                $validated['notes'] ?? null
+                            ),
+                            'issued_by' => $context['user_id'],
                             'posted_at' => $now,
                             'voided_by' => null,
                             'voided_at' => null,
@@ -1438,176 +1264,168 @@ class StockIssuanceController extends Controller
                             'updated_at' => $now,
                         ]);
 
-                    foreach (
-                        $preparedItems
-                        as $preparedItem
-                    ) {
-                        $stock =
-                            $preparedItem['stock'];
+                    $totalQuantity = 0.0;
+                    $totalCost = 0.0;
 
-                        $quantity =
-                            $preparedItem['quantity'];
+                    foreach ($validated['items'] as $index => $input) {
+                        $productId = (int) $input['product_id'];
+                        $product = $products->get($productId);
+                        $rawQuantity = (float) $input['quantity_issued'];
+                        $quantity = $this->ledger->quantity($rawQuantity);
 
-                        $unitCost =
-                            $preparedItem['unit_cost'];
-
-                        $lineTotal =
-                            $preparedItem['line_total'];
-
-                        $quantityBefore = round(
-                            (float) $stock->quantity,
-                            3
-                        );
-
-                        $quantityAfter = round(
-                            $quantityBefore - $quantity,
-                            3
-                        );
-
-                        $averageCost = round(
-                            (float) $stock
-                                ->average_cost,
-                            4
-                        );
-
-                        $database
-                            ->table('warehouse_stocks')
-                            ->where(
-                                'id',
-                                $stock->stock_id
-                            )
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->update([
-                                'quantity' =>
-                                    $quantityAfter,
-                                'last_movement_at' =>
-                                    $movementDate,
-                                'updated_at' => $now,
+                        if (abs($rawQuantity - $quantity) > 0.0000001) {
+                            throw ValidationException::withMessages([
+                                "items.{$index}.quantity_issued" =>
+                                    'Quantity may only contain up to three decimal places.',
                             ]);
-
-                        $movementType =
-                            $this->movementTypeForReason(
-                                $reason
-                            );
-
-                        $remarks =
-                            "Stock issuance {$issuanceNumber}"
-                            .' | Reason: '
-                            .$this->reasonLabel(
-                                $reason
-                            );
-
-                        if ($issuedTo) {
-                            $remarks .=
-                                " | Issued to: {$issuedTo}";
                         }
 
-                        if ($department) {
-                            $remarks .=
-                                " | Department: {$department}";
-                        }
-
-                        if ($purpose) {
-                            $remarks .=
-                                " | Purpose: {$purpose}";
-                        }
-
-                        if ($referenceNo) {
-                            $remarks .=
-                                " | Reference: {$referenceNo}";
-                        }
-
-                        $movementId = $database
-                            ->table('stock_movements')
+                        $itemId = $database
+                            ->table('stock_issuance_items')
                             ->insertGetId([
                                 'tenant_id' => $tenantId,
-                                'warehouse_id' =>
-                                    $warehouse->id,
-                                'product_id' =>
-                                    $stock->product_id,
-                                'movement_type' =>
-                                    $movementType,
-                                'quantity' => $quantity,
-                                'quantity_before' =>
-                                    $quantityBefore,
-                                'quantity_after' =>
-                                    $quantityAfter,
-                                'unit_cost' =>
-                                    $unitCost,
-                                'total_cost' =>
-                                    $lineTotal,
-                                'average_cost_before' =>
-                                    $averageCost,
-                                'average_cost_after' =>
-                                    $averageCost,
-                                'reference_type' =>
-                                    'stock_issuance',
-                                'reference_id' =>
-                                    $issuanceId,
-                                'reference_no' =>
-                                    $issuanceNumber,
-                                'related_warehouse_id' =>
-                                    null,
-                                'reversal_of_movement_id' =>
-                                    null,
-                                'remarks' => $remarks,
-                                'movement_date' =>
-                                    $movementDate,
-                                'created_by' =>
-                                    $context['user_id'],
+                                'stock_issuance_id' => $issuanceId,
+                                'product_id' => $productId,
+                                'stock_movement_id' => null,
+                                'void_stock_movement_id' => null,
+                                'product_name' => $product->name,
+                                'product_sku' => $product->sku,
+                                'unit' => $product->unit ?: 'pcs',
+                                'quantity_issued' => $quantity,
+                                'unit_cost' => 0,
+                                'line_total' => 0,
+                                'notes' => $this->nullableString(
+                                    $input['notes'] ?? null
+                                ),
                                 'created_at' => $now,
                                 'updated_at' => $now,
                             ]);
+
+                        $remarks = "Stock issuance {$issuanceNumber}"
+                            .' | Reason: '.$this->reasonLabel($reason);
+
+                        if ($issuedTo !== null) {
+                            $remarks .= " | Issued to: {$issuedTo}";
+                        }
+                        if ($department !== null) {
+                            $remarks .= " | Department: {$department}";
+                        }
+                        if ($purpose !== null) {
+                            $remarks .= " | Purpose: {$purpose}";
+                        }
+                        if ($referenceNo !== null) {
+                            $remarks .= " | Reference: {$referenceNo}";
+                        }
+
+                        $ledgerResult = $this->ledger->postOutgoing([
+                            'tenant_id' => $tenantId,
+                            'warehouse_id' => (int) $warehouse->id,
+                            'product_id' => $productId,
+                            'quantity' => $quantity,
+                            'movement_type' =>
+                                $this->movementTypeForReason($reason),
+                            'reference_type' => 'stock_issuance',
+                            'reference_id' => $issuanceId,
+                            'reference_no' => $issuanceNumber,
+                            'user_id' => $context['user_id'],
+                            'movement_date' => $movementDate,
+                            'purpose' => match ($reason) {
+                                'damaged' => 'damage',
+                                'expired' => 'expired',
+                                default => 'issue',
+                            },
+                            'batch_allocations' =>
+                                $input['batch_allocations'] ?? [],
+                            'remarks' => $remarks,
+                        ]);
 
                         $database
-                            ->table(
-                                'stock_issuance_items'
-                            )
-                            ->insert([
-                                'tenant_id' =>
-                                    $tenantId,
-                                'stock_issuance_id' =>
-                                    $issuanceId,
-                                'product_id' =>
-                                    $stock->product_id,
+                            ->table('stock_issuance_items')
+                            ->where('tenant_id', $tenantId)
+                            ->where('id', $itemId)
+                            ->update([
                                 'stock_movement_id' =>
-                                    $movementId,
-                                'void_stock_movement_id' =>
-                                    null,
-                                'product_name' =>
-                                    $stock->name,
-                                'product_sku' =>
-                                    $stock->sku,
-                                'unit' =>
-                                    $stock->unit
-                                    ?? 'pcs',
-                                'quantity_issued' =>
-                                    $quantity,
-                                'unit_cost' =>
-                                    $unitCost,
-                                'line_total' =>
-                                    $lineTotal,
-                                'notes' =>
-                                    $preparedItem[
-                                        'notes'
-                                    ],
-                                'created_at' => $now,
+                                    $ledgerResult['movement_id'],
+                                'unit_cost' => $ledgerResult['unit_cost'],
+                                'line_total' => $ledgerResult['total_cost'],
                                 'updated_at' => $now,
                             ]);
+
+                        foreach ($ledgerResult['allocations'] as $allocation) {
+                            $database
+                                ->table('stock_issuance_item_batches')
+                                ->insert([
+                                    'tenant_id' => $tenantId,
+                                    'stock_issuance_item_id' => $itemId,
+                                    'warehouse_id' => (int) $warehouse->id,
+                                    'product_id' => $productId,
+                                    'stock_batch_id' =>
+                                        $allocation['stock_batch_id'],
+                                    'stock_movement_batch_id' =>
+                                        $allocation['stock_movement_batch_id'],
+                                    'void_stock_movement_batch_id' => null,
+                                    'quantity_issued' =>
+                                        $allocation['quantity'],
+                                    'unit_cost' => $allocation['unit_cost'],
+                                    'line_total' => $allocation['total_cost'],
+                                    'created_at' => $now,
+                                    'updated_at' => $now,
+                                ]);
+                        }
+
+                        $totalQuantity = $this->ledger->quantity(
+                            $totalQuantity + $ledgerResult['quantity']
+                        );
+                        $totalCost = $this->ledger->money(
+                            $totalCost + $ledgerResult['total_cost']
+                        );
                     }
 
+                    $database
+                        ->table('stock_issuances')
+                        ->where('tenant_id', $tenantId)
+                        ->where('id', $issuanceId)
+                        ->update([
+                            'total_quantity' => $totalQuantity,
+                            'total_cost' => $totalCost,
+                            'updated_at' => $now,
+                        ]);
+
                     return $issuanceNumber;
-                }
+                },
+                5
             );
 
-        return back()->with(
-            'success',
-            "Stock issuance {$issuanceNumber} posted successfully."
-        );
+            return back()->with(
+                'success',
+                "Stock issuance {$issuanceNumber} posted successfully."
+            );
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (QueryException $exception) {
+            report($exception);
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'issuance' => config('app.debug')
+                        ? 'Database error: '.$exception->getMessage()
+                        : 'The database rejected the withdrawal. Review stock and batch availability, then try again.',
+                ]);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'issuance' => config('app.debug')
+                        ? 'Withdrawal error: '.$exception->getMessage()
+                        : 'The withdrawal could not be posted. Please review the request and try again.',
+                ]);
+        }
     }
+
+
 
     /*
     |--------------------------------------------------------------------------
@@ -1619,424 +1437,14 @@ class StockIssuanceController extends Controller
         Request $request,
         int $issuance
     ): RedirectResponse {
-        $context = $this->userContext($request);
-        $tenantId = $context['account_owner_id'];
-
-        abort_unless(
-            $context['is_owner'],
-            403,
-            'Only the account owner can void posted stock issuances.'
-        );
-
-        $validated = $request->validate([
-            'reason' => [
-                'required',
-                'string',
-                'min:3',
-                'max:1000',
-            ],
-        ]);
-
-        $issuanceNumber = DB::connection('mysql')
-            ->transaction(
-                function () use (
-                    $request,
-                    $tenantId,
-                    $issuance,
-                    $validated
-                ): string {
-                    $database =
-                        DB::connection('mysql');
-
-                    $issuanceRecord = $database
-                        ->table('stock_issuances')
-                        ->where(
-                            'id',
-                            $issuance
-                        )
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->lockForUpdate()
-                        ->first();
-
-                    if (! $issuanceRecord) {
-                        abort(404);
-                    }
-
-                    if (
-                        $issuanceRecord->status
-                        !== 'posted'
-                    ) {
-                        throw ValidationException::withMessages([
-                            'issuance' =>
-                                'This stock issuance has already been voided.',
-                        ]);
-                    }
-
-                    $items = $database
-                        ->table(
-                            'stock_issuance_items'
-                        )
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->where(
-                            'stock_issuance_id',
-                            $issuanceRecord->id
-                        )
-                        ->orderBy('id')
-                        ->lockForUpdate()
-                        ->get();
-
-                    if ($items->isEmpty()) {
-                        throw ValidationException::withMessages([
-                            'issuance' =>
-                                'This stock issuance has no items to reverse.',
-                        ]);
-                    }
-
-                    if (
-                        $items->contains(
-                            fn ($item): bool =>
-                                ! $item
-                                    ->stock_movement_id
-                                || $item
-                                    ->void_stock_movement_id
-                        )
-                    ) {
-                        throw ValidationException::withMessages([
-                            'issuance' =>
-                                'This stock issuance cannot be safely voided because its movement links are incomplete or already reversed.',
-                        ]);
-                    }
-
-                    $movementIds = $items
-                        ->pluck(
-                            'stock_movement_id'
-                        )
-                        ->map(
-                            fn ($id): int => (int) $id
-                        )
-                        ->unique()
-                        ->values();
-
-                    $movements = $database
-                        ->table('stock_movements')
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->whereIn(
-                            'id',
-                            $movementIds
-                        )
-                        ->lockForUpdate()
-                        ->get()
-                        ->keyBy('id');
-
-                    if (
-                        $movements->count()
-                        !== $movementIds->count()
-                    ) {
-                        throw ValidationException::withMessages([
-                            'issuance' =>
-                                'One or more original stock movements could not be found.',
-                        ]);
-                    }
-
-                    $now = now();
-
-                    $voidReason = trim(
-                        (string) $validated['reason']
-                    );
-
-                    foreach ($items as $item) {
-                        $movement = $movements->get(
-                            (int) $item
-                                ->stock_movement_id
-                        );
-
-                        if (
-                            ! $movement
-                            || ! in_array(
-                                $movement
-                                    ->movement_type,
-                                [
-                                    'stock_out',
-                                    'damage',
-                                    'expired',
-                                ],
-                                true
-                            )
-                            || $movement
-                                ->reference_type
-                                !== 'stock_issuance'
-                            || (int) $movement
-                                ->reference_id
-                                !== (int) $issuanceRecord
-                                    ->id
-                            || (int) $movement
-                                ->warehouse_id
-                                !== (int) $issuanceRecord
-                                    ->warehouse_id
-                            || (int) $movement
-                                ->product_id
-                                !== (int) $item
-                                    ->product_id
-                            || $movement
-                                ->average_cost_before
-                                === null
-                            || $movement
-                                ->average_cost_after
-                                === null
-                        ) {
-                            throw ValidationException::withMessages([
-                                'issuance' =>
-                                    "{$item->product_name} does not have a complete reversible movement record.",
-                            ]);
-                        }
-
-                        $alreadyReversed = $database
-                            ->table('stock_movements')
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->where(
-                                'reversal_of_movement_id',
-                                $movement->id
-                            )
-                            ->exists();
-
-                        if ($alreadyReversed) {
-                            throw ValidationException::withMessages([
-                                'issuance' =>
-                                    "{$item->product_name} has already been reversed.",
-                            ]);
-                        }
-
-                        $hasLaterMovement = $database
-                            ->table('stock_movements')
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->where(
-                                'warehouse_id',
-                                $movement->warehouse_id
-                            )
-                            ->where(
-                                'product_id',
-                                $movement->product_id
-                            )
-                            ->where(
-                                'id',
-                                '>',
-                                $movement->id
-                            )
-                            ->exists();
-
-                        if ($hasLaterMovement) {
-                            throw ValidationException::withMessages([
-                                'issuance' =>
-                                    "{$item->product_name} has later stock activity. Void that later activity first or use a controlled adjustment instead.",
-                            ]);
-                        }
-
-                        $stock = $database
-                            ->table('warehouse_stocks')
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->where(
-                                'warehouse_id',
-                                $movement->warehouse_id
-                            )
-                            ->where(
-                                'product_id',
-                                $movement->product_id
-                            )
-                            ->lockForUpdate()
-                            ->first();
-
-                        if (! $stock) {
-                            throw ValidationException::withMessages([
-                                'issuance' =>
-                                    "The warehouse stock for {$item->product_name} could not be found.",
-                            ]);
-                        }
-
-                        $currentQuantity = round(
-                            (float) $stock->quantity,
-                            3
-                        );
-
-                        $currentAverageCost = round(
-                            (float) $stock->average_cost,
-                            4
-                        );
-
-                        if (
-                            ! $this->almostEqual(
-                                $currentQuantity,
-                                (float) $movement
-                                    ->quantity_after,
-                                0.0005
-                            )
-                            || ! $this->almostEqual(
-                                $currentAverageCost,
-                                (float) $movement
-                                    ->average_cost_after,
-                                0.00005
-                            )
-                        ) {
-                            throw ValidationException::withMessages([
-                                'issuance' =>
-                                    "Current stock for {$item->product_name} no longer matches the posted issuance state.",
-                            ]);
-                        }
-
-                        $restoredQuantity = round(
-                            (float) $movement
-                                ->quantity_before,
-                            3
-                        );
-
-                        $restoredAverageCost = round(
-                            (float) $movement
-                                ->average_cost_before,
-                            4
-                        );
-
-                        $database
-                            ->table('warehouse_stocks')
-                            ->where(
-                                'id',
-                                $stock->id
-                            )
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->update([
-                                'quantity' =>
-                                    $restoredQuantity,
-                                'average_cost' =>
-                                    $restoredAverageCost,
-                                'last_movement_at' =>
-                                    $now,
-                                'updated_at' => $now,
-                            ]);
-
-                        $voidMovementId = $database
-                            ->table('stock_movements')
-                            ->insertGetId([
-                                'tenant_id' => $tenantId,
-                                'warehouse_id' =>
-                                    $movement->warehouse_id,
-                                'product_id' =>
-                                    $movement->product_id,
-                                'movement_type' =>
-                                    'adjustment_in',
-                                'quantity' =>
-                                    round(
-                                        (float) $movement
-                                            ->quantity,
-                                        3
-                                    ),
-                                'quantity_before' =>
-                                    $currentQuantity,
-                                'quantity_after' =>
-                                    $restoredQuantity,
-                                'unit_cost' =>
-                                    round(
-                                        (float) $movement
-                                            ->unit_cost,
-                                        4
-                                    ),
-                                'total_cost' =>
-                                    round(
-                                        (float) $movement
-                                            ->total_cost,
-                                        2
-                                    ),
-                                'average_cost_before' =>
-                                    $currentAverageCost,
-                                'average_cost_after' =>
-                                    $restoredAverageCost,
-                                'reference_type' =>
-                                    'stock_issuance_void',
-                                'reference_id' =>
-                                    $issuanceRecord->id,
-                                'reference_no' =>
-                                    $issuanceRecord
-                                        ->issuance_number,
-                                'related_warehouse_id' =>
-                                    null,
-                                'reversal_of_movement_id' =>
-                                    $movement->id,
-                                'remarks' =>
-                                    "Voided stock issuance {$issuanceRecord->issuance_number}: {$voidReason}",
-                                'movement_date' => $now,
-                                'created_by' =>
-                                    $request->user()->id,
-                                'created_at' => $now,
-                                'updated_at' => $now,
-                            ]);
-
-                        $database
-                            ->table(
-                                'stock_issuance_items'
-                            )
-                            ->where(
-                                'id',
-                                $item->id
-                            )
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->update([
-                                'void_stock_movement_id' =>
-                                    $voidMovementId,
-                                'updated_at' => $now,
-                            ]);
-                    }
-
-                    $database
-                        ->table('stock_issuances')
-                        ->where(
-                            'id',
-                            $issuanceRecord->id
-                        )
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->update([
-                            'status' => 'voided',
-                            'voided_by' =>
-                                $request->user()->id,
-                            'voided_at' => $now,
-                            'void_reason' =>
-                                $voidReason,
-                            'updated_at' => $now,
-                        ]);
-
-                    return $issuanceRecord
-                        ->issuance_number;
-                }
-            );
+        $this->access->resolve($request);
 
         return back()->with(
-            'success',
-            "Stock issuance {$issuanceNumber} was voided and its stock was safely restored."
+            'error',
+            'Use the Stock Issuance History screen to void an issuance. The active history controller performs an exact batch reversal.'
         );
     }
+
 
     /*
     |--------------------------------------------------------------------------
@@ -2299,161 +1707,9 @@ class StockIssuanceController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    private function userContext(
-        Request $request
-    ): array {
-        $userId = (int) (
-            $request->user()?->id
-        );
-
-        abort_unless(
-            $userId > 0,
-            401
-        );
-
-        $context = DB::connection('saas')
-            ->table(
-                'user_product_access as access'
-            )
-            ->join(
-                'products as product',
-                'product.id',
-                '=',
-                'access.product_id'
-            )
-            ->join(
-                'product_user_types as product_role',
-                function ($join): void {
-                    $join
-                        ->on(
-                            'product_role.id',
-                            '=',
-                            'access.product_user_type_id'
-                        )
-                        ->on(
-                            'product_role.product_id',
-                            '=',
-                            'access.product_id'
-                        );
-                }
-            )
-            ->join(
-                'user_types as user_type',
-                'user_type.id',
-                '=',
-                'product_role.user_type_id'
-            )
-            ->join(
-                'subscriptions as subscription',
-                function ($join): void {
-                    $join
-                        ->on(
-                            'subscription.id',
-                            '=',
-                            'access.subscription_id'
-                        )
-                        ->on(
-                            'subscription.product_id',
-                            '=',
-                            'access.product_id'
-                        );
-                }
-            )
-            ->where(
-                'access.user_id',
-                $userId
-            )
-            ->where(
-                'access.status',
-                'active'
-            )
-            ->where(
-                'product.product_code',
-                self::PRODUCT_CODE
-            )
-            ->whereIn(
-                'product.status',
-                [
-                    'development',
-                    'active',
-                ]
-            )
-            ->where(
-                'product_role.status',
-                'active'
-            )
-            ->where(
-                'user_type.status',
-                'active'
-            )
-            ->whereIn(
-                'subscription.status',
-                [
-                    'trial',
-                    'active',
-                ]
-            )
-            ->orderByDesc(
-                'subscription.id'
-            )
-            ->select([
-                'access.account_owner_id',
-                'access.product_id',
-                'access.subscription_id',
-                'product_role.display_name as role_name',
-                'user_type.type_code as role_code',
-                'user_type.is_owner_type',
-            ])
-            ->first();
-
-        abort_unless(
-            $context,
-            403,
-            'Your account does not have active access to JCM Inventory.'
-        );
-
-        $isOwner =
-            (bool) $context->is_owner_type;
-
-        $assignedBranchId = $isOwner
-            ? null
-            : (int) (
-                $request->user()
-                    ?->branch_id
-                ?? 0
-            );
-
-        if (
-            ! $isOwner
-            && $assignedBranchId <= 0
-        ) {
-            abort(
-                403,
-                'No branch is assigned to your inventory account.'
-            );
-        }
-
-        return [
-            'user_id' => $userId,
-            'account_owner_id' =>
-                (int) $context
-                    ->account_owner_id,
-            'product_id' =>
-                (int) $context->product_id,
-            'subscription_id' =>
-                (int) $context
-                    ->subscription_id,
-            'role_code' =>
-                (string) $context->role_code,
-            'role_name' =>
-                (string) (
-                    $context->role_name
-                    ?: $context->role_code
-                ),
-            'is_owner' => $isOwner,
-            'branch_id' => $isOwner
-                ? null
-                : $assignedBranchId,
-        ];
+    private function userContext(Request $request): array
+    {
+        return $this->access->resolve($request);
     }
+
 }

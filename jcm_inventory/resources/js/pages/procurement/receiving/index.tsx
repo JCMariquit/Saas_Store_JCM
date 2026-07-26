@@ -1,11 +1,14 @@
 import { AppDrawer } from "@/components/shared/app-drawer";
+import { AppPagination } from "@/components/shared/app-pagination";
 import { CalloutCard } from "@/components/shared/callout-card";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { FormDialog } from "@/components/shared/form-dialog";
+import { FilterBar } from "@/components/shared/filter-bar";
 import { FormField } from "@/components/shared/form-field";
 import { FormSection } from "@/components/shared/form-section";
 import { IconInput } from "@/components/shared/icon-input";
 import { PageContainer } from "@/components/shared/page-container";
+import { SearchInput } from "@/components/shared/search-input";
 import { SectionCard } from "@/components/shared/section-card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import AppLayout from "@/layouts/app-layout";
 import { cn } from "@/lib/utils";
 import { type BreadcrumbItem } from "@/types";
-import { Head, useForm } from "@inertiajs/react";
+import { Head, router, useForm } from "@inertiajs/react";
 import {
   ArrowDownToLine,
   Banknote,
@@ -33,10 +36,13 @@ import {
   ChevronDown,
   ClipboardList,
   PackageCheck,
+  Layers3,
+  Plus,
   ReceiptText,
   RotateCcw,
   ShieldCheck,
   Truck,
+  Trash2,
   UserRound,
   Warehouse,
   XCircle,
@@ -46,6 +52,7 @@ import {
   Fragment,
   type FormEvent,
   type ReactNode,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -92,6 +99,10 @@ type PurchaseOrderItemOption = {
   remaining_quantity: number;
   unit_cost: number;
   notes: string | null;
+  batch_tracking_enabled: boolean;
+  batch_issue_policy: 'fifo' | 'fefo' | 'manual';
+  requires_expiration_date: boolean;
+  expiry_warning_days: number | null;
 };
 
 type PurchaseOrderOption = {
@@ -123,6 +134,22 @@ type PurchaseOrderOption = {
   items: PurchaseOrderItemOption[];
 };
 
+type ReceiptItemBatch = {
+  id: number;
+  stock_batch_id: number;
+  batch_code: string;
+  lot_number: string | null;
+  quantity_received: number;
+  unit_cost: number;
+  line_total: number;
+  received_date: string | null;
+  manufactured_date: string | null;
+  expiration_date: string | null;
+  status: string;
+  stock_movement_batch_id: number | null;
+  void_stock_movement_batch_id: number | null;
+};
+
 type ReceiptItem = {
   id: number;
   purchase_order_item_id: number;
@@ -134,6 +161,9 @@ type ReceiptItem = {
   unit_cost: number;
   line_total: number;
   notes: string | null;
+  stock_movement_id: number | null;
+  void_stock_movement_id: number | null;
+  batches: ReceiptItemBatch[];
 };
 
 type Receipt = {
@@ -225,10 +255,20 @@ type ReceivingFilters = {
   date_to: string;
 };
 
+type ReceivingBatchForm = {
+  quantity: string;
+  batch_code: string;
+  lot_number: string;
+  manufactured_date: string;
+  expiration_date: string;
+  notes: string;
+};
+
 type ReceivingFormItem = {
   purchase_order_item_id: string;
   quantity_received: string;
   notes: string;
+  batches: ReceivingBatchForm[];
 };
 
 type ReceivingFormData = {
@@ -260,11 +300,11 @@ const breadcrumbs: BreadcrumbItem[] = [
   },
   {
     title: "Procurement",
-    href: "/procurement/suppliers",
+    href: "/suppliers",
   },
   {
     title: "Receiving",
-    href: "/procurement/receiving",
+    href: "/suppliers/receiving",
   },
 ];
 
@@ -275,6 +315,26 @@ function todayDate(): string {
   const offset = date.getTimezoneOffset() * 60_000;
 
   return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function emptyBatch(): ReceivingBatchForm {
+  return {
+    quantity: '',
+    batch_code: '',
+    lot_number: '',
+    manufactured_date: '',
+    expiration_date: '',
+    notes: '',
+  };
+}
+
+function formItemFor(orderItem: PurchaseOrderItemOption): ReceivingFormItem {
+  return {
+    purchase_order_item_id: String(orderItem.id),
+    quantity_received: '',
+    notes: '',
+    batches: orderItem.batch_tracking_enabled ? [emptyBatch()] : [],
+  };
 }
 
 function emptyForm(): ReceivingFormData {
@@ -288,8 +348,13 @@ function emptyForm(): ReceivingFormData {
 }
 
 export default function ReceivingIndex({
+  receipts,
   summary,
+  suppliers,
+  warehouses,
   purchase_orders,
+  statuses,
+  filters,
 }: ReceivingPageProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
@@ -301,6 +366,13 @@ export default function ReceivingIndex({
 
   const [voidingReceipt, setVoidingReceipt] = useState<Receipt | null>(null);
 
+  const [search, setSearch] = useState(filters.search ?? "");
+  const [status, setStatus] = useState(filters.status ?? "");
+  const [supplierId, setSupplierId] = useState(filters.supplier_id ?? "");
+  const [warehouseId, setWarehouseId] = useState(filters.warehouse_id ?? "");
+  const [dateFrom, setDateFrom] = useState(filters.date_from ?? "");
+  const [dateTo, setDateTo] = useState(filters.date_to ?? "");
+
   const form = useForm<ReceivingFormData>(emptyForm());
 
   const voidForm = useForm<VoidReceiptFormData>({
@@ -308,6 +380,22 @@ export default function ReceivingIndex({
   });
 
   const voidErrors = voidForm.errors as Record<string, string | undefined>;
+
+  useEffect(() => {
+    setSearch(filters.search ?? "");
+    setStatus(filters.status ?? "");
+    setSupplierId(filters.supplier_id ?? "");
+    setWarehouseId(filters.warehouse_id ?? "");
+    setDateFrom(filters.date_from ?? "");
+    setDateTo(filters.date_to ?? "");
+  }, [
+    filters.search,
+    filters.status,
+    filters.supplier_id,
+    filters.warehouse_id,
+    filters.date_from,
+    filters.date_to,
+  ]);
 
   const selectedPurchaseOrder = useMemo(() => {
     return (
@@ -363,12 +451,7 @@ export default function ReceivingIndex({
     form.setData({
       ...emptyForm(),
       purchase_order_id: order ? String(order.id) : "",
-      items:
-        order?.items.map((item) => ({
-          purchase_order_item_id: String(item.id),
-          quantity_received: "",
-          notes: "",
-        })) ?? [],
+      items: order?.items.map(formItemFor) ?? [],
     });
 
     setIsCreateModalOpen(true);
@@ -396,27 +479,101 @@ export default function ReceivingIndex({
 
       purchase_order_id: purchaseOrderId,
 
-      items:
-        order?.items.map((item) => ({
-          purchase_order_item_id: String(item.id),
-
-          quantity_received: "",
-
-          notes: "",
-        })) ?? [],
+      items: order?.items.map(formItemFor) ?? [],
     });
   }
 
   function updateItem(
     index: number,
-    field: keyof ReceivingFormItem,
+    field: "quantity_received" | "notes",
     value: string,
   ): void {
     const items = [...form.data.items];
+    const current = items[index];
 
-    items[index] = {
-      ...items[index],
+    if (!current) {
+      return;
+    }
+
+    const nextItem: ReceivingFormItem = {
+      ...current,
       [field]: value,
+    };
+
+    if (
+      field === "quantity_received" &&
+      nextItem.batches.length === 1
+    ) {
+      nextItem.batches = [
+        {
+          ...nextItem.batches[0],
+          quantity: value,
+        },
+      ];
+    }
+
+    items[index] = nextItem;
+    form.setData("items", items);
+  }
+
+  function updateBatchField(
+    itemIndex: number,
+    batchIndex: number,
+    field: keyof ReceivingBatchForm,
+    value: string,
+  ): void {
+    const items = [...form.data.items];
+    const item = items[itemIndex];
+
+    if (!item) {
+      return;
+    }
+
+    const batches = [...item.batches];
+    const batch = batches[batchIndex];
+
+    if (!batch) {
+      return;
+    }
+
+    batches[batchIndex] = {
+      ...batch,
+      [field]: value,
+    };
+
+    items[itemIndex] = { ...item, batches };
+    form.setData("items", items);
+  }
+
+  function addBatch(itemIndex: number): void {
+    const items = [...form.data.items];
+    const item = items[itemIndex];
+
+    if (!item) {
+      return;
+    }
+
+    items[itemIndex] = {
+      ...item,
+      batches: [...item.batches, emptyBatch()],
+    };
+
+    form.setData("items", items);
+  }
+
+  function removeBatch(itemIndex: number, batchIndex: number): void {
+    const items = [...form.data.items];
+    const item = items[itemIndex];
+
+    if (!item) {
+      return;
+    }
+
+    const batches = item.batches.filter((_, index) => index !== batchIndex);
+
+    items[itemIndex] = {
+      ...item,
+      batches: batches.length > 0 ? batches : [emptyBatch()],
     };
 
     form.setData("items", items);
@@ -433,13 +590,15 @@ export default function ReceivingIndex({
         const orderItem = selectedPurchaseOrder.items.find(
           (candidate) => String(candidate.id) === item.purchase_order_item_id,
         );
+        const quantity = orderItem ? String(orderItem.remaining_quantity) : "";
 
         return {
           ...item,
-
-          quantity_received: orderItem
-            ? String(orderItem.remaining_quantity)
-            : "",
+          quantity_received: quantity,
+          batches:
+            item.batches.length === 1
+              ? [{ ...item.batches[0], quantity }]
+              : item.batches,
         };
       }),
     );
@@ -451,23 +610,34 @@ export default function ReceivingIndex({
       form.data.items.map((item) => ({
         ...item,
         quantity_received: "",
+        batches: item.batches.map((batch) => ({ ...batch, quantity: "" })),
       })),
     );
   }
 
   function itemError(
     index: number,
-    field: keyof ReceivingFormItem,
+    field: "quantity_received" | "notes" | "batches",
   ): string | undefined {
     return (form.errors as Record<string, string>)[`items.${index}.${field}`];
   }
 
+  function batchError(
+    itemIndex: number,
+    batchIndex: number,
+    field: keyof ReceivingBatchForm,
+  ): string | undefined {
+    return (form.errors as Record<string, string>)[
+      `items.${itemIndex}.batches.${batchIndex}.${field}`
+    ];
+  }
+
   function submitReceipt(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
+    form.clearErrors();
 
     const selectedItems = form.data.items.filter((item) => {
       const quantity = Number(item.quantity_received || 0);
-
       return Number.isFinite(quantity) && quantity > 0;
     });
 
@@ -476,30 +646,95 @@ export default function ReceivingIndex({
         "items",
         "Enter a received quantity for at least one product.",
       );
-
       return;
     }
 
-    form.clearErrors();
+    if (!selectedPurchaseOrder) {
+      form.setError("purchase_order_id", "Select an approved purchase order.");
+      return;
+    }
+
+    let hasBatchError = false;
+
+    form.data.items.forEach((item, itemIndex) => {
+      const quantity = Number(item.quantity_received || 0);
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        return;
+      }
+
+      const orderItem = selectedPurchaseOrder.items.find(
+        (candidate) => String(candidate.id) === item.purchase_order_item_id,
+      );
+
+      if (!orderItem?.batch_tracking_enabled) {
+        return;
+      }
+
+      const activeBatches = item.batches.filter((batch) => {
+        const batchQuantity = Number(batch.quantity || 0);
+        return Number.isFinite(batchQuantity) && batchQuantity > 0;
+      });
+
+      if (activeBatches.length === 0) {
+        form.setError(
+          `items.${itemIndex}.batches` as keyof ReceivingFormData,
+          "Add at least one batch allocation for this tracked product.",
+        );
+        hasBatchError = true;
+        return;
+      }
+
+      const allocated = activeBatches.reduce(
+        (sum, batch) => sum + Number(batch.quantity || 0),
+        0,
+      );
+
+      if (Math.abs(allocated - quantity) > 0.0001) {
+        form.setError(
+          `items.${itemIndex}.batches` as keyof ReceivingFormData,
+          `Batch quantities must total ${formatQuantity(quantity)}.`,
+        );
+        hasBatchError = true;
+      }
+
+      activeBatches.forEach((batch, batchIndex) => {
+        if (orderItem.requires_expiration_date && !batch.expiration_date) {
+          form.setError(
+            `items.${itemIndex}.batches.${batchIndex}.expiration_date` as keyof ReceivingFormData,
+            "Expiration date is required for this product.",
+          );
+          hasBatchError = true;
+        }
+      });
+    });
+
+    if (hasBatchError) {
+      return;
+    }
 
     form.transform((data) => ({
       ...data,
-      items: data.items.filter((item) => {
-        const quantity = Number(item.quantity_received || 0);
-
-        return Number.isFinite(quantity) && quantity > 0;
-      }),
+      items: data.items
+        .filter((item) => {
+          const quantity = Number(item.quantity_received || 0);
+          return Number.isFinite(quantity) && quantity > 0;
+        })
+        .map((item) => ({
+          ...item,
+          batches: item.batches.filter((batch) => {
+            const quantity = Number(batch.quantity || 0);
+            return Number.isFinite(quantity) && quantity > 0;
+          }),
+        })),
     }));
 
-    form.post("/procurement/receiving", {
+    form.post("/suppliers/receiving", {
       preserveScroll: true,
-
       onSuccess: () => {
         setIsCreateModalOpen(false);
         form.reset();
         form.setData(emptyForm());
       },
-
       onFinish: () => {
         form.transform((data) => data);
       },
@@ -534,7 +769,7 @@ export default function ReceivingIndex({
       return;
     }
 
-    voidForm.post(`/procurement/receiving/${voidingReceipt.id}/void`, {
+    voidForm.post(`/suppliers/receiving/${voidingReceipt.id}/void`, {
       preserveScroll: true,
       onSuccess: () => {
         setVoidingReceipt(null);
@@ -547,6 +782,42 @@ export default function ReceivingIndex({
   function togglePurchaseOrderDetails(purchaseOrderId: number): void {
     setExpandedPurchaseOrderId((currentId) =>
       currentId === purchaseOrderId ? null : purchaseOrderId,
+    );
+  }
+
+  function applyReceiptFilters(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+
+    router.get(
+      "/suppliers/receiving",
+      {
+        search: search.trim() || undefined,
+        status: status || undefined,
+        supplier_id: supplierId || undefined,
+        warehouse_id: warehouseId || undefined,
+        date_from: dateFrom || undefined,
+        date_to: dateTo || undefined,
+      },
+      {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+      },
+    );
+  }
+
+  function resetReceiptFilters(): void {
+    setSearch("");
+    setStatus("");
+    setSupplierId("");
+    setWarehouseId("");
+    setDateFrom("");
+    setDateTo("");
+
+    router.get(
+      "/suppliers/receiving",
+      {},
+      { preserveState: true, preserveScroll: true, replace: true },
     );
   }
 
@@ -568,6 +839,10 @@ export default function ReceivingIndex({
 
   const averageReceivedValue =
     summary.posted > 0 ? summary.received_value / summary.posted : 0;
+
+  const hasActiveReceiptFilters = Boolean(
+    search.trim() || status || supplierId || warehouseId || dateFrom || dateTo,
+  );
 
   const receivingStatusLabel =
     summary.total === 0
@@ -777,6 +1052,224 @@ export default function ReceivingIndex({
             onToggleDetails={togglePurchaseOrderDetails}
             onReceive={openCreateModal}
           />
+        </SectionCard>
+
+        <SectionCard
+          title="Receiving Register"
+          description="Review posted and voided supplier receipts, exact batch layers, warehouse impact, and reversal eligibility."
+          actions={
+            <Badge
+              variant="outline"
+              className="h-7 rounded-full border-primary/15 bg-primary/[0.06] px-2.5 text-[10px] font-medium text-primary"
+            >
+              <ReceiptText className="mr-1 size-3" />
+              {formatNumber(receipts.total)} receipt{receipts.total === 1 ? "" : "s"}
+            </Badge>
+          }
+        >
+          <FilterBar
+            onSubmit={applyReceiptFilters}
+            contentClassName="grid w-full gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_160px_180px_180px_150px_150px]"
+            actions={
+              <>
+                <Button type="submit" variant="secondary" className="h-10 px-4 text-sm">
+                  Apply Filters
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!hasActiveReceiptFilters}
+                  onClick={resetReceiptFilters}
+                  className="h-10 px-3 text-sm"
+                >
+                  <RotateCcw className="size-3.5" />
+                  Reset
+                </Button>
+              </>
+            }
+          >
+            <SearchInput
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onClear={() => setSearch("")}
+              placeholder="Search receipt, PO, supplier, delivery reference..."
+              className="sm:col-span-2 xl:col-span-1"
+            />
+
+            <Select
+              value={status || NONE_VALUE}
+              onValueChange={(value) => setStatus(value === NONE_VALUE ? "" : value)}
+            >
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE_VALUE}>All statuses</SelectItem>
+                {statuses.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={supplierId || NONE_VALUE}
+              onValueChange={(value) => setSupplierId(value === NONE_VALUE ? "" : value)}
+            >
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue placeholder="All suppliers" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE_VALUE}>All suppliers</SelectItem>
+                {suppliers.map((supplier) => (
+                  <SelectItem key={supplier.id} value={String(supplier.id)}>
+                    {supplier.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={warehouseId || NONE_VALUE}
+              onValueChange={(value) => setWarehouseId(value === NONE_VALUE ? "" : value)}
+            >
+              <SelectTrigger className="h-10 w-full">
+                <SelectValue placeholder="All warehouses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE_VALUE}>All warehouses</SelectItem>
+                {warehouses.map((warehouse) => (
+                  <SelectItem key={warehouse.id} value={String(warehouse.id)}>
+                    {warehouse.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(event) => setDateFrom(event.target.value)}
+              className="h-10"
+              aria-label="Receipt date from"
+            />
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(event) => setDateTo(event.target.value)}
+              className="h-10"
+              aria-label="Receipt date to"
+            />
+          </FilterBar>
+
+          <div className="overflow-hidden rounded-xl border border-border/60">
+            <div className="app-scrollbar-thin overflow-x-auto">
+              <table className="w-full min-w-[980px] text-left">
+                <thead className="border-b bg-muted/35">
+                  <tr className="text-[9px] uppercase tracking-[0.08em] text-muted-foreground">
+                    <th className="px-4 py-3 font-medium">Receipt</th>
+                    <th className="px-4 py-3 font-medium">Supplier / PO</th>
+                    <th className="px-4 py-3 font-medium">Destination</th>
+                    <th className="px-4 py-3 font-medium">Received</th>
+                    <th className="px-4 py-3 font-medium">Quantity / Value</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 text-right font-medium">Actions</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y">
+                  {receipts.data.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-12 text-center">
+                        <ReceiptText className="mx-auto size-8 text-muted-foreground/50" />
+                        <p className="mt-3 text-[12px] font-semibold">No receiving records found</p>
+                        <p className="mt-1 text-[9px] text-muted-foreground">
+                          Posted receipts will appear here with their exact batch allocations.
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    receipts.data.map((receipt) => (
+                      <tr key={receipt.id} className="transition hover:bg-muted/[0.025]">
+                        <td className="px-4 py-3">
+                          <button
+                            type="button"
+                            onClick={() => setViewingReceipt(receipt)}
+                            className="text-left"
+                          >
+                            <p className="font-mono text-[10px] font-semibold text-primary">
+                              {receipt.receipt_number}
+                            </p>
+                            <p className="mt-1 text-[8px] text-muted-foreground">
+                              {receipt.delivery_reference ?? "No delivery reference"}
+                            </p>
+                          </button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-[11px] font-semibold">{receipt.supplier.name}</p>
+                          <p className="mt-1 font-mono text-[8px] text-muted-foreground">
+                            {receipt.purchase_order.po_number}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-[10px] font-semibold">{receipt.warehouse.name}</p>
+                          <p className="mt-1 text-[8px] text-muted-foreground">{receipt.branch.name}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-[10px] font-medium">{formatDate(receipt.received_date)}</p>
+                          <p className="mt-1 text-[8px] text-muted-foreground">
+                            {receipt.received_by?.name ?? "Unknown receiver"}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-[11px] font-semibold tabular-nums">
+                            {formatQuantity(receipt.total_quantity)} units
+                          </p>
+                          <p className="mt-1 text-[9px] font-medium tabular-nums text-primary">
+                            {formatCurrency(receipt.total_amount)}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusBadge
+                            label={receipt.status_label}
+                            variant={receipt.status === "posted" ? "success" : "danger"}
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setViewingReceipt(receipt)}
+                              className="h-8 text-[9px]"
+                            >
+                              View
+                            </Button>
+                            {receipt.can_void && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openVoidModal(receipt)}
+                                className="h-8 border-red-500/20 text-[9px] text-red-300 hover:bg-red-500/10"
+                              >
+                                <RotateCcw className="mr-1 size-3" />
+                                Void
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <AppPagination pagination={receipts} itemLabel="receipts" />
         </SectionCard>
       </PageContainer>
 
@@ -1026,118 +1519,354 @@ export default function ReceivingIndex({
                       : 0;
                     const exceedsRemaining =
                       quantity > Number(orderItem.remaining_quantity);
+                    const allocatedBatchQuantity = (formItem?.batches ?? []).reduce(
+                      (sum, batch) => {
+                        const batchQuantity = Number(batch.quantity || 0);
+                        return Number.isFinite(batchQuantity)
+                          ? sum + batchQuantity
+                          : sum;
+                      },
+                      0,
+                    );
+                    const batchDifference = quantity - allocatedBatchQuantity;
 
                     return (
-                      <tr
-                        key={orderItem.id}
-                        className="align-top transition hover:bg-muted/[0.025]"
-                      >
-                        <td className="px-4 py-3">
-                          <div className="flex items-start gap-2.5">
-                            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
-                              <Boxes className="size-4" />
-                            </span>
+                      <Fragment key={orderItem.id}>
+                        <tr className="align-top transition hover:bg-muted/[0.025]">
+                          <td className="px-4 py-3">
+                            <div className="flex items-start gap-2.5">
+                              <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
+                                <Boxes className="size-4" />
+                              </span>
 
-                            <div className="min-w-0">
-                              <p className="max-w-[230px] truncate text-[12px] font-semibold">
-                                {orderItem.product_name}
+                              <div className="min-w-0">
+                                <p className="max-w-[230px] truncate text-[12px] font-semibold">
+                                  {orderItem.product_name}
+                                </p>
+
+                                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                  <span className="font-mono text-[9px] text-muted-foreground">
+                                    {orderItem.product_sku ?? "NO SKU"} · {orderItem.unit}
+                                  </span>
+
+                                  {orderItem.batch_tracking_enabled && (
+                                    <Badge
+                                      variant="outline"
+                                      className="h-5 border-cyan-500/25 bg-cyan-500/10 px-1.5 text-[8px] text-cyan-300"
+                                    >
+                                      <Layers3 className="mr-1 size-2.5" />
+                                      Batch tracked
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <p className="text-[12px] font-semibold tabular-nums">
+                              {formatQuantity(orderItem.ordered_quantity)}
+                            </p>
+                            <p className="mt-1 text-[9px] text-muted-foreground">
+                              {orderItem.unit}
+                            </p>
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <p className="text-[12px] tabular-nums text-muted-foreground">
+                              {formatQuantity(orderItem.received_quantity)}
+                            </p>
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <p className="text-[12px] font-semibold tabular-nums text-amber-400">
+                              {formatQuantity(orderItem.remaining_quantity)}
+                            </p>
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <Input
+                              type="number"
+                              min="0"
+                              max={orderItem.remaining_quantity}
+                              step="0.001"
+                              value={formItem?.quantity_received ?? ""}
+                              disabled={form.processing}
+                              onChange={(event) =>
+                                updateItem(
+                                  index,
+                                  "quantity_received",
+                                  event.target.value,
+                                )
+                              }
+                              placeholder="0"
+                              className={cn(
+                                "tabular-nums",
+                                exceedsRemaining &&
+                                  "border-destructive focus-visible:ring-destructive/20",
+                              )}
+                            />
+
+                            {exceedsRemaining && (
+                              <p className="mt-1 text-[9px] text-destructive">
+                                Maximum {formatQuantity(orderItem.remaining_quantity)}.
                               </p>
+                            )}
 
-                              <p className="mt-1 font-mono text-[9px] text-muted-foreground">
-                                {orderItem.product_sku ?? "NO SKU"} ·{" "}
-                                {orderItem.unit}
+                            {itemError(index, "quantity_received") && (
+                              <p className="mt-1 text-[9px] text-destructive">
+                                {itemError(index, "quantity_received")}
+                              </p>
+                            )}
+                          </td>
+
+                          <td className="px-4 py-3">
+                            <div className="rounded-lg border border-primary/10 bg-primary/[0.035] px-3 py-2.5">
+                              <p className="text-[11px] font-semibold tabular-nums text-primary">
+                                {formatCurrency(lineTotal)}
+                              </p>
+                              <p className="mt-1 text-[8px] text-muted-foreground">
+                                @ {formatCurrency(orderItem.unit_cost)}
                               </p>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        <td className="px-4 py-3">
-                          <p className="text-[12px] font-semibold tabular-nums">
-                            {formatQuantity(orderItem.ordered_quantity)}
-                          </p>
-                          <p className="mt-1 text-[9px] text-muted-foreground">
-                            {orderItem.unit}
-                          </p>
-                        </td>
+                          <td className="px-4 py-3">
+                            <Input
+                              type="text"
+                              value={formItem?.notes ?? ""}
+                              disabled={form.processing}
+                              onChange={(event) =>
+                                updateItem(index, "notes", event.target.value)
+                              }
+                              placeholder="Optional"
+                            />
 
-                        <td className="px-4 py-3">
-                          <p className="text-[12px] tabular-nums text-muted-foreground">
-                            {formatQuantity(orderItem.received_quantity)}
-                          </p>
-                        </td>
-
-                        <td className="px-4 py-3">
-                          <p className="text-[12px] font-semibold tabular-nums text-amber-400">
-                            {formatQuantity(orderItem.remaining_quantity)}
-                          </p>
-                        </td>
-
-                        <td className="px-4 py-3">
-                          <Input
-                            type="number"
-                            min="0"
-                            max={orderItem.remaining_quantity}
-                            step="0.001"
-                            value={formItem?.quantity_received ?? ""}
-                            disabled={form.processing}
-                            onChange={(event) =>
-                              updateItem(
-                                index,
-                                "quantity_received",
-                                event.target.value,
-                              )
-                            }
-                            placeholder="0"
-                            className={cn(
-                              "tabular-nums",
-                              exceedsRemaining &&
-                                "border-destructive focus-visible:ring-destructive/20",
+                            {itemError(index, "notes") && (
+                              <p className="mt-1 text-[9px] text-destructive">
+                                {itemError(index, "notes")}
+                              </p>
                             )}
-                          />
+                          </td>
+                        </tr>
 
-                          {exceedsRemaining && (
-                            <p className="mt-1 text-[9px] text-destructive">
-                              Maximum{" "}
-                              {formatQuantity(orderItem.remaining_quantity)}.
-                            </p>
-                          )}
+                        {orderItem.batch_tracking_enabled && quantity > 0 && (
+                          <tr className="bg-cyan-500/[0.025]">
+                            <td colSpan={7} className="px-4 py-4">
+                              <div className="rounded-xl border border-cyan-500/20 bg-card/55 p-4">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <Layers3 className="size-4 text-cyan-300" />
+                                      <p className="text-[11px] font-semibold">
+                                        Receiving Batch Layers
+                                      </p>
+                                    </div>
+                                    <p className="mt-1 text-[9px] text-muted-foreground">
+                                      Allocate the full received quantity into one or more cost layers.
+                                      {orderItem.requires_expiration_date
+                                        ? " Expiration date is required."
+                                        : " Expiration date is optional."}
+                                    </p>
+                                  </div>
 
-                          {itemError(index, "quantity_received") && (
-                            <p className="mt-1 text-[9px] text-destructive">
-                              {itemError(index, "quantity_received")}
-                            </p>
-                          )}
-                        </td>
+                                  <div className="flex items-center gap-2">
+                                    <Badge
+                                      variant="outline"
+                                      className={cn(
+                                        "border-border/70 bg-background/40 text-[9px]",
+                                        Math.abs(batchDifference) <= 0.0001
+                                          ? "text-emerald-300"
+                                          : "text-amber-300",
+                                      )}
+                                    >
+                                      Allocated {formatQuantity(allocatedBatchQuantity)} / {formatQuantity(quantity)}
+                                    </Badge>
 
-                        <td className="px-4 py-3">
-                          <div className="rounded-lg border border-primary/10 bg-primary/[0.035] px-3 py-2.5">
-                            <p className="text-[11px] font-semibold tabular-nums text-primary">
-                              {formatCurrency(lineTotal)}
-                            </p>
-                            <p className="mt-1 text-[8px] text-muted-foreground">
-                              @ {formatCurrency(orderItem.unit_cost)}
-                            </p>
-                          </div>
-                        </td>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={form.processing}
+                                      onClick={() => addBatch(index)}
+                                      className="h-8 text-[9px]"
+                                    >
+                                      <Plus className="mr-1 size-3.5" />
+                                      Add batch
+                                    </Button>
+                                  </div>
+                                </div>
 
-                        <td className="px-4 py-3">
-                          <Input
-                            type="text"
-                            value={formItem?.notes ?? ""}
-                            disabled={form.processing}
-                            onChange={(event) =>
-                              updateItem(index, "notes", event.target.value)
-                            }
-                            placeholder="Optional"
-                          />
+                                <div className="mt-3 space-y-3">
+                                  {(formItem?.batches ?? []).map((batch, batchIndex) => (
+                                    <div
+                                      key={`${orderItem.id}-batch-${batchIndex}`}
+                                      className="rounded-lg border border-border/60 bg-background/35 p-3"
+                                    >
+                                      <div className="mb-3 flex items-center justify-between">
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                                          Batch {batchIndex + 1}
+                                        </p>
+                                        <Button
+                                          type="button"
+                                          size="icon"
+                                          variant="ghost"
+                                          disabled={form.processing}
+                                          onClick={() => removeBatch(index, batchIndex)}
+                                          className="size-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                          aria-label={`Remove batch ${batchIndex + 1}`}
+                                        >
+                                          <Trash2 className="size-3.5" />
+                                        </Button>
+                                      </div>
 
-                          {itemError(index, "notes") && (
-                            <p className="mt-1 text-[9px] text-destructive">
-                              {itemError(index, "notes")}
-                            </p>
-                          )}
-                        </td>
-                      </tr>
+                                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+                                        <FormField
+                                          id={`items_${index}_batches_${batchIndex}_quantity`}
+                                          label="Quantity"
+                                          required
+                                          error={batchError(index, batchIndex, "quantity")}
+                                        >
+                                          <Input
+                                            id={`items_${index}_batches_${batchIndex}_quantity`}
+                                            type="number"
+                                            min="0"
+                                            step="0.001"
+                                            value={batch.quantity}
+                                            disabled={form.processing}
+                                            onChange={(event) =>
+                                              updateBatchField(
+                                                index,
+                                                batchIndex,
+                                                "quantity",
+                                                event.target.value,
+                                              )
+                                            }
+                                            placeholder="0"
+                                            className="tabular-nums"
+                                          />
+                                        </FormField>
+
+                                        <FormField
+                                          id={`items_${index}_batches_${batchIndex}_batch_code`}
+                                          label="Batch Code"
+                                          error={batchError(index, batchIndex, "batch_code")}
+                                        >
+                                          <Input
+                                            id={`items_${index}_batches_${batchIndex}_batch_code`}
+                                            value={batch.batch_code}
+                                            disabled={form.processing}
+                                            onChange={(event) =>
+                                              updateBatchField(
+                                                index,
+                                                batchIndex,
+                                                "batch_code",
+                                                event.target.value,
+                                              )
+                                            }
+                                            placeholder="Auto if blank"
+                                          />
+                                        </FormField>
+
+                                        <FormField
+                                          id={`items_${index}_batches_${batchIndex}_lot_number`}
+                                          label="Lot Number"
+                                          error={batchError(index, batchIndex, "lot_number")}
+                                        >
+                                          <Input
+                                            id={`items_${index}_batches_${batchIndex}_lot_number`}
+                                            value={batch.lot_number}
+                                            disabled={form.processing}
+                                            onChange={(event) =>
+                                              updateBatchField(
+                                                index,
+                                                batchIndex,
+                                                "lot_number",
+                                                event.target.value,
+                                              )
+                                            }
+                                            placeholder="Optional"
+                                          />
+                                        </FormField>
+
+                                        <FormField
+                                          id={`items_${index}_batches_${batchIndex}_manufactured_date`}
+                                          label="Manufactured"
+                                          error={batchError(index, batchIndex, "manufactured_date")}
+                                        >
+                                          <Input
+                                            id={`items_${index}_batches_${batchIndex}_manufactured_date`}
+                                            type="date"
+                                            value={batch.manufactured_date}
+                                            disabled={form.processing}
+                                            onChange={(event) =>
+                                              updateBatchField(
+                                                index,
+                                                batchIndex,
+                                                "manufactured_date",
+                                                event.target.value,
+                                              )
+                                            }
+                                          />
+                                        </FormField>
+
+                                        <FormField
+                                          id={`items_${index}_batches_${batchIndex}_expiration_date`}
+                                          label="Expiration"
+                                          required={orderItem.requires_expiration_date}
+                                          error={batchError(index, batchIndex, "expiration_date")}
+                                        >
+                                          <Input
+                                            id={`items_${index}_batches_${batchIndex}_expiration_date`}
+                                            type="date"
+                                            value={batch.expiration_date}
+                                            disabled={form.processing}
+                                            onChange={(event) =>
+                                              updateBatchField(
+                                                index,
+                                                batchIndex,
+                                                "expiration_date",
+                                                event.target.value,
+                                              )
+                                            }
+                                          />
+                                        </FormField>
+
+                                        <FormField
+                                          id={`items_${index}_batches_${batchIndex}_notes`}
+                                          label="Batch Notes"
+                                          error={batchError(index, batchIndex, "notes")}
+                                        >
+                                          <Input
+                                            id={`items_${index}_batches_${batchIndex}_notes`}
+                                            value={batch.notes}
+                                            disabled={form.processing}
+                                            onChange={(event) =>
+                                              updateBatchField(
+                                                index,
+                                                batchIndex,
+                                                "notes",
+                                                event.target.value,
+                                              )
+                                            }
+                                            placeholder="Optional"
+                                          />
+                                        </FormField>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {itemError(index, "batches") && (
+                                  <p className="mt-3 text-[9px] text-destructive">
+                                    {itemError(index, "batches")}
+                                  </p>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
                     );
                   })}
                 </tbody>
@@ -1313,28 +2042,86 @@ export default function ReceivingIndex({
 
                     <tbody className="divide-y">
                       {viewingReceipt.items.map((item) => (
-                        <tr key={item.id}>
-                          <td className="px-4 py-3">
-                            <p className="text-[11px] font-semibold">
-                              {item.product_name}
-                            </p>
-                            <p className="mt-1 font-mono text-[9px] text-muted-foreground">
-                              {item.product_sku ?? "NO SKU"} · {item.unit}
-                            </p>
-                          </td>
-                          <td className="px-4 py-3 text-[11px] tabular-nums">
-                            {formatQuantity(item.quantity_received)} {item.unit}
-                          </td>
-                          <td className="px-4 py-3 text-[11px] tabular-nums">
-                            {formatCurrency(item.unit_cost)}
-                          </td>
-                          <td className="px-4 py-3 text-[11px] font-semibold tabular-nums text-primary">
-                            {formatCurrency(item.line_total)}
-                          </td>
-                          <td className="max-w-[220px] px-4 py-3 text-[10px] text-muted-foreground">
-                            {item.notes ?? "—"}
-                          </td>
-                        </tr>
+                        <Fragment key={item.id}>
+                          <tr>
+                            <td className="px-4 py-3">
+                              <p className="text-[11px] font-semibold">
+                                {item.product_name}
+                              </p>
+                              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                <span className="font-mono text-[9px] text-muted-foreground">
+                                  {item.product_sku ?? "NO SKU"} · {item.unit}
+                                </span>
+                                {item.batches.length > 0 && (
+                                  <Badge
+                                    variant="outline"
+                                    className="h-5 border-cyan-500/25 bg-cyan-500/10 px-1.5 text-[8px] text-cyan-300"
+                                  >
+                                    <Layers3 className="mr-1 size-2.5" />
+                                    {item.batches.length} batch{item.batches.length === 1 ? "" : "es"}
+                                  </Badge>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-[11px] tabular-nums">
+                              {formatQuantity(item.quantity_received)} {item.unit}
+                            </td>
+                            <td className="px-4 py-3 text-[11px] tabular-nums">
+                              {formatCurrency(item.unit_cost)}
+                            </td>
+                            <td className="px-4 py-3 text-[11px] font-semibold tabular-nums text-primary">
+                              {formatCurrency(item.line_total)}
+                            </td>
+                            <td className="max-w-[220px] px-4 py-3 text-[10px] text-muted-foreground">
+                              {item.notes ?? "—"}
+                            </td>
+                          </tr>
+
+                          {item.batches.length > 0 && (
+                            <tr className="bg-cyan-500/[0.025]">
+                              <td colSpan={5} className="px-4 py-3">
+                                <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                                  {item.batches.map((batch) => (
+                                    <div
+                                      key={batch.id}
+                                      className="rounded-lg border border-cyan-500/15 bg-background/40 p-3"
+                                    >
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                          <p className="truncate font-mono text-[10px] font-semibold text-cyan-300">
+                                            {batch.batch_code}
+                                          </p>
+                                          <p className="mt-1 text-[8px] text-muted-foreground">
+                                            Lot {batch.lot_number ?? "—"} · {formatQuantity(batch.quantity_received)} {item.unit}
+                                          </p>
+                                        </div>
+                                        <StatusBadge
+                                          label={batch.status.replaceAll('_', ' ')}
+                                          variant={batch.status === 'active' ? 'success' : 'warning'}
+                                        />
+                                      </div>
+
+                                      <div className="mt-3 grid grid-cols-2 gap-2 text-[8px] text-muted-foreground">
+                                        <span>Unit cost</span>
+                                        <span className="text-right tabular-nums text-foreground">
+                                          {formatCurrency(batch.unit_cost)}
+                                        </span>
+                                        <span>Manufactured</span>
+                                        <span className="text-right text-foreground">
+                                          {formatDate(batch.manufactured_date)}
+                                        </span>
+                                        <span>Expiration</span>
+                                        <span className="text-right text-foreground">
+                                          {formatDate(batch.expiration_date)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
                       ))}
                     </tbody>
                   </table>

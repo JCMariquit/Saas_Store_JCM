@@ -70,6 +70,17 @@ type WarehouseOption = {
     };
 };
 
+type EligibleBatch = {
+    stock_batch_id: number;
+    batch_code: string;
+    lot_number: string | null;
+    available_quantity: number;
+    unit_cost: number;
+    received_date: string | null;
+    expiration_date: string | null;
+    status: string;
+};
+
 type ProductStock = {
     stock_id: number;
     warehouse_id: number;
@@ -96,6 +107,11 @@ type ProductStock = {
     available_quantity: number;
     reorder_level: number;
     average_cost: number;
+    batch_tracking_enabled: boolean;
+    batch_issue_policy: 'fifo' | 'fefo' | 'manual';
+    requires_expiration_date: boolean;
+    expiry_warning_days: number | null;
+    eligible_batches: EligibleBatch[];
 };
 
 type ReasonOption = {
@@ -111,10 +127,16 @@ type TerminalSummary = {
     quantity_issued_today: number;
 };
 
+type BatchAllocationForm = {
+    stock_batch_id: string;
+    quantity: string;
+};
+
 type CartItem = {
     product_id: number;
     quantity_issued: string;
     notes: string;
+    batch_allocations: BatchAllocationForm[];
 };
 
 type WithdrawalFormData = {
@@ -150,6 +172,36 @@ type PageProps = {
 };
 
 type FormErrors = Partial<Record<keyof WithdrawalFormData, string>>;
+
+type WithdrawalErrorModalState = {
+    title: string;
+    messages: string[];
+};
+
+function collectErrorMessages(value: unknown): string[] {
+    if (typeof value === 'string') {
+        const message = value.trim();
+        return message ? [message] : [];
+    }
+
+    if (Array.isArray(value)) {
+        return value.flatMap(collectErrorMessages);
+    }
+
+    if (value && typeof value === 'object') {
+        return Object.values(value as Record<string, unknown>).flatMap(
+            collectErrorMessages,
+        );
+    }
+
+    return [];
+}
+
+function uniqueMessages(messages: string[]): string[] {
+    return Array.from(new Set(messages.map((message) => message.trim()))).filter(
+        Boolean,
+    );
+}
 
 function todayLocal(): string {
     const currentDate = new Date();
@@ -242,6 +294,103 @@ function InlineError({ message }: { message?: string }) {
             <AlertTriangle className="mt-0.5 size-3 shrink-0" />
             <span>{message}</span>
         </p>
+    );
+}
+
+function WithdrawalErrorModal({
+    state,
+    onClose,
+}: {
+    state: WithdrawalErrorModalState | null;
+    onClose: () => void;
+}) {
+    useEffect(() => {
+        if (!state) {
+            return;
+        }
+
+        const handleKeyDown = (event: globalThis.KeyboardEvent): void => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose, state]);
+
+    if (!state) {
+        return null;
+    }
+
+    return (
+        <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 px-4 py-6 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="withdrawal-error-title"
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget) {
+                    onClose();
+                }
+            }}
+        >
+            <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-rose-500/25 bg-card shadow-2xl">
+                <div className="flex items-start gap-3 border-b border-rose-500/15 bg-rose-500/[0.06] px-5 py-4">
+                    <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400">
+                        <AlertTriangle className="size-4.5" />
+                    </span>
+
+                    <div className="min-w-0 flex-1">
+                        <h2
+                            id="withdrawal-error-title"
+                            className="text-sm font-semibold text-foreground"
+                        >
+                            {state.title}
+                        </h2>
+                        <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                            The withdrawal was not posted. Review the reason below,
+                            correct the request, then try again.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-background/70 hover:text-foreground"
+                        aria-label="Close error dialog"
+                    >
+                        <X className="size-4" />
+                    </button>
+                </div>
+
+                <div className="max-h-[55vh] overflow-y-auto p-5">
+                    <div className="space-y-2">
+                        {state.messages.map((message, index) => (
+                            <div
+                                key={`${message}-${index}`}
+                                className="flex items-start gap-2.5 rounded-xl border border-rose-500/15 bg-rose-500/[0.035] px-3.5 py-3"
+                            >
+                                <span className="mt-1 size-1.5 shrink-0 rounded-full bg-rose-400" />
+                                <p className="text-[11px] leading-5 text-foreground/90">
+                                    {message}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex justify-end border-t border-border/60 bg-muted/20 px-5 py-3.5">
+                    <Button
+                        type="button"
+                        onClick={onClose}
+                        className="h-9 rounded-lg px-4 text-xs"
+                    >
+                        Review withdrawal
+                    </Button>
+                </div>
+            </div>
+        </div>
     );
 }
 
@@ -846,6 +995,7 @@ function ReviewPanel({
     onQuantityStep,
     onQuantityInput,
     onNoteChange,
+    onBatchAllocationChange,
 }: {
     desktop: boolean;
     open: boolean;
@@ -861,6 +1011,11 @@ function ReviewPanel({
     onQuantityStep: (index: number, product: ProductStock, value: number) => void;
     onQuantityInput: (index: number, value: string) => void;
     onNoteChange: (index: number, value: string) => void;
+    onBatchAllocationChange: (
+        index: number,
+        stockBatchId: number,
+        value: string,
+    ) => void;
 }) {
     const visible = desktop || open;
     const canSubmit = warehouseSelected && entries.length > 0 && !processing;
@@ -1000,6 +1155,119 @@ function ReviewPanel({
                                             <InlineError message={getNestedError(errors, `items.${index}.quantity_issued`)} />
                                         </div>
 
+                                        {product.batch_tracking_enabled && (
+                                            <div className="mt-3 rounded-xl border border-border/70 bg-background/30 p-3">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <div>
+                                                        <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                                                            Batch allocation
+                                                        </p>
+                                                        <p className="mt-1 text-[8px] text-muted-foreground">
+                                                            {product.batch_issue_policy === 'manual'
+                                                                ? 'Select exact batches. Allocated quantity must equal the withdrawal quantity.'
+                                                                : `${product.batch_issue_policy.toUpperCase()} allocation will be applied automatically by the server.`}
+                                                        </p>
+                                                    </div>
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="h-5 rounded-full border-primary/15 bg-primary/[0.05] px-2 text-[8px] font-semibold text-primary"
+                                                    >
+                                                        {product.batch_issue_policy.toUpperCase()}
+                                                    </Badge>
+                                                </div>
+
+                                                {product.batch_issue_policy === 'manual' && (
+                                                    <div className="mt-3 space-y-2">
+                                                        {product.eligible_batches.length === 0 ? (
+                                                            <p className="rounded-lg border border-rose-500/20 bg-rose-500/[0.05] px-3 py-2 text-[8px] text-rose-300">
+                                                                No eligible batches are available for manual allocation.
+                                                            </p>
+                                                        ) : (
+                                                            product.eligible_batches.map((batch) => {
+                                                                const allocation = item.batch_allocations.find(
+                                                                    (candidate) =>
+                                                                        Number(candidate.stock_batch_id) ===
+                                                                        batch.stock_batch_id,
+                                                                );
+
+                                                                return (
+                                                                    <div
+                                                                        key={batch.stock_batch_id}
+                                                                        className="grid grid-cols-[minmax(0,1fr)_105px] items-center gap-3 rounded-lg border border-border/60 bg-card/35 px-3 py-2"
+                                                                    >
+                                                                        <div className="min-w-0">
+                                                                            <p className="truncate font-mono text-[8px] font-semibold text-foreground">
+                                                                                {batch.batch_code}
+                                                                            </p>
+                                                                            <p className="mt-0.5 truncate text-[7px] text-muted-foreground">
+                                                                                {formatNumber(batch.available_quantity)} available
+                                                                                {batch.expiration_date
+                                                                                    ? ` · Exp ${batch.expiration_date}`
+                                                                                    : ' · No expiry'}
+                                                                            </p>
+                                                                        </div>
+                                                                        <Input
+                                                                            type="number"
+                                                                            min={0}
+                                                                            step={QUANTITY_STEP}
+                                                                            max={batch.available_quantity}
+                                                                            value={allocation?.quantity ?? ''}
+                                                                            disabled={processing}
+                                                                            onChange={(event) =>
+                                                                                onBatchAllocationChange(
+                                                                                    index,
+                                                                                    batch.stock_batch_id,
+                                                                                    event.target.value,
+                                                                                )
+                                                                            }
+                                                                            placeholder="0"
+                                                                            className="h-8 rounded-lg text-right text-[9px] tabular-nums"
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            })
+                                                        )}
+
+                                                        <div className="flex items-center justify-between border-t border-border/50 pt-2 text-[8px]">
+                                                            <span className="text-muted-foreground">Allocated</span>
+                                                            <span
+                                                                className={cn(
+                                                                    'font-semibold tabular-nums',
+                                                                    Math.abs(
+                                                                        item.batch_allocations.reduce(
+                                                                            (total, allocation) =>
+                                                                                total +
+                                                                                (Number(allocation.quantity) || 0),
+                                                                            0,
+                                                                        ) - quantity,
+                                                                    ) <= 0.0001
+                                                                        ? 'text-emerald-400'
+                                                                        : 'text-amber-400',
+                                                                )}
+                                                            >
+                                                                {formatNumber(
+                                                                    item.batch_allocations.reduce(
+                                                                        (total, allocation) =>
+                                                                            total +
+                                                                            (Number(allocation.quantity) || 0),
+                                                                        0,
+                                                                    ),
+                                                                )}{' '}
+                                                                / {formatNumber(quantity)}
+                                                            </span>
+                                                        </div>
+
+                                                        <InlineError
+                                                            message={getNestedError(
+                                                                errors,
+                                                                `items.${index}.batch_allocations`,
+                                                            )}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         <div className="mt-3 flex items-center justify-between text-[8px] text-muted-foreground">
                                             <span>Estimated value</span>
                                             <span className="font-semibold tabular-nums text-foreground">{formatMoney(quantity * product.average_cost)}</span>
@@ -1101,6 +1369,8 @@ export default function StockWithdrawalIndex({
     const [category, setCategory] = useState(ALL_CATEGORIES);
     const [reviewOpen, setReviewOpen] = useState(false);
     const [desktopReview, setDesktopReview] = useState(false);
+    const [errorModal, setErrorModal] =
+        useState<WithdrawalErrorModalState | null>(null);
 
     const form = useForm<WithdrawalFormData>(
         getEmptyWithdrawalForm(warehouses, reasons),
@@ -1354,9 +1624,44 @@ export default function StockWithdrawalIndex({
                 product_id: product.product_id,
                 quantity_issued: '1',
                 notes: '',
+                batch_allocations: [],
             },
         ]);
         form.clearErrors('items');
+    }
+
+    function updateBatchAllocation(
+        itemIndex: number,
+        stockBatchId: number,
+        value: string,
+    ): void {
+        form.setData(
+            'items',
+            form.data.items.map((item, index) => {
+                if (index !== itemIndex) {
+                    return item;
+                }
+
+                const nextAllocations = item.batch_allocations.filter(
+                    (allocation) =>
+                        Number(allocation.stock_batch_id) !== stockBatchId,
+                );
+
+                const quantity = Number(value);
+
+                if (value !== '' && Number.isFinite(quantity) && quantity > 0) {
+                    nextAllocations.push({
+                        stock_batch_id: String(stockBatchId),
+                        quantity: value,
+                    });
+                }
+
+                return {
+                    ...item,
+                    batch_allocations: nextAllocations,
+                };
+            }),
+        );
     }
 
     function removeProduct(index: number): void {
@@ -1410,14 +1715,26 @@ export default function StockWithdrawalIndex({
         focusProductSearch();
     }
 
+    function showWithdrawalErrors(
+        errors: unknown,
+        fallbackMessage = 'The server did not accept the withdrawal request.',
+    ): void {
+        const messages = uniqueMessages(collectErrorMessages(errors));
+
+        setErrorModal({
+            title: 'Unable to post withdrawal',
+            messages: messages.length > 0 ? messages : [fallbackMessage],
+        });
+    }
+
     function submitWithdrawal(event: FormEvent<HTMLFormElement>): void {
         event.preventDefault();
 
         if (form.data.items.length === 0) {
-            form.setError(
-                'items',
-                'Add at least one stock item before confirming the withdrawal.',
-            );
+            const message =
+                'Add at least one stock item before confirming the withdrawal.';
+            form.setError('items', message);
+            showWithdrawalErrors(message);
             setReviewOpen(true);
             return;
         }
@@ -1433,19 +1750,88 @@ export default function StockWithdrawalIndex({
         });
 
         if (invalidEntry) {
-            form.setError(
-                'items',
-                `Check the withdrawal quantity for ${invalidEntry.product.name}.`,
-            );
+            const message = `Check the withdrawal quantity for ${invalidEntry.product.name}.`;
+            form.setError('items', message);
+            showWithdrawalErrors(message);
             setReviewOpen(true);
             return;
         }
 
-        form.clearErrors('items');
+        const invalidManualAllocation = cartEntries.find(({ item, product }) => {
+            if (!product.batch_tracking_enabled || product.batch_issue_policy !== 'manual') {
+                return false;
+            }
+
+            const requestedQuantity = Number(item.quantity_issued) || 0;
+            const allocatedQuantity = item.batch_allocations.reduce(
+                (total, allocation) => total + (Number(allocation.quantity) || 0),
+                0,
+            );
+
+            if (Math.abs(requestedQuantity - allocatedQuantity) > 0.0001) {
+                return true;
+            }
+
+            return item.batch_allocations.some((allocation) => {
+                const batch = product.eligible_batches.find(
+                    (candidate) =>
+                        candidate.stock_batch_id === Number(allocation.stock_batch_id),
+                );
+
+                const quantity = Number(allocation.quantity) || 0;
+
+                return !batch || quantity <= 0 || quantity > batch.available_quantity;
+            });
+        });
+
+        if (invalidManualAllocation) {
+            const message = `Complete the manual batch allocation for ${invalidManualAllocation.product.name}.`;
+            form.setError('items', message);
+            showWithdrawalErrors(message);
+            setReviewOpen(true);
+            return;
+        }
+
+        form.clearErrors();
+        setErrorModal(null);
+
+        // Only manual-policy products should send explicit batch allocations.
+        // FIFO and FEFO are allocated automatically by InventoryLedgerService.
+        form.transform((data) => ({
+            ...data,
+            items: data.items.map((item) => {
+                const product = warehouseProductMap.get(item.product_id);
+                const payload: Record<string, unknown> = {
+                    product_id: item.product_id,
+                    quantity_issued: item.quantity_issued,
+                    notes: item.notes,
+                };
+
+                if (
+                    product?.batch_tracking_enabled &&
+                    product.batch_issue_policy === 'manual'
+                ) {
+                    payload.batch_allocations = item.batch_allocations.filter(
+                        (allocation) =>
+                            Number(allocation.stock_batch_id) > 0 &&
+                            Number(allocation.quantity) > 0,
+                    );
+                }
+
+                return payload;
+            }),
+        }));
+
         form.post(TERMINAL_URL, {
             preserveScroll: true,
-            onSuccess: resetWithdrawal,
-            onError: () => setReviewOpen(true),
+            onSuccess: () => {
+                setErrorModal(null);
+                resetWithdrawal();
+            },
+            onError: (errors) => {
+                showWithdrawalErrors(errors);
+                setReviewOpen(true);
+            },
         });
     }
 
@@ -1515,6 +1901,7 @@ export default function StockWithdrawalIndex({
                             onNoteChange={(index, value) =>
                                 updateCartItem(index, 'notes', value)
                             }
+                            onBatchAllocationChange={updateBatchAllocation}
                         />
                     </div>
                 </form>
@@ -1527,6 +1914,11 @@ export default function StockWithdrawalIndex({
                     />
                 )}
             </PageContainer>
+
+            <WithdrawalErrorModal
+                state={errorModal}
+                onClose={() => setErrorModal(null)}
+            />
         </AppLayout>
     );
 }

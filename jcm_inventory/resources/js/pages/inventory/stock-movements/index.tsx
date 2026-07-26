@@ -6,7 +6,7 @@ import { SearchInput } from '@/components/shared/search-input';
 import { SectionCard } from '@/components/shared/section-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -70,11 +70,30 @@ type CreatorInfo = {
     email: string | null;
 };
 
+type MovementBatch = {
+    id: number;
+    stock_batch_id: number;
+    batch_code: string;
+    lot_number: string | null;
+    direction: 'in' | 'out';
+    quantity: number;
+    batch_quantity_before: number;
+    batch_quantity_after: number;
+    unit_cost: number;
+    total_cost: number;
+    received_date: string | null;
+    expiration_date: string | null;
+    batch_status: string;
+    reversal_of_stock_movement_batch_id: number | null;
+};
+
 type StockMovement = {
     id: number;
     product: ProductInfo;
     warehouse: WarehouseInfo;
     related_warehouse: WarehouseInfo | null;
+    is_batch_tracked: boolean;
+    batch_allocation_status: 'not_required' | 'pending' | 'allocated' | 'reversed';
     movement_type: string;
     movement_label: string;
     direction: 'in' | 'out';
@@ -83,10 +102,14 @@ type StockMovement = {
     quantity_after: number;
     unit_cost: number;
     total_cost: number;
+    average_cost_before: number | null;
+    average_cost_after: number | null;
     reference_type: string | null;
     reference_id: number | null;
     reference_no: string | null;
+    reversal_of_movement_id: number | null;
     remarks: string | null;
+    batches: MovementBatch[];
     movement_date: string;
     created_by: CreatorInfo | null;
 };
@@ -154,7 +177,7 @@ type StockMovementPageProps = {
 |--------------------------------------------------------------------------
 */
 
-const MOVEMENTS_URL = '/inventory/stock-movements';
+const MOVEMENTS_URL = '/stock-movements';
 const ALL_VALUE = 'all';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -963,6 +986,85 @@ function MovementDetailsDrawer({
                                     </div>
                                 </div>
                             </ModalSection>
+
+                            {movement.is_batch_tracked && (
+                                <ModalSection
+                                    title="Batch Allocation"
+                                    description="Exact cost layers linked to this movement."
+                                    icon={Boxes}
+                                >
+                                    <div className="divide-y divide-border/60">
+                                        <div className="grid gap-1 px-4 py-3 sm:grid-cols-[130px_minmax(0,1fr)] sm:items-center">
+                                            <p className="text-[10px] font-medium text-muted-foreground">
+                                                Allocation status
+                                            </p>
+                                            <div className="sm:text-right">
+                                                <Badge
+                                                    variant="outline"
+                                                    className={cn(
+                                                        'h-6 rounded-full px-2.5 text-[8px] font-semibold',
+                                                        movement.batch_allocation_status === 'allocated'
+                                                            ? 'border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-400'
+                                                            : movement.batch_allocation_status === 'reversed'
+                                                              ? 'border-rose-500/20 bg-rose-500/[0.06] text-rose-400'
+                                                              : 'border-amber-500/20 bg-amber-500/[0.06] text-amber-400',
+                                                    )}
+                                                >
+                                                    {movement.batch_allocation_status.replace(/_/g, ' ')}
+                                                </Badge>
+                                            </div>
+                                        </div>
+
+                                        {movement.batches.length === 0 ? (
+                                            <p className="px-4 py-4 text-[10px] text-muted-foreground">
+                                                No batch allocation rows were attached to this movement.
+                                            </p>
+                                        ) : (
+                                            movement.batches.map((batch) => (
+                                                <div
+                                                    key={batch.id}
+                                                    className="grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_92px_110px]"
+                                                >
+                                                    <div className="min-w-0">
+                                                        <p className="truncate font-mono text-[10px] font-semibold text-foreground">
+                                                            {batch.batch_code}
+                                                        </p>
+                                                        <p className="mt-1 truncate text-[8px] text-muted-foreground">
+                                                            {batch.lot_number ? `Lot ${batch.lot_number}` : 'No lot'}
+                                                            {batch.expiration_date
+                                                                ? ` · Exp ${formatDate(batch.expiration_date)}`
+                                                                : ' · No expiry'}
+                                                        </p>
+                                                        <p className="mt-1 text-[8px] text-muted-foreground">
+                                                            Balance {formatQuantity(batch.batch_quantity_before)} →{' '}
+                                                            {formatQuantity(batch.batch_quantity_after)}
+                                                        </p>
+                                                    </div>
+                                                    <p
+                                                        className={cn(
+                                                            'text-right text-[10px] font-semibold tabular-nums',
+                                                            batch.direction === 'in'
+                                                                ? 'text-emerald-400'
+                                                                : 'text-rose-400',
+                                                        )}
+                                                    >
+                                                        {batch.direction === 'in' ? '+' : '−'}
+                                                        {formatQuantity(batch.quantity)}
+                                                    </p>
+                                                    <div className="text-right">
+                                                        <p className="text-[10px] font-semibold tabular-nums text-foreground">
+                                                            {formatMoney(batch.total_cost)}
+                                                        </p>
+                                                        <p className="mt-1 text-[8px] text-muted-foreground">
+                                                            {formatMoney(batch.unit_cost)} / unit
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </ModalSection>
+                            )}
 
                             <ModalSection
                                 title="Remarks"

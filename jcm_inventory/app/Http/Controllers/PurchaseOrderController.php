@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Inventory\InventoryAccessContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -14,6 +15,11 @@ use Inertia\Response;
 
 class PurchaseOrderController extends Controller
 {
+    public function __construct(
+        private readonly InventoryAccessContext $access
+    ) {
+    }
+
     private const PRODUCT_CODE = 'JCM-INVENTORY-001';
 
     /*
@@ -24,8 +30,9 @@ class PurchaseOrderController extends Controller
 
     public function index(Request $request): Response
     {
-        $context = $this->userContext($request);
+        $context = $this->access->resolve($request);
         $tenantId = $context['account_owner_id'];
+        $branchId = $context['branch_id'];
 
         /*
         |--------------------------------------------------------------------------
@@ -131,6 +138,13 @@ class PurchaseOrderController extends Controller
             )
             ->whereNull(
                 'purchase_orders.deleted_at'
+            )
+            ->when(
+                $branchId !== null,
+                fn ($query) => $query->where(
+                    'purchase_orders.branch_id',
+                    $branchId
+                )
             )
 
             /*
@@ -628,7 +642,11 @@ class PurchaseOrderController extends Controller
         $summaryQuery = DB::connection('mysql')
             ->table('purchase_orders')
             ->where('tenant_id', $tenantId)
-            ->whereNull('deleted_at');
+            ->whereNull('deleted_at')
+            ->when(
+                $branchId !== null,
+                fn ($query) => $query->where('branch_id', $branchId)
+            );
 
         $summary = [
             'total' => (clone $summaryQuery)
@@ -696,6 +714,10 @@ class PurchaseOrderController extends Controller
             ->where('tenant_id', $tenantId)
             ->where('is_active', true)
             ->whereNull('deleted_at')
+            ->when(
+                $branchId !== null,
+                fn ($query) => $query->where('id', $branchId)
+            )
             ->orderByDesc('is_main')
             ->orderBy('name')
             ->get([
@@ -710,6 +732,10 @@ class PurchaseOrderController extends Controller
             ->where('tenant_id', $tenantId)
             ->where('is_active', true)
             ->whereNull('deleted_at')
+            ->when(
+                $branchId !== null,
+                fn ($query) => $query->where('branch_id', $branchId)
+            )
             ->orderByDesc('is_main')
             ->orderBy('name')
             ->get([
@@ -851,6 +877,11 @@ class PurchaseOrderController extends Controller
         $validated = $this->validateOrder(
             request: $request,
             tenantId: $tenantId
+        );
+
+        $this->access->assertBranch(
+            $context,
+            (int) $validated['branch_id']
         );
 
         $prepared = $this->prepareOrder(
@@ -1024,6 +1055,11 @@ class PurchaseOrderController extends Controller
             purchaseOrderId: $purchaseOrder
         );
 
+        $this->access->assertBranch(
+            $context,
+            (int) $order->branch_id
+        );
+
         if ($order->status !== 'draft') {
             throw ValidationException::withMessages([
                 'status' =>
@@ -1040,6 +1076,11 @@ class PurchaseOrderController extends Controller
         $validated = $this->validateOrder(
             request: $request,
             tenantId: $tenantId
+        );
+
+        $this->access->assertBranch(
+            $context,
+            (int) $validated['branch_id']
         );
 
         $prepared = $this->prepareOrder(
@@ -1229,6 +1270,11 @@ class PurchaseOrderController extends Controller
                         'Purchase order not found.'
                     );
 
+                    $this->access->assertBranch(
+                        $context,
+                        (int) $order->branch_id
+                    );
+
                     if ($order->status !== 'draft') {
                         throw ValidationException::withMessages([
                             'status' =>
@@ -1323,6 +1369,11 @@ class PurchaseOrderController extends Controller
                         ! $order,
                         404,
                         'Purchase order not found.'
+                    );
+
+                    $this->access->assertBranch(
+                        $context,
+                        (int) $order->branch_id
                     );
 
                     $allowedStatuses = $context['is_owner']
@@ -1424,6 +1475,11 @@ class PurchaseOrderController extends Controller
         $order = $this->findOrder(
             tenantId: $tenantId,
             purchaseOrderId: $purchaseOrder
+        );
+
+        $this->access->assertBranch(
+            $context,
+            (int) $order->branch_id
         );
 
         if ($order->status !== 'draft') {
@@ -1711,21 +1767,32 @@ class PurchaseOrderController extends Controller
         )
             ->map(
                 function (
-                    array $item
+                    array $item,
+                    int $index
                 ) use ($products): array {
                     $product = $products->get(
                         (int) $item['product_id']
                     );
 
-                    $quantity = round(
-                        (float) $item['quantity'],
-                        4
-                    );
+                    $rawQuantity = (float) $item['quantity'];
+                    $quantity = round($rawQuantity, 3);
 
-                    $unitCost = round(
-                        (float) $item['unit_cost'],
-                        2
-                    );
+                    if (abs($rawQuantity - $quantity) > 0.0000001) {
+                        throw ValidationException::withMessages([
+                            "items.{$index}.quantity" =>
+                                'Quantity may only contain up to three decimal places.',
+                        ]);
+                    }
+
+                    $rawUnitCost = (float) $item['unit_cost'];
+                    $unitCost = round($rawUnitCost, 4);
+
+                    if (abs($rawUnitCost - $unitCost) > 0.0000001) {
+                        throw ValidationException::withMessages([
+                            "items.{$index}.unit_cost" =>
+                                'Unit cost may only contain up to four decimal places.',
+                        ]);
+                    }
 
                     $lineTotal = round(
                         $quantity * $unitCost,
@@ -2029,145 +2096,11 @@ class PurchaseOrderController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    private function userContext(
-        Request $request
-    ): array {
-        $userId = (int) (
-            $request->user()?->id
-        );
-
-        abort_unless(
-            $userId > 0,
-            401
-        );
-
-        $context = DB::connection('saas')
-            ->table(
-                'user_product_access as access'
-            )
-            ->join(
-                'products as product',
-                'product.id',
-                '=',
-                'access.product_id'
-            )
-            ->join(
-                'product_user_types as product_role',
-                function ($join): void {
-                    $join
-                        ->on(
-                            'product_role.id',
-                            '=',
-                            'access.product_user_type_id'
-                        )
-                        ->on(
-                            'product_role.product_id',
-                            '=',
-                            'access.product_id'
-                        );
-                }
-            )
-            ->join(
-                'user_types as user_type',
-                'user_type.id',
-                '=',
-                'product_role.user_type_id'
-            )
-            ->join(
-                'subscriptions as subscription',
-                function ($join): void {
-                    $join
-                        ->on(
-                            'subscription.id',
-                            '=',
-                            'access.subscription_id'
-                        )
-                        ->on(
-                            'subscription.product_id',
-                            '=',
-                            'access.product_id'
-                        );
-                }
-            )
-            ->where(
-                'access.user_id',
-                $userId
-            )
-            ->where(
-                'access.status',
-                'active'
-            )
-            ->where(
-                'product.product_code',
-                self::PRODUCT_CODE
-            )
-            ->whereIn(
-                'product.status',
-                [
-                    'development',
-                    'active',
-                ]
-            )
-            ->where(
-                'product_role.status',
-                'active'
-            )
-            ->where(
-                'user_type.status',
-                'active'
-            )
-            ->whereIn(
-                'subscription.status',
-                [
-                    'trial',
-                    'active',
-                ]
-            )
-            ->orderByDesc(
-                'subscription.id'
-            )
-            ->select([
-                'access.account_owner_id',
-                'access.product_id',
-                'access.subscription_id',
-                'product_role.display_name as role_name',
-                'user_type.type_code as role_code',
-                'user_type.is_owner_type',
-            ])
-            ->first();
-
-        abort_unless(
-            $context,
-            403,
-            'Your account does not have active access to JCM Inventory.'
-        );
-
-        return [
-            'user_id' =>
-                $userId,
-
-            'account_owner_id' =>
-                (int) $context->account_owner_id,
-
-            'product_id' =>
-                (int) $context->product_id,
-
-            'subscription_id' =>
-                (int) $context->subscription_id,
-
-            'role_code' =>
-                (string) $context->role_code,
-
-            'role_name' =>
-                (string) (
-                    $context->role_name
-                    ?: $context->role_code
-                ),
-
-            'is_owner' =>
-                (bool) $context->is_owner_type,
-        ];
+    private function userContext(Request $request): array
+    {
+        return $this->access->resolve($request);
     }
+
 
     /*
     |--------------------------------------------------------------------------

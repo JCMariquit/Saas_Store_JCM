@@ -2,15 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Inventory\InventoryAccessContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class StockOverviewController extends Controller
 {
+    public function __construct(
+        private readonly InventoryAccessContext $access
+    ) {
+    }
+
     private const INCOMING_MOVEMENT_TYPES = [
         'opening_stock',
         'stock_in',
@@ -33,20 +40,10 @@ class StockOverviewController extends Controller
 
     public function index(Request $request): Response
     {
-        $user = $request->user();
-
-        abort_unless($user, 401);
-
-        $tenantId = (int) ($user->client_id ?: $user->id);
-
-        abort_if(
-            $tenantId <= 0,
-            403,
-            'No inventory tenant is assigned to this account.',
-        );
-
-        $branchId = $this->resolveBranchScope($user);
-        $db = app('db')->connection();
+        $context = $this->access->resolve($request);
+        $tenantId = $context['account_owner_id'];
+        $branchId = $context['branch_id'];
+        $db = DB::connection('mysql');
 
         $stockQuery = $this->stockPositionQuery(
             db: $db,
@@ -76,6 +73,7 @@ class StockOverviewController extends Controller
         $trackedProducts = $this->trackedProductCount(
             db: $db,
             tenantId: $tenantId,
+            branchId: $branchId,
         );
 
         $productsWithStock = (clone $stockQuery)
@@ -102,6 +100,7 @@ class StockOverviewController extends Controller
                 'activeProducts' => $this->activeProductCount(
                     db: $db,
                     tenantId: $tenantId,
+                    branchId: $branchId,
                 ),
                 'trackedProducts' => $trackedProducts,
                 'activeWarehouses' => $this->activeWarehouseCount(
@@ -669,26 +668,68 @@ class StockOverviewController extends Controller
     private function trackedProductCount(
         ConnectionInterface $db,
         int $tenantId,
+        ?int $branchId,
     ): int {
-        return $db
-            ->table('products')
-            ->where('tenant_id', $tenantId)
-            ->where('stock_tracking', 'tracked')
-            ->whereNull('deleted_at')
-            ->count();
+        $query = $db
+            ->table('products as product')
+            ->where('product.tenant_id', $tenantId)
+            ->where('product.stock_tracking', 'tracked')
+            ->whereNull('product.deleted_at');
+
+        if ($branchId !== null) {
+            $query
+                ->join('warehouse_stocks as stock', function ($join): void {
+                    $join
+                        ->on('stock.product_id', '=', 'product.id')
+                        ->on('stock.tenant_id', '=', 'product.tenant_id');
+                })
+                ->join('warehouses as warehouse', function ($join): void {
+                    $join
+                        ->on('warehouse.id', '=', 'stock.warehouse_id')
+                        ->on('warehouse.tenant_id', '=', 'stock.tenant_id');
+                })
+                ->where('warehouse.branch_id', $branchId)
+                ->whereNull('warehouse.deleted_at');
+        }
+
+        return $query
+            ->distinct()
+            ->count('product.id');
     }
+
 
     private function activeProductCount(
         ConnectionInterface $db,
         int $tenantId,
+        ?int $branchId,
     ): int {
-        return $db
-            ->table('products')
-            ->where('tenant_id', $tenantId)
-            ->where('is_active', true)
-            ->whereNull('deleted_at')
-            ->count();
+        $query = $db
+            ->table('products as product')
+            ->where('product.tenant_id', $tenantId)
+            ->where('product.is_active', true)
+            ->whereNull('product.deleted_at');
+
+        if ($branchId !== null) {
+            $query
+                ->join('warehouse_stocks as stock', function ($join): void {
+                    $join
+                        ->on('stock.product_id', '=', 'product.id')
+                        ->on('stock.tenant_id', '=', 'product.tenant_id');
+                })
+                ->join('warehouses as warehouse', function ($join): void {
+                    $join
+                        ->on('warehouse.id', '=', 'stock.warehouse_id')
+                        ->on('warehouse.tenant_id', '=', 'stock.tenant_id');
+                })
+                ->where('warehouse.branch_id', $branchId)
+                ->whereNull('warehouse.deleted_at');
+        }
+
+        return $query
+            ->distinct()
+            ->count('product.id');
     }
+
 
     private function activeWarehouseCount(
         ConnectionInterface $db,
@@ -726,22 +767,9 @@ class StockOverviewController extends Controller
 
     private function resolveBranchScope(object $user): ?int
     {
-        $role = strtolower(
-            (string) ($user->role ?? 'client'),
-        );
-
-        if (in_array(
-            $role,
-            ['client', 'owner', 'admin'],
-            true,
-        )) {
-            return null;
-        }
-
         $branchId = (int) ($user->branch_id ?? 0);
 
-        return $branchId > 0
-            ? $branchId
-            : null;
+        return $branchId > 0 ? $branchId : null;
     }
+
 }

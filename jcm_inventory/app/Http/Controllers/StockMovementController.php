@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\StockMovement;
+use App\Services\Inventory\InventoryAccessContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -10,6 +11,65 @@ use Inertia\Response;
 
 class StockMovementController extends Controller
 {
+    /**
+     * Inventory movements that increase warehouse stock.
+     */
+    private const INCOMING_TYPES = [
+        'opening_stock',
+        'stock_in',
+        'adjustment_in',
+        'return_in',
+        'transfer_in',
+        'purchase_receipt',
+        'stock_issuance_void',
+        'issuance_void',
+    ];
+
+    /**
+     * Inventory movements that decrease warehouse stock.
+     */
+    private const OUTGOING_TYPES = [
+        'stock_out',
+        'adjustment_out',
+        'return_out',
+        'damage',
+        'expired',
+        'transfer_out',
+        'sale',
+        'stock_issuance',
+        'issuance',
+        'purchase_receipt_void',
+    ];
+
+    /**
+     * Labels used by the movement filter and movement cards.
+     */
+    private const MOVEMENT_LABELS = [
+        'opening_stock' => 'Opening Stock',
+        'stock_in' => 'Stock In',
+        'stock_out' => 'Stock Out',
+        'adjustment_in' => 'Adjustment In',
+        'adjustment_out' => 'Adjustment Out',
+        'return_in' => 'Return In',
+        'return_out' => 'Return Out',
+        'damage' => 'Damaged Stock',
+        'expired' => 'Expired Stock',
+        'transfer_in' => 'Transfer In',
+        'transfer_out' => 'Transfer Out',
+        'purchase_receipt' => 'Purchase Receipt',
+        'purchase_receipt_void' => 'Purchase Receipt Reversal',
+        'stock_issuance' => 'Stock Withdrawal',
+        'stock_issuance_void' => 'Withdrawal Reversal',
+        'issuance' => 'Stock Withdrawal',
+        'issuance_void' => 'Withdrawal Reversal',
+        'sale' => 'Sale',
+    ];
+
+    public function __construct(
+        private readonly InventoryAccessContext $access
+    ) {
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Stock Movement History
@@ -32,7 +92,9 @@ class StockMovementController extends Controller
 
     public function index(Request $request): Response
     {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->access->resolve($request);
+        $tenantId = $context['account_owner_id'];
+        $branchId = $context['branch_id'];
 
         /*
         |--------------------------------------------------------------------------
@@ -137,6 +199,14 @@ class StockMovementController extends Controller
                 }
             )
 
+            ->when(
+                $branchId !== null,
+                fn ($query) => $query->where(
+                    'warehouses.branch_id',
+                    $branchId
+                )
+            )
+
             /*
              * Search:
              * product, SKU, barcode, warehouse,
@@ -203,7 +273,7 @@ class StockMovementController extends Controller
             ->when(
                 array_key_exists(
                     $movementType,
-                    StockMovement::movementLabels()
+                    self::MOVEMENT_LABELS
                 ),
                 fn ($query) => $query->where(
                     'stock_movements.movement_type',
@@ -218,7 +288,7 @@ class StockMovementController extends Controller
                 $direction === 'in',
                 fn ($query) => $query->whereIn(
                     'stock_movements.movement_type',
-                    StockMovement::incomingTypes()
+                    self::INCOMING_TYPES
                 )
             )
 
@@ -226,7 +296,7 @@ class StockMovementController extends Controller
                 $direction === 'out',
                 fn ($query) => $query->whereIn(
                     'stock_movements.movement_type',
-                    StockMovement::outgoingTypes()
+                    self::OUTGOING_TYPES
                 )
             )
 
@@ -267,16 +337,21 @@ class StockMovementController extends Controller
                 'stock_movements.tenant_id',
                 'stock_movements.warehouse_id',
                 'stock_movements.product_id',
+                'stock_movements.is_batch_tracked',
+                'stock_movements.batch_allocation_status',
                 'stock_movements.movement_type',
                 'stock_movements.quantity',
                 'stock_movements.quantity_before',
                 'stock_movements.quantity_after',
                 'stock_movements.unit_cost',
                 'stock_movements.total_cost',
+                'stock_movements.average_cost_before',
+                'stock_movements.average_cost_after',
                 'stock_movements.reference_type',
                 'stock_movements.reference_id',
                 'stock_movements.reference_no',
                 'stock_movements.related_warehouse_id',
+                'stock_movements.reversal_of_movement_id',
                 'stock_movements.remarks',
                 'stock_movements.movement_date',
                 'stock_movements.created_by',
@@ -302,6 +377,43 @@ class StockMovementController extends Controller
             )
             ->paginate(15)
             ->withQueryString();
+
+        $movementIds = $movements
+            ->getCollection()
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->values();
+
+        $movementBatches = $movementIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql')
+                ->table('stock_movement_batches as allocation')
+                ->join('stock_batches as batch', function ($join): void {
+                    $join
+                        ->on('batch.id', '=', 'allocation.stock_batch_id')
+                        ->on('batch.tenant_id', '=', 'allocation.tenant_id');
+                })
+                ->where('allocation.tenant_id', $tenantId)
+                ->whereIn('allocation.stock_movement_id', $movementIds)
+                ->orderBy('allocation.id')
+                ->get([
+                    'allocation.id',
+                    'allocation.stock_movement_id',
+                    'allocation.stock_batch_id',
+                    'allocation.reversal_of_stock_movement_batch_id',
+                    'allocation.direction',
+                    'allocation.quantity',
+                    'allocation.batch_quantity_before',
+                    'allocation.batch_quantity_after',
+                    'allocation.unit_cost',
+                    'allocation.total_cost',
+                    'batch.batch_code',
+                    'batch.lot_number',
+                    'batch.received_date',
+                    'batch.expiration_date',
+                    'batch.status as batch_status',
+                ])
+                ->groupBy('stock_movement_id');
 
         /*
         |--------------------------------------------------------------------------
@@ -347,7 +459,7 @@ class StockMovementController extends Controller
                 ->map(
                     function (
                         StockMovement $movement
-                    ) use ($creators): array {
+                    ) use ($creators, $movementBatches): array {
                         $creator = $movement->created_by
                             ? $creators->get(
                                 (int) $movement->created_by
@@ -404,17 +516,29 @@ class StockMovementController extends Controller
                                     ]
                                     : null,
 
+                            'is_batch_tracked' =>
+                                (bool) $movement->is_batch_tracked,
+
+                            'batch_allocation_status' =>
+                                $movement->batch_allocation_status,
+
                             'movement_type' =>
                                 $movement->movement_type,
 
                             'movement_label' =>
-                                $movement->movementLabel(),
+                                $this->movementLabel(
+                                    (string) $movement->movement_type
+                                ),
 
                             'direction' =>
-                                $movement->direction(),
+                                $this->movementDirection(
+                                    (string) $movement->movement_type,
+                                    (float) $movement->quantity_before,
+                                    (float) $movement->quantity_after
+                                ),
 
                             'quantity' =>
-                                (float) $movement->quantity,
+                                abs((float) $movement->quantity),
 
                             'quantity_before' =>
                                 (float) $movement
@@ -430,6 +554,16 @@ class StockMovementController extends Controller
                             'total_cost' =>
                                 (float) $movement->total_cost,
 
+                            'average_cost_before' =>
+                                $movement->average_cost_before !== null
+                                    ? (float) $movement->average_cost_before
+                                    : null,
+
+                            'average_cost_after' =>
+                                $movement->average_cost_after !== null
+                                    ? (float) $movement->average_cost_after
+                                    : null,
+
                             'reference_type' =>
                                 $movement->reference_type,
 
@@ -442,8 +576,46 @@ class StockMovementController extends Controller
                             'reference_no' =>
                                 $movement->reference_no,
 
+                            'reversal_of_movement_id' =>
+                                $movement->reversal_of_movement_id
+                                    ? (int) $movement->reversal_of_movement_id
+                                    : null,
+
                             'remarks' =>
                                 $movement->remarks,
+
+                            'batches' => $movementBatches
+                                ->get((int) $movement->id, collect())
+                                ->map(fn ($allocation): array => [
+                                    'id' => (int) $allocation->id,
+                                    'stock_batch_id' =>
+                                        (int) $allocation->stock_batch_id,
+                                    'batch_code' => $allocation->batch_code,
+                                    'lot_number' => $allocation->lot_number,
+                                    'direction' => $allocation->direction,
+                                    'quantity' =>
+                                        (float) $allocation->quantity,
+                                    'batch_quantity_before' =>
+                                        (float) $allocation->batch_quantity_before,
+                                    'batch_quantity_after' =>
+                                        (float) $allocation->batch_quantity_after,
+                                    'unit_cost' =>
+                                        (float) $allocation->unit_cost,
+                                    'total_cost' =>
+                                        (float) $allocation->total_cost,
+                                    'received_date' =>
+                                        $allocation->received_date,
+                                    'expiration_date' =>
+                                        $allocation->expiration_date,
+                                    'batch_status' =>
+                                        $allocation->batch_status,
+                                    'reversal_of_stock_movement_batch_id' =>
+                                        $allocation->reversal_of_stock_movement_batch_id
+                                            ? (int) $allocation->reversal_of_stock_movement_batch_id
+                                            : null,
+                                ])
+                                ->values()
+                                ->all(),
 
                             'movement_date' =>
                                 $movement->movement_date
@@ -478,26 +650,58 @@ class StockMovementController extends Controller
         */
 
         $summaryQuery = StockMovement::query()
-            ->forTenant($tenantId);
+            ->forTenant($tenantId)
+            ->join('warehouses as summary_warehouses', function ($join): void {
+                $join
+                    ->on(
+                        'summary_warehouses.id',
+                        '=',
+                        'stock_movements.warehouse_id'
+                    )
+                    ->on(
+                        'summary_warehouses.tenant_id',
+                        '=',
+                        'stock_movements.tenant_id'
+                    );
+            })
+            ->when(
+                $branchId !== null,
+                fn ($query) => $query->where(
+                    'summary_warehouses.branch_id',
+                    $branchId
+                )
+            );
 
         $summary = [
             'total' => (clone $summaryQuery)
                 ->count(),
 
             'incoming_quantity' =>
-                (float) (clone $summaryQuery)
-                    ->incoming()
-                    ->sum('quantity'),
+                (float) ((clone $summaryQuery)
+                    ->whereIn(
+                        'stock_movements.movement_type',
+                        self::INCOMING_TYPES
+                    )
+                    ->selectRaw(
+                        'COALESCE(SUM(ABS(stock_movements.quantity)), 0) AS aggregate_quantity'
+                    )
+                    ->value('aggregate_quantity') ?? 0),
 
             'outgoing_quantity' =>
-                (float) (clone $summaryQuery)
-                    ->outgoing()
-                    ->sum('quantity'),
+                (float) ((clone $summaryQuery)
+                    ->whereIn(
+                        'stock_movements.movement_type',
+                        self::OUTGOING_TYPES
+                    )
+                    ->selectRaw(
+                        'COALESCE(SUM(ABS(stock_movements.quantity)), 0) AS aggregate_quantity'
+                    )
+                    ->value('aggregate_quantity') ?? 0),
 
             'affected_products' =>
                 (clone $summaryQuery)
                     ->distinct()
-                    ->count('product_id'),
+                    ->count('stock_movements.product_id'),
         ];
 
         /*
@@ -510,6 +714,10 @@ class StockMovementController extends Controller
             ->table('warehouses')
             ->where('tenant_id', $tenantId)
             ->whereNull('deleted_at')
+            ->when(
+                $branchId !== null,
+                fn ($query) => $query->where('branch_id', $branchId)
+            )
             ->orderByDesc('is_main')
             ->orderBy('name')
             ->get([
@@ -525,7 +733,7 @@ class StockMovementController extends Controller
         */
 
         $movementTypes = collect(
-            StockMovement::movementLabels()
+            self::MOVEMENT_LABELS
         )
             ->map(
                 fn (
@@ -581,35 +789,56 @@ class StockMovementController extends Controller
 
     /*
     |--------------------------------------------------------------------------
+    | Movement Presentation Helpers
+    |--------------------------------------------------------------------------
+    */
+
+    private function movementDirection(
+        string $movementType,
+        float $quantityBefore,
+        float $quantityAfter
+    ): string {
+        // The recorded balance change is the strongest source of truth.
+        // This prevents a newly added movement type from being displayed with
+        // the wrong sign merely because it was missing from a label list.
+        if ($quantityAfter > $quantityBefore + 0.0001) {
+            return 'in';
+        }
+
+        if ($quantityAfter < $quantityBefore - 0.0001) {
+            return 'out';
+        }
+
+        if (in_array($movementType, self::INCOMING_TYPES, true)) {
+            return 'in';
+        }
+
+        if (in_array($movementType, self::OUTGOING_TYPES, true)) {
+            return 'out';
+        }
+
+        // The current UI accepts only in/out. Unknown zero-delta movements
+        // default to incoming-neutral styling instead of a destructive sign.
+        return 'in';
+    }
+
+    private function movementLabel(string $movementType): string
+    {
+        return self::MOVEMENT_LABELS[$movementType]
+            ?? ucwords(str_replace(['_', '-'], ' ', $movementType));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
     | Tenant Helper
     |--------------------------------------------------------------------------
     */
 
-    private function getTenantId(
-        Request $request
-    ): int {
-        $tenantId = (int) (
-            $request->user()->client_id ?? 0
-        );
-
-        /*
-         * Temporary local development fallback.
-         */
-        if (
-            $tenantId <= 0
-            && app()->environment('local')
-        ) {
-            return 1;
-        }
-
-        abort_if(
-            $tenantId <= 0,
-            403,
-            'Your account is not assigned to a client.'
-        );
-
-        return $tenantId;
+    private function getTenantId(Request $request): int
+    {
+        return $this->access->tenantId($request);
     }
+
 
     /*
     |--------------------------------------------------------------------------

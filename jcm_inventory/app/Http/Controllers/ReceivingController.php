@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Inventory\InventoryAccessContext;
+use App\Services\Inventory\InventoryLedgerService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,6 +19,12 @@ class ReceivingController extends Controller
 {
     private const PRODUCT_CODE =
         'JCM-INVENTORY-001';
+
+    public function __construct(
+        private readonly InventoryAccessContext $access,
+        private readonly InventoryLedgerService $ledger
+    ) {
+    }
 
     public function index(Request $request): Response
     {
@@ -130,6 +138,13 @@ class ReceivingController extends Controller
             ->where(
                 'purchase_receipts.tenant_id',
                 $tenantId
+            )
+            ->when(
+                ! $context['is_owner'],
+                fn ($query) => $query->where(
+                    'purchase_receipts.branch_id',
+                    $context['branch_id']
+                )
             )
             ->when(
                 $search !== '',
@@ -315,6 +330,42 @@ class ReceivingController extends Controller
                 ])
                 ->groupBy('purchase_receipt_id');
 
+        $receiptItemIds = $receiptItems
+            ->flatten(1)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->values();
+
+        $receiptItemBatches = $receiptItemIds->isEmpty()
+            ? collect()
+            : DB::connection('mysql')
+                ->table('purchase_receipt_item_batches as item_batch')
+                ->join('stock_batches as batch', function ($join): void {
+                    $join
+                        ->on('batch.id', '=', 'item_batch.stock_batch_id')
+                        ->on('batch.tenant_id', '=', 'item_batch.tenant_id');
+                })
+                ->where('item_batch.tenant_id', $tenantId)
+                ->whereIn('item_batch.purchase_receipt_item_id', $receiptItemIds)
+                ->orderBy('item_batch.id')
+                ->get([
+                    'item_batch.id',
+                    'item_batch.purchase_receipt_item_id',
+                    'item_batch.stock_batch_id',
+                    'item_batch.stock_movement_batch_id',
+                    'item_batch.void_stock_movement_batch_id',
+                    'item_batch.quantity_received',
+                    'item_batch.unit_cost',
+                    'item_batch.line_total',
+                    'batch.batch_code',
+                    'batch.lot_number',
+                    'batch.received_date',
+                    'batch.manufactured_date',
+                    'batch.expiration_date',
+                    'batch.status',
+                ])
+                ->groupBy('purchase_receipt_item_id');
+
         $userIds = $receipts
             ->getCollection()
             ->flatMap(
@@ -340,6 +391,7 @@ class ReceivingController extends Controller
                 ->map(
                     function ($receipt) use (
                         $receiptItems,
+                        $receiptItemBatches,
                         $users,
                         $isOwner
                     ): array {
@@ -505,6 +557,41 @@ class ReceivingController extends Controller
 
                                         'notes' =>
                                             $item->notes,
+
+                                        'batches' => $receiptItemBatches
+                                            ->get((int) $item->id, collect())
+                                            ->map(fn ($batch): array => [
+                                                'id' => (int) $batch->id,
+                                                'stock_batch_id' =>
+                                                    (int) $batch->stock_batch_id,
+                                                'batch_code' =>
+                                                    $batch->batch_code,
+                                                'lot_number' =>
+                                                    $batch->lot_number,
+                                                'quantity_received' =>
+                                                    (float) $batch->quantity_received,
+                                                'unit_cost' =>
+                                                    (float) $batch->unit_cost,
+                                                'line_total' =>
+                                                    (float) $batch->line_total,
+                                                'received_date' =>
+                                                    $batch->received_date,
+                                                'manufactured_date' =>
+                                                    $batch->manufactured_date,
+                                                'expiration_date' =>
+                                                    $batch->expiration_date,
+                                                'status' => $batch->status,
+                                                'stock_movement_batch_id' =>
+                                                    $batch->stock_movement_batch_id
+                                                        ? (int) $batch->stock_movement_batch_id
+                                                        : null,
+                                                'void_stock_movement_batch_id' =>
+                                                    $batch->void_stock_movement_batch_id
+                                                        ? (int) $batch->void_stock_movement_batch_id
+                                                        : null,
+                                            ])
+                                            ->values()
+                                            ->all(),
                                     ]
                                 )
                                 ->values()
@@ -516,7 +603,14 @@ class ReceivingController extends Controller
 
         $summaryQuery = DB::connection('mysql')
             ->table('purchase_receipts')
-            ->where('tenant_id', $tenantId);
+            ->where('tenant_id', $tenantId)
+            ->when(
+                ! $context['is_owner'],
+                fn ($query) => $query->where(
+                    'branch_id',
+                    $context['branch_id']
+                )
+            );
 
         $summary = [
             'total' => (clone $summaryQuery)
@@ -555,6 +649,13 @@ class ReceivingController extends Controller
         $warehouses = DB::connection('mysql')
             ->table('warehouses')
             ->where('tenant_id', $tenantId)
+            ->when(
+                ! $context['is_owner'],
+                fn ($query) => $query->where(
+                    'branch_id',
+                    $context['branch_id']
+                )
+            )
             ->whereNull('deleted_at')
             ->orderByDesc('is_main')
             ->orderBy('name')
@@ -620,6 +721,13 @@ class ReceivingController extends Controller
                 'purchase_orders.tenant_id',
                 $tenantId
             )
+            ->when(
+                ! $context['is_owner'],
+                fn ($query) => $query->where(
+                    'purchase_orders.branch_id',
+                    $context['branch_id']
+                )
+            )
             ->whereNull(
                 'purchase_orders.deleted_at'
             )
@@ -667,30 +775,39 @@ class ReceivingController extends Controller
         $openOrderItems = $openOrderIds->isEmpty()
             ? collect()
             : DB::connection('mysql')
-                ->table('purchase_order_items')
-                ->where('tenant_id', $tenantId)
+                ->table('purchase_order_items as poi')
+                ->join('products as product', function ($join): void {
+                    $join
+                        ->on('product.tenant_id', '=', 'poi.tenant_id')
+                        ->on('product.id', '=', 'poi.product_id');
+                })
+                ->where('poi.tenant_id', $tenantId)
                 ->whereIn(
-                    'purchase_order_id',
+                    'poi.purchase_order_id',
                     $openOrderIds
                 )
                 ->whereColumn(
-                    'received_quantity',
+                    'poi.received_quantity',
                     '<',
-                    'quantity'
+                    'poi.quantity'
                 )
-                ->orderBy('id')
+                ->orderBy('poi.id')
                 ->get([
-                    'id',
-                    'purchase_order_id',
-                    'product_id',
-                    'product_name',
-                    'product_sku',
-                    'unit',
-                    'quantity',
-                    'received_quantity',
-                    'unit_cost',
-                    'line_total',
-                    'notes',
+                    'poi.id',
+                    'poi.purchase_order_id',
+                    'poi.product_id',
+                    'poi.product_name',
+                    'poi.product_sku',
+                    'poi.unit',
+                    'poi.quantity',
+                    'poi.received_quantity',
+                    'poi.unit_cost',
+                    'poi.line_total',
+                    'poi.notes',
+                    'product.batch_tracking_enabled',
+                    'product.batch_issue_policy',
+                    'product.requires_expiration_date',
+                    'product.expiry_warning_days',
                 ])
                 ->groupBy('purchase_order_id');
 
@@ -747,6 +864,20 @@ class ReceivingController extends Controller
 
                                     'notes' =>
                                         $item->notes,
+
+                                    'batch_tracking_enabled' =>
+                                        (bool) $item->batch_tracking_enabled,
+
+                                    'batch_issue_policy' =>
+                                        $item->batch_issue_policy,
+
+                                    'requires_expiration_date' =>
+                                        (bool) $item->requires_expiration_date,
+
+                                    'expiry_warning_days' =>
+                                        $item->expiry_warning_days !== null
+                                            ? (int) $item->expiry_warning_days
+                                            : null,
                                 ];
                             }
                         )
@@ -870,55 +1001,33 @@ class ReceivingController extends Controller
         );
     }
 
-    public function store(
-        Request $request
-    ): RedirectResponse {
-        $context = $this->userContext($request);
+    public function store(Request $request): RedirectResponse
+    {
+        $context = $this->access->resolve($request);
         $tenantId = $context['account_owner_id'];
 
         $validated = $request->validate([
             'purchase_order_id' => [
                 'required',
                 'integer',
-                Rule::exists(
-                    'purchase_orders',
-                    'id'
-                )->where(
+                Rule::exists('purchase_orders', 'id')->where(
                     fn ($query) => $query
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->whereIn(
-                            'status',
-                            [
-                                'approved',
-                                'partially_received',
-                            ]
-                        )
+                        ->where('tenant_id', $tenantId)
+                        ->whereIn('status', [
+                            'approved',
+                            'partially_received',
+                        ])
                         ->whereNull('deleted_at')
                 ),
             ],
-            'delivery_reference' => [
-                'nullable',
-                'string',
-                'max:120',
-            ],
+            'delivery_reference' => ['nullable', 'string', 'max:120'],
             'received_date' => [
                 'required',
                 'date_format:Y-m-d',
                 'before_or_equal:today',
             ],
-            'notes' => [
-                'nullable',
-                'string',
-                'max:5000',
-            ],
-            'items' => [
-                'required',
-                'array',
-                'min:1',
-            ],
+            'notes' => ['nullable', 'string', 'max:5000'],
+            'items' => ['required', 'array', 'min:1'],
             'items.*.purchase_order_item_id' => [
                 'required',
                 'integer',
@@ -930,470 +1039,414 @@ class ReceivingController extends Controller
                 'gt:0',
                 'max:99999999999.999',
             ],
-            'items.*.notes' => [
+            'items.*.notes' => ['nullable', 'string', 'max:500'],
+            'items.*.batch_code' => ['nullable', 'string', 'max:100'],
+            'items.*.lot_number' => ['nullable', 'string', 'max:120'],
+            'items.*.manufactured_date' => ['nullable', 'date_format:Y-m-d'],
+            'items.*.expiration_date' => ['nullable', 'date_format:Y-m-d'],
+            'items.*.batch_notes' => ['nullable', 'string', 'max:1000'],
+            'items.*.batches' => ['nullable', 'array', 'min:1'],
+            'items.*.batches.*.quantity' => [
+                'required_with:items.*.batches',
+                'numeric',
+                'gt:0',
+            ],
+            'items.*.batches.*.batch_code' => [
                 'nullable',
                 'string',
-                'max:500',
+                'max:100',
+                'distinct',
+            ],
+            'items.*.batches.*.lot_number' => [
+                'nullable',
+                'string',
+                'max:120',
+            ],
+            'items.*.batches.*.manufactured_date' => [
+                'nullable',
+                'date_format:Y-m-d',
+            ],
+            'items.*.batches.*.expiration_date' => [
+                'nullable',
+                'date_format:Y-m-d',
+            ],
+            'items.*.batches.*.notes' => [
+                'nullable',
+                'string',
+                'max:1000',
             ],
         ]);
 
-        $receiptNumber = DB::connection('mysql')
-            ->transaction(
-                function () use (
-                    $request,
+        $receiptNumber = DB::connection('mysql')->transaction(
+            function () use ($request, $context, $tenantId, $validated): string {
+                $database = DB::connection('mysql');
+                $order = $database
+                    ->table('purchase_orders')
+                    ->where('id', (int) $validated['purchase_order_id'])
+                    ->where('tenant_id', $tenantId)
+                    ->whereNull('deleted_at')
+                    ->lockForUpdate()
+                    ->first();
+
+                if (
+                    ! $order
+                    || ! in_array(
+                        $order->status,
+                        ['approved', 'partially_received'],
+                        true
+                    )
+                ) {
+                    throw ValidationException::withMessages([
+                        'purchase_order_id' =>
+                            'The selected purchase order is not available for receiving.',
+                    ]);
+                }
+
+                $this->access->assertBranch(
+                    $context,
+                    (int) $order->branch_id
+                );
+
+                $warehouse = $this->ledger->lockWarehouse(
                     $tenantId,
-                    $validated
-                ): string {
-                    $database = DB::connection('mysql');
+                    (int) $order->warehouse_id
+                );
 
-                    $order = $database
-                        ->table('purchase_orders')
-                        ->where(
-                            'id',
-                            (int) $validated[
-                                'purchase_order_id'
-                            ]
-                        )
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->whereNull('deleted_at')
-                        ->lockForUpdate()
-                        ->first();
+                if ((int) $warehouse->branch_id !== (int) $order->branch_id) {
+                    throw ValidationException::withMessages([
+                        'purchase_order_id' =>
+                            'The purchase order warehouse does not belong to its selected branch.',
+                    ]);
+                }
 
-                    if (
-                        ! $order
-                        || ! in_array(
-                            $order->status,
-                            [
-                                'approved',
-                                'partially_received',
-                            ],
-                            true
-                        )
-                    ) {
+                $submittedItemIds = collect($validated['items'])
+                    ->pluck('purchase_order_item_id')
+                    ->map(fn ($id): int => (int) $id)
+                    ->unique()
+                    ->values();
+
+                $orderItems = $database
+                    ->table('purchase_order_items')
+                    ->where('tenant_id', $tenantId)
+                    ->where('purchase_order_id', $order->id)
+                    ->whereIn('id', $submittedItemIds)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                if ($orderItems->count() !== $submittedItemIds->count()) {
+                    throw ValidationException::withMessages([
+                        'items' =>
+                            'One or more selected items do not belong to the purchase order.',
+                    ]);
+                }
+
+                $productIds = $orderItems
+                    ->pluck('product_id')
+                    ->map(fn ($id): int => (int) $id)
+                    ->unique()
+                    ->values();
+
+                $products = $database
+                    ->table('products')
+                    ->where('tenant_id', $tenantId)
+                    ->whereIn('id', $productIds)
+                    ->whereNull('deleted_at')
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                if ($products->count() !== $productIds->count()) {
+                    throw ValidationException::withMessages([
+                        'items' =>
+                            'One or more products are no longer available.',
+                    ]);
+                }
+
+                $preparedItems = collect();
+
+                foreach ($validated['items'] as $index => $input) {
+                    $orderItem = $orderItems->get(
+                        (int) $input['purchase_order_item_id']
+                    );
+                    $product = $products->get((int) $orderItem->product_id);
+                    $rawQuantity = (float) $input['quantity_received'];
+                    $quantity = round($rawQuantity, 3);
+
+                    if (abs($rawQuantity - $quantity) > 0.0000001) {
                         throw ValidationException::withMessages([
-                            'purchase_order_id' =>
-                                'The selected purchase order is not available for receiving.',
+                            "items.{$index}.quantity_received" =>
+                                'Quantity may only contain up to three decimal places.',
                         ]);
                     }
 
-                    $submittedItemIds = collect(
-                        $validated['items']
-                    )
-                        ->pluck('purchase_order_item_id')
-                        ->map(
-                            fn ($id): int => (int) $id
+                    $remainingQuantity = round(
+                        (float) $orderItem->quantity
+                            - (float) $orderItem->received_quantity,
+                        3
+                    );
+
+                    if ($remainingQuantity <= 0) {
+                        throw ValidationException::withMessages([
+                            "items.{$index}.quantity_received" =>
+                                "{$orderItem->product_name} has already been fully received.",
+                        ]);
+                    }
+
+                    if ($quantity > $remainingQuantity + 0.0001) {
+                        throw ValidationException::withMessages([
+                            "items.{$index}.quantity_received" =>
+                                "Only {$remainingQuantity} {$orderItem->unit} remain for {$orderItem->product_name}.",
+                        ]);
+                    }
+
+                    $rawBatches = collect($input['batches'] ?? [])
+                        ->filter(
+                            fn ($batch): bool =>
+                                (float) ($batch['quantity'] ?? 0) > 0
                         )
-                        ->unique()
                         ->values();
 
-                    $orderItems = $database
-                        ->table('purchase_order_items')
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->where(
-                            'purchase_order_id',
-                            $order->id
-                        )
-                        ->whereIn(
-                            'id',
-                            $submittedItemIds
-                        )
-                        ->lockForUpdate()
-                        ->get()
-                        ->keyBy('id');
-
-                    if (
-                        $orderItems->count()
-                        !== $submittedItemIds->count()
-                    ) {
-                        throw ValidationException::withMessages([
-                            'items' =>
-                                'One or more selected items do not belong to the purchase order.',
-                        ]);
-                    }
-
-                    $preparedItems = collect();
-
-                    foreach (
-                        $validated['items'] as $index => $input
-                    ) {
-                        $orderItem = $orderItems->get(
-                            (int) $input[
-                                'purchase_order_item_id'
-                            ]
-                        );
-
-                        $rawQuantity = (float) $input[
-                            'quantity_received'
-                        ];
-
-                        $quantity = round(
-                            $rawQuantity,
-                            3
-                        );
-
-                        if (
-                            abs(
-                                $rawQuantity - $quantity
-                            ) > 0.0000001
-                        ) {
-                            throw ValidationException::withMessages([
-                                "items.{$index}.quantity_received" =>
-                                    'Quantity may only contain up to three decimal places.',
-                            ]);
-                        }
-
-                        $remainingQuantity = round(
-                            (float) $orderItem->quantity
-                            - (float) $orderItem
-                                ->received_quantity,
-                            3
-                        );
-
-                        if ($remainingQuantity <= 0) {
-                            throw ValidationException::withMessages([
-                                "items.{$index}.quantity_received" =>
-                                    "{$orderItem->product_name} has already been fully received.",
-                            ]);
-                        }
-
-                        if ($quantity > $remainingQuantity) {
-                            throw ValidationException::withMessages([
-                                "items.{$index}.quantity_received" =>
-                                    "Only {$remainingQuantity} {$orderItem->unit} remain for {$orderItem->product_name}.",
-                            ]);
-                        }
-
-                        $unitCost = round(
-                            (float) $orderItem->unit_cost,
-                            4
-                        );
-
-                        $lineTotal = round(
-                            $quantity * $unitCost,
-                            2
-                        );
-
-                        $preparedItems->push([
-                            'order_item' => $orderItem,
+                    if ($rawBatches->isEmpty()) {
+                        $rawBatches = collect([[
                             'quantity' => $quantity,
-                            'unit_cost' => $unitCost,
-                            'line_total' => $lineTotal,
-                            'notes' => $this->nullableString(
-                                $input['notes'] ?? null
-                            ),
-                        ]);
+                            'batch_code' => $input['batch_code'] ?? null,
+                            'lot_number' => $input['lot_number'] ?? null,
+                            'manufactured_date' =>
+                                $input['manufactured_date'] ?? null,
+                            'expiration_date' =>
+                                $input['expiration_date'] ?? null,
+                            'notes' => $input['batch_notes'] ?? null,
+                        ]]);
                     }
 
-                    $totalQuantity = round(
-                        (float) $preparedItems->sum(
-                            'quantity'
+                    $batchQuantity = round(
+                        (float) $rawBatches->sum(
+                            fn ($batch): float =>
+                                (float) ($batch['quantity'] ?? 0)
                         ),
                         3
                     );
 
-                    $totalAmount = round(
-                        (float) $preparedItems->sum(
-                            'line_total'
+                    if (abs($batchQuantity - $quantity) > 0.0001) {
+                        throw ValidationException::withMessages([
+                            "items.{$index}.batches" =>
+                                'Batch quantities must exactly match the received quantity.',
+                        ]);
+                    }
+
+                    if (
+                        (bool) $product->batch_tracking_enabled
+                        && (bool) $product->requires_expiration_date
+                        && $rawBatches->contains(
+                            fn ($batch): bool =>
+                                blank($batch['expiration_date'] ?? null)
+                        )
+                    ) {
+                        throw ValidationException::withMessages([
+                            "items.{$index}.expiration_date" =>
+                                "An expiration date is required for {$orderItem->product_name}.",
+                        ]);
+                    }
+
+                    $unitCost = round((float) $orderItem->unit_cost, 4);
+                    $lineTotal = round($quantity * $unitCost, 2);
+
+                    $preparedItems->push([
+                        'index' => $index,
+                        'order_item' => $orderItem,
+                        'product' => $product,
+                        'quantity' => $quantity,
+                        'unit_cost' => $unitCost,
+                        'line_total' => $lineTotal,
+                        'notes' => $this->nullableString(
+                            $input['notes'] ?? null
                         ),
-                        2
-                    );
+                        'layers' => $rawBatches
+                            ->map(fn ($batch): array => [
+                                'quantity' => round(
+                                    (float) $batch['quantity'],
+                                    3
+                                ),
+                                'unit_cost' => $unitCost,
+                                'batch_code' =>
+                                    $batch['batch_code'] ?? null,
+                                'lot_number' =>
+                                    $batch['lot_number'] ?? null,
+                                'received_date' =>
+                                    $validated['received_date'],
+                                'manufactured_date' =>
+                                    $batch['manufactured_date'] ?? null,
+                                'expiration_date' =>
+                                    $batch['expiration_date'] ?? null,
+                                'notes' => $batch['notes'] ?? null,
+                            ])
+                            ->all(),
+                    ]);
+                }
 
-                    $receiptNumber =
-                        $this->generateReceiptNumber(
-                            $tenantId
-                        );
+                $totalQuantity = round(
+                    (float) $preparedItems->sum('quantity'),
+                    3
+                );
+                $totalAmount = round(
+                    (float) $preparedItems->sum('line_total'),
+                    2
+                );
+                $receiptNumber = $this->generateReceiptNumber($tenantId);
+                $now = now();
+                $movementDate = Carbon::parse(
+                    $validated['received_date'].' '.$now->format('H:i:s')
+                );
+                $deliveryReference = $this->nullableString(
+                    $validated['delivery_reference'] ?? null
+                );
+                $userId = (int) $request->user()->id;
 
-                    $now = now();
+                $receiptId = $database
+                    ->table('purchase_receipts')
+                    ->insertGetId([
+                        'tenant_id' => $tenantId,
+                        'purchase_order_id' => $order->id,
+                        'supplier_id' => $order->supplier_id,
+                        'branch_id' => $order->branch_id,
+                        'warehouse_id' => $order->warehouse_id,
+                        'receipt_number' => $receiptNumber,
+                        'delivery_reference' => $deliveryReference,
+                        'received_date' => $validated['received_date'],
+                        'status' => 'posted',
+                        'total_quantity' => $totalQuantity,
+                        'total_amount' => $totalAmount,
+                        'notes' => $this->nullableString(
+                            $validated['notes'] ?? null
+                        ),
+                        'received_by' => $userId,
+                        'posted_at' => $now,
+                        'voided_by' => null,
+                        'voided_at' => null,
+                        'void_reason' => null,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
 
-                    $movementDate = Carbon::parse(
-                        $validated['received_date']
-                        .' '
-                        .$now->format('H:i:s')
-                    );
-
-                    $deliveryReference =
-                        $this->nullableString(
-                            $validated[
-                                'delivery_reference'
-                            ] ?? null
-                        );
-
-                    $receiptId = $database
-                        ->table('purchase_receipts')
+                foreach ($preparedItems as $preparedItem) {
+                    $orderItem = $preparedItem['order_item'];
+                    $receiptItemId = $database
+                        ->table('purchase_receipt_items')
                         ->insertGetId([
                             'tenant_id' => $tenantId,
-                            'purchase_order_id' =>
-                                $order->id,
-                            'supplier_id' =>
-                                $order->supplier_id,
-                            'branch_id' =>
-                                $order->branch_id,
-                            'warehouse_id' =>
-                                $order->warehouse_id,
-                            'receipt_number' =>
-                                $receiptNumber,
-                            'delivery_reference' =>
-                                $deliveryReference,
-                            'received_date' =>
-                                $validated['received_date'],
-                            'status' => 'posted',
-                            'total_quantity' =>
-                                $totalQuantity,
-                            'total_amount' =>
-                                $totalAmount,
-                            'notes' =>
-                                $this->nullableString(
-                                    $validated['notes']
-                                    ?? null
-                                ),
-                            'received_by' =>
-                                $request->user()->id,
-                            'posted_at' => $now,
+                            'purchase_receipt_id' => $receiptId,
+                            'purchase_order_item_id' => $orderItem->id,
+                            'product_id' => $orderItem->product_id,
+                            'stock_movement_id' => null,
+                            'void_stock_movement_id' => null,
+                            'product_name' => $orderItem->product_name,
+                            'product_sku' => $orderItem->product_sku,
+                            'unit' => $orderItem->unit,
+                            'quantity_received' =>
+                                $preparedItem['quantity'],
+                            'unit_cost' => $preparedItem['unit_cost'],
+                            'line_total' => $preparedItem['line_total'],
+                            'notes' => $preparedItem['notes'],
                             'created_at' => $now,
                             'updated_at' => $now,
                         ]);
 
-                    foreach (
-                        $preparedItems as $preparedItem
-                    ) {
-                        $orderItem =
-                            $preparedItem['order_item'];
+                    $remarks = "Received from PO {$order->po_number}";
+                    if ($deliveryReference) {
+                        $remarks .=
+                            " | Delivery reference: {$deliveryReference}";
+                    }
 
-                        $quantity =
-                            $preparedItem['quantity'];
+                    $result = $this->ledger->postIncoming([
+                        'tenant_id' => $tenantId,
+                        'warehouse_id' => (int) $order->warehouse_id,
+                        'product_id' => (int) $orderItem->product_id,
+                        'quantity' => $preparedItem['quantity'],
+                        'unit_cost' => $preparedItem['unit_cost'],
+                        'movement_type' => 'purchase_receipt',
+                        'reference_type' => 'purchase_receipt',
+                        'reference_id' => $receiptId,
+                        'reference_no' => $receiptNumber,
+                        'source_type' => 'purchase_receipt',
+                        'source_reference' => $receiptNumber,
+                        'supplier_id' => (int) $order->supplier_id,
+                        'purchase_receipt_item_id' => $receiptItemId,
+                        'user_id' => $userId,
+                        'movement_date' => $movementDate,
+                        'remarks' => $remarks,
+                        'layers' => $preparedItem['layers'],
+                    ]);
 
-                        $unitCost =
-                            $preparedItem['unit_cost'];
+                    $database
+                        ->table('purchase_receipt_items')
+                        ->where('tenant_id', $tenantId)
+                        ->where('id', $receiptItemId)
+                        ->update([
+                            'stock_movement_id' => $result['movement_id'],
+                            'unit_cost' => $result['unit_cost'],
+                            'line_total' => $result['total_cost'],
+                            'updated_at' => $now,
+                        ]);
 
-                        $lineTotal =
-                            $preparedItem['line_total'];
-
+                    foreach ($result['allocations'] as $allocation) {
                         $database
-                            ->table('warehouse_stocks')
-                            ->insertOrIgnore([
-                                'tenant_id' => $tenantId,
-                                'warehouse_id' =>
-                                    $order->warehouse_id,
-                                'product_id' =>
-                                    $orderItem->product_id,
-                                'quantity' => 0,
-                                'reorder_level' => 0,
-                                'average_cost' => 0,
-                                'created_at' => $now,
-                                'updated_at' => $now,
-                            ]);
-
-                        $stock = $database
-                            ->table('warehouse_stocks')
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->where(
-                                'warehouse_id',
-                                $order->warehouse_id
-                            )
-                            ->where(
-                                'product_id',
-                                $orderItem->product_id
-                            )
-                            ->lockForUpdate()
-                            ->first();
-
-                        if (! $stock) {
-                            throw ValidationException::withMessages([
-                                'items' =>
-                                    'Unable to prepare the warehouse stock record.',
-                            ]);
-                        }
-
-                        $quantityBefore = round(
-                            (float) $stock->quantity,
-                            3
-                        );
-
-                        $quantityAfter = round(
-                            $quantityBefore + $quantity,
-                            3
-                        );
-
-                        $averageCostBefore = round(
-                            (float) $stock->average_cost,
-                            4
-                        );
-
-                        $previousValue =
-                            $quantityBefore
-                            * $averageCostBefore;
-
-                        $receivedValue =
-                            $quantity
-                            * $unitCost;
-
-                        $averageCostAfter =
-                            $quantityAfter > 0
-                                ? round(
-                                    (
-                                        $previousValue
-                                        + $receivedValue
-                                    ) / $quantityAfter,
-                                    4
-                                )
-                                : 0;
-
-                        $database
-                            ->table('warehouse_stocks')
-                            ->where(
-                                'id',
-                                $stock->id
-                            )
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->update([
-                                'quantity' =>
-                                    $quantityAfter,
-                                'average_cost' =>
-                                    $averageCostAfter,
-                                'last_movement_at' =>
-                                    $movementDate,
-                                'updated_at' => $now,
-                            ]);
-
-                        $remarks =
-                            "Received from PO {$order->po_number}";
-
-                        if ($deliveryReference) {
-                            $remarks .=
-                                " | Delivery reference: {$deliveryReference}";
-                        }
-
-                        $movementId = $database
-                            ->table('stock_movements')
-                            ->insertGetId([
-                                'tenant_id' => $tenantId,
-                                'warehouse_id' =>
-                                    $order->warehouse_id,
-                                'product_id' =>
-                                    $orderItem->product_id,
-                                'movement_type' =>
-                                    'purchase_receipt',
-                                'quantity' => $quantity,
-                                'quantity_before' =>
-                                    $quantityBefore,
-                                'quantity_after' =>
-                                    $quantityAfter,
-                                'unit_cost' => $unitCost,
-                                'total_cost' => $lineTotal,
-                                'average_cost_before' =>
-                                    $averageCostBefore,
-                                'average_cost_after' =>
-                                    $averageCostAfter,
-                                'reference_type' =>
-                                    'purchase_receipt',
-                                'reference_id' =>
-                                    $receiptId,
-                                'reference_no' =>
-                                    $receiptNumber,
-                                'related_warehouse_id' =>
-                                    null,
-                                'reversal_of_movement_id' =>
-                                    null,
-                                'remarks' => $remarks,
-                                'movement_date' =>
-                                    $movementDate,
-                                'created_by' =>
-                                    $request->user()->id,
-                                'created_at' => $now,
-                                'updated_at' => $now,
-                            ]);
-
-                        $database
-                            ->table(
-                                'purchase_receipt_items'
-                            )
+                            ->table('purchase_receipt_item_batches')
                             ->insert([
                                 'tenant_id' => $tenantId,
-                                'purchase_receipt_id' =>
-                                    $receiptId,
-                                'purchase_order_item_id' =>
-                                    $orderItem->id,
-                                'product_id' =>
-                                    $orderItem->product_id,
-                                'stock_movement_id' =>
-                                    $movementId,
-                                'void_stock_movement_id' =>
-                                    null,
-                                'product_name' =>
-                                    $orderItem->product_name,
-                                'product_sku' =>
-                                    $orderItem->product_sku,
-                                'unit' =>
-                                    $orderItem->unit,
+                                'purchase_receipt_item_id' => $receiptItemId,
+                                'warehouse_id' => (int) $order->warehouse_id,
+                                'product_id' => (int) $orderItem->product_id,
+                                'stock_batch_id' =>
+                                    $allocation['stock_batch_id'],
+                                'stock_movement_batch_id' =>
+                                    $allocation['stock_movement_batch_id'],
+                                'void_stock_movement_batch_id' => null,
                                 'quantity_received' =>
-                                    $quantity,
-                                'unit_cost' =>
-                                    $unitCost,
-                                'line_total' =>
-                                    $lineTotal,
-                                'notes' =>
-                                    $preparedItem['notes'],
+                                    $allocation['quantity'],
+                                'unit_cost' => $allocation['unit_cost'],
+                                'line_total' => $allocation['total_cost'],
                                 'created_at' => $now,
-                                'updated_at' => $now,
-                            ]);
-
-                        $newReceivedQuantity = round(
-                            (float) $orderItem
-                                ->received_quantity
-                            + $quantity,
-                            3
-                        );
-
-                        $database
-                            ->table('purchase_order_items')
-                            ->where(
-                                'id',
-                                $orderItem->id
-                            )
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->update([
-                                'received_quantity' =>
-                                    $newReceivedQuantity,
                                 'updated_at' => $now,
                             ]);
                     }
 
-                    $this->recalculatePurchaseOrderStatus(
-                        $tenantId,
-                        (int) $order->id,
-                        $now
-                    );
-
-                    return $receiptNumber;
+                    $database
+                        ->table('purchase_order_items')
+                        ->where('id', $orderItem->id)
+                        ->where('tenant_id', $tenantId)
+                        ->update([
+                            'received_quantity' => round(
+                                (float) $orderItem->received_quantity
+                                    + $preparedItem['quantity'],
+                                3
+                            ),
+                            'updated_at' => $now,
+                        ]);
                 }
-            );
+
+                $this->recalculatePurchaseOrderStatus(
+                    $tenantId,
+                    (int) $order->id,
+                    $now
+                );
+
+                return $receiptNumber;
+            }
+        );
 
         return back()->with(
             'success',
-            "Receipt {$receiptNumber} posted successfully."
+            "Receipt {$receiptNumber} posted successfully with batch allocations."
         );
     }
+
 
     public function void(
         Request $request,
         int $receipt
     ): RedirectResponse {
-        $context = $this->userContext($request);
+        $context = $this->access->resolve($request);
         $tenantId = $context['account_owner_id'];
 
         abort_unless(
@@ -1403,483 +1456,198 @@ class ReceivingController extends Controller
         );
 
         $validated = $request->validate([
-            'reason' => [
-                'required',
-                'string',
-                'min:3',
-                'max:1000',
-            ],
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ]);
 
-        $receiptNumber = DB::connection('mysql')
-            ->transaction(
-                function () use (
-                    $request,
-                    $tenantId,
-                    $receipt,
-                    $validated
-                ): string {
-                    $database = DB::connection('mysql');
+        $receiptNumber = DB::connection('mysql')->transaction(
+            function () use (
+                $request,
+                $tenantId,
+                $receipt,
+                $validated
+            ): string {
+                $database = DB::connection('mysql');
+                $receiptRecord = $database
+                    ->table('purchase_receipts')
+                    ->where('id', $receipt)
+                    ->where('tenant_id', $tenantId)
+                    ->lockForUpdate()
+                    ->first();
 
-                    $receiptRecord = $database
-                        ->table('purchase_receipts')
-                        ->where(
-                            'id',
-                            $receipt
-                        )
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->lockForUpdate()
-                        ->first();
+                if (! $receiptRecord) {
+                    abort(404);
+                }
 
-                    if (! $receiptRecord) {
-                        abort(404);
-                    }
+                if ($receiptRecord->status !== 'posted') {
+                    throw ValidationException::withMessages([
+                        'receipt' => 'This receipt has already been voided.',
+                    ]);
+                }
 
-                    if (
-                        $receiptRecord->status !== 'posted'
-                    ) {
-                        throw ValidationException::withMessages([
-                            'receipt' =>
-                                'This receipt has already been voided.',
-                        ]);
-                    }
+                $order = $database
+                    ->table('purchase_orders')
+                    ->where('id', $receiptRecord->purchase_order_id)
+                    ->where('tenant_id', $tenantId)
+                    ->lockForUpdate()
+                    ->first();
 
-                    $order = $database
-                        ->table('purchase_orders')
-                        ->where(
-                            'id',
-                            $receiptRecord
-                                ->purchase_order_id
-                        )
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->lockForUpdate()
-                        ->first();
+                if (! $order) {
+                    throw ValidationException::withMessages([
+                        'receipt' =>
+                            'The related purchase order could not be found.',
+                    ]);
+                }
 
-                    if (! $order) {
-                        throw ValidationException::withMessages([
-                            'receipt' =>
-                                'The related purchase order could not be found.',
-                        ]);
-                    }
+                $receiptItems = $database
+                    ->table('purchase_receipt_items')
+                    ->where('tenant_id', $tenantId)
+                    ->where('purchase_receipt_id', $receiptRecord->id)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
 
-                    $receiptItems = $database
-                        ->table('purchase_receipt_items')
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->where(
-                            'purchase_receipt_id',
-                            $receiptRecord->id
-                        )
-                        ->orderBy('id')
-                        ->lockForUpdate()
-                        ->get();
+                if ($receiptItems->isEmpty()) {
+                    throw ValidationException::withMessages([
+                        'receipt' => 'This receipt has no items to reverse.',
+                    ]);
+                }
 
-                    if ($receiptItems->isEmpty()) {
-                        throw ValidationException::withMessages([
-                            'receipt' =>
-                                'This receipt has no items to reverse.',
-                        ]);
-                    }
+                if (
+                    $receiptItems->contains(
+                        fn ($item): bool =>
+                            ! $item->stock_movement_id
+                            || (bool) $item->void_stock_movement_id
+                    )
+                ) {
+                    throw ValidationException::withMessages([
+                        'receipt' =>
+                            'This receipt has incomplete or already reversed movement links.',
+                    ]);
+                }
 
-                    if (
-                        $receiptItems->contains(
-                            fn ($item): bool =>
-                                ! $item->stock_movement_id
-                                || $item
-                                    ->void_stock_movement_id
-                        )
-                    ) {
-                        throw ValidationException::withMessages([
-                            'receipt' =>
-                                'This receipt cannot be safely voided because its movement links are incomplete or already reversed.',
-                        ]);
-                    }
+                $now = now();
+                $reason = trim((string) $validated['reason']);
+                $userId = (int) $request->user()->id;
 
-                    $movementIds = $receiptItems
-                        ->pluck('stock_movement_id')
-                        ->map(
-                            fn ($id): int => (int) $id
-                        )
-                        ->unique()
-                        ->values();
+                foreach ($receiptItems as $item) {
+                    $result = $this->ledger->reverseMovement([
+                        'tenant_id' => $tenantId,
+                        'original_movement_id' =>
+                            (int) $item->stock_movement_id,
+                        'expected_reference_type' => 'purchase_receipt',
+                        'expected_reference_id' => (int) $receiptRecord->id,
+                        'movement_type' => 'purchase_receipt_void',
+                        'reference_type' => 'purchase_receipt_void',
+                        'reference_id' => (int) $receiptRecord->id,
+                        'reference_no' => $receiptRecord->receipt_number,
+                        'user_id' => $userId,
+                        'movement_date' => $now,
+                        'remarks' =>
+                            "Void receipt {$receiptRecord->receipt_number}: {$reason}",
+                    ]);
 
-                    $movements = $database
-                        ->table('stock_movements')
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->whereIn(
-                            'id',
-                            $movementIds
-                        )
-                        ->lockForUpdate()
-                        ->get()
-                        ->keyBy('id');
-
-                    if (
-                        $movements->count()
-                        !== $movementIds->count()
-                    ) {
-                        throw ValidationException::withMessages([
-                            'receipt' =>
-                                'One or more original stock movements could not be found.',
-                        ]);
-                    }
-
-                    $orderItemIds = $receiptItems
-                        ->pluck('purchase_order_item_id')
-                        ->map(
-                            fn ($id): int => (int) $id
-                        )
-                        ->unique()
-                        ->values();
-
-                    $orderItems = $database
-                        ->table('purchase_order_items')
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
-                        ->where(
-                            'purchase_order_id',
-                            $order->id
-                        )
-                        ->whereIn(
-                            'id',
-                            $orderItemIds
-                        )
-                        ->lockForUpdate()
-                        ->get()
-                        ->keyBy('id');
-
-                    if (
-                        $orderItems->count()
-                        !== $orderItemIds->count()
-                    ) {
-                        throw ValidationException::withMessages([
-                            'receipt' =>
-                                'One or more purchase order items could not be found.',
-                        ]);
-                    }
-
-                    $now = now();
-                    $reason = trim(
-                        (string) $validated['reason']
-                    );
-
-                    foreach ($receiptItems as $item) {
-                        $movement = $movements->get(
-                            (int) $item
-                                ->stock_movement_id
-                        );
-
-                        if (
-                            ! $movement
-                            || $movement->movement_type
-                                !== 'purchase_receipt'
-                            || $movement->reference_type
-                                !== 'purchase_receipt'
-                            || (int) $movement->reference_id
-                                !== (int) $receiptRecord->id
-                            || (int) $movement->warehouse_id
-                                !== (int) $receiptRecord
-                                    ->warehouse_id
-                            || (int) $movement->product_id
-                                !== (int) $item->product_id
-                            || $movement
-                                ->average_cost_before === null
-                            || $movement
-                                ->average_cost_after === null
-                        ) {
-                            throw ValidationException::withMessages([
-                                'receipt' =>
-                                    "{$item->product_name} does not have a complete reversible movement record.",
-                            ]);
-                        }
-
-                        $alreadyReversed = $database
-                            ->table('stock_movements')
+                    foreach ($result['allocations'] as $allocation) {
+                        $updated = $database
+                            ->table('purchase_receipt_item_batches')
+                            ->where('tenant_id', $tenantId)
+                            ->where('purchase_receipt_item_id', $item->id)
                             ->where(
-                                'tenant_id',
-                                $tenantId
+                                'stock_movement_batch_id',
+                                $allocation[
+                                    'original_stock_movement_batch_id'
+                                ]
                             )
-                            ->where(
-                                'reversal_of_movement_id',
-                                $movement->id
-                            )
-                            ->exists();
-
-                        if ($alreadyReversed) {
-                            throw ValidationException::withMessages([
-                                'receipt' =>
-                                    "{$item->product_name} has already been reversed.",
-                            ]);
-                        }
-
-                        $hasLaterMovement = $database
-                            ->table('stock_movements')
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->where(
-                                'warehouse_id',
-                                $movement->warehouse_id
-                            )
-                            ->where(
-                                'product_id',
-                                $movement->product_id
-                            )
-                            ->where(
-                                'id',
-                                '>',
-                                $movement->id
-                            )
-                            ->exists();
-
-                        if ($hasLaterMovement) {
-                            throw ValidationException::withMessages([
-                                'receipt' =>
-                                    "{$item->product_name} has later stock activity. Void that later activity first or use a controlled adjustment instead.",
-                            ]);
-                        }
-
-                        $stock = $database
-                            ->table('warehouse_stocks')
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->where(
-                                'warehouse_id',
-                                $movement->warehouse_id
-                            )
-                            ->where(
-                                'product_id',
-                                $movement->product_id
-                            )
-                            ->lockForUpdate()
-                            ->first();
-
-                        if (! $stock) {
-                            throw ValidationException::withMessages([
-                                'receipt' =>
-                                    "The warehouse stock for {$item->product_name} could not be found.",
-                            ]);
-                        }
-
-                        $currentQuantity = round(
-                            (float) $stock->quantity,
-                            3
-                        );
-
-                        $currentAverageCost = round(
-                            (float) $stock->average_cost,
-                            4
-                        );
-
-                        if (
-                            ! $this->almostEqual(
-                                $currentQuantity,
-                                (float) $movement
-                                    ->quantity_after,
-                                0.0005
-                            )
-                            || ! $this->almostEqual(
-                                $currentAverageCost,
-                                (float) $movement
-                                    ->average_cost_after,
-                                0.00005
-                            )
-                        ) {
-                            throw ValidationException::withMessages([
-                                'receipt' =>
-                                    "Current stock for {$item->product_name} no longer matches the posted receipt state.",
-                            ]);
-                        }
-
-                        $restoredQuantity = round(
-                            (float) $movement
-                                ->quantity_before,
-                            3
-                        );
-
-                        $restoredAverageCost = round(
-                            (float) $movement
-                                ->average_cost_before,
-                            4
-                        );
-
-                        $database
-                            ->table('warehouse_stocks')
-                            ->where(
-                                'id',
-                                $stock->id
-                            )
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
+                            ->whereNull('void_stock_movement_batch_id')
                             ->update([
-                                'quantity' =>
-                                    $restoredQuantity,
-                                'average_cost' =>
-                                    $restoredAverageCost,
-                                'last_movement_at' => $now,
+                                'void_stock_movement_batch_id' =>
+                                    $allocation['stock_movement_batch_id'],
                                 'updated_at' => $now,
                             ]);
 
-                        $voidMovementId = $database
-                            ->table('stock_movements')
-                            ->insertGetId([
-                                'tenant_id' => $tenantId,
-                                'warehouse_id' =>
-                                    $movement->warehouse_id,
-                                'product_id' =>
-                                    $movement->product_id,
-                                'movement_type' =>
-                                    'purchase_receipt_void',
-                                'quantity' =>
-                                    round(
-                                        (float) $movement
-                                            ->quantity,
-                                        3
-                                    ),
-                                'quantity_before' =>
-                                    $currentQuantity,
-                                'quantity_after' =>
-                                    $restoredQuantity,
-                                'unit_cost' =>
-                                    round(
-                                        (float) $movement
-                                            ->unit_cost,
-                                        4
-                                    ),
-                                'total_cost' =>
-                                    round(
-                                        (float) $movement
-                                            ->total_cost,
-                                        2
-                                    ),
-                                'average_cost_before' =>
-                                    $currentAverageCost,
-                                'average_cost_after' =>
-                                    $restoredAverageCost,
-                                'reference_type' =>
-                                    'purchase_receipt_void',
-                                'reference_id' =>
-                                    $receiptRecord->id,
-                                'reference_no' =>
-                                    $receiptRecord
-                                        ->receipt_number,
-                                'related_warehouse_id' =>
-                                    null,
-                                'reversal_of_movement_id' =>
-                                    $movement->id,
-                                'remarks' =>
-                                    "Voided receipt {$receiptRecord->receipt_number}: {$reason}",
-                                'movement_date' => $now,
-                                'created_by' =>
-                                    $request->user()->id,
-                                'created_at' => $now,
-                                'updated_at' => $now,
+                        if ($updated !== 1) {
+                            throw ValidationException::withMessages([
+                                'receipt' =>
+                                    "Batch links for {$item->product_name} are incomplete.",
                             ]);
-
-                        $database
-                            ->table(
-                                'purchase_receipt_items'
-                            )
-                            ->where(
-                                'id',
-                                $item->id
-                            )
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->update([
-                                'void_stock_movement_id' =>
-                                    $voidMovementId,
-                                'updated_at' => $now,
-                            ]);
-
-                        $orderItem = $orderItems->get(
-                            (int) $item
-                                ->purchase_order_item_id
-                        );
-
-                        $newReceivedQuantity = max(
-                            round(
-                                (float) $orderItem
-                                    ->received_quantity
-                                - (float) $item
-                                    ->quantity_received,
-                                3
-                            ),
-                            0
-                        );
-
-                        $database
-                            ->table('purchase_order_items')
-                            ->where(
-                                'id',
-                                $orderItem->id
-                            )
-                            ->where(
-                                'tenant_id',
-                                $tenantId
-                            )
-                            ->update([
-                                'received_quantity' =>
-                                    $newReceivedQuantity,
-                                'updated_at' => $now,
-                            ]);
+                        }
                     }
 
                     $database
-                        ->table('purchase_receipts')
-                        ->where(
-                            'id',
-                            $receiptRecord->id
-                        )
-                        ->where(
-                            'tenant_id',
-                            $tenantId
-                        )
+                        ->table('purchase_receipt_items')
+                        ->where('tenant_id', $tenantId)
+                        ->where('id', $item->id)
                         ->update([
-                            'status' => 'voided',
-                            'voided_by' =>
-                                $request->user()->id,
-                            'voided_at' => $now,
-                            'void_reason' => $reason,
+                            'void_stock_movement_id' => $result['movement_id'],
                             'updated_at' => $now,
                         ]);
 
-                    $this->recalculatePurchaseOrderStatus(
-                        $tenantId,
-                        (int) $order->id,
-                        $now
+                    $orderItem = $database
+                        ->table('purchase_order_items')
+                        ->where('tenant_id', $tenantId)
+                        ->where('id', $item->purchase_order_item_id)
+                        ->where('purchase_order_id', $order->id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $orderItem) {
+                        throw ValidationException::withMessages([
+                            'receipt' =>
+                                'A related purchase order item could not be found.',
+                        ]);
+                    }
+
+                    $restoredReceivedQuantity = round(
+                        (float) $orderItem->received_quantity
+                            - (float) $item->quantity_received,
+                        3
                     );
 
-                    return $receiptRecord
-                        ->receipt_number;
+                    if ($restoredReceivedQuantity < -0.0001) {
+                        throw ValidationException::withMessages([
+                            'receipt' =>
+                                "The received quantity for {$item->product_name} is inconsistent.",
+                        ]);
+                    }
+
+                    $database
+                        ->table('purchase_order_items')
+                        ->where('tenant_id', $tenantId)
+                        ->where('id', $orderItem->id)
+                        ->update([
+                            'received_quantity' =>
+                                max(0, $restoredReceivedQuantity),
+                            'updated_at' => $now,
+                        ]);
                 }
-            );
+
+                $database
+                    ->table('purchase_receipts')
+                    ->where('tenant_id', $tenantId)
+                    ->where('id', $receiptRecord->id)
+                    ->update([
+                        'status' => 'voided',
+                        'voided_by' => $userId,
+                        'voided_at' => $now,
+                        'void_reason' => $reason,
+                        'updated_at' => $now,
+                    ]);
+
+                $this->recalculatePurchaseOrderStatus(
+                    $tenantId,
+                    (int) $order->id,
+                    $now
+                );
+
+                return (string) $receiptRecord->receipt_number;
+            }
+        );
 
         return back()->with(
             'success',
-            "Receipt {$receiptNumber} was voided and its stock was safely reversed."
+            "Receipt {$receiptNumber} was voided using exact batch reversal."
         );
     }
+
 
     private function recalculatePurchaseOrderStatus(
         int $tenantId,
@@ -2053,143 +1821,9 @@ class ReceivingController extends Controller
         return $value;
     }
 
-    private function userContext(
-        Request $request
-    ): array {
-        $userId = (int) (
-            $request->user()?->id
-        );
-
-        abort_unless(
-            $userId > 0,
-            401
-        );
-
-        $context = DB::connection('saas')
-            ->table(
-                'user_product_access as access'
-            )
-            ->join(
-                'products as product',
-                'product.id',
-                '=',
-                'access.product_id'
-            )
-            ->join(
-                'product_user_types as product_role',
-                function ($join): void {
-                    $join
-                        ->on(
-                            'product_role.id',
-                            '=',
-                            'access.product_user_type_id'
-                        )
-                        ->on(
-                            'product_role.product_id',
-                            '=',
-                            'access.product_id'
-                        );
-                }
-            )
-            ->join(
-                'user_types as user_type',
-                'user_type.id',
-                '=',
-                'product_role.user_type_id'
-            )
-            ->join(
-                'subscriptions as subscription',
-                function ($join): void {
-                    $join
-                        ->on(
-                            'subscription.id',
-                            '=',
-                            'access.subscription_id'
-                        )
-                        ->on(
-                            'subscription.product_id',
-                            '=',
-                            'access.product_id'
-                        );
-                }
-            )
-            ->where(
-                'access.user_id',
-                $userId
-            )
-            ->where(
-                'access.status',
-                'active'
-            )
-            ->where(
-                'product.product_code',
-                self::PRODUCT_CODE
-            )
-            ->whereIn(
-                'product.status',
-                [
-                    'development',
-                    'active',
-                ]
-            )
-            ->where(
-                'product_role.status',
-                'active'
-            )
-            ->where(
-                'user_type.status',
-                'active'
-            )
-            ->whereIn(
-                'subscription.status',
-                [
-                    'trial',
-                    'active',
-                ]
-            )
-            ->orderByDesc(
-                'subscription.id'
-            )
-            ->select([
-                'access.account_owner_id',
-                'access.product_id',
-                'access.subscription_id',
-                'product_role.display_name as role_name',
-                'user_type.type_code as role_code',
-                'user_type.is_owner_type',
-            ])
-            ->first();
-
-        abort_unless(
-            $context,
-            403,
-            'Your account does not have active access to JCM Inventory.'
-        );
-
-        return [
-            'user_id' =>
-                $userId,
-
-            'account_owner_id' =>
-                (int) $context->account_owner_id,
-
-            'product_id' =>
-                (int) $context->product_id,
-
-            'subscription_id' =>
-                (int) $context->subscription_id,
-
-            'role_code' =>
-                (string) $context->role_code,
-
-            'role_name' =>
-                (string) (
-                    $context->role_name
-                    ?: $context->role_code
-                ),
-
-            'is_owner' =>
-                (bool) $context->is_owner_type,
-        ];
+    private function userContext(Request $request): array
+    {
+        return $this->access->resolve($request);
     }
+
 }

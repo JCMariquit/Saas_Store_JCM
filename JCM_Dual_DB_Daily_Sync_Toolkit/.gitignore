@@ -1,0 +1,5 @@
+# Local automatic backups must never be committed
+/safety_backups/
+
+# Temporary files
+*.tmp

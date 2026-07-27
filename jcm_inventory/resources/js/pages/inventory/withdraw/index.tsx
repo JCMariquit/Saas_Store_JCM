@@ -413,7 +413,7 @@ function WorkspaceHeader({
 }) {
     return (
         <header>
-            <section className="relative overflow-hidden rounded-[20px] border border-primary/15 bg-gradient-to-br from-primary/[0.085] via-primary/[0.025] to-transparent shadow-sm">
+            <section className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.085] via-primary/[0.025] to-transparent shadow-sm">
                 <div className="pointer-events-none absolute -left-20 -top-24 size-56 rounded-full bg-primary/[0.07] blur-3xl" />
                 <PackageMinus className="pointer-events-none absolute -bottom-9 -right-7 size-36 text-primary opacity-[0.025]" />
 
@@ -476,7 +476,7 @@ function WorkspaceHeader({
                         </p>
                     </div>
 
-                    <div className="min-w-0 border-b border-primary/10 px-4 py-3.5 xl:border-b-0 xl:border-r">
+                    <div className="min-w-0 border-b border-primary/10 px-4 py-3.5 lg:border-b-0 lg:border-r">
                         <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                             Available quantity
                         </p>
@@ -535,8 +535,8 @@ function RequestDetails({
     onFieldChange: (field: TextField, value: string) => void;
 }) {
     return (
-        <section className="overflow-hidden rounded-[18px] border border-border/70 bg-card/70 shadow-sm">
-            <div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3.5 md:px-5">
+        <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/70 shadow-sm">
+            <div className="flex min-h-[68px] items-center justify-between gap-3 border-b border-border/60 bg-background/15 px-4 py-3.5 md:px-5">
                 <div>
                     <p className="text-xs font-semibold text-foreground">Release request</p>
                     <p className="mt-0.5 text-[9px] text-muted-foreground">
@@ -551,8 +551,8 @@ function RequestDetails({
                 </Badge>
             </div>
 
-            <div className="grid xl:grid-cols-[300px_minmax(0,1fr)]">
-                <div className="border-b border-border/60 bg-muted/[0.035] p-4 md:p-5 xl:border-b-0 xl:border-r">
+            <div className="grid lg:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.28fr)]">
+                <div className="border-b border-border/60 bg-muted/[0.035] p-4 md:p-5 lg:border-b-0 lg:border-r">
                     <div className="mb-4 flex items-start gap-3">
                         <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
                             <Warehouse className="size-4" />
@@ -758,8 +758,8 @@ function ProductBrowser({
     onAddProduct: (product: ProductStock) => void;
 }) {
     return (
-        <section className="overflow-hidden rounded-[18px] border border-border/70 bg-card/70 shadow-sm">
-            <div className="grid gap-3 border-b border-border/60 p-4 lg:grid-cols-[minmax(220px,.7fr)_minmax(0,1.3fr)_210px] lg:items-center md:p-5">
+        <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/70 shadow-sm">
+            <div className="grid min-h-[76px] gap-3 border-b border-border/60 bg-background/15 p-4 lg:grid-cols-[minmax(210px,.65fr)_minmax(260px,1.35fr)_200px] lg:items-center md:px-5">
                 <div className="flex items-center gap-3">
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-foreground text-background">
                         <Boxes className="size-4" />
@@ -1039,7 +1039,7 @@ function ReviewPanel({
                 className={cn(
                     'flex w-full flex-col overflow-hidden bg-card bg-gradient-to-b from-primary/[0.055] via-primary/[0.016] to-transparent',
                     desktop
-                        ? 'sticky top-0 self-start h-[calc(100vh-2rem)] min-h-[600px] rounded-[20px] border border-primary/15 shadow-sm'
+                        ? 'sticky top-0 self-start h-[calc(100vh-2rem)] min-h-[600px] rounded-2xl border border-primary/15 shadow-sm'
                         : 'fixed inset-y-0 right-0 z-50 max-w-[430px] border-l border-primary/15 shadow-2xl transition-transform duration-300 ease-out',
                     !desktop && (open ? 'translate-x-0' : 'translate-x-full'),
                 )}
@@ -1839,12 +1839,12 @@ export default function StockWithdrawalIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Withdraw Stock" />
 
-            <PageContainer className="pb-24 min-[1360px]:pb-5">
+            <PageContainer className="gap-5 pb-24 min-[1360px]:pb-5">
                 <form
                     onSubmit={submitWithdrawal}
-                    className="min-w-0 min-[1360px]:grid min-[1360px]:grid-cols-[minmax(0,1fr)_390px] min-[1360px]:items-start min-[1360px]:gap-5 min-[1660px]:grid-cols-[minmax(0,1fr)_420px] min-[1660px]:gap-6"
+                    className="grid min-w-0 gap-5 min-[1360px]:grid-cols-[minmax(0,1fr)_400px] min-[1360px]:items-start min-[1660px]:grid-cols-[minmax(0,1fr)_430px] min-[1660px]:gap-6"
                 >
-                    <div className="min-w-0 space-y-6">
+                    <div className="min-w-0 min-[1360px]:col-span-2">
                         <WorkspaceHeader
                             selectedWarehouse={selectedWarehouse}
                             availableQuantity={warehouseAvailableQuantity}
@@ -1854,7 +1854,9 @@ export default function StockWithdrawalIndex({
                             processing={form.processing}
                             onReset={resetWithdrawal}
                         />
+                    </div>
 
+                    <div className="min-w-0 space-y-5">
                         <RequestDetails
                             warehouses={warehouses}
                             reasons={reasons}
@@ -1881,7 +1883,7 @@ export default function StockWithdrawalIndex({
                         />
                     </div>
 
-                    <div className="min-w-0 self-start min-[1360px]:h-full">
+                    <div className="min-w-0 self-start min-[1360px]:sticky min-[1360px]:top-5">
                         <ReviewPanel
                             desktop={desktopReview}
                             open={reviewOpen}

@@ -1,20 +1,14 @@
-import { ActionGroup } from '@/components/shared/action-group';
 import { AppDrawer } from '@/components/shared/app-drawer';
 import { AppDrawerActions } from '@/components/shared/app-drawer-actions';
 import { AppPagination } from '@/components/shared/app-pagination';
 import { CalloutCard } from '@/components/shared/callout-card';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { ContextCard } from '@/components/shared/context-card';
-import {
-    DataTable,
-    type DataTableColumn,
-} from '@/components/shared/data-table';
 import { EntityAvatar } from '@/components/shared/entity-avatar';
 import { EntityInfo } from '@/components/shared/entity-info';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { FormField } from '@/components/shared/form-field';
 import { FormSection } from '@/components/shared/form-section';
-import { IconButton } from '@/components/shared/icon-button';
 import { MoneyInput } from '@/components/shared/money-input';
 import { NumberInput } from '@/components/shared/number-input';
 import { PageContainer } from '@/components/shared/page-container';
@@ -46,7 +40,6 @@ import {
     ArrowRightLeft,
     ArrowUpRight,
     Boxes,
-    Building2,
     CheckCircle2,
     CircleDollarSign,
     ClipboardPenLine,
@@ -65,6 +58,7 @@ import {
 } from 'lucide-react';
 import {
     type FormEvent,
+    type ReactNode,
     useEffect,
     useMemo,
     useState,
@@ -327,6 +321,16 @@ type StockMetricTone =
     | 'amber'
     | 'red';
 
+type StockInsightView =
+    | 'valuation'
+    | 'positions'
+    | 'quantity'
+    | 'active_batches'
+    | 'expiring'
+    | 'low_stock'
+    | 'out_of_stock'
+    | 'health';
+
 /*
 |--------------------------------------------------------------------------
 | Configuration
@@ -437,6 +441,12 @@ export default function StockIndex({
 
     const [selectedStock, setSelectedStock] =
         useState<WarehouseStock | null>(null);
+
+    const [detailsStock, setDetailsStock] =
+        useState<WarehouseStock | null>(null);
+
+    const [stockInsightView, setStockInsightView] =
+        useState<StockInsightView | null>(null);
 
     const [deleteTarget, setDeleteTarget] =
         useState<WarehouseStock | null>(null);
@@ -643,6 +653,26 @@ export default function StockIndex({
         }
     }
 
+    function openDetailsDrawer(
+        stock: WarehouseStock,
+    ): void {
+        setDetailsStock(stock);
+    }
+
+    function closeDetailsDrawer(): void {
+        setDetailsStock(null);
+    }
+
+    function openStockInsight(
+        view: StockInsightView,
+    ): void {
+        setStockInsightView(view);
+    }
+
+    function closeStockInsight(): void {
+        setStockInsightView(null);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Drawer actions
@@ -684,6 +714,7 @@ export default function StockIndex({
     }
 
     function openCreateDrawer(): void {
+        setDetailsStock(null);
         setSelectedStock(null);
 
         createForm.clearErrors();
@@ -698,6 +729,7 @@ export default function StockIndex({
     function openSettingsDrawer(
         stock: WarehouseStock,
     ): void {
+        setDetailsStock(null);
         setSelectedStock(stock);
 
         settingsForm.clearErrors();
@@ -720,6 +752,7 @@ export default function StockIndex({
     function openAdjustDrawer(
         stock: WarehouseStock,
     ): void {
+        setDetailsStock(null);
         setSelectedStock(stock);
 
         adjustForm.clearErrors();
@@ -747,6 +780,7 @@ export default function StockIndex({
     function openTransferDrawer(
         stock: WarehouseStock,
     ): void {
+        setDetailsStock(null);
         setSelectedStock(stock);
 
         transferForm.clearErrors();
@@ -1067,313 +1101,6 @@ export default function StockIndex({
 
     /*
     |--------------------------------------------------------------------------
-    | Table
-    |--------------------------------------------------------------------------
-    */
-
-    const stockColumns: DataTableColumn<WarehouseStock>[] =
-        [
-            {
-                key: 'product',
-                header: 'Product',
-                className: 'min-w-[250px]',
-                cell: (stock) => (
-                    <EntityInfo
-                        avatar={
-                            <EntityAvatar
-                                icon={Package2}
-                                className="border-primary/15 bg-primary/10 text-primary group-hover:border-primary/25 group-hover:bg-primary/15"
-                            />
-                        }
-                        title={
-                            stock.product?.name ??
-                            'Unknown product'
-                        }
-                        subtitle={
-                            <>
-                                SKU:{' '}
-                                <span className="font-semibold text-foreground/70">
-                                    {stock.product
-                                        ?.sku ?? '—'}
-                                </span>
-                            </>
-                        }
-                        description={
-                            <span className="flex flex-wrap items-center gap-1.5">
-                                <span>
-                                    {stock.product?.category?.name ?? 'Uncategorized'}
-                                </span>
-                                {stock.product?.batch_tracking_enabled && (
-                                    <Badge
-                                        variant="outline"
-                                        className="h-5 border-cyan-500/25 bg-cyan-500/10 px-1.5 text-[8px] text-cyan-300"
-                                    >
-                                        {stock.product.batch_issue_policy.toUpperCase()} · {stock.batch_count} batch{stock.batch_count === 1 ? '' : 'es'}
-                                    </Badge>
-                                )}
-                                {!stock.is_reconciled && (
-                                    <Badge
-                                        variant="outline"
-                                        className="h-5 border-red-500/25 bg-red-500/10 px-1.5 text-[8px] text-red-300"
-                                    >
-                                        Reconciliation mismatch
-                                    </Badge>
-                                )}
-                            </span>
-                        }
-                    />
-                ),
-            },
-            {
-                key: 'location',
-                header: 'Location',
-                className: 'min-w-[200px]',
-                cell: (stock) => (
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                            <span className="inline-flex size-7 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
-                                <WarehouseIcon className="size-3.5" />
-                            </span>
-
-                            <span className="max-w-36 truncate text-[12px] font-semibold">
-                                {stock.warehouse
-                                    ?.name ??
-                                    'Unknown warehouse'}
-                            </span>
-
-                            {stock.warehouse
-                                ?.is_main && (
-                                <Badge
-                                    variant="outline"
-                                    className="h-5 gap-1 rounded-full border-amber-500/20 bg-amber-500/10 px-2 text-[9px] font-semibold text-amber-300"
-                                >
-                                    MAIN
-                                </Badge>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-1.5 pl-1 text-[10px] text-muted-foreground">
-                            <Building2 className="size-3" />
-
-                            {stock.warehouse?.branch
-                                ?.name ??
-                                'No branch'}
-                        </div>
-                    </div>
-                ),
-            },
-            {
-                key: 'availability',
-                header: 'Availability',
-                className: 'min-w-[190px]',
-                cell: (stock) => {
-                    const statusInfo =
-                        getStockStatus(stock);
-
-                    const percentage =
-                        getStockPercentage(stock);
-
-                    return (
-                        <div className="min-w-[170px]">
-                            <div className="flex items-end justify-between gap-3">
-                                <div>
-                                    <p className="text-lg font-semibold leading-none tabular-nums">
-                                        {formatQuantity(
-                                            stock.quantity,
-                                        )}
-                                    </p>
-
-                                    <p className="mt-1 text-[10px] text-muted-foreground">
-                                        {stock.product
-                                            ?.unit ??
-                                            'unit'}
-                                    </p>
-                                </div>
-
-                                <StatusBadge
-                                    label={
-                                        statusInfo.label
-                                    }
-                                    variant={
-                                        statusInfo.variant
-                                    }
-                                />
-                            </div>
-
-                            <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-muted">
-                                <div
-                                    className={`h-full rounded-full ${statusInfo.progressClass}`}
-                                    style={{
-                                        width: `${percentage}%`,
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    );
-                },
-            },
-            {
-                key: 'levels',
-                header: 'Stock Levels',
-                className: 'min-w-[150px]',
-                cell: (stock) => (
-                    <div className="space-y-1.5 text-[11px]">
-                        <div className="flex items-center justify-between gap-5">
-                            <span className="text-muted-foreground">
-                                Reorder
-                            </span>
-
-                            <span className="font-semibold tabular-nums">
-                                {formatQuantity(
-                                    stock.reorder_level,
-                                )}
-                            </span>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-5">
-                            <span className="text-muted-foreground">
-                                Maximum
-                            </span>
-
-                            <span className="font-semibold tabular-nums">
-                                {stock.max_stock_level !==
-                                null
-                                    ? formatQuantity(
-                                          stock.max_stock_level,
-                                      )
-                                    : 'Not set'}
-                            </span>
-                        </div>
-                    </div>
-                ),
-            },
-            {
-                key: 'valuation',
-                header: 'Valuation',
-                className: 'min-w-[165px]',
-                cell: (stock) => {
-                    const quantity = Number(
-                        stock.quantity ?? 0,
-                    );
-
-                    const averageCost = Number(
-                        stock.average_cost ?? 0,
-                    );
-
-                    return (
-                        <div className="space-y-1">
-                            <p className="text-[12px] font-semibold tabular-nums text-primary">
-                                {formatCurrency(
-                                    quantity *
-                                        averageCost,
-                                )}
-                            </p>
-
-                            <p className="text-[10px] text-muted-foreground">
-                                {formatCurrency(
-                                    averageCost,
-                                )}{' '}
-                                average cost
-                            </p>
-                        </div>
-                    );
-                },
-            },
-            {
-                key: 'movement',
-                header: 'Last Movement',
-                className: 'min-w-[145px]',
-                cell: (stock) => (
-                    <div>
-                        <p className="text-[11px] font-medium">
-                            {formatDate(
-                                stock.last_movement_at,
-                            )}
-                        </p>
-
-                        <p className="mt-1 text-[10px] text-muted-foreground">
-                            {formatTime(
-                                stock.last_movement_at,
-                            )}
-                        </p>
-                    </div>
-                ),
-            },
-            {
-                key: 'actions',
-                header: 'Actions',
-                headerClassName:
-                    'text-right',
-                className: 'text-right',
-                cell: (stock) => {
-                    const quantity = Number(
-                        stock.quantity ?? 0,
-                    );
-
-                    return (
-                        <ActionGroup>
-                            <Button
-                                type="button"
-                                size="sm"
-                                onClick={() =>
-                                    openAdjustDrawer(
-                                        stock,
-                                    )
-                                }
-                                className="h-8 rounded-lg px-3 text-[11px]"
-                            >
-                                <ClipboardPenLine className="size-3.5" />
-                                Adjust
-                            </Button>
-
-                            <IconButton
-                                label="Transfer stock"
-                                disabled={
-                                    warehouses.length <=
-                                        1 ||
-                                    quantity <= 0
-                                }
-                                onClick={() =>
-                                    openTransferDrawer(
-                                        stock,
-                                    )
-                                }
-                                className="text-primary hover:bg-primary/10 hover:text-primary"
-                            >
-                                <ArrowRightLeft className="size-3.5" />
-                            </IconButton>
-
-                            <IconButton
-                                label="Stock settings"
-                                onClick={() =>
-                                    openSettingsDrawer(
-                                        stock,
-                                    )
-                                }
-                                className="text-primary hover:bg-primary/10 hover:text-primary"
-                            >
-                                <Settings2 className="size-3.5" />
-                            </IconButton>
-
-                            <IconButton
-                                label="Delete stock record"
-                                onClick={() =>
-                                    requestDelete(
-                                        stock,
-                                    )
-                                }
-                                className="text-red-400 hover:bg-red-500/10 hover:text-red-400"
-                            >
-                                <Trash2 className="size-3.5" />
-                            </IconButton>
-                        </ActionGroup>
-                    );
-                },
-            },
-        ];
-
-    /*
-    |--------------------------------------------------------------------------
     | Derived overview values
     |--------------------------------------------------------------------------
     */
@@ -1528,10 +1255,11 @@ export default function StockIndex({
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                            <Badge
-                                variant="outline"
+                            <button
+                                type="button"
+                                onClick={() => openStockInsight('health')}
                                 className={cn(
-                                    'h-7 w-fit gap-1.5 rounded-full px-2.5 text-[9px] font-semibold',
+                                    'inline-flex h-7 w-fit items-center gap-1.5 rounded-full border px-2.5 text-[9px] font-semibold transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35',
                                     inventoryHealthClass,
                                 )}
                             >
@@ -1545,7 +1273,7 @@ export default function StockIndex({
                                 )}
 
                                 {inventoryHealthLabel}
-                            </Badge>
+                            </button>
 
                             <Button
                                 type="button"
@@ -1554,13 +1282,17 @@ export default function StockIndex({
                                 className="h-9 rounded-lg px-3.5 text-xs"
                             >
                                 <Plus className="size-3.5" />
-                                Set Opening Stock
+                                Add Stocks
                             </Button>
                         </div>
                     </div>
 
                     <div className="grid min-w-0 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
-                        <div className="relative overflow-hidden border-b border-border/60 p-4 xl:border-b-0 xl:border-r md:p-5">
+                        <button
+                            type="button"
+                            onClick={() => openStockInsight('valuation')}
+                            className="relative overflow-hidden border-b border-border/60 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35 xl:border-b-0 xl:border-r md:p-5"
+                        >
                             <div className="pointer-events-none absolute -left-16 -top-20 size-52 rounded-full bg-primary/10 blur-3xl" />
                             <CircleDollarSign className="pointer-events-none absolute -bottom-10 -right-6 size-36 text-primary opacity-[0.025]" />
 
@@ -1668,50 +1400,66 @@ export default function StockIndex({
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </button>
 
-                        <div className="grid min-w-0 grid-cols-2">
+                        <div className="grid min-w-0 grid-cols-2 lg:grid-cols-3 xl:grid-cols-2">
                             <StockControlMetric
                                 title="Inventory Positions"
-                                value={formatNumber(
-                                    summary.records,
-                                )}
+                                value={formatNumber(summary.records)}
                                 description="Product and warehouse pairs"
                                 icon={Layers3}
                                 tone="primary"
+                                onClick={() => openStockInsight('positions')}
                                 className="border-b border-r border-border/60"
                             />
 
                             <StockControlMetric
                                 title="Available Quantity"
-                                value={formatQuantity(
-                                    summary.total_quantity,
-                                )}
+                                value={formatQuantity(summary.total_quantity)}
                                 description="Combined units on hand"
                                 icon={Boxes}
                                 tone="primary"
-                                className="border-b border-border/60"
+                                onClick={() => openStockInsight('quantity')}
+                                className="border-b border-border/60 lg:border-r xl:border-r-0"
+                            />
+
+                            <StockControlMetric
+                                title="Active Batches"
+                                value={formatNumber(summary.active_batches)}
+                                description="Usable batch cost layers"
+                                icon={Layers3}
+                                tone="primary"
+                                onClick={() => openStockInsight('active_batches')}
+                                className="border-b border-r border-border/60 xl:border-b-0"
+                            />
+
+                            <StockControlMetric
+                                title="Expiring Batches"
+                                value={formatNumber(summary.expiring_batches)}
+                                description="Within the warning window"
+                                icon={TriangleAlert}
+                                tone="amber"
+                                onClick={() => openStockInsight('expiring')}
+                                className="border-b border-border/60 xl:border-b-0"
                             />
 
                             <StockControlMetric
                                 title="Low Stock"
-                                value={formatNumber(
-                                    summary.low_stock,
-                                )}
+                                value={formatNumber(summary.low_stock)}
                                 description="Below replenishment threshold"
                                 icon={TriangleAlert}
                                 tone="amber"
+                                onClick={() => openStockInsight('low_stock')}
                                 className="border-r border-border/60"
                             />
 
                             <StockControlMetric
                                 title="Out of Stock"
-                                value={formatNumber(
-                                    summary.out_of_stock,
-                                )}
+                                value={formatNumber(summary.out_of_stock)}
                                 description="No quantity available"
                                 icon={ArrowDownRight}
                                 tone="red"
+                                onClick={() => openStockInsight('out_of_stock')}
                             />
                         </div>
                     </div>
@@ -1721,7 +1469,7 @@ export default function StockIndex({
 
                 <SectionCard
                     title="Inventory Positions"
-                    description="Search product-location balances, thresholds, valuation, movement activity, and stock condition."
+                    description="Select any stock row to open its complete warehouse balance, batch layers, thresholds, valuation, and available actions."
                     className="min-w-0 max-w-full"
                     actions={
                         <div className="flex flex-wrap items-center gap-2">
@@ -1782,7 +1530,7 @@ export default function StockIndex({
                                 className="h-9 rounded-lg px-3.5 text-xs"
                             >
                                 <Plus className="size-3.5" />
-                                Set Opening Stock
+                                Add Stocks
                             </Button>
                         </div>
                     }
@@ -1990,38 +1738,11 @@ export default function StockIndex({
                         </Select>
                     </FilterBar>
 
-                    <DataTable
-                        data={stocks.data}
-                        columns={stockColumns}
-                        getRowKey={(stock) => stock.id}
-                        emptyIcon={Boxes}
-                        emptyTitle="No inventory positions found"
-                        emptyDescription="No product-location balances matched the current filters. Reset the filters or create an opening stock position."
-                        emptyAction={
-                            <div className="flex flex-wrap justify-center gap-2">
-                                {hasActiveFilters && (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={resetFilters}
-                                    >
-                                        <RefreshCw className="size-4" />
-                                        Reset Filters
-                                    </Button>
-                                )}
-
-                                {requirementsComplete && (
-                                    <Button
-                                        type="button"
-                                        onClick={openCreateDrawer}
-                                    >
-                                        <Plus className="size-4" />
-                                        Set Opening Stock
-                                    </Button>
-                                )}
-                            </div>
-                        }
-                        minWidth="1180px"
+                    <StockDirectoryTable
+                        stocks={stocks.data}
+                        onSelect={openDetailsDrawer}
+                        onCreate={openCreateDrawer}
+                        canCreate={requirementsComplete}
                     />
 
                     <AppPagination
@@ -2030,6 +1751,39 @@ export default function StockIndex({
                     />
                 </SectionCard>
             </PageContainer>
+
+            <StockInsightDrawer
+                view={stockInsightView}
+                pagination={stocks}
+                summary={summary}
+                onClose={closeStockInsight}
+                onSelect={(stock) => {
+                    closeStockInsight();
+                    openDetailsDrawer(stock);
+                }}
+            />
+
+            <StockPositionDetailsDrawer
+                stock={detailsStock}
+                warehouses={warehouses}
+                onClose={closeDetailsDrawer}
+                onAdjust={(stock) => {
+                    closeDetailsDrawer();
+                    openAdjustDrawer(stock);
+                }}
+                onTransfer={(stock) => {
+                    closeDetailsDrawer();
+                    openTransferDrawer(stock);
+                }}
+                onSettings={(stock) => {
+                    closeDetailsDrawer();
+                    openSettingsDrawer(stock);
+                }}
+                onDelete={(stock) => {
+                    closeDetailsDrawer();
+                    requestDelete(stock);
+                }}
+            />
 
             {/* Create stock */}
 
@@ -2040,7 +1794,7 @@ export default function StockIndex({
                         closeDrawer();
                     }
                 }}
-                title="Set Opening Stock"
+                title="Add Stocks"
                 description="Create the first inventory position for a tracked product at a warehouse."
                 processing={createForm.processing}
             >
@@ -3250,6 +3004,744 @@ export default function StockIndex({
 |--------------------------------------------------------------------------
 */
 
+
+function StockDirectoryTable({
+    stocks,
+    onSelect,
+    onCreate,
+    canCreate,
+}: {
+    stocks: WarehouseStock[];
+    onSelect: (stock: WarehouseStock) => void;
+    onCreate: () => void;
+    canCreate: boolean;
+}) {
+    return (
+        <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20 shadow-sm">
+            <div className="overflow-x-auto">
+                <table className="w-full min-w-[980px] table-fixed border-collapse">
+                    <thead className="border-b border-primary/10 bg-primary/[0.025]">
+                        <tr>
+                            <th className="w-[280px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                Product
+                            </th>
+                            <th className="w-[220px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                Location
+                            </th>
+                            <th className="w-[185px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                Available
+                            </th>
+                            <th className="w-[170px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                Valuation
+                            </th>
+                            <th className="w-[125px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                Status
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody className="divide-y divide-border/60">
+                        {stocks.length === 0 ? (
+                            <tr>
+                                <td colSpan={5} className="px-6 py-14">
+                                    <div className="mx-auto flex max-w-sm flex-col items-center text-center">
+                                        <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.045] text-primary">
+                                            <Boxes className="size-5" />
+                                        </span>
+                                        <h3 className="mt-3 text-sm font-semibold text-foreground">
+                                            No inventory positions found
+                                        </h3>
+                                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                            Adjust the filters or create the first warehouse stock position.
+                                        </p>
+                                        {canCreate && (
+                                            <Button
+                                                type="button"
+                                                onClick={onCreate}
+                                                className="mt-4 h-9 rounded-lg px-4 text-xs"
+                                            >
+                                                <Plus className="size-4" />
+                                                Add Stocks
+                                            </Button>
+                                        )}
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : (
+                            stocks.map((stock) => {
+                                const statusInfo = getStockStatus(stock);
+                                const quantity = Number(stock.quantity ?? 0);
+                                const averageCost = Number(stock.average_cost ?? 0);
+
+                                return (
+                                    <tr
+                                        key={stock.id}
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-label={`View stock position for ${stock.product?.name ?? 'product'}`}
+                                        onClick={() => onSelect(stock)}
+                                        onKeyDown={(event) => {
+                                            if (
+                                                event.key === 'Enter' ||
+                                                event.key === ' '
+                                            ) {
+                                                event.preventDefault();
+                                                onSelect(stock);
+                                            }
+                                        }}
+                                        className="group cursor-pointer bg-card/55 transition-colors hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                                    >
+                                        <td className="px-4 py-2.5">
+                                            <EntityInfo
+                                                avatar={
+                                                    <EntityAvatar
+                                                        icon={Package2}
+                                                        className="border-primary/15 bg-primary/[0.07] text-primary transition-colors group-hover:border-primary/25 group-hover:bg-primary/10"
+                                                    />
+                                                }
+                                                title={stock.product?.name ?? 'Unknown product'}
+                                                subtitle={
+                                                    <span className="font-mono text-[10px]">
+                                                        {stock.product?.sku ?? 'No SKU'}
+                                                    </span>
+                                                }
+                                            />
+                                        </td>
+
+                                        <td className="px-4 py-2.5">
+                                            <div className="min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <WarehouseIcon className="size-3.5 shrink-0 text-primary" />
+                                                    <p className="truncate text-[11px] font-semibold">
+                                                        {stock.warehouse?.name ?? 'Unknown warehouse'}
+                                                    </p>
+                                                </div>
+                                                <p className="mt-1 truncate text-[9px] text-muted-foreground">
+                                                    {stock.warehouse?.branch?.name ?? 'No branch'}
+                                                    {stock.warehouse?.is_main ? ' · Main warehouse' : ''}
+                                                </p>
+                                            </div>
+                                        </td>
+
+                                        <td className="px-4 py-2.5">
+                                            <p className="text-[13px] font-semibold tabular-nums text-foreground">
+                                                {formatQuantity(stock.quantity)}{' '}
+                                                <span className="text-[9px] font-medium text-muted-foreground">
+                                                    {stock.product?.unit ?? 'unit'}
+                                                </span>
+                                            </p>
+                                            <p className="mt-1 text-[9px] text-muted-foreground">
+                                                Reorder at {formatQuantity(stock.reorder_level)}
+                                            </p>
+                                        </td>
+
+                                        <td className="px-4 py-2.5">
+                                            <p className="text-[12px] font-semibold tabular-nums text-primary">
+                                                {formatCurrency(quantity * averageCost)}
+                                            </p>
+                                            <p className="mt-1 text-[9px] text-muted-foreground">
+                                                {formatCurrency(averageCost)} average
+                                            </p>
+                                        </td>
+
+                                        <td className="px-4 py-2.5">
+                                            <div className="flex flex-col items-start gap-1">
+                                                <StatusBadge
+                                                    label={statusInfo.label}
+                                                    variant={statusInfo.variant}
+                                                />
+                                                {stock.product?.batch_tracking_enabled && (
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="h-5 rounded-full border-cyan-500/20 bg-cyan-500/[0.07] px-1.5 text-[8px] text-cyan-300"
+                                                    >
+                                                        {stock.batch_count} batch{stock.batch_count === 1 ? '' : 'es'}
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+function StockInsightDrawer({
+    view,
+    pagination,
+    summary,
+    onClose,
+    onSelect,
+}: {
+    view: StockInsightView | null;
+    pagination: PaginatedStocks;
+    summary: StockSummary;
+    onClose: () => void;
+    onSelect: (stock: WarehouseStock) => void;
+}) {
+    const [drawerSearch, setDrawerSearch] = useState('');
+
+    useEffect(() => {
+        setDrawerSearch('');
+    }, [view]);
+
+    const activeView = view ?? 'positions';
+
+    const configs: Record<
+        StockInsightView,
+        {
+            title: string;
+            eyebrow: string;
+            description: string;
+            total: string;
+        }
+    > = {
+        valuation: {
+            title: 'Inventory Valuation',
+            eyebrow: 'Current weighted stock value',
+            description:
+                'Review loaded stock positions contributing to the current inventory valuation.',
+            total: formatCurrency(summary.inventory_value),
+        },
+        positions: {
+            title: 'Inventory Positions',
+            eyebrow: 'Product and warehouse pairs',
+            description:
+                'Review stock positions loaded on the current page and open any record for complete details.',
+            total: formatNumber(summary.records),
+        },
+        quantity: {
+            title: 'Available Quantity',
+            eyebrow: 'Combined units on hand',
+            description:
+                'Review the stock positions that contribute to the current available quantity.',
+            total: formatQuantity(summary.total_quantity),
+        },
+        active_batches: {
+            title: 'Active Batch Layers',
+            eyebrow: 'Usable cost layers',
+            description:
+                'Review positions with active batch-tracked inventory and exact cost layers.',
+            total: formatNumber(summary.active_batches),
+        },
+        expiring: {
+            title: 'Expiring Batch Positions',
+            eyebrow: 'Expiry warning exposure',
+            description:
+                'Review loaded positions with one or more batches approaching expiration.',
+            total: formatNumber(summary.expiring_batches),
+        },
+        low_stock: {
+            title: 'Low-Stock Positions',
+            eyebrow: 'Replenishment attention',
+            description:
+                'Review loaded positions at or below their configured reorder threshold.',
+            total: formatNumber(summary.low_stock),
+        },
+        out_of_stock: {
+            title: 'Out-of-Stock Positions',
+            eyebrow: 'Unavailable inventory',
+            description:
+                'Review loaded positions with no remaining quantity.',
+            total: formatNumber(summary.out_of_stock),
+        },
+        health: {
+            title: 'Stock Health',
+            eyebrow: 'Availability distribution',
+            description:
+                'Review loaded healthy, low-stock, and out-of-stock positions.',
+            total: formatNumber(summary.records),
+        },
+    };
+
+    const config = configs[activeView];
+
+    const matchingStocks = pagination.data.filter((stock) => {
+        const quantity = Number(stock.quantity ?? 0);
+        const reorder = Number(stock.reorder_level ?? 0);
+
+        if (activeView === 'active_batches') {
+            return stock.batch_count > 0;
+        }
+        if (activeView === 'expiring') {
+            return stock.expiring_batch_count > 0;
+        }
+        if (activeView === 'low_stock') {
+            return quantity > 0 && reorder > 0 && quantity <= reorder;
+        }
+        if (activeView === 'out_of_stock') {
+            return quantity <= 0;
+        }
+
+        return true;
+    });
+
+    const normalizedSearch = drawerSearch.trim().toLowerCase();
+
+    const visibleStocks = normalizedSearch
+        ? matchingStocks.filter((stock) =>
+              [
+                  stock.product?.name,
+                  stock.product?.sku,
+                  stock.product?.barcode,
+                  stock.warehouse?.name,
+                  stock.warehouse?.code,
+                  stock.warehouse?.branch?.name,
+              ]
+                  .filter(Boolean)
+                  .join(' ')
+                  .toLowerCase()
+                  .includes(normalizedSearch),
+          )
+        : matchingStocks;
+
+    const loadedRange =
+        pagination.from !== null && pagination.to !== null
+            ? `${pagination.from}-${pagination.to}`
+            : '0';
+
+    return (
+        <AppDrawer
+            open={view !== null}
+            onOpenChange={(open) => {
+                if (!open) {
+                    onClose();
+                }
+            }}
+            title={config.title}
+            description={config.description}
+            processing={false}
+        >
+            <div className="flex min-h-full flex-col bg-card">
+                <div className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
+                        {config.eyebrow}
+                    </p>
+                    <div className="mt-2 flex items-end justify-between gap-4">
+                        <p className="text-3xl font-semibold leading-none tabular-nums text-primary">
+                            {config.total}
+                        </p>
+                        <Badge
+                            variant="outline"
+                            className="h-7 rounded-full border-primary/15 bg-primary/[0.055] px-2.5 text-[9px] text-primary"
+                        >
+                            Loaded {loadedRange}
+                        </Badge>
+                    </div>
+                </div>
+
+                <div className="border-b border-border/60 p-4">
+                    <SearchInput
+                        value={drawerSearch}
+                        onChange={(event) => setDrawerSearch(event.target.value)}
+                        onClear={() => setDrawerSearch('')}
+                        placeholder="Search loaded stock positions..."
+                    />
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                    {visibleStocks.length === 0 ? (
+                        <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-background/20 p-6 text-center">
+                            <Boxes className="size-6 text-muted-foreground" />
+                            <p className="mt-3 text-sm font-semibold">
+                                No loaded matches
+                            </p>
+                            <p className="mt-1 text-[10px] text-muted-foreground">
+                                Change the page or directory filters to review additional records.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {visibleStocks.map((stock) => {
+                                const statusInfo = getStockStatus(stock);
+
+                                return (
+                                    <button
+                                        key={stock.id}
+                                        type="button"
+                                        onClick={() => onSelect(stock)}
+                                        className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-background/25 p-3 text-left transition hover:border-primary/20 hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+                                    >
+                                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.07] text-primary">
+                                            <Package2 className="size-4" />
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <p className="truncate text-[11px] font-semibold">
+                                                    {stock.product?.name ?? 'Unknown product'}
+                                                </p>
+                                                <StatusBadge
+                                                    label={statusInfo.label}
+                                                    variant={statusInfo.variant}
+                                                />
+                                            </div>
+                                            <p className="mt-1 truncate text-[9px] text-muted-foreground">
+                                                {stock.warehouse?.name ?? 'Unknown warehouse'} ·{' '}
+                                                {formatQuantity(stock.quantity)}{' '}
+                                                {stock.product?.unit ?? 'unit'}
+                                            </p>
+                                            <p className="mt-1 text-[8px] text-muted-foreground">
+                                                {stock.batch_count} batches · {formatCurrency(Number(stock.quantity ?? 0) * Number(stock.average_cost ?? 0))}
+                                            </p>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </AppDrawer>
+    );
+}
+
+function StockPositionDetailsDrawer({
+    stock,
+    warehouses,
+    onClose,
+    onAdjust,
+    onTransfer,
+    onSettings,
+    onDelete,
+}: {
+    stock: WarehouseStock | null;
+    warehouses: WarehouseOption[];
+    onClose: () => void;
+    onAdjust: (stock: WarehouseStock) => void;
+    onTransfer: (stock: WarehouseStock) => void;
+    onSettings: (stock: WarehouseStock) => void;
+    onDelete: (stock: WarehouseStock) => void;
+}) {
+    if (!stock) {
+        return null;
+    }
+
+    const quantity = Number(stock.quantity ?? 0);
+    const averageCost = Number(stock.average_cost ?? 0);
+    const statusInfo = getStockStatus(stock);
+
+    return (
+        <AppDrawer
+            open
+            onOpenChange={(open) => {
+                if (!open) {
+                    onClose();
+                }
+            }}
+            title="Stock Position Details"
+            description="Review warehouse balance, valuation, thresholds, batch layers, reconciliation, and actions."
+            processing={false}
+        >
+            <div className="flex min-h-full flex-col bg-card">
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    <section className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
+                        <div className="flex items-start gap-3">
+                            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                                <Package2 className="size-5" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
+                                        Warehouse inventory
+                                    </p>
+                                    <StatusBadge
+                                        label={statusInfo.label}
+                                        variant={statusInfo.variant}
+                                    />
+                                    {stock.product?.batch_tracking_enabled && (
+                                        <Badge
+                                            variant="outline"
+                                            className="h-5 rounded-full border-cyan-500/20 bg-cyan-500/[0.07] px-2 text-[8px] text-cyan-300"
+                                        >
+                                            {stock.product.batch_issue_policy.toUpperCase()} batches
+                                        </Badge>
+                                    )}
+                                </div>
+                                <h2 className="mt-2 text-lg font-semibold tracking-[-0.025em] text-foreground">
+                                    {stock.product?.name ?? 'Unknown product'}
+                                </h2>
+                                <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+                                    {stock.product?.sku ?? 'No SKU'} ·{' '}
+                                    {stock.warehouse?.name ?? 'Unknown warehouse'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="mt-5 grid grid-cols-2 border-y border-border/60 sm:grid-cols-4">
+                            <StockDetailStat
+                                label="Available"
+                                value={`${formatQuantity(stock.quantity)} ${stock.product?.unit ?? 'unit'}`}
+                                helper="Current balance"
+                                className="border-b border-r border-border/60 sm:border-b-0"
+                            />
+                            <StockDetailStat
+                                label="Average Cost"
+                                value={formatCurrency(averageCost)}
+                                helper="Weighted unit cost"
+                                className="border-b border-border/60 sm:border-b-0 sm:border-r"
+                            />
+                            <StockDetailStat
+                                label="Inventory Value"
+                                value={formatCurrency(quantity * averageCost)}
+                                helper="Quantity × average"
+                                className="border-r border-border/60"
+                            />
+                            <StockDetailStat
+                                label="Batch Layers"
+                                value={formatNumber(stock.batch_count)}
+                                helper="Current batch records"
+                            />
+                        </div>
+                    </section>
+
+                    <div className="space-y-5 p-5">
+                        <StockDetailSection
+                            title="Location and thresholds"
+                            description="Warehouse assignment and replenishment settings."
+                            icon={WarehouseIcon}
+                        >
+                            <dl className="divide-y divide-border/60">
+                                <StockDetailRow
+                                    label="Branch"
+                                    value={stock.warehouse?.branch?.name ?? 'No branch'}
+                                />
+                                <StockDetailRow
+                                    label="Warehouse"
+                                    value={stock.warehouse?.name ?? 'Unknown warehouse'}
+                                />
+                                <StockDetailRow
+                                    label="Reorder level"
+                                    value={formatQuantity(stock.reorder_level)}
+                                />
+                                <StockDetailRow
+                                    label="Maximum stock"
+                                    value={
+                                        stock.max_stock_level !== null
+                                            ? formatQuantity(stock.max_stock_level)
+                                            : 'Not set'
+                                    }
+                                />
+                                <StockDetailRow
+                                    label="Last movement"
+                                    value={`${formatDate(stock.last_movement_at)} ${formatTime(stock.last_movement_at)}`}
+                                />
+                            </dl>
+                        </StockDetailSection>
+
+                        <StockDetailSection
+                            title="Batch and reconciliation"
+                            description="Exact cost layers compared with the aggregate warehouse balance."
+                            icon={Layers3}
+                        >
+                            <dl className="divide-y divide-border/60">
+                                <StockDetailRow
+                                    label="Batch tracking"
+                                    value={
+                                        stock.product?.batch_tracking_enabled
+                                            ? 'Enabled'
+                                            : 'Standard stock'
+                                    }
+                                />
+                                <StockDetailRow
+                                    label="Batch quantity"
+                                    value={formatQuantity(stock.batch_quantity)}
+                                />
+                                <StockDetailRow
+                                    label="Reconciliation"
+                                    value={stock.is_reconciled ? 'Matched' : 'Mismatch'}
+                                    valueClassName={
+                                        stock.is_reconciled
+                                            ? 'text-emerald-400'
+                                            : 'text-red-400'
+                                    }
+                                />
+                                <StockDetailRow
+                                    label="Difference"
+                                    value={formatQuantity(stock.reconciliation_difference)}
+                                />
+                                <StockDetailRow
+                                    label="Expiring batches"
+                                    value={formatNumber(stock.expiring_batch_count)}
+                                />
+                                <StockDetailRow
+                                    label="Expired batches"
+                                    value={formatNumber(stock.expired_batch_count)}
+                                />
+                            </dl>
+                        </StockDetailSection>
+
+                        {stock.batch_stocks.length > 0 && (
+                            <StockDetailSection
+                                title="Batch cost layers"
+                                description="Current exact batch quantities, costs, dates, and status."
+                                icon={Layers3}
+                            >
+                                <div className="space-y-2 p-4">
+                                    {stock.batch_stocks.map((batch) => (
+                                        <div
+                                            key={batch.warehouse_batch_stock_id}
+                                            className="rounded-xl border border-border/60 bg-background/25 p-3"
+                                        >
+                                            <div className="flex flex-wrap items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="truncate font-mono text-[10px] font-semibold">
+                                                        {batch.batch_code}
+                                                    </p>
+                                                    <p className="mt-1 text-[9px] text-muted-foreground">
+                                                        {formatQuantity(batch.quantity)} units · {formatCurrency(Number(batch.unit_cost ?? 0))}
+                                                    </p>
+                                                </div>
+                                                <StatusBadge
+                                                    label={batch.batch_status}
+                                                    variant={
+                                                        batch.batch_status === 'active'
+                                                            ? 'success'
+                                                            : batch.batch_status === 'expired'
+                                                              ? 'danger'
+                                                              : 'neutral'
+                                                    }
+                                                />
+                                            </div>
+                                            <div className="mt-3 grid grid-cols-2 gap-2 text-[9px] text-muted-foreground sm:grid-cols-3">
+                                                <span>Received: {formatDate(batch.received_date)}</span>
+                                                <span>Expiry: {formatDate(batch.expiration_date)}</span>
+                                                <span>Value: {formatCurrency(Number(batch.batch_value ?? 0))}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </StockDetailSection>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/70 bg-background/35 px-5 py-4">
+                    <Button
+                        type="button"
+                        onClick={() => onAdjust(stock)}
+                        className="h-9 rounded-lg px-3 text-xs"
+                    >
+                        <ClipboardPenLine className="size-3.5" />
+                        Adjust
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={warehouses.length <= 1 || quantity <= 0}
+                        onClick={() => onTransfer(stock)}
+                        className="h-9 rounded-lg px-3 text-xs"
+                    >
+                        <ArrowRightLeft className="size-3.5" />
+                        Transfer
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onSettings(stock)}
+                        className="h-9 rounded-lg px-3 text-xs"
+                    >
+                        <Settings2 className="size-3.5" />
+                        Settings
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onDelete(stock)}
+                        className="h-9 rounded-lg border-red-500/20 px-3 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                    >
+                        <Trash2 className="size-3.5" />
+                        Delete
+                    </Button>
+                </div>
+            </div>
+        </AppDrawer>
+    );
+}
+
+function StockDetailStat({
+    label,
+    value,
+    helper,
+    className,
+}: {
+    label: string;
+    value: string;
+    helper: string;
+    className?: string;
+}) {
+    return (
+        <div className={cn('min-w-0 px-3 py-3', className)}>
+            <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                {label}
+            </p>
+            <p className="mt-1.5 truncate text-[12px] font-semibold tabular-nums text-primary">
+                {value}
+            </p>
+            <p className="mt-1 truncate text-[8px] text-muted-foreground">
+                {helper}
+            </p>
+        </div>
+    );
+}
+
+function StockDetailSection({
+    title,
+    description,
+    icon: Icon,
+    children,
+}: {
+    title: string;
+    description: string;
+    icon: LucideIcon;
+    children: ReactNode;
+}) {
+    return (
+        <section className="overflow-hidden rounded-xl border border-border/70 bg-background/20">
+            <div className="flex items-start gap-3 border-b border-border/60 px-4 py-3.5">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.06] text-primary">
+                    <Icon className="size-4" />
+                </span>
+                <div>
+                    <h3 className="text-[11px] font-semibold">{title}</h3>
+                    <p className="mt-1 text-[9px] leading-4 text-muted-foreground">
+                        {description}
+                    </p>
+                </div>
+            </div>
+            {children}
+        </section>
+    );
+}
+
+function StockDetailRow({
+    label,
+    value,
+    valueClassName,
+}: {
+    label: string;
+    value: string;
+    valueClassName?: string;
+}) {
+    return (
+        <div className="flex items-start justify-between gap-4 px-4 py-3 text-[10px]">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd
+                className={cn(
+                    'max-w-[250px] text-right font-medium text-foreground/85',
+                    valueClassName,
+                )}
+            >
+                {value}
+            </dd>
+        </div>
+    );
+}
+
 function StockControlMetric({
     title,
     value,
@@ -3257,6 +3749,7 @@ function StockControlMetric({
     icon: Icon,
     tone,
     className,
+    onClick,
 }: {
     title: string;
     value: string;
@@ -3264,6 +3757,7 @@ function StockControlMetric({
     icon: LucideIcon;
     tone: StockMetricTone;
     className?: string;
+    onClick: () => void;
 }) {
     const toneStyles: Record<
         StockMetricTone,
@@ -3293,9 +3787,11 @@ function StockControlMetric({
     const styles = toneStyles[tone];
 
     return (
-        <div
+        <button
+            type="button"
+            onClick={onClick}
             className={cn(
-                'group relative min-w-0 overflow-hidden p-4 transition-colors hover:bg-muted/[0.025]',
+                'group relative min-w-0 overflow-hidden p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35',
                 className,
             )}
         >
@@ -3335,7 +3831,7 @@ function StockControlMetric({
                     <Icon className="size-4" />
                 </span>
             </div>
-        </div>
+        </button>
     );
 }
 
@@ -3657,45 +4153,6 @@ function getStockStatus(
         variant: 'success',
         progressClass: 'bg-emerald-400',
     };
-}
-
-function getStockPercentage(
-    stock: WarehouseStock,
-): number {
-    const quantity = Number(
-        stock.quantity ?? 0,
-    );
-
-    const maximum = Number(
-        stock.max_stock_level ?? 0,
-    );
-
-    const reorder = Number(
-        stock.reorder_level ?? 0,
-    );
-
-    if (maximum > 0) {
-        return Math.min(
-            100,
-            Math.max(
-                0,
-                (quantity / maximum) * 100,
-            ),
-        );
-    }
-
-    if (quantity <= 0) {
-        return 0;
-    }
-
-    if (
-        reorder > 0 &&
-        quantity <= reorder
-    ) {
-        return 35;
-    }
-
-    return 75;
 }
 
 function formatCurrency(

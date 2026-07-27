@@ -1,3 +1,4 @@
+import { AppDrawer } from '@/components/shared/app-drawer';
 import { AppPagination } from '@/components/shared/app-pagination';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { IconInput } from '@/components/shared/icon-input';
@@ -24,8 +25,8 @@ import {
     ArrowUpFromLine,
     Boxes,
     CalendarDays,
+    ChevronRight,
     CircleDollarSign,
-    Eye,
     FileText,
     Fingerprint,
     Package2,
@@ -171,6 +172,12 @@ type StockMovementPageProps = {
     filters: MovementFilters;
 };
 
+type MovementControlDrawerView =
+    | 'all'
+    | 'incoming'
+    | 'outgoing'
+    | 'products';
+
 /*
 |--------------------------------------------------------------------------
 | Configuration
@@ -220,6 +227,9 @@ export default function StockMovementIndex({
     const [dateTo, setDateTo] = useState(filters.date_to ?? '');
     const [selectedMovement, setSelectedMovement] =
         useState<StockMovement | null>(null);
+
+    const [movementDrawerView, setMovementDrawerView] =
+        useState<MovementControlDrawerView | null>(null);
 
     useEffect(() => {
         setSearch(filters.search ?? '');
@@ -329,6 +339,16 @@ export default function StockMovementIndex({
         );
     }
 
+    function openMovementDrawer(
+        view: MovementControlDrawerView,
+    ): void {
+        setMovementDrawerView(view);
+    }
+
+    function closeMovementDrawer(): void {
+        setMovementDrawerView(null);
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Stock Movements" />
@@ -342,13 +362,14 @@ export default function StockMovementIndex({
                     incomingPercentage={incomingPercentage}
                     outgoingPercentage={outgoingPercentage}
                     averageMovementsPerProduct={averageMovementsPerProduct}
+                    onOpenView={openMovementDrawer}
                 />
 
                 
 
                 <SectionCard
                     title="Stock Movement Ledger"
-                    description="Review every inventory increase, decrease, adjustment, transfer, withdrawal, receipt, return, and linked source record."
+                    description="Select any movement row to open its complete quantity flow, cost, batch allocation, warehouse, reference, and audit record."
                     actions={
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge
@@ -510,6 +531,19 @@ export default function StockMovementIndex({
                 </SectionCard>
             </PageContainer>
 
+            <MovementControlDrawer
+                view={movementDrawerView}
+                pagination={movements}
+                summary={summary}
+                incomingQuantity={incomingQuantity}
+                outgoingQuantity={outgoingQuantity}
+                onClose={closeMovementDrawer}
+                onSelect={(movement) => {
+                    closeMovementDrawer();
+                    setSelectedMovement(movement);
+                }}
+            />
+
             <MovementDetailsDrawer
                 movement={selectedMovement}
                 onClose={() => setSelectedMovement(null)}
@@ -538,7 +572,7 @@ function MovementLedgerTable({
     return (
         <div className="overflow-hidden bg-background/10">
             <div className="overflow-x-auto">
-                <table className="w-full min-w-[980px] border-collapse">
+                <table className="w-full min-w-[880px] border-collapse">
                     <thead className="border-b border-primary/10 bg-primary/[0.025]">
                         <tr>
                             <th className="min-w-[220px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
@@ -556,16 +590,13 @@ function MovementLedgerTable({
                             <th className="min-w-[190px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                                 Reference
                             </th>
-                            <th className="w-[115px] px-4 py-3 text-right text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                                Action
-                            </th>
                         </tr>
                     </thead>
 
                     <tbody className="divide-y divide-border/60">
                         {movements.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="px-6 py-14">
+                                <td colSpan={5} className="px-6 py-14">
                                     <div className="mx-auto flex max-w-sm flex-col items-center text-center">
                                         <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.045] text-primary">
                                             <Activity className="size-5" />
@@ -613,7 +644,7 @@ function MovementLedgerTable({
                                     }}
                                     className="group cursor-pointer bg-card/55 transition-colors hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40"
                                 >
-                                    <td className="px-4 py-3.5">
+                                    <td className="px-4 py-2.5">
                                         <div className="flex min-w-0 items-start gap-3">
                                             <span
                                                 className={cn(
@@ -645,7 +676,7 @@ function MovementLedgerTable({
                                         </div>
                                     </td>
 
-                                    <td className="px-4 py-3.5">
+                                    <td className="px-4 py-2.5">
                                         <p className="max-w-[190px] truncate text-[11px] font-semibold">
                                             {movement.product.name}
                                         </p>
@@ -660,7 +691,7 @@ function MovementLedgerTable({
                                         </p>
                                     </td>
 
-                                    <td className="px-4 py-3.5">
+                                    <td className="px-4 py-2.5">
                                         <div className="flex min-w-0 items-center gap-2.5">
                                             <Warehouse className="size-3.5 shrink-0 text-primary" />
                                             <div className="min-w-0">
@@ -677,7 +708,7 @@ function MovementLedgerTable({
                                         </div>
                                     </td>
 
-                                    <td className="px-4 py-3.5 text-right">
+                                    <td className="px-4 py-2.5 text-right">
                                         <p
                                             className={cn(
                                                 'text-[13px] font-semibold tabular-nums',
@@ -698,7 +729,7 @@ function MovementLedgerTable({
                                         </p>
                                     </td>
 
-                                    <td className="px-4 py-3.5">
+                                    <td className="px-4 py-2.5">
                                         <p className="max-w-[165px] truncate text-[10px] font-semibold">
                                             {movement.reference_no ?? 'No reference'}
                                         </p>
@@ -712,26 +743,368 @@ function MovementLedgerTable({
                                         </p>
                                     </td>
 
-                                    <td className="px-4 py-3.5 text-right">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={(event) => {
-                                                event.stopPropagation();
-                                                onSelectMovement(movement);
-                                            }}
-                                            className="h-8 rounded-lg border-primary/15 bg-primary/[0.035] px-2.5 text-[9px] text-primary hover:bg-primary/[0.08] hover:text-primary"
-                                        >
-                                            <Eye className="size-3.5" />
-                                            Details
-                                        </Button>
-                                    </td>
                                 </tr>
                             ))
                         )}
                     </tbody>
                 </table>
             </div>
+        </div>
+    );
+}
+
+
+function MovementControlDrawer({
+    view,
+    pagination,
+    summary,
+    incomingQuantity,
+    outgoingQuantity,
+    onClose,
+    onSelect,
+}: {
+    view: MovementControlDrawerView | null;
+    pagination: PaginatedMovements;
+    summary: MovementSummary;
+    incomingQuantity: number;
+    outgoingQuantity: number;
+    onClose: () => void;
+    onSelect: (movement: StockMovement) => void;
+}) {
+    const [drawerSearch, setDrawerSearch] = useState('');
+
+    useEffect(() => {
+        setDrawerSearch('');
+    }, [view]);
+
+    const activeView = view ?? 'all';
+
+    const configs: Record<
+        MovementControlDrawerView,
+        {
+            title: string;
+            eyebrow: string;
+            description: string;
+            totalLabel: string;
+            totalValue: string;
+            emptyLabel: string;
+        }
+    > = {
+        all: {
+            title: 'Complete Movement Flow',
+            eyebrow: 'Filtered audit ledger',
+            description:
+                'Review movement records loaded on the current page and open any event for its complete audit details.',
+            totalLabel: 'Movement records',
+            totalValue: formatNumber(summary.total),
+            emptyLabel: 'No movement records are loaded on this page.',
+        },
+        incoming: {
+            title: 'Incoming Stock Movements',
+            eyebrow: 'Inventory increases',
+            description:
+                'Review receipts, positive adjustments, returns, and other movements that increased stock.',
+            totalLabel: 'Incoming quantity',
+            totalValue: formatQuantity(incomingQuantity),
+            emptyLabel: 'No incoming movements are loaded on this page.',
+        },
+        outgoing: {
+            title: 'Outgoing Stock Movements',
+            eyebrow: 'Inventory decreases',
+            description:
+                'Review withdrawals, negative adjustments, transfers out, and other movements that reduced stock.',
+            totalLabel: 'Outgoing quantity',
+            totalValue: formatQuantity(outgoingQuantity),
+            emptyLabel: 'No outgoing movements are loaded on this page.',
+        },
+        products: {
+            title: 'Affected Products',
+            eyebrow: 'Movement coverage',
+            description:
+                'Review products represented by the movement records loaded on the current page.',
+            totalLabel: 'Affected products',
+            totalValue: formatNumber(summary.affected_products),
+            emptyLabel: 'No affected products are loaded on this page.',
+        },
+    };
+
+    const config = configs[activeView];
+    const normalizedSearch = drawerSearch.trim().toLowerCase();
+
+    const matchingMovements = pagination.data.filter((movement) => {
+        if (activeView === 'incoming') {
+            return movement.direction === 'in';
+        }
+        if (activeView === 'outgoing') {
+            return movement.direction === 'out';
+        }
+        return true;
+    });
+
+    const visibleMovements = normalizedSearch
+        ? matchingMovements.filter((movement) =>
+              [
+                  movement.movement_label,
+                  movement.movement_type,
+                  movement.product.name,
+                  movement.product.sku,
+                  movement.product.barcode,
+                  movement.warehouse.name,
+                  movement.warehouse.code,
+                  movement.reference_no,
+                  movement.remarks,
+                  movement.created_by?.name,
+              ]
+                  .filter(Boolean)
+                  .join(' ')
+                  .toLowerCase()
+                  .includes(normalizedSearch),
+          )
+        : matchingMovements;
+
+    const productGroups = Array.from(
+        pagination.data.reduce(
+            (
+                groups,
+                movement,
+            ) => {
+                const current = groups.get(movement.product.id) ?? {
+                    product: movement.product,
+                    count: 0,
+                    incoming: 0,
+                    outgoing: 0,
+                    latest: movement,
+                };
+
+                current.count += 1;
+
+                if (movement.direction === 'in') {
+                    current.incoming += Math.abs(movement.quantity);
+                } else {
+                    current.outgoing += Math.abs(movement.quantity);
+                }
+
+                if (
+                    new Date(movement.movement_date).getTime() >
+                    new Date(current.latest.movement_date).getTime()
+                ) {
+                    current.latest = movement;
+                }
+
+                groups.set(movement.product.id, current);
+                return groups;
+            },
+            new Map<
+                number,
+                {
+                    product: ProductInfo;
+                    count: number;
+                    incoming: number;
+                    outgoing: number;
+                    latest: StockMovement;
+                }
+            >(),
+        ).values(),
+    );
+
+    const visibleProducts = normalizedSearch
+        ? productGroups.filter((group) =>
+              [
+                  group.product.name,
+                  group.product.sku,
+                  group.product.barcode,
+              ]
+                  .filter(Boolean)
+                  .join(' ')
+                  .toLowerCase()
+                  .includes(normalizedSearch),
+          )
+        : productGroups;
+
+    const loadedRange =
+        pagination.from !== null && pagination.to !== null
+            ? `${pagination.from}-${pagination.to}`
+            : '0';
+
+    return (
+        <AppDrawer
+            open={view !== null}
+            onOpenChange={(open) => {
+                if (!open) {
+                    onClose();
+                }
+            }}
+            title={config.title}
+            description={config.description}
+            processing={false}
+        >
+            <div className="flex min-h-full flex-col bg-card">
+                <div className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
+                        {config.eyebrow}
+                    </p>
+
+                    <div className="mt-2 flex items-end justify-between gap-4">
+                        <div>
+                            <p className="text-3xl font-semibold leading-none tabular-nums text-primary">
+                                {config.totalValue}
+                            </p>
+                            <p className="mt-1 text-[9px] text-muted-foreground">
+                                {config.totalLabel}
+                            </p>
+                        </div>
+
+                        <Badge
+                            variant="outline"
+                            className="h-7 rounded-full border-primary/15 bg-primary/[0.055] px-2.5 text-[9px] text-primary"
+                        >
+                            Loaded {loadedRange}
+                        </Badge>
+                    </div>
+                </div>
+
+                <div className="border-b border-border/60 p-4">
+                    <SearchInput
+                        value={drawerSearch}
+                        onChange={(event) =>
+                            setDrawerSearch(event.target.value)
+                        }
+                        onClear={() => setDrawerSearch('')}
+                        placeholder={
+                            activeView === 'products'
+                                ? 'Search affected products...'
+                                : 'Search loaded movements...'
+                        }
+                    />
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                    {activeView === 'products' ? (
+                        visibleProducts.length === 0 ? (
+                            <MovementControlDrawerEmpty
+                                icon={Package2}
+                                description={config.emptyLabel}
+                            />
+                        ) : (
+                            <div className="space-y-2">
+                                {visibleProducts.map((group) => (
+                                    <button
+                                        key={group.product.id}
+                                        type="button"
+                                        onClick={() => onSelect(group.latest)}
+                                        className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-background/25 p-3 text-left transition hover:border-primary/20 hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+                                    >
+                                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.07] text-primary">
+                                            <Package2 className="size-4" />
+                                        </span>
+
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-[11px] font-semibold">
+                                                {group.product.name}
+                                            </p>
+                                            <p className="mt-1 truncate font-mono text-[9px] text-muted-foreground">
+                                                {group.product.sku ?? 'No SKU'} · {group.count} movement{group.count === 1 ? '' : 's'}
+                                            </p>
+                                            <p className="mt-1 text-[8px] text-muted-foreground">
+                                                {formatQuantity(group.incoming)} in · {formatQuantity(group.outgoing)} out
+                                            </p>
+                                        </div>
+
+                                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                                    </button>
+                                ))}
+                            </div>
+                        )
+                    ) : visibleMovements.length === 0 ? (
+                        <MovementControlDrawerEmpty
+                            icon={Activity}
+                            description={config.emptyLabel}
+                        />
+                    ) : (
+                        <div className="space-y-2">
+                            {visibleMovements.map((movement) => (
+                                <button
+                                    key={movement.id}
+                                    type="button"
+                                    onClick={() => onSelect(movement)}
+                                    className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-background/25 p-3 text-left transition hover:border-primary/20 hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+                                >
+                                    <span
+                                        className={cn(
+                                            'flex size-9 shrink-0 items-center justify-center rounded-lg border',
+                                            movement.direction === 'in'
+                                                ? 'border-emerald-500/20 bg-emerald-500/[0.07] text-emerald-400'
+                                                : 'border-rose-500/20 bg-rose-500/[0.07] text-rose-400',
+                                        )}
+                                    >
+                                        {movement.direction === 'in' ? (
+                                            <ArrowDownToLine className="size-4" />
+                                        ) : (
+                                            <ArrowUpFromLine className="size-4" />
+                                        )}
+                                    </span>
+
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            <p className="truncate text-[11px] font-semibold">
+                                                {movement.movement_label}
+                                            </p>
+                                            <MovementTypeBadge movement={movement} />
+                                        </div>
+
+                                        <p className="mt-1 truncate text-[9px] text-muted-foreground">
+                                            {movement.product.name} · {movement.warehouse.name}
+                                        </p>
+
+                                        <p className="mt-1 font-mono text-[8px] text-muted-foreground">
+                                            {movement.reference_no ?? `Movement #${movement.id}`}
+                                        </p>
+                                    </div>
+
+                                    <div className="shrink-0 text-right">
+                                        <p
+                                            className={cn(
+                                                'text-[10px] font-semibold tabular-nums',
+                                                movement.direction === 'in'
+                                                    ? 'text-emerald-400'
+                                                    : 'text-rose-400',
+                                            )}
+                                        >
+                                            {movement.direction === 'in' ? '+' : '−'}
+                                            {formatQuantity(Math.abs(movement.quantity))}
+                                        </p>
+                                        <p className="mt-1 text-[8px] text-muted-foreground">
+                                            {formatDate(movement.movement_date)}
+                                        </p>
+                                    </div>
+
+                                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </AppDrawer>
+    );
+}
+
+function MovementControlDrawerEmpty({
+    icon: Icon,
+    description,
+}: {
+    icon: LucideIcon;
+    description: string;
+}) {
+    return (
+        <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-background/20 p-6 text-center">
+            <Icon className="size-6 text-muted-foreground" />
+            <p className="mt-3 text-sm font-semibold">
+                No loaded matches
+            </p>
+            <p className="mt-1 max-w-sm text-[10px] leading-5 text-muted-foreground">
+                {description}
+            </p>
         </div>
     );
 }
@@ -1362,6 +1735,7 @@ function MovementControlBoard({
     incomingPercentage,
     outgoingPercentage,
     averageMovementsPerProduct,
+    onOpenView,
 }: {
     summary: MovementSummary;
     incomingQuantity: number;
@@ -1370,6 +1744,7 @@ function MovementControlBoard({
     incomingPercentage: number;
     outgoingPercentage: number;
     averageMovementsPerProduct: number;
+    onOpenView: (view: MovementControlDrawerView) => void;
 }) {
     const netIncoming = netQuantity >= 0;
 
@@ -1386,7 +1761,7 @@ function MovementControlBoard({
                             Inventory Movement Control
                         </p>
                         <p className="mt-0.5 text-[10px] text-muted-foreground">
-                            Read-only stock flow, warehouse routing, source references, and quantity balance.
+                            Select a flow segment to inspect its matching audit records.
                         </p>
                     </div>
                 </div>
@@ -1401,7 +1776,11 @@ function MovementControlBoard({
             </div>
 
             <div className="grid min-w-0 xl:grid-cols-[minmax(320px,1.15fr)_minmax(0,1.85fr)]">
-                <div className="relative overflow-hidden border-b border-border/60 p-4 xl:border-b-0 xl:border-r md:p-5">
+                <button
+                    type="button"
+                    onClick={() => onOpenView('all')}
+                    className="relative overflow-hidden border-b border-border/60 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35 xl:border-b-0 xl:border-r md:p-5"
+                >
                     <div className="pointer-events-none absolute -left-16 -top-20 size-48 rounded-full bg-primary/[0.055] blur-3xl" />
 
                     <div className="relative">
@@ -1480,53 +1859,70 @@ function MovementControlBoard({
                                 />
                             </div>
                         </div>
+
+                        <div className="mt-4 rounded-xl border border-border/60 bg-background/40 px-3 py-2.5">
+                            <p className="text-[10px] font-semibold text-foreground/85">
+                                Open the complete movement flow
+                            </p>
+                            <p className="mt-0.5 text-[9px] text-muted-foreground">
+                                Includes all movement records loaded under the current page and filters.
+                            </p>
+                        </div>
                     </div>
-                </div>
+                </button>
 
-                <div className="grid min-w-0 sm:grid-cols-3">
-                    <ControlSnapshot
-                        label="Incoming Share"
-                        value={`${incomingPercentage}%`}
-                        helper={`${formatQuantity(incomingQuantity)} quantity`}
-                        icon={ArrowDownToLine}
-                        tone="emerald"
-                        className="border-b border-border/60 sm:border-r"
-                    />
+                <div className="min-w-0">
+                    <div className="grid min-w-0 sm:grid-cols-3">
+                        <ControlSnapshot
+                            label="Incoming Share"
+                            value={`${incomingPercentage}%`}
+                            helper={`${formatQuantity(incomingQuantity)} quantity`}
+                            icon={ArrowDownToLine}
+                            tone="emerald"
+                            onClick={() => onOpenView('incoming')}
+                            className="border-b border-border/60 sm:border-r"
+                        />
 
-                    <ControlSnapshot
-                        label="Outgoing Share"
-                        value={`${outgoingPercentage}%`}
-                        helper={`${formatQuantity(outgoingQuantity)} quantity`}
-                        icon={ArrowUpFromLine}
-                        tone="rose"
-                        className="border-b border-border/60 sm:border-r"
-                    />
+                        <ControlSnapshot
+                            label="Outgoing Share"
+                            value={`${outgoingPercentage}%`}
+                            helper={`${formatQuantity(outgoingQuantity)} quantity`}
+                            icon={ArrowUpFromLine}
+                            tone="rose"
+                            onClick={() => onOpenView('outgoing')}
+                            className="border-b border-border/60 sm:border-r"
+                        />
 
-                    <ControlSnapshot
-                        label="Affected Products"
-                        value={formatNumber(summary.affected_products)}
-                        helper={`${formatDecimal(averageMovementsPerProduct)} events/product`}
-                        icon={Package2}
-                        tone="teal"
-                        className="border-b border-border/60"
-                    />
+                        <ControlSnapshot
+                            label="Affected Products"
+                            value={formatNumber(summary.affected_products)}
+                            helper={`${formatDecimal(averageMovementsPerProduct)} events/product`}
+                            icon={Package2}
+                            tone="teal"
+                            onClick={() => onOpenView('products')}
+                            className="border-b border-border/60"
+                        />
+                    </div>
 
-                    <div className="p-4 sm:col-span-3">
+                    <div className="p-4">
                         <div className="grid gap-3 md:grid-cols-3">
                             <ControlDetail
                                 icon={ArrowRightLeft}
                                 label="Flow coverage"
                                 value={`${incomingPercentage}% in / ${outgoingPercentage}% out`}
+                                onClick={() => onOpenView('all')}
                             />
                             <ControlDetail
                                 icon={Boxes}
                                 label="Ledger coverage"
                                 value={`${formatNumber(summary.total)} movement events`}
+                                onClick={() => onOpenView('all')}
                             />
                             <ControlDetail
                                 icon={Scale}
                                 label="Average activity"
                                 value={`${formatDecimal(averageMovementsPerProduct)} events per product`}
+                                onClick={() => onOpenView('products')}
                             />
                         </div>
                     </div>
@@ -1549,6 +1945,7 @@ function ControlSnapshot({
     helper,
     icon: Icon,
     tone,
+    onClick,
     className,
 }: {
     label: string;
@@ -1556,6 +1953,7 @@ function ControlSnapshot({
     helper: string;
     icon: LucideIcon;
     tone: 'emerald' | 'rose' | 'teal';
+    onClick: () => void;
     className?: string;
 }) {
     const toneClass = {
@@ -1566,7 +1964,14 @@ function ControlSnapshot({
     }[tone];
 
     return (
-        <div className={cn('min-w-0 p-4', className)}>
+        <button
+            type="button"
+            onClick={onClick}
+            className={cn(
+                'group min-w-0 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35',
+                className,
+            )}
+        >
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                     <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
@@ -1582,14 +1987,14 @@ function ControlSnapshot({
 
                 <span
                     className={cn(
-                        'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border',
+                        'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border transition-transform group-hover:scale-105',
                         toneClass,
                     )}
                 >
                     <Icon className="size-4" />
                 </span>
             </div>
-        </div>
+        </button>
     );
 }
 
@@ -1597,18 +2002,24 @@ function ControlDetail({
     icon: Icon,
     label,
     value,
+    onClick,
 }: {
     icon: LucideIcon;
     label: string;
     value: string;
+    onClick: () => void;
 }) {
     return (
-        <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-border/60 bg-background/30 px-3 py-2.5">
-            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/[0.055] text-primary">
+        <button
+            type="button"
+            onClick={onClick}
+            className="group flex min-w-0 items-center gap-2.5 rounded-xl border border-border/60 bg-background/30 px-3 py-2.5 text-left transition hover:border-primary/20 hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+        >
+            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/[0.055] text-primary transition-transform group-hover:scale-105">
                 <Icon className="size-4" />
             </span>
 
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
                 <p className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground">
                     {label}
                 </p>
@@ -1616,7 +2027,9 @@ function ControlDetail({
                     {value}
                 </p>
             </div>
-        </div>
+
+            <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+        </button>
     );
 }
 

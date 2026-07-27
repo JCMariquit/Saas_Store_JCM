@@ -31,6 +31,7 @@ import {
     Barcode,
     Boxes,
     CheckCircle2,
+    ChevronRight,
     FileSpreadsheet,
     FileText,
     Layers3,
@@ -160,6 +161,16 @@ type ProductPageProps = {
     filters: ProductFilters;
 };
 
+type ProductCatalogDrawerView =
+    | 'all'
+    | 'active'
+    | 'inactive'
+    | 'tracked'
+    | 'not_tracked'
+    | 'batch'
+    | 'expiry'
+    | 'categories';
+
 /*
 |--------------------------------------------------------------------------
 | Configuration
@@ -237,6 +248,9 @@ export default function ProductIndex({
 
     const [detailsProduct, setDetailsProduct] =
         useState<Product | null>(null);
+
+    const [catalogDrawerView, setCatalogDrawerView] =
+        useState<ProductCatalogDrawerView | null>(null);
 
     const [deleteTarget, setDeleteTarget] =
         useState<Product | null>(null);
@@ -348,6 +362,16 @@ export default function ProductIndex({
 
     function closeDetailsDrawer(): void {
         setDetailsProduct(null);
+    }
+
+    function openCatalogDrawer(
+        view: ProductCatalogDrawerView,
+    ): void {
+        setCatalogDrawerView(view);
+    }
+
+    function closeCatalogDrawer(): void {
+        setCatalogDrawerView(null);
     }
 
     function openEditDialog(
@@ -684,7 +708,7 @@ export default function ProductIndex({
                                 </p>
 
                                 <p className="mt-0.5 text-[9px] leading-4 text-muted-foreground">
-                                    A concise view of catalog readiness, tracking coverage, and configuration health.
+                                    Select an overview segment to inspect its matching catalog records.
                                 </p>
                             </div>
                         </div>
@@ -708,30 +732,36 @@ export default function ProductIndex({
                         </Badge>
                     </div>
 
-                    <div className="grid min-w-0 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
-                        <div className="relative min-w-0 overflow-hidden p-4 md:p-5">
+                    <div className="grid min-w-0 xl:grid-cols-[minmax(340px,1.08fr)_minmax(0,1.92fr)]">
+                        <button
+                            type="button"
+                            onClick={() => openCatalogDrawer('active')}
+                            className="relative min-w-0 overflow-hidden border-b border-border/60 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35 xl:border-b-0 xl:border-r md:p-5"
+                        >
                             <div className="pointer-events-none absolute -left-20 -top-24 size-60 rounded-full bg-primary/[0.08] blur-3xl" />
                             <Package2 className="pointer-events-none absolute -bottom-10 -right-6 size-36 text-primary opacity-[0.018]" />
 
                             <div className="relative">
-                                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
-                                    Catalog readiness
-                                </p>
-
-                                <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                                    <div className="flex min-w-0 items-end gap-3">
-                                        <p className="shrink-0 text-[34px] font-semibold leading-none tracking-[-0.045em] tabular-nums text-primary sm:text-[38px]">
-                                            {activePercentage}%
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
+                                            Catalog readiness
                                         </p>
 
-                                        <div className="min-w-0 pb-0.5">
-                                            <p className="text-[12px] font-semibold text-foreground">
-                                                {summary.active} of {summary.total} products active
+                                        <div className="mt-3 flex items-end gap-3">
+                                            <p className="shrink-0 text-[34px] font-semibold leading-none tracking-[-0.045em] tabular-nums text-primary sm:text-[38px]">
+                                                {activePercentage}%
                                             </p>
 
-                                            <p className="mt-1 max-w-xl text-[9px] leading-4 text-muted-foreground">
-                                                Active products are available for stock setup, movement recording, and other inventory transactions.
-                                            </p>
+                                            <div className="min-w-0 pb-0.5">
+                                                <p className="text-[12px] font-semibold text-foreground">
+                                                    {summary.active} of {summary.total} products active
+                                                </p>
+
+                                                <p className="mt-1 max-w-xl text-[9px] leading-4 text-muted-foreground">
+                                                    Active products are available for stock setup, movement recording, and inventory transactions.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -739,97 +769,118 @@ export default function ProductIndex({
                                         variant="outline"
                                         className="h-7 w-fit shrink-0 rounded-full border-emerald-500/15 bg-emerald-500/[0.055] px-2.5 text-[9px] font-semibold text-emerald-300"
                                     >
-                                        {summary.active} active record{summary.active === 1 ? '' : 's'}
+                                        Open active records
                                     </Badge>
                                 </div>
 
-                                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-background/70">
-                                    <div
-                                        className="h-full rounded-full bg-emerald-400 transition-all duration-500"
-                                        style={{
-                                            width: `${activePercentage}%`,
-                                        }}
-                                    />
+                                <div className="mt-5">
+                                    <div className="flex items-center justify-between gap-3 text-[9px] font-medium">
+                                        <span className="inline-flex items-center gap-1.5 text-emerald-400">
+                                            <span className="size-1.5 rounded-full bg-emerald-400" />
+                                            {summary.active} active
+                                        </span>
+
+                                        <span className="inline-flex items-center gap-1.5 text-amber-400">
+                                            {inactiveProducts} inactive
+                                            <span className="size-1.5 rounded-full bg-amber-400" />
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-muted">
+                                        <div
+                                            className="h-full bg-emerald-400 transition-all duration-500"
+                                            style={{ width: `${activePercentage}%` }}
+                                        />
+                                        <div
+                                            className="h-full bg-amber-400 transition-all duration-500"
+                                            style={{ width: `${Math.max(0, 100 - activePercentage)}%` }}
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="mt-5 grid border-t border-border/60 sm:grid-cols-3 sm:divide-x sm:divide-border/60">
-                                    <div className="border-b border-border/60 py-3 sm:border-b-0 sm:pr-4">
-                                        <div className="flex items-center justify-between gap-3 sm:block">
-                                            <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                                Tracking coverage
-                                            </p>
-                                            <p className="text-sm font-semibold tabular-nums text-primary/85 sm:mt-1.5">
-                                                {trackedPercentage}%
-                                            </p>
-                                        </div>
-                                        <p className="mt-1 text-[9px] text-muted-foreground">
-                                            {summary.tracked} tracked · {summary.not_tracked} not tracked
-                                        </p>
-                                    </div>
+                                <div className="mt-4 rounded-xl border border-border/60 bg-background/40 px-3 py-2.5">
+                                    <div className="flex items-center gap-2.5">
+                                        <span
+                                            className={cn(
+                                                'inline-flex size-7 shrink-0 items-center justify-center rounded-lg',
+                                                inactiveProducts === 0
+                                                    ? 'bg-emerald-500/10 text-emerald-400'
+                                                    : 'bg-amber-500/10 text-amber-400',
+                                            )}
+                                        >
+                                            {inactiveProducts === 0 ? (
+                                                <CheckCircle2 className="size-3.5" />
+                                            ) : (
+                                                <XCircle className="size-3.5" />
+                                            )}
+                                        </span>
 
-                                    <div className="border-b border-border/60 py-3 sm:border-b-0 sm:px-4">
-                                        <div className="flex items-center justify-between gap-3 sm:block">
-                                            <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                                Active categories
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] font-semibold text-foreground/85">
+                                                {inactiveProducts === 0
+                                                    ? 'All products are operational'
+                                                    : 'Catalog availability needs review'}
                                             </p>
-                                            <p className="text-sm font-semibold tabular-nums text-primary sm:mt-1.5">
-                                                {activeCategoryCount}
-                                            </p>
-                                        </div>
-                                        <p className="mt-1 text-[9px] text-muted-foreground">
-                                            From {categories.length} available categor{categories.length === 1 ? 'y' : 'ies'}
-                                        </p>
-                                    </div>
-
-                                    <div className="py-3 sm:pl-4">
-                                        <div className="flex items-center justify-between gap-3 sm:block">
-                                            <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                                Needs attention
-                                            </p>
-                                            <p
-                                                className={cn(
-                                                    'text-sm font-semibold tabular-nums sm:mt-1.5',
-                                                    inactiveProducts > 0
-                                                        ? 'text-amber-400'
-                                                        : 'text-emerald-400',
-                                                )}
-                                            >
-                                                {inactiveProducts}
+                                            <p className="mt-0.5 text-[9px] text-muted-foreground">
+                                                Select this panel to inspect active product records.
                                             </p>
                                         </div>
-                                        <p className="mt-1 text-[9px] text-muted-foreground">
-                                            Inactive product record{inactiveProducts === 1 ? '' : 's'}
-                                        </p>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </button>
 
-                        <div className="min-w-0 border-t border-border/60 bg-background/20 xl:border-l xl:border-t-0">
-                            <div className="border-b border-border/60 px-4 py-3">
+                        <div className="min-w-0">
+                            <div className="grid min-w-0 sm:grid-cols-3">
+                                <ProductOverviewSnapshot
+                                    title="Tracking Coverage"
+                                    value={`${trackedPercentage}%`}
+                                    description={`${summary.tracked} tracked products`}
+                                    icon={Boxes}
+                                    tone="primary"
+                                    onClick={() => openCatalogDrawer('tracked')}
+                                    className="border-b border-border/60 sm:border-r"
+                                />
+
+                                <ProductOverviewSnapshot
+                                    title="Active Categories"
+                                    value={formatNumber(activeCategoryCount)}
+                                    description={`${categories.length} category records`}
+                                    icon={Tags}
+                                    tone="teal"
+                                    onClick={() => openCatalogDrawer('categories')}
+                                    className="border-b border-border/60 sm:border-r"
+                                />
+
+                                <ProductOverviewSnapshot
+                                    title="Needs Attention"
+                                    value={formatNumber(inactiveProducts)}
+                                    description="Inactive product records"
+                                    icon={XCircle}
+                                    tone={inactiveProducts > 0 ? 'amber' : 'emerald'}
+                                    onClick={() => openCatalogDrawer('inactive')}
+                                    className="border-b border-border/60"
+                                />
+                            </div>
+
+                            <div className="border-b border-border/60 bg-background/20 px-4 py-3">
                                 <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                                     Catalog facts
                                 </p>
                                 <p className="mt-1 text-[9px] text-muted-foreground">
-                                    Current configuration totals across the product directory.
+                                    Each fact opens its own filtered drawer.
                                 </p>
                             </div>
 
-                            <dl className="divide-y divide-border/60">
+                            <div className="grid min-w-0 sm:grid-cols-2">
                                 <CatalogFactRow
                                     label="Registered products"
                                     description="Complete catalog records"
                                     value={summary.total}
                                     icon={<Package2 className="size-3.5" />}
                                     tone="emerald"
-                                />
-
-                                <CatalogFactRow
-                                    label="Stock tracked"
-                                    description="Warehouse balances monitored"
-                                    value={summary.tracked}
-                                    icon={<Boxes className="size-3.5" />}
-                                    tone="teal"
+                                    onClick={() => openCatalogDrawer('all')}
+                                    className="border-b border-border/60 sm:border-r"
                                 />
 
                                 <CatalogFactRow
@@ -838,8 +889,29 @@ export default function ProductIndex({
                                     value={summary.not_tracked}
                                     icon={<XCircle className="size-3.5" />}
                                     tone="amber"
+                                    onClick={() => openCatalogDrawer('not_tracked')}
+                                    className="border-b border-border/60"
                                 />
-                            </dl>
+
+                                <CatalogFactRow
+                                    label="Batch enabled"
+                                    description="Lot and cost-layer tracking"
+                                    value={summary.batch_enabled}
+                                    icon={<Layers3 className="size-3.5" />}
+                                    tone="teal"
+                                    onClick={() => openCatalogDrawer('batch')}
+                                    className="sm:border-r"
+                                />
+
+                                <CatalogFactRow
+                                    label="Expiry required"
+                                    description="Expiration-controlled products"
+                                    value={summary.expiration_required}
+                                    icon={<Barcode className="size-3.5" />}
+                                    tone="lime"
+                                    onClick={() => openCatalogDrawer('expiry')}
+                                />
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -1069,6 +1141,18 @@ export default function ProductIndex({
                 </SectionCard>
             </PageContainer>
 
+
+            <ProductCatalogDrawer
+                view={catalogDrawerView}
+                pagination={products}
+                categories={categories}
+                summary={summary}
+                onClose={closeCatalogDrawer}
+                onSelect={(product) => {
+                    closeCatalogDrawer();
+                    openDetailsDrawer(product);
+                }}
+            />
 
             <ProductDetailsDrawer
                 product={detailsProduct}
@@ -1746,7 +1830,7 @@ function ProductDirectoryTable({
     return (
         <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20 shadow-sm">
             <div className="overflow-x-auto">
-                <table className="w-full min-w-[880px] border-collapse">
+                <table className="w-full min-w-[960px] border-collapse table-fixed">
                     <thead className="border-b border-primary/10 bg-primary/[0.025]">
                         <tr>
                             <th className="min-w-[280px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
@@ -1761,7 +1845,7 @@ function ProductDirectoryTable({
                             <th className="min-w-[185px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
                                 Inventory
                             </th>
-                            <th className="min-w-[135px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                            <th className="w-[220px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
                                 Status
                             </th>
                         </tr>
@@ -1895,30 +1979,41 @@ function ProductDirectoryTable({
                                         )}
                                     </td>
 
-                                    <td className="px-4 py-2.5">
-                                        <div className="flex flex-col items-start gap-1.5">
+                                    <td className="w-[220px] px-4 py-2.5 align-middle">
+                                        <div className="flex min-w-0 items-center gap-1.5 whitespace-nowrap">
                                             <StatusBadge
                                                 label={product.is_active ? 'Active' : 'Inactive'}
                                                 variant={product.is_active ? 'success' : 'danger'}
                                             />
-                                            <StatusBadge
-                                                label={
+
+                                            <Badge
+                                                variant="outline"
+                                                className={cn(
+                                                    'h-5 min-w-0 max-w-[125px] shrink px-1.5 text-[8px] font-medium',
                                                     product.stock_tracking === 'tracked'
-                                                        ? 'Tracked'
-                                                        : 'Not tracked'
+                                                        ? 'border-blue-500/25 bg-blue-500/10 text-blue-300'
+                                                        : 'border-slate-500/25 bg-slate-500/10 text-slate-300',
+                                                )}
+                                                title={
+                                                    product.stock_tracking !== 'tracked'
+                                                        ? 'Quantity is not tracked'
+                                                        : product.batch_tracking_enabled
+                                                          ? product.requires_expiration_date
+                                                              ? 'Stock tracked, batch tracked, expiration required'
+                                                              : 'Stock tracked and batch tracked'
+                                                          : 'Stock tracked without batch tracking'
                                                 }
-                                                variant={
-                                                    product.stock_tracking === 'tracked'
-                                                        ? 'info'
-                                                        : 'neutral'
-                                                }
-                                            />
-                                            {product.batch_tracking_enabled && (
-                                                <StatusBadge
-                                                    label={product.requires_expiration_date ? 'Batch + expiry' : 'Batch tracked'}
-                                                    variant="info"
-                                                />
-                                            )}
+                                            >
+                                                <span className="truncate">
+                                                    {product.stock_tracking !== 'tracked'
+                                                        ? 'Not tracked'
+                                                        : product.batch_tracking_enabled
+                                                          ? product.requires_expiration_date
+                                                              ? 'Tracked · Expiry'
+                                                              : 'Tracked · Batch'
+                                                          : 'Tracked'}
+                                                </span>
+                                            </Badge>
                                         </div>
                                     </td>
                                 </tr>
@@ -1987,6 +2082,395 @@ function ProductFormPreviewRow({
                 {value}
             </dd>
         </div>
+    );
+}
+
+
+function ProductCatalogDrawer({
+    view,
+    pagination,
+    categories,
+    summary,
+    onClose,
+    onSelect,
+}: {
+    view: ProductCatalogDrawerView | null;
+    pagination: PaginatedProducts;
+    categories: CategoryOption[];
+    summary: ProductSummary;
+    onClose: () => void;
+    onSelect: (product: Product) => void;
+}) {
+    const [drawerSearch, setDrawerSearch] = useState('');
+
+    useEffect(() => {
+        setDrawerSearch('');
+    }, [view]);
+
+    const activeView = view ?? 'all';
+    const inactiveTotal = Math.max(0, summary.total - summary.active);
+
+    const configs: Record<
+        ProductCatalogDrawerView,
+        {
+            title: string;
+            eyebrow: string;
+            description: string;
+            total: number;
+            emptyLabel: string;
+        }
+    > = {
+        all: {
+            title: 'Registered Products',
+            eyebrow: 'Complete catalog',
+            description:
+                'Review product records loaded on the current page and open any item for its complete catalog and inventory details.',
+            total: summary.total,
+            emptyLabel: 'No products are loaded on this page.',
+        },
+        active: {
+            title: 'Active Products',
+            eyebrow: 'Catalog readiness',
+            description:
+                'Active products are available for warehouse setup and inventory transactions.',
+            total: summary.active,
+            emptyLabel: 'No active products are loaded on this page.',
+        },
+        inactive: {
+            title: 'Inactive Products',
+            eyebrow: 'Needs attention',
+            description:
+                'Inactive products remain in the catalog but are unavailable for normal inventory operations.',
+            total: inactiveTotal,
+            emptyLabel: 'No inactive products are loaded on this page.',
+        },
+        tracked: {
+            title: 'Stock-Tracked Products',
+            eyebrow: 'Tracking coverage',
+            description:
+                'These products maintain warehouse balances and stock movement history.',
+            total: summary.tracked,
+            emptyLabel: 'No stock-tracked products are loaded on this page.',
+        },
+        not_tracked: {
+            title: 'Not-Tracked Products',
+            eyebrow: 'Reference-only catalog',
+            description:
+                'These products are excluded from warehouse quantity balances.',
+            total: summary.not_tracked,
+            emptyLabel: 'No not-tracked products are loaded on this page.',
+        },
+        batch: {
+            title: 'Batch-Enabled Products',
+            eyebrow: 'Lot and cost layers',
+            description:
+                'These products maintain exact batch identity, remaining quantity, and issue-policy settings.',
+            total: summary.batch_enabled,
+            emptyLabel: 'No batch-enabled products are loaded on this page.',
+        },
+        expiry: {
+            title: 'Expiration-Controlled Products',
+            eyebrow: 'Expiry requirements',
+            description:
+                'These products require expiration dates when batch inventory is received.',
+            total: summary.expiration_required,
+            emptyLabel: 'No expiration-controlled products are loaded on this page.',
+        },
+        categories: {
+            title: 'Catalog Categories',
+            eyebrow: 'Product organization',
+            description:
+                'Review the category records currently available for product assignment.',
+            total: categories.length,
+            emptyLabel: 'No categories are available.',
+        },
+    };
+
+    const config = configs[activeView];
+    const normalizedSearch = drawerSearch.trim().toLowerCase();
+
+    const matchingProducts = pagination.data.filter((product) => {
+        if (activeView === 'active') {
+            return product.is_active;
+        }
+        if (activeView === 'inactive') {
+            return !product.is_active;
+        }
+        if (activeView === 'tracked') {
+            return product.stock_tracking === 'tracked';
+        }
+        if (activeView === 'not_tracked') {
+            return product.stock_tracking === 'not_tracked';
+        }
+        if (activeView === 'batch') {
+            return product.batch_tracking_enabled;
+        }
+        if (activeView === 'expiry') {
+            return product.requires_expiration_date;
+        }
+        return true;
+    });
+
+    const visibleProducts =
+        activeView === 'categories'
+            ? []
+            : normalizedSearch
+              ? matchingProducts.filter((product) =>
+                    [
+                        product.name,
+                        product.sku,
+                        product.barcode,
+                        product.category?.name,
+                    ]
+                        .filter(Boolean)
+                        .join(' ')
+                        .toLowerCase()
+                        .includes(normalizedSearch),
+                )
+              : matchingProducts;
+
+    const visibleCategories = normalizedSearch
+        ? categories.filter((category) =>
+              [
+                  category.name,
+                  category.slug,
+                  category.parent_id ? 'subcategory' : 'root',
+                  category.is_active ? 'active' : 'inactive',
+              ]
+                  .join(' ')
+                  .toLowerCase()
+                  .includes(normalizedSearch),
+          )
+        : categories;
+
+    const loadedRange =
+        pagination.from !== null && pagination.to !== null
+            ? `${pagination.from}-${pagination.to}`
+            : '0';
+
+    return (
+        <AppDrawer
+            open={view !== null}
+            onOpenChange={(open) => {
+                if (!open) {
+                    onClose();
+                }
+            }}
+            title={config.title}
+            description={config.description}
+            processing={false}
+        >
+            <div className="flex min-h-full flex-col bg-card">
+                <div className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
+                        {config.eyebrow}
+                    </p>
+
+                    <div className="mt-2 flex items-end justify-between gap-4">
+                        <div>
+                            <p className="text-3xl font-semibold leading-none tabular-nums text-primary">
+                                {formatNumber(config.total)}
+                            </p>
+                            <p className="mt-1 text-[9px] text-muted-foreground">
+                                Total matching catalog records
+                            </p>
+                        </div>
+
+                        <Badge
+                            variant="outline"
+                            className="h-7 rounded-full border-primary/15 bg-primary/[0.055] px-2.5 text-[9px] text-primary"
+                        >
+                            {activeView === 'categories'
+                                ? `${categories.length} available`
+                                : `Loaded ${loadedRange}`}
+                        </Badge>
+                    </div>
+                </div>
+
+                <div className="border-b border-border/60 p-4">
+                    <SearchInput
+                        value={drawerSearch}
+                        onChange={(event) =>
+                            setDrawerSearch(event.target.value)
+                        }
+                        onClear={() => setDrawerSearch('')}
+                        placeholder={
+                            activeView === 'categories'
+                                ? 'Search loaded categories...'
+                                : 'Search loaded products...'
+                        }
+                    />
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                    {activeView === 'categories' ? (
+                        visibleCategories.length === 0 ? (
+                            <ProductCatalogDrawerEmpty
+                                icon={Tags}
+                                description={config.emptyLabel}
+                            />
+                        ) : (
+                            <div className="space-y-2">
+                                {visibleCategories.map((category) => (
+                                    <div
+                                        key={category.id}
+                                        className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/25 p-3"
+                                    >
+                                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.07] text-primary">
+                                            <Tags className="size-4" />
+                                        </span>
+
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                <p className="truncate text-[11px] font-semibold">
+                                                    {category.name}
+                                                </p>
+                                                <StatusBadge
+                                                    label={category.is_active ? 'Active' : 'Inactive'}
+                                                    variant={category.is_active ? 'success' : 'danger'}
+                                                />
+                                            </div>
+
+                                            <p className="mt-1 truncate font-mono text-[9px] text-muted-foreground">
+                                                {category.parent_id ? 'Subcategory' : 'Root category'} · {category.slug}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )
+                    ) : visibleProducts.length === 0 ? (
+                        <ProductCatalogDrawerEmpty
+                            icon={Package2}
+                            description={config.emptyLabel}
+                        />
+                    ) : (
+                        <div className="space-y-2">
+                            {visibleProducts.map((product) => (
+                                <button
+                                    key={product.id}
+                                    type="button"
+                                    onClick={() => onSelect(product)}
+                                    className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-background/25 p-3 text-left transition hover:border-primary/20 hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+                                >
+                                    <EntityAvatar
+                                        icon={Package2}
+                                        className="border-primary/15 bg-primary/[0.07] text-primary"
+                                    />
+
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            <p className="truncate text-[11px] font-semibold">
+                                                {product.name}
+                                            </p>
+                                            <StatusBadge
+                                                label={product.is_active ? 'Active' : 'Inactive'}
+                                                variant={product.is_active ? 'success' : 'danger'}
+                                            />
+                                        </div>
+
+                                        <p className="mt-1 truncate font-mono text-[9px] text-muted-foreground">
+                                            {product.sku ?? 'No SKU'} · {product.category?.name ?? 'Uncategorized'}
+                                        </p>
+
+                                        <p className="mt-1 text-[8px] text-muted-foreground">
+                                            {product.stock_tracking === 'tracked'
+                                                ? `${formatQuantity(product.total_stock)} ${product.unit} · ${product.available_stock_batches_count} active batches`
+                                                : 'Quantity not tracked'}
+                                        </p>
+                                    </div>
+
+                                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </AppDrawer>
+    );
+}
+
+function ProductCatalogDrawerEmpty({
+    icon: Icon,
+    description,
+}: {
+    icon: typeof Package2;
+    description: string;
+}) {
+    return (
+        <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-background/20 p-6 text-center">
+            <Icon className="size-6 text-muted-foreground" />
+            <p className="mt-3 text-sm font-semibold">
+                No loaded matches
+            </p>
+            <p className="mt-1 max-w-sm text-[10px] leading-5 text-muted-foreground">
+                {description}
+            </p>
+        </div>
+    );
+}
+
+function ProductOverviewSnapshot({
+    title,
+    value,
+    description,
+    icon: Icon,
+    tone,
+    onClick,
+    className,
+}: {
+    title: string;
+    value: string;
+    description: string;
+    icon: typeof Package2;
+    tone: 'primary' | 'teal' | 'emerald' | 'amber';
+    onClick: () => void;
+    className?: string;
+}) {
+    const toneStyles = {
+        primary:
+            'border-primary/15 bg-primary/[0.055] text-primary',
+        teal:
+            'border-cyan-500/15 bg-cyan-500/[0.055] text-cyan-300',
+        emerald:
+            'border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-400',
+        amber:
+            'border-amber-500/15 bg-amber-500/[0.055] text-amber-400',
+    } as const;
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={cn(
+                'group min-w-0 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35',
+                className,
+            )}
+        >
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                        {title}
+                    </p>
+                    <p className="mt-2 text-xl font-semibold leading-none tabular-nums">
+                        {value}
+                    </p>
+                    <p className="mt-1.5 truncate text-[9px] text-muted-foreground">
+                        {description}
+                    </p>
+                </div>
+
+                <span
+                    className={cn(
+                        'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border transition-transform group-hover:scale-105',
+                        toneStyles[tone],
+                    )}
+                >
+                    <Icon className="size-4" />
+                </span>
+            </div>
+        </button>
     );
 }
 
@@ -2376,12 +2860,16 @@ function CatalogFactRow({
     value,
     icon,
     tone,
+    onClick,
+    className,
 }: {
     label: string;
     description: string;
     value: number;
     icon: ReactNode;
     tone: 'emerald' | 'lime' | 'teal' | 'amber';
+    onClick: () => void;
+    className?: string;
 }) {
     const toneStyles = {
         emerald: {
@@ -2389,12 +2877,12 @@ function CatalogFactRow({
             value: 'text-primary',
         },
         lime: {
-            icon: 'border-primary/15 bg-primary/[0.055] text-primary',
-            value: 'text-primary',
+            icon: 'border-lime-500/15 bg-lime-500/[0.055] text-lime-300',
+            value: 'text-lime-300',
         },
         teal: {
-            icon: 'border-primary/15 bg-primary/[0.055] text-primary',
-            value: 'text-primary',
+            icon: 'border-cyan-500/15 bg-cyan-500/[0.055] text-cyan-300',
+            value: 'text-cyan-300',
         },
         amber: {
             icon: 'border-amber-500/15 bg-amber-500/[0.055] text-amber-400',
@@ -2405,10 +2893,17 @@ function CatalogFactRow({
     const styles = toneStyles[tone];
 
     return (
-        <div className="flex items-center gap-3 px-4 py-3.5">
+        <button
+            type="button"
+            onClick={onClick}
+            className={cn(
+                'group flex min-w-0 items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35',
+                className,
+            )}
+        >
             <span
                 className={cn(
-                    'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border',
+                    'inline-flex size-8 shrink-0 items-center justify-center rounded-lg border transition-transform group-hover:scale-105',
                     styles.icon,
                 )}
             >
@@ -2416,12 +2911,12 @@ function CatalogFactRow({
             </span>
 
             <div className="min-w-0 flex-1">
-                <dt className="text-[10px] font-semibold text-foreground/90">
+                <p className="text-[10px] font-semibold text-foreground/90">
                     {label}
-                </dt>
-                <dd className="mt-0.5 truncate text-[9px] text-muted-foreground">
+                </p>
+                <p className="mt-0.5 truncate text-[9px] text-muted-foreground">
                     {description}
-                </dd>
+                </p>
             </div>
 
             <span
@@ -2432,7 +2927,7 @@ function CatalogFactRow({
             >
                 {formatNumber(value)}
             </span>
-        </div>
+        </button>
     );
 }
 
@@ -2447,13 +2942,6 @@ function formatNumber(value: number): string {
     return new Intl.NumberFormat('en-PH', {
         maximumFractionDigits: 0,
     }).format(Number(value || 0));
-}
-
-function formatDecimal(value: number): string {
-    return new Intl.NumberFormat('en-PH', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 1,
-    }).format(Number.isFinite(value) ? value : 0);
 }
 
 function formatDateTime(value: string | null): string {

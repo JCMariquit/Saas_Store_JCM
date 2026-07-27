@@ -1,18 +1,13 @@
-import { ActionGroup } from '@/components/shared/action-group';
+import { AppDrawer } from '@/components/shared/app-drawer';
 import { AppPagination } from '@/components/shared/app-pagination';
 import { BooleanField } from '@/components/shared/boolean-field';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
-import {
-    DataTable,
-    type DataTableColumn,
-} from '@/components/shared/data-table';
 import { EntityAvatar } from '@/components/shared/entity-avatar';
 import { EntityInfo } from '@/components/shared/entity-info';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { FormDialog } from '@/components/shared/form-dialog';
 import { FormField } from '@/components/shared/form-field';
 import { FormSection } from '@/components/shared/form-section';
-import { IconButton } from '@/components/shared/icon-button';
 import { PageContainer } from '@/components/shared/page-container';
 import { SearchInput } from '@/components/shared/search-input';
 import { SectionCard } from '@/components/shared/section-card';
@@ -33,7 +28,9 @@ import { cn } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import {
+    CalendarDays,
     CheckCircle2,
+    ChevronRight,
     CircleGauge,
     Folder,
     FolderTree,
@@ -42,6 +39,7 @@ import {
     Pencil,
     Plus,
     RefreshCw,
+    Search,
     Tags,
     Trash2,
     XCircle,
@@ -49,6 +47,7 @@ import {
 } from 'lucide-react';
 import {
     type FormEvent,
+    type ReactNode,
     useEffect,
     useState,
 } from 'react';
@@ -143,6 +142,13 @@ type CategoryMetricTone =
     | 'teal'
     | 'lime';
 
+type CategoryDrawerView =
+    | 'all'
+    | 'active'
+    | 'inactive'
+    | 'root'
+    | 'nested';
+
 /*
 |--------------------------------------------------------------------------
 | Configuration
@@ -192,6 +198,12 @@ export default function CategoryIndex({
 
     const [editingCategory, setEditingCategory] =
         useState<Category | null>(null);
+
+    const [detailsCategory, setDetailsCategory] =
+        useState<Category | null>(null);
+
+    const [catalogDrawerView, setCatalogDrawerView] =
+        useState<CategoryDrawerView | null>(null);
 
     const [deleteTarget, setDeleteTarget] =
         useState<Category | null>(null);
@@ -287,6 +299,26 @@ export default function CategoryIndex({
         });
 
         setIsDialogOpen(true);
+    }
+
+    function openDetailsDrawer(
+        category: Category,
+    ): void {
+        setDetailsCategory(category);
+    }
+
+    function closeDetailsDrawer(): void {
+        setDetailsCategory(null);
+    }
+
+    function openCatalogDrawer(
+        view: CategoryDrawerView,
+    ): void {
+        setCatalogDrawerView(view);
+    }
+
+    function closeCatalogDrawer(): void {
+        setCatalogDrawerView(null);
     }
 
     function submitCategory(
@@ -500,224 +532,6 @@ export default function CategoryIndex({
 
     /*
     |--------------------------------------------------------------------------
-    | Table columns
-    |--------------------------------------------------------------------------
-    */
-
-    const categoryColumns: DataTableColumn<Category>[] =
-        [
-            {
-                key: 'category',
-                header: 'Category',
-                className: 'min-w-[300px]',
-                cell: (category) => (
-                    <EntityInfo
-                        avatar={
-                            <EntityAvatar
-                                icon={
-                                    category.parent_id
-                                        ? Folder
-                                        : FolderTree
-                                }
-                                className={
-                                    category.parent_id
-                                        ? 'border-primary/15 bg-primary/[0.055] text-primary/80 group-hover:border-primary/25 group-hover:bg-primary/10'
-                                        : 'border-primary/20 bg-primary/10 text-primary group-hover:border-primary/30 group-hover:bg-primary/15'
-                                }
-                            />
-                        }
-                        title={category.name}
-                        badges={
-                            <Badge
-                                variant="outline"
-                                className={cn(
-                                    'h-5 rounded-full px-2 text-[9px] font-semibold',
-                                    category.parent_id
-                                        ? 'border-primary/15 bg-primary/[0.055] text-primary/80'
-                                        : 'border-primary/20 bg-primary/10 text-primary',
-                                )}
-                            >
-                                {category.parent_id
-                                    ? 'CHILD'
-                                    : 'ROOT'}
-                            </Badge>
-                        }
-                        subtitle={
-                            <>
-                                Slug:{' '}
-                                <span className="font-mono font-semibold text-foreground/75">
-                                    {category.slug}
-                                </span>
-                            </>
-                        }
-                        description={
-                            category.description ??
-                            'No category description'
-                        }
-                    />
-                ),
-            },
-            {
-                key: 'hierarchy',
-                header: 'Catalog Hierarchy',
-                className: 'min-w-[230px]',
-                cell: (category) =>
-                    category.parent ? (
-                        <div className="flex items-start gap-2.5">
-                            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.055] text-primary/80">
-                                <Layers3 className="size-4" />
-                            </span>
-
-                            <div className="min-w-0">
-                                <p className="text-[9px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-                                    Nested under
-                                </p>
-
-                                <p className="mt-1 max-w-[175px] truncate text-[12px] font-semibold text-foreground/85">
-                                    {category.parent.name}
-                                </p>
-
-                                <p className="mt-1 max-w-[175px] truncate font-mono text-[9px] text-primary/75">
-                                    {category.parent.slug}
-                                    {' / '}
-                                    {category.slug}
-                                </p>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex items-start gap-2.5">
-                            <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
-                                <FolderTree className="size-4" />
-                            </span>
-
-                            <div className="min-w-0">
-                                <p className="text-[9px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-                                    Top-level group
-                                </p>
-
-                                <p className="mt-1 text-[12px] font-semibold text-foreground/85">
-                                    Root category
-                                </p>
-
-                                <p className="mt-1 text-[9px] text-muted-foreground">
-                                    No parent assignment
-                                </p>
-                            </div>
-                        </div>
-                    ),
-            },
-            {
-                key: 'catalog-usage',
-                header: 'Catalog Usage',
-                className: 'min-w-[190px]',
-                cell: (category) => (
-                    <CategoryUsage
-                        products={
-                            category.products_count
-                        }
-                        children={
-                            category.children_count
-                        }
-                    />
-                ),
-            },
-            {
-                key: 'sort-order',
-                header: 'Display Order',
-                className: 'min-w-[120px]',
-                cell: (category) => (
-                    <div className="space-y-1.5">
-                        <Badge
-                            variant="outline"
-                            className="h-7 min-w-10 justify-center rounded-full border-border/70 bg-muted/25 px-2.5 font-mono text-[11px] font-semibold text-foreground"
-                        >
-                            #{category.sort_order}
-                        </Badge>
-
-                        <p className="text-[9px] text-muted-foreground">
-                            Lower displays first
-                        </p>
-                    </div>
-                ),
-            },
-            {
-                key: 'status',
-                header: 'Availability',
-                className: 'min-w-[120px]',
-                cell: (category) => (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={
-                            statusProcessingId ===
-                            category.id
-                        }
-                        onClick={() =>
-                            toggleStatus(category)
-                        }
-                        className="h-auto rounded-full p-0 disabled:opacity-60"
-                    >
-                        <StatusBadge
-                            label={
-                                category.is_active
-                                    ? 'Active'
-                                    : 'Inactive'
-                            }
-                            variant={
-                                category.is_active
-                                    ? 'success'
-                                    : 'danger'
-                            }
-                        />
-                    </Button>
-                ),
-            },
-            {
-                key: 'actions',
-                header: 'Actions',
-                headerClassName: 'text-right',
-                className: 'text-right',
-                cell: (category) => (
-                    <ActionGroup>
-                        <IconButton
-                            label="Edit category"
-                            onClick={() =>
-                                openEditDialog(
-                                    category,
-                                )
-                            }
-                            className="text-primary hover:bg-primary/10 hover:text-primary"
-                        >
-                            <Pencil className="size-3.5" />
-                        </IconButton>
-
-                        <IconButton
-                            label={
-                                category.products_count >
-                                    0 ||
-                                category.children_count >
-                                    0
-                                    ? 'Category has linked records'
-                                    : 'Delete category'
-                            }
-                            variant="ghost"
-                            onClick={() =>
-                                requestDelete(
-                                    category,
-                                )
-                            }
-                            className="text-red-400 hover:bg-red-500/10 hover:text-red-400"
-                        >
-                            <Trash2 className="size-3.5" />
-                        </IconButton>
-                    </ActionGroup>
-                ),
-            },
-        ];
-
-    /*
-    |--------------------------------------------------------------------------
     | Render
     |--------------------------------------------------------------------------
     */
@@ -769,7 +583,11 @@ export default function CategoryIndex({
                     <div className="grid min-w-0 xl:grid-cols-[minmax(320px,1.05fr)_minmax(0,1.95fr)]">
                         {/* Primary catalog coverage */}
 
-                        <div className="relative overflow-hidden border-b border-border/60 p-4 xl:border-b-0 xl:border-r md:p-5">
+                        <button
+                            type="button"
+                            onClick={() => openCatalogDrawer('active')}
+                            className="relative overflow-hidden border-b border-border/60 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35 xl:border-b-0 xl:border-r md:p-5"
+                        >
                             <div className="pointer-events-none absolute -left-16 -top-20 size-52 rounded-full bg-primary/10 blur-3xl" />
                             <FolderTree className="pointer-events-none absolute -bottom-8 -right-5 size-32 text-primary opacity-[0.022]" />
 
@@ -889,7 +707,7 @@ export default function CategoryIndex({
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </button>
 
                         {/* Structure snapshots and distribution */}
 
@@ -897,6 +715,7 @@ export default function CategoryIndex({
                             <div className="grid min-w-0 sm:grid-cols-3">
                                 <CategorySnapshot
                                     title="Total Categories"
+                                    onClick={() => openCatalogDrawer('all')}
                                     value={summary.total}
                                     description="Registered catalog groups"
                                     icon={Tags}
@@ -906,6 +725,7 @@ export default function CategoryIndex({
 
                                 <CategorySnapshot
                                     title="Root Groups"
+                                    onClick={() => openCatalogDrawer('root')}
                                     value={summary.root}
                                     description="Top-level categories"
                                     icon={FolderTree}
@@ -915,6 +735,7 @@ export default function CategoryIndex({
 
                                 <CategorySnapshot
                                     title="Subcategories"
+                                    onClick={() => openCatalogDrawer('nested')}
                                     value={nestedCategories}
                                     description="Nested catalog groups"
                                     icon={Layers3}
@@ -924,7 +745,11 @@ export default function CategoryIndex({
                             </div>
 
                             <div className="grid min-w-0 md:grid-cols-2">
-                                <div className="border-b border-border/60 p-4 md:border-b-0 md:border-r">
+                                <button
+                                    type="button"
+                                    onClick={() => openCatalogDrawer('root')}
+                                    className="border-b border-border/60 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35 md:border-b-0 md:border-r"
+                                >
                                     <div className="flex items-center justify-between gap-3">
                                         <div>
                                             <p className="text-[10px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
@@ -968,9 +793,13 @@ export default function CategoryIndex({
                                             {nestedCategories} nested
                                         </span>
                                     </div>
-                                </div>
+                                </button>
 
-                                <div className="p-4">
+                                <button
+                                    type="button"
+                                    onClick={() => openCatalogDrawer('nested')}
+                                    className="p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                                >
                                     <div className="flex items-center justify-between gap-3">
                                         <div>
                                             <p className="text-[10px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
@@ -1016,7 +845,7 @@ export default function CategoryIndex({
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1026,7 +855,7 @@ export default function CategoryIndex({
 
                 <SectionCard
                     title="Category Directory"
-                    description="Manage catalog groups, parent relationships, product usage, display order, and availability."
+                    description="Select any category row to open its hierarchy, usage, availability, and catalog record."
                     actions={
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge
@@ -1173,25 +1002,10 @@ export default function CategoryIndex({
                         </Select>
                     </FilterBar>
 
-                    <DataTable
-                        data={categories.data}
-                        columns={categoryColumns}
-                        getRowKey={(category) =>
-                            category.id
-                        }
-                        emptyIcon={Tags}
-                        emptyTitle="No categories found"
-                        emptyDescription="Adjust the current filters or create the first category in your product catalog."
-                        emptyAction={
-                            <Button
-                                type="button"
-                                onClick={openCreateDialog}
-                            >
-                                <Plus className="size-4" />
-                                Add Category
-                            </Button>
-                        }
-                        minWidth="1060px"
+                    <CategoryDirectoryTable
+                        categories={categories.data}
+                        onSelect={openDetailsDrawer}
+                        onCreate={openCreateDialog}
                     />
 
                     <AppPagination
@@ -1200,6 +1014,35 @@ export default function CategoryIndex({
                     />
                 </SectionCard>
             </PageContainer>
+
+            <CategoryCatalogDrawer
+                view={catalogDrawerView}
+                pagination={categories}
+                summary={summary}
+                onClose={closeCatalogDrawer}
+                onSelect={(category) => {
+                    closeCatalogDrawer();
+                    openDetailsDrawer(category);
+                }}
+            />
+
+            <CategoryDetailsDrawer
+                category={detailsCategory}
+                statusProcessingId={statusProcessingId}
+                onClose={closeDetailsDrawer}
+                onEdit={(category) => {
+                    closeDetailsDrawer();
+                    openEditDialog(category);
+                }}
+                onToggleStatus={(category) => {
+                    closeDetailsDrawer();
+                    toggleStatus(category);
+                }}
+                onDelete={(category) => {
+                    closeDetailsDrawer();
+                    requestDelete(category);
+                }}
+            />
 
             {/* Create and edit form */}
 
@@ -1457,6 +1300,701 @@ export default function CategoryIndex({
 |--------------------------------------------------------------------------
 */
 
+
+function CategoryDirectoryTable({
+    categories,
+    onSelect,
+    onCreate,
+}: {
+    categories: Category[];
+    onSelect: (category: Category) => void;
+    onCreate: () => void;
+}) {
+    return (
+        <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20 shadow-sm">
+            <div className="overflow-x-auto">
+                <table className="w-full min-w-[920px] table-fixed border-collapse">
+                    <thead className="border-b border-primary/10 bg-primary/[0.025]">
+                        <tr>
+                            <th className="w-[290px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                Category
+                            </th>
+                            <th className="w-[220px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                Hierarchy
+                            </th>
+                            <th className="w-[185px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                Catalog Usage
+                            </th>
+                            <th className="w-[120px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                Order
+                            </th>
+                            <th className="w-[125px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                Status
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody className="divide-y divide-border/60">
+                        {categories.length === 0 ? (
+                            <tr>
+                                <td colSpan={5} className="px-6 py-14">
+                                    <div className="mx-auto flex max-w-sm flex-col items-center text-center">
+                                        <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.045] text-primary">
+                                            <Tags className="size-5" />
+                                        </span>
+                                        <h3 className="mt-3 text-sm font-semibold text-foreground">
+                                            No categories found
+                                        </h3>
+                                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                            Adjust the filters or create the first category in the product catalog.
+                                        </p>
+                                        <Button
+                                            type="button"
+                                            onClick={onCreate}
+                                            className="mt-4 h-9 rounded-lg px-4 text-xs"
+                                        >
+                                            <Plus className="size-4" />
+                                            Add Category
+                                        </Button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : (
+                            categories.map((category) => (
+                                <tr
+                                    key={category.id}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`View details for ${category.name}`}
+                                    onClick={() => onSelect(category)}
+                                    onKeyDown={(event) => {
+                                        if (
+                                            event.key === 'Enter' ||
+                                            event.key === ' '
+                                        ) {
+                                            event.preventDefault();
+                                            onSelect(category);
+                                        }
+                                    }}
+                                    className="group cursor-pointer bg-card/55 transition-colors hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                                >
+                                    <td className="px-4 py-2.5">
+                                        <EntityInfo
+                                            avatar={
+                                                <EntityAvatar
+                                                    icon={category.parent_id ? Folder : FolderTree}
+                                                    className="border-primary/15 bg-primary/[0.07] text-primary transition-colors group-hover:border-primary/25 group-hover:bg-primary/10"
+                                                />
+                                            }
+                                            title={category.name}
+                                            subtitle={
+                                                <span className="font-mono text-[10px]">
+                                                    {category.slug}
+                                                </span>
+                                            }
+                                        />
+                                    </td>
+
+                                    <td className="px-4 py-2.5">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-[11px] font-semibold text-foreground/90">
+                                                {category.parent?.name ?? 'Root category'}
+                                            </p>
+                                            <p className="mt-1 truncate font-mono text-[9px] text-muted-foreground">
+                                                {category.parent
+                                                    ? `${category.parent.slug} / ${category.slug}`
+                                                    : 'Top-level catalog group'}
+                                            </p>
+                                        </div>
+                                    </td>
+
+                                    <td className="px-4 py-2.5">
+                                        <CategoryUsageCompact
+                                            products={category.products_count}
+                                            children={category.children_count}
+                                        />
+                                    </td>
+
+                                    <td className="px-4 py-2.5">
+                                        <Badge
+                                            variant="outline"
+                                            className="h-6 rounded-full border-border/70 bg-muted/25 px-2.5 font-mono text-[10px] font-semibold text-foreground"
+                                        >
+                                            #{category.sort_order}
+                                        </Badge>
+                                    </td>
+
+                                    <td className="px-4 py-2.5">
+                                        <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                            <StatusBadge
+                                                label={category.is_active ? 'Active' : 'Inactive'}
+                                                variant={category.is_active ? 'success' : 'danger'}
+                                            />
+                                            <Badge
+                                                variant="outline"
+                                                className="h-5 rounded-full border-primary/15 bg-primary/[0.055] px-1.5 text-[8px] text-primary/80"
+                                            >
+                                                {category.parent_id ? 'Child' : 'Root'}
+                                            </Badge>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+function CategoryUsageCompact({
+    products,
+    children,
+}: {
+    products: number;
+    children: number;
+}) {
+    return (
+        <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <Badge
+                variant="outline"
+                className="h-5 border-primary/15 bg-primary/[0.045] px-1.5 text-[8px] text-primary"
+            >
+                <Package2 className="mr-1 size-2.5" />
+                {products} product{products === 1 ? '' : 's'}
+            </Badge>
+            <Badge
+                variant="outline"
+                className="h-5 border-primary/10 bg-primary/[0.025] px-1.5 text-[8px] text-primary/75"
+            >
+                <Layers3 className="mr-1 size-2.5" />
+                {children} child{children === 1 ? '' : 'ren'}
+            </Badge>
+        </div>
+    );
+}
+
+function CategoryCatalogDrawer({
+    view,
+    pagination,
+    summary,
+    onClose,
+    onSelect,
+}: {
+    view: CategoryDrawerView | null;
+    pagination: PaginatedCategories;
+    summary: CategorySummary;
+    onClose: () => void;
+    onSelect: (category: Category) => void;
+}) {
+    const [drawerSearch, setDrawerSearch] = useState('');
+
+    useEffect(() => {
+        setDrawerSearch('');
+    }, [view]);
+
+    const activeView = view ?? 'all';
+
+    const configs: Record<
+        CategoryDrawerView,
+        {
+            title: string;
+            eyebrow: string;
+            description: string;
+            total: number;
+            emptyLabel: string;
+        }
+    > = {
+        all: {
+            title: 'Registered Categories',
+            eyebrow: 'Complete catalog structure',
+            description:
+                'Review category records loaded on the current page and open any row for its complete hierarchy and usage details.',
+            total: summary.total,
+            emptyLabel: 'No category records are loaded on this page.',
+        },
+        active: {
+            title: 'Active Categories',
+            eyebrow: 'Available for assignment',
+            description:
+                'Active categories can be assigned to products and used throughout inventory catalog operations.',
+            total: summary.active,
+            emptyLabel: 'No active categories are loaded on this page.',
+        },
+        inactive: {
+            title: 'Inactive Categories',
+            eyebrow: 'Needs catalog review',
+            description:
+                'Inactive categories remain in history but are unavailable for new product assignment.',
+            total: summary.inactive,
+            emptyLabel: 'No inactive categories are loaded on this page.',
+        },
+        root: {
+            title: 'Root Category Groups',
+            eyebrow: 'Top-level hierarchy',
+            description:
+                'Root groups establish the primary product organization and may contain nested categories.',
+            total: summary.root,
+            emptyLabel: 'No root categories are loaded on this page.',
+        },
+        nested: {
+            title: 'Subcategories',
+            eyebrow: 'Nested hierarchy',
+            description:
+                'Subcategories inherit a parent group and provide more specific product organization.',
+            total: Math.max(0, summary.total - summary.root),
+            emptyLabel: 'No subcategories are loaded on this page.',
+        },
+    };
+
+    const config = configs[activeView];
+
+    const matchingCategories = pagination.data.filter((category) => {
+        if (activeView === 'active') {
+            return category.is_active;
+        }
+        if (activeView === 'inactive') {
+            return !category.is_active;
+        }
+        if (activeView === 'root') {
+            return category.parent_id === null;
+        }
+        if (activeView === 'nested') {
+            return category.parent_id !== null;
+        }
+        return true;
+    });
+
+    const normalizedSearch = drawerSearch.trim().toLowerCase();
+
+    const visibleCategories = normalizedSearch
+        ? matchingCategories.filter((category) =>
+              [
+                  category.name,
+                  category.slug,
+                  category.description,
+                  category.parent?.name,
+                  category.parent?.slug,
+              ]
+                  .filter(Boolean)
+                  .join(' ')
+                  .toLowerCase()
+                  .includes(normalizedSearch),
+          )
+        : matchingCategories;
+
+    const loadedRange =
+        pagination.from !== null && pagination.to !== null
+            ? `${pagination.from}-${pagination.to}`
+            : '0';
+
+    return (
+        <AppDrawer
+            open={view !== null}
+            onOpenChange={(open) => {
+                if (!open) {
+                    onClose();
+                }
+            }}
+            title={config.title}
+            description={config.description}
+            processing={false}
+        >
+            <div className="flex min-h-full flex-col bg-card">
+                <div className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
+                        {config.eyebrow}
+                    </p>
+                    <div className="mt-2 flex items-end justify-between gap-4">
+                        <div>
+                            <p className="text-3xl font-semibold leading-none tabular-nums text-primary">
+                                {config.total}
+                            </p>
+                            <p className="mt-1 text-[9px] text-muted-foreground">
+                                Total matching catalog records
+                            </p>
+                        </div>
+                        <Badge
+                            variant="outline"
+                            className="h-7 rounded-full border-primary/15 bg-primary/[0.055] px-2.5 text-[9px] text-primary"
+                        >
+                            Loaded {loadedRange}
+                        </Badge>
+                    </div>
+                </div>
+
+                <div className="border-b border-border/60 p-4">
+                    <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            value={drawerSearch}
+                            onChange={(event) => setDrawerSearch(event.target.value)}
+                            placeholder="Search loaded categories..."
+                            className="h-10 pl-9 text-sm"
+                        />
+                    </div>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                    {visibleCategories.length === 0 ? (
+                        <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-background/20 p-6 text-center">
+                            <Tags className="size-6 text-muted-foreground" />
+                            <p className="mt-3 text-sm font-semibold">
+                                No loaded matches
+                            </p>
+                            <p className="mt-1 max-w-sm text-[10px] leading-5 text-muted-foreground">
+                                {config.emptyLabel}
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {visibleCategories.map((category) => (
+                                <button
+                                    key={category.id}
+                                    type="button"
+                                    onClick={() => onSelect(category)}
+                                    className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-background/25 p-3 text-left transition hover:border-primary/20 hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+                                >
+                                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.07] text-primary">
+                                        {category.parent_id ? (
+                                            <Folder className="size-4" />
+                                        ) : (
+                                            <FolderTree className="size-4" />
+                                        )}
+                                    </span>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-1.5">
+                                            <p className="truncate text-[11px] font-semibold">
+                                                {category.name}
+                                            </p>
+                                            <StatusBadge
+                                                label={category.is_active ? 'Active' : 'Inactive'}
+                                                variant={category.is_active ? 'success' : 'danger'}
+                                            />
+                                        </div>
+                                        <p className="mt-1 truncate font-mono text-[9px] text-muted-foreground">
+                                            {category.parent
+                                                ? `${category.parent.name} / ${category.slug}`
+                                                : category.slug}
+                                        </p>
+                                        <p className="mt-1 text-[8px] text-muted-foreground">
+                                            {category.products_count} products · {category.children_count} children
+                                        </p>
+                                    </div>
+                                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </AppDrawer>
+    );
+}
+
+function CategoryDetailsDrawer({
+    category,
+    statusProcessingId,
+    onClose,
+    onEdit,
+    onToggleStatus,
+    onDelete,
+}: {
+    category: Category | null;
+    statusProcessingId: number | null;
+    onClose: () => void;
+    onEdit: (category: Category) => void;
+    onToggleStatus: (category: Category) => void;
+    onDelete: (category: Category) => void;
+}) {
+    return (
+        <AppDrawer
+            open={category !== null}
+            onOpenChange={(open) => {
+                if (!open) {
+                    onClose();
+                }
+            }}
+            title="Category Record"
+            description="Review catalog identity, hierarchy, usage, ordering, and availability."
+            processing={false}
+        >
+            {category && (
+                <div className="flex min-h-full flex-col bg-card">
+                    <div className="min-h-0 flex-1 overflow-y-auto">
+                        <section className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
+                            <div className="flex items-start gap-3">
+                                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                                    {category.parent_id ? (
+                                        <Folder className="size-5" />
+                                    ) : (
+                                        <FolderTree className="size-5" />
+                                    )}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
+                                            Inventory category
+                                        </p>
+                                        <StatusBadge
+                                            label={category.is_active ? 'Active' : 'Inactive'}
+                                            variant={category.is_active ? 'success' : 'danger'}
+                                        />
+                                        <Badge
+                                            variant="outline"
+                                            className="h-5 rounded-full border-primary/15 bg-primary/[0.055] px-2 text-[8px] text-primary/80"
+                                        >
+                                            {category.parent_id ? 'CHILD' : 'ROOT'}
+                                        </Badge>
+                                    </div>
+                                    <h2 className="mt-2 text-lg font-semibold tracking-[-0.025em] text-foreground">
+                                        {category.name}
+                                    </h2>
+                                    <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+                                        {category.slug}
+                                    </p>
+                                    <p className="mt-2 text-[10px] leading-5 text-muted-foreground">
+                                        {category.description ??
+                                            'No internal category description was provided.'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mt-5 grid grid-cols-3 border-y border-border/60">
+                                <CategoryDetailStat
+                                    label="Products"
+                                    value={category.products_count}
+                                    helper="Assigned records"
+                                    className="border-r border-border/60"
+                                />
+                                <CategoryDetailStat
+                                    label="Children"
+                                    value={category.children_count}
+                                    helper="Nested groups"
+                                    className="border-r border-border/60"
+                                />
+                                <CategoryDetailStat
+                                    label="Order"
+                                    value={category.sort_order}
+                                    helper="Display priority"
+                                />
+                            </div>
+                        </section>
+
+                        <div className="space-y-5 p-5">
+                            <CategoryDetailSection
+                                title="Catalog hierarchy"
+                                description="Parent relationship and complete category path."
+                                icon={FolderTree}
+                            >
+                                <dl className="divide-y divide-border/60">
+                                    <CategoryDetailRow
+                                        label="Category level"
+                                        value={category.parent_id ? 'Subcategory' : 'Root category'}
+                                    />
+                                    <CategoryDetailRow
+                                        label="Parent category"
+                                        value={category.parent?.name ?? 'No parent'}
+                                    />
+                                    <CategoryDetailRow
+                                        label="Catalog path"
+                                        value={
+                                            category.parent
+                                                ? `${category.parent.slug} / ${category.slug}`
+                                                : category.slug
+                                        }
+                                        mono
+                                    />
+                                </dl>
+                            </CategoryDetailSection>
+
+                            <CategoryDetailSection
+                                title="Catalog usage"
+                                description="Linked products and direct subcategory records."
+                                icon={Package2}
+                            >
+                                <div className="grid grid-cols-2 gap-3 p-4">
+                                    <div className="rounded-xl border border-primary/15 bg-primary/[0.045] p-3">
+                                        <p className="text-2xl font-semibold tabular-nums text-primary">
+                                            {category.products_count}
+                                        </p>
+                                        <p className="mt-1 text-[9px] text-muted-foreground">
+                                            Products assigned
+                                        </p>
+                                    </div>
+                                    <div className="rounded-xl border border-primary/10 bg-primary/[0.025] p-3">
+                                        <p className="text-2xl font-semibold tabular-nums text-primary/80">
+                                            {category.children_count}
+                                        </p>
+                                        <p className="mt-1 text-[9px] text-muted-foreground">
+                                            Direct child groups
+                                        </p>
+                                    </div>
+                                </div>
+                            </CategoryDetailSection>
+
+                            <CategoryDetailSection
+                                title="Record activity"
+                                description="Creation and latest update timestamps."
+                                icon={CalendarDays}
+                            >
+                                <dl className="divide-y divide-border/60">
+                                    <CategoryDetailRow
+                                        label="Created"
+                                        value={formatCategoryDate(category.created_at)}
+                                    />
+                                    <CategoryDetailRow
+                                        label="Last updated"
+                                        value={formatCategoryDate(category.updated_at)}
+                                    />
+                                    <CategoryDetailRow
+                                        label="Availability"
+                                        value={
+                                            category.is_active
+                                                ? 'Available for product assignment'
+                                                : 'Unavailable for new assignment'
+                                        }
+                                    />
+                                </dl>
+                            </CategoryDetailSection>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/70 bg-background/35 px-5 py-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onEdit(category)}
+                            className="h-9 rounded-lg px-3 text-xs"
+                        >
+                            <Pencil className="size-3.5" />
+                            Edit
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={statusProcessingId === category.id}
+                            onClick={() => onToggleStatus(category)}
+                            className="h-9 rounded-lg px-3 text-xs"
+                        >
+                            {category.is_active ? 'Disable' : 'Enable'}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onDelete(category)}
+                            className="h-9 rounded-lg border-red-500/20 px-3 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                        >
+                            <Trash2 className="size-3.5" />
+                            Delete
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </AppDrawer>
+    );
+}
+
+function CategoryDetailStat({
+    label,
+    value,
+    helper,
+    className,
+}: {
+    label: string;
+    value: number;
+    helper: string;
+    className?: string;
+}) {
+    return (
+        <div className={cn('min-w-0 px-3 py-3', className)}>
+            <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                {label}
+            </p>
+            <p className="mt-1.5 text-lg font-semibold tabular-nums text-primary">
+                {value}
+            </p>
+            <p className="mt-1 truncate text-[8px] text-muted-foreground">
+                {helper}
+            </p>
+        </div>
+    );
+}
+
+function CategoryDetailSection({
+    title,
+    description,
+    icon: Icon,
+    children,
+}: {
+    title: string;
+    description: string;
+    icon: LucideIcon;
+    children: ReactNode;
+}) {
+    return (
+        <section className="overflow-hidden rounded-xl border border-border/70 bg-background/20">
+            <div className="flex items-start gap-3 border-b border-border/60 px-4 py-3.5">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.06] text-primary">
+                    <Icon className="size-4" />
+                </span>
+                <div>
+                    <h3 className="text-[11px] font-semibold">{title}</h3>
+                    <p className="mt-1 text-[9px] leading-4 text-muted-foreground">
+                        {description}
+                    </p>
+                </div>
+            </div>
+            {children}
+        </section>
+    );
+}
+
+function CategoryDetailRow({
+    label,
+    value,
+    mono = false,
+}: {
+    label: string;
+    value: string;
+    mono?: boolean;
+}) {
+    return (
+        <div className="flex items-start justify-between gap-4 px-4 py-3 text-[10px]">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd
+                className={cn(
+                    'max-w-[240px] text-right font-medium text-foreground/85',
+                    mono && 'font-mono',
+                )}
+            >
+                {value}
+            </dd>
+        </div>
+    );
+}
+
+function formatCategoryDate(value: string | null): string {
+    if (!value) {
+        return '—';
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+
+    return new Intl.DateTimeFormat('en-PH', {
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date);
+}
+
 function CategorySnapshot({
     title,
     value,
@@ -1464,6 +2002,7 @@ function CategorySnapshot({
     icon: Icon,
     tone,
     className,
+    onClick,
 }: {
     title: string;
     value: number;
@@ -1471,6 +2010,7 @@ function CategorySnapshot({
     icon: LucideIcon;
     tone: CategoryMetricTone;
     className?: string;
+    onClick: () => void;
 }) {
     const toneStyles: Record<
         CategoryMetricTone,
@@ -1500,9 +2040,11 @@ function CategorySnapshot({
     const styles = toneStyles[tone];
 
     return (
-        <div
+        <button
+            type="button"
+            onClick={onClick}
             className={cn(
-                'group relative min-w-0 overflow-hidden px-4 py-3.5 transition-colors hover:bg-muted/[0.025]',
+                'group relative min-w-0 overflow-hidden px-4 py-3.5 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35',
                 className,
             )}
         >
@@ -1542,46 +2084,6 @@ function CategorySnapshot({
                     <Icon className="size-4" />
                 </span>
             </div>
-        </div>
-    );
-}
-
-function CategoryUsage({
-    products,
-    children,
-}: {
-    products: number;
-    children: number;
-}) {
-    return (
-        <div className="grid grid-cols-2 gap-2">
-            <div className="min-w-0 rounded-lg border border-primary/15 bg-primary/[0.045] px-2.5 py-2">
-                <div className="flex items-center gap-1.5">
-                    <Package2 className="size-3 text-primary" />
-
-                    <span className="text-[12px] font-semibold tabular-nums text-foreground">
-                        {products}
-                    </span>
-                </div>
-
-                <p className="mt-1 truncate text-[8px] text-muted-foreground">
-                    Products
-                </p>
-            </div>
-
-            <div className="min-w-0 rounded-lg border border-primary/10 bg-primary/[0.025] px-2.5 py-2">
-                <div className="flex items-center gap-1.5">
-                    <Layers3 className="size-3 text-primary/70" />
-
-                    <span className="text-[12px] font-semibold tabular-nums text-foreground">
-                        {children}
-                    </span>
-                </div>
-
-                <p className="mt-1 truncate text-[8px] text-muted-foreground">
-                    Children
-                </p>
-            </div>
-        </div>
+        </button>
     );
 }

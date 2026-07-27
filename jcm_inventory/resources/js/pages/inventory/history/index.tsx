@@ -999,7 +999,7 @@ export default function StockWithdrawalHistory({
 
                     <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20 shadow-sm">
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[1080px] border-collapse">
+                            <table className="w-full min-w-[980px] border-collapse">
                                 <thead className="border-b border-border/70 bg-primary/[0.025]">
                                     <tr>
                                         <th className="min-w-[190px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -1026,9 +1026,6 @@ export default function StockWithdrawalHistory({
                                             Status
                                         </th>
 
-                                        <th className="w-[110px] px-3 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                                            Action
-                                        </th>
                                     </tr>
                                 </thead>
 
@@ -1036,7 +1033,7 @@ export default function StockWithdrawalHistory({
                                     {issuances.data.length === 0 ? (
                                         <tr>
                                             <td
-                                                colSpan={7}
+                                                colSpan={6}
                                                 className="px-4 py-14"
                                             >
                                                 <div className="mx-auto flex max-w-sm flex-col items-center text-center">
@@ -1246,24 +1243,6 @@ export default function StockWithdrawalHistory({
                                                         />
                                                     </td>
 
-                                                    <td className="px-3 py-3 text-right">
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            onClick={(
-                                                                event,
-                                                            ) => {
-                                                                event.stopPropagation();
-
-                                                                setSelectedIssuance(
-                                                                    issuance,
-                                                                );
-                                                            }}
-                                                            className="h-8 rounded-lg border-primary/15 bg-primary/[0.04] px-2.5 text-[9px] text-primary hover:bg-primary/[0.09] hover:text-primary"
-                                                        >
-                                                            Details
-                                                        </Button>
-                                                    </td>
                                                 </tr>
                                             ),
                                         )

@@ -1,4 +1,4 @@
-import { ActionGroup } from "@/components/shared/action-group";
+import { AppDrawer } from "@/components/shared/app-drawer";
 import { AppPagination } from "@/components/shared/app-pagination";
 import { BooleanField } from "@/components/shared/boolean-field";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -8,7 +8,6 @@ import { FilterBar } from "@/components/shared/filter-bar";
 import { FormDialog } from "@/components/shared/form-dialog";
 import { FormField } from "@/components/shared/form-field";
 import { FormSection } from "@/components/shared/form-section";
-import { IconButton } from "@/components/shared/icon-button";
 import { IconInput } from "@/components/shared/icon-input";
 import { MoneyInput } from "@/components/shared/money-input";
 import { PageContainer } from "@/components/shared/page-container";
@@ -34,9 +33,8 @@ import {
   Banknote,
   CalendarDays,
   CheckCircle2,
-  ChevronDown,
+  ChevronRight,
   CircleDollarSign,
-  Hash,
   Mail,
   MapPin,
   Pencil,
@@ -52,7 +50,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  Fragment,
   type FormEvent,
   type ReactNode,
   useEffect,
@@ -147,6 +144,8 @@ type SupplierPageProps = {
 
 type SupplierMetricTone = "primary" | "emerald" | "red";
 
+type SupplierDrawerView = "all" | "active" | "inactive";
+
 /*
 |--------------------------------------------------------------------------
 | Configuration
@@ -194,9 +193,12 @@ export default function SupplierIndex({
 }: SupplierPageProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const [expandedSupplierId, setExpandedSupplierId] = useState<number | null>(
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
     null,
   );
+
+  const [supplierDrawerView, setSupplierDrawerView] =
+    useState<SupplierDrawerView | null>(null);
 
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
 
@@ -335,7 +337,6 @@ export default function SupplierIndex({
     setSearch("");
     setStatus("");
     setSort("latest");
-    setExpandedSupplierId(null);
 
     router.get(
       "/suppliers",
@@ -348,10 +349,20 @@ export default function SupplierIndex({
     );
   }
 
-  function toggleSupplierDetails(supplierId: number): void {
-    setExpandedSupplierId((currentId) =>
-      currentId === supplierId ? null : supplierId,
-    );
+  function openSupplierDetails(supplier: Supplier): void {
+    setSelectedSupplier(supplier);
+  }
+
+  function closeSupplierDetails(): void {
+    setSelectedSupplier(null);
+  }
+
+  function openSupplierDrawer(view: SupplierDrawerView): void {
+    setSupplierDrawerView(view);
+  }
+
+  function closeSupplierDrawer(): void {
+    setSupplierDrawerView(null);
   }
 
   /*
@@ -486,7 +497,11 @@ export default function SupplierIndex({
           </div>
 
           <div className="grid min-w-0 lg:grid-cols-[minmax(330px,1.08fr)_minmax(0,1.92fr)]">
-            <div className="relative overflow-hidden border-b border-border/60 p-4 lg:border-b-0 lg:border-r">
+            <button
+              type="button"
+              onClick={() => openSupplierDrawer("active")}
+              className="relative overflow-hidden border-b border-border/60 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35 lg:border-b-0 lg:border-r"
+            >
               <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-primary/10 blur-3xl" />
               <Truck className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-primary opacity-[0.025]" />
 
@@ -549,7 +564,7 @@ export default function SupplierIndex({
                   </div>
                 </div>
               </div>
-            </div>
+            </button>
 
             <div className="grid min-w-0 sm:grid-cols-3">
               <SupplierNetworkMetric
@@ -561,6 +576,7 @@ export default function SupplierIndex({
                 progress={operationalPercentage}
                 icon={Truck}
                 tone="primary"
+                onClick={() => openSupplierDrawer("all")}
                 className="border-b border-border/60 sm:border-b-0 sm:border-r"
               />
 
@@ -573,6 +589,7 @@ export default function SupplierIndex({
                 progress={operationalPercentage}
                 icon={CheckCircle2}
                 tone="emerald"
+                onClick={() => openSupplierDrawer("active")}
                 className="border-b border-border/60 sm:border-b-0 sm:border-r"
               />
 
@@ -585,6 +602,7 @@ export default function SupplierIndex({
                 progress={inactivePercentage}
                 icon={XCircle}
                 tone="red"
+                onClick={() => openSupplierDrawer("inactive")}
               />
             </div>
           </div>
@@ -687,12 +705,7 @@ export default function SupplierIndex({
 
             <SupplierRegistryTable
               suppliers={suppliers.data}
-              expandedSupplierId={expandedSupplierId}
-              statusProcessingId={statusProcessingId}
-              onToggleDetails={toggleSupplierDetails}
-              onToggleStatus={toggleStatus}
-              onEdit={openEditDialog}
-              onDelete={requestDelete}
+              onSelect={openSupplierDetails}
               onCreate={openCreateDialog}
             />
 
@@ -700,6 +713,31 @@ export default function SupplierIndex({
           </SectionCard>
         </div>
       </PageContainer>
+
+      <SupplierOverviewDrawer
+        view={supplierDrawerView}
+        pagination={suppliers}
+        summary={summary}
+        onClose={closeSupplierDrawer}
+      />
+
+      <SupplierDetailsDrawer
+        supplier={selectedSupplier}
+        statusProcessingId={statusProcessingId}
+        onClose={closeSupplierDetails}
+        onEdit={(supplier) => {
+          closeSupplierDetails();
+          openEditDialog(supplier);
+        }}
+        onToggleStatus={(supplier) => {
+          closeSupplierDetails();
+          toggleStatus(supplier);
+        }}
+        onDelete={(supplier) => {
+          closeSupplierDetails();
+          requestDelete(supplier);
+        }}
+      />
 
       {/* Create and edit supplier */}
 
@@ -1002,68 +1040,32 @@ export default function SupplierIndex({
 
 type SupplierRegistryTableProps = {
   suppliers: Supplier[];
-  expandedSupplierId: number | null;
-  statusProcessingId: number | null;
-  onToggleDetails: (supplierId: number) => void;
-  onToggleStatus: (supplier: Supplier) => void;
-  onEdit: (supplier: Supplier) => void;
-  onDelete: (supplier: Supplier) => void;
+  onSelect: (supplier: Supplier) => void;
   onCreate: () => void;
 };
 
 function SupplierRegistryTable({
   suppliers,
-  expandedSupplierId,
-  statusProcessingId,
-  onToggleDetails,
-  onToggleStatus,
-  onEdit,
-  onDelete,
+  onSelect,
   onCreate,
 }: SupplierRegistryTableProps) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20">
+    <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20 shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] border-collapse">
-          <thead className="border-b border-border/70 bg-muted/20">
+        <table className="w-full min-w-[900px] border-collapse table-fixed">
+          <thead className="border-b border-primary/10 bg-primary/[0.025]">
             <tr>
-              <th scope="col" className="w-11 px-3 py-2.5 text-left">
-                <span className="sr-only">Expand details</span>
-              </th>
-
-              <th
-                scope="col"
-                className="min-w-[260px] px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground"
-              >
+              <th className="w-[280px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
                 Supplier
               </th>
-
-              <th
-                scope="col"
-                className="min-w-[190px] px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground"
-              >
+              <th className="w-[210px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
                 Primary Contact
               </th>
-
-              <th
-                scope="col"
-                className="min-w-[180px] px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground"
-              >
+              <th className="w-[210px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
                 Commercial Terms
               </th>
-
-              <th
-                scope="col"
-                className="min-w-[110px] px-3 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground"
-              >
+              <th className="w-[145px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
                 Status
-              </th>
-
-              <th
-                scope="col"
-                className="w-[104px] px-3 py-2.5 text-right text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground"
-              >
-                Actions
               </th>
             </tr>
           </thead>
@@ -1071,379 +1073,622 @@ function SupplierRegistryTable({
           <tbody className="divide-y divide-border/60">
             {suppliers.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12">
+                <td colSpan={4} className="px-6 py-14">
                   <div className="mx-auto flex max-w-sm flex-col items-center text-center">
-                    <span className="flex size-11 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                    <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.045] text-primary">
                       <Truck className="size-5" />
                     </span>
-
                     <h3 className="mt-3 text-sm font-semibold">
                       No suppliers found
                     </h3>
-
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      Adjust the current filters or register your first supplier
-                      partner.
+                      Adjust the filters or register your first supplier partner.
                     </p>
-
                     <Button
                       type="button"
                       onClick={onCreate}
-                      className="mt-4 h-9 px-3.5 text-xs"
+                      className="mt-4 h-9 rounded-lg px-4 text-xs"
                     >
-                      <Plus className="size-3.5" />
+                      <Plus className="size-4" />
                       Add Supplier
                     </Button>
                   </div>
                 </td>
               </tr>
             ) : (
-              suppliers.map((supplier) => {
-                const isExpanded = expandedSupplierId === supplier.id;
-                const detailsId = `supplier-details-${supplier.id}`;
-
-                return (
-                  <Fragment key={supplier.id}>
-                    <tr
-                      tabIndex={0}
-                      aria-expanded={isExpanded}
-                      aria-controls={detailsId}
-                      onClick={() => onToggleDetails(supplier.id)}
-                      onKeyDown={(event) => {
-                        if (event.target !== event.currentTarget) {
-                          return;
-                        }
-
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          onToggleDetails(supplier.id);
-                        }
-                      }}
-                      className={cn(
-                        "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
-                        isExpanded &&
-                          "bg-primary/[0.04] hover:bg-primary/[0.06]",
-                      )}
-                    >
-                      <td className="px-3 py-3 align-middle">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={
-                            isExpanded
-                              ? `Collapse ${supplier.name} details`
-                              : `Expand ${supplier.name} details`
-                          }
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onToggleDetails(supplier.id);
-                          }}
-                          className={cn(
-                            "size-7 rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary",
-                            isExpanded && "bg-primary/10 text-primary",
-                          )}
-                        >
-                          <ChevronDown
-                            className={cn(
-                              "size-3.5 transition-transform duration-200",
-                              isExpanded && "rotate-180",
-                            )}
-                          />
-                        </Button>
-                      </td>
-
-                      <td className="px-3 py-3 align-middle">
-                        <EntityInfo
-                          avatar={
-                            <EntityAvatar
-                              icon={Truck}
-                              className="border-primary/20 bg-primary/10 text-primary group-hover:border-primary/30 group-hover:bg-primary/15"
-                            />
-                          }
-                          title={supplier.name}
-                          badges={
-                            <Badge
-                              variant="outline"
-                              className="h-5 gap-1 rounded-full border-amber-500/15 bg-amber-500/[0.06] px-2 font-mono text-[9px] font-semibold text-amber-300"
-                            >
-                              <Hash className="size-2.5" />
-                              {supplier.code}
-                            </Badge>
-                          }
-                          subtitle={
-                            isExpanded
-                              ? "Complete record is open"
-                              : "Click row to view complete record"
-                          }
+              suppliers.map((supplier) => (
+                <tr
+                  key={supplier.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open ${supplier.name} supplier record`}
+                  onClick={() => onSelect(supplier)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelect(supplier);
+                    }
+                  }}
+                  className="group cursor-pointer bg-card/55 transition-colors hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                >
+                  <td className="px-4 py-3">
+                    <EntityInfo
+                      avatar={
+                        <EntityAvatar
+                          icon={Truck}
+                          className="border-primary/15 bg-primary/[0.07] text-primary transition-colors group-hover:border-primary/25 group-hover:bg-primary/10"
                         />
-                      </td>
-
-                      <td className="px-3 py-3 align-middle">
-                        <div className="space-y-1.5">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                              <UserRound className="size-3" />
-                            </span>
-
-                            <span
-                              className={cn(
-                                "max-w-[155px] truncate text-[11px] font-semibold",
-                                !supplier.contact_person &&
-                                  "text-muted-foreground",
-                              )}
-                            >
-                              {supplier.contact_person ?? "Not provided"}
-                            </span>
-                          </div>
-
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                              <Phone className="size-3" />
-                            </span>
-
-                            <span
-                              className={cn(
-                                "max-w-[155px] truncate text-[10px]",
-                                supplier.phone
-                                  ? "text-foreground/75"
-                                  : "text-muted-foreground",
-                              )}
-                            >
-                              {supplier.phone ?? "No phone"}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-3 py-3 align-middle">
-                        <div className="space-y-1.5">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                              <ReceiptText className="size-3" />
-                            </span>
-
-                            <span
-                              className={cn(
-                                "max-w-[140px] truncate text-[10px] font-medium",
-                                !supplier.payment_terms &&
-                                  "text-muted-foreground",
-                              )}
-                            >
-                              {supplier.payment_terms ?? "Not configured"}
-                            </span>
-                          </div>
-
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                              <CircleDollarSign className="size-3" />
-                            </span>
-
-                            <span className="text-[11px] font-semibold tabular-nums text-primary">
-                              {formatCurrency(supplier.credit_limit)}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-3 py-3 align-middle">
-                        <div
-                          onClick={(event) => event.stopPropagation()}
-                          onKeyDown={(event) => event.stopPropagation()}
+                      }
+                      title={supplier.name}
+                      badges={
+                        <Badge
+                          variant="outline"
+                          className="h-5 rounded-full border-amber-500/15 bg-amber-500/[0.055] px-2 font-mono text-[8px] text-amber-300"
                         >
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            disabled={statusProcessingId === supplier.id}
-                            onClick={() => onToggleStatus(supplier)}
-                            className="h-auto rounded-full p-0 disabled:opacity-60"
-                          >
-                            <StatusBadge
-                              label={supplier.is_active ? "Active" : "Inactive"}
-                              variant={
-                                supplier.is_active ? "success" : "danger"
-                              }
-                            />
-                          </Button>
-                        </div>
-                      </td>
+                          {supplier.code}
+                        </Badge>
+                      }
+                      subtitle={
+                        supplier.address
+                          ? supplier.address
+                          : "No business address"
+                      }
+                    />
+                  </td>
 
-                      <td className="px-3 py-3 text-right align-middle">
-                        <div
-                          className="inline-flex"
-                          onClick={(event) => event.stopPropagation()}
-                          onKeyDown={(event) => event.stopPropagation()}
-                        >
-                          <ActionGroup>
-                            <IconButton
-                              label="Edit supplier"
-                              onClick={() => onEdit(supplier)}
-                              className="text-primary hover:bg-primary/10 hover:text-primary"
-                            >
-                              <Pencil className="size-3.5" />
-                            </IconButton>
+                  <td className="px-4 py-3">
+                    <p className="truncate text-[11px] font-semibold text-foreground/90">
+                      {supplier.contact_person ?? "Not provided"}
+                    </p>
+                    <p className="mt-1 truncate text-[9px] text-muted-foreground">
+                      {supplier.phone ?? supplier.email ?? "No contact channel"}
+                    </p>
+                  </td>
 
-                            <IconButton
-                              label="Delete supplier"
-                              onClick={() => onDelete(supplier)}
-                              className="text-red-400 hover:bg-red-500/10 hover:text-red-400"
-                            >
-                              <Trash2 className="size-3.5" />
-                            </IconButton>
-                          </ActionGroup>
-                        </div>
-                      </td>
-                    </tr>
+                  <td className="px-4 py-3">
+                    <p className="truncate text-[11px] font-semibold text-foreground/90">
+                      {supplier.payment_terms ?? "Not configured"}
+                    </p>
+                    <p className="mt-1 text-[9px] font-medium tabular-nums text-primary">
+                      {formatCurrency(supplier.credit_limit)} credit limit
+                    </p>
+                  </td>
 
-                    {isExpanded && (
-                      <tr id={detailsId} className="bg-muted/[0.08]">
-                        <td colSpan={6} className="px-3 pb-3 pt-0">
-                          <div className="overflow-hidden rounded-xl border border-primary/15 bg-background/45 shadow-sm">
-                            <div className="flex flex-col gap-2 border-b border-border/60 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                              <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
-                                  Complete Supplier Record
-                                </p>
-
-                                <p className="mt-0.5 text-[9px] text-muted-foreground">
-                                  Additional contact, business, and record
-                                  information.
-                                </p>
-                              </div>
-
-                              <Badge
-                                variant="outline"
-                                className="h-6 w-fit rounded-full border-border/70 bg-muted/20 px-2.5 font-mono text-[9px] text-muted-foreground"
-                              >
-                                {supplier.code}
-                              </Badge>
-                            </div>
-
-                            <div className="grid gap-3 p-3 lg:grid-cols-3">
-                              <SupplierDetailSection
-                                title="Communication"
-                                description="Contact channels for supplier coordination."
-                                icon={Phone}
-                                iconClassName="border-primary/20 bg-primary/10 text-primary"
-                              >
-                                <SupplierDetailItem
-                                  label="Contact person"
-                                  value={
-                                    supplier.contact_person ?? "Not provided"
-                                  }
-                                  icon={UserRound}
-                                />
-
-                                <SupplierDetailItem
-                                  label="Primary phone"
-                                  value={supplier.phone ?? "Not provided"}
-                                  icon={Phone}
-                                />
-
-                                <SupplierDetailItem
-                                  label="Alternate phone"
-                                  value={
-                                    supplier.alternate_phone ?? "Not provided"
-                                  }
-                                  icon={Phone}
-                                />
-
-                                <SupplierDetailItem
-                                  label="Email address"
-                                  value={supplier.email ?? "Not provided"}
-                                  icon={Mail}
-                                />
-                              </SupplierDetailSection>
-
-                              <SupplierDetailSection
-                                title="Business Profile"
-                                description="Registered address and tax identity."
-                                icon={MapPin}
-                                iconClassName="border-primary/20 bg-primary/10 text-primary"
-                              >
-                                <SupplierDetailItem
-                                  label="Business address"
-                                  value={supplier.address ?? "Not provided"}
-                                  icon={MapPin}
-                                  multiline
-                                />
-
-                                <SupplierDetailItem
-                                  label="Tax number / TIN"
-                                  value={supplier.tax_number ?? "Not provided"}
-                                  icon={ReceiptText}
-                                  mono
-                                />
-                              </SupplierDetailSection>
-
-                              <SupplierDetailSection
-                                title="Procurement Record"
-                                description="Terms, ownership, dates, and internal notes."
-                                icon={Banknote}
-                                iconClassName="border-primary/20 bg-primary/10 text-primary"
-                              >
-                                <SupplierDetailItem
-                                  label="Payment terms"
-                                  value={
-                                    supplier.payment_terms ?? "Not configured"
-                                  }
-                                  icon={ReceiptText}
-                                />
-
-                                <SupplierDetailItem
-                                  label="Credit limit"
-                                  value={formatCurrency(supplier.credit_limit)}
-                                  icon={CircleDollarSign}
-                                  valueClassName="font-semibold tabular-nums text-primary"
-                                />
-
-                                <SupplierDetailItem
-                                  label="Added by"
-                                  value={
-                                    supplier.created_by
-                                      ? `${supplier.created_by.name}${
-                                          supplier.created_by.email
-                                            ? ` · ${supplier.created_by.email}`
-                                            : ""
-                                        }`
-                                      : "Creator not recorded"
-                                  }
-                                  icon={UserRound}
-                                />
-
-                                <SupplierDetailItem
-                                  label="Created"
-                                  value={formatDateTime(supplier.created_at)}
-                                  icon={CalendarDays}
-                                />
-
-                                <SupplierDetailItem
-                                  label="Last updated"
-                                  value={formatDateTime(supplier.updated_at)}
-                                  icon={CalendarDays}
-                                />
-
-                                <SupplierDetailItem
-                                  label="Notes"
-                                  value={supplier.notes ?? "No internal notes"}
-                                  icon={ReceiptText}
-                                  multiline
-                                />
-                              </SupplierDetailSection>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <StatusBadge
+                        label={supplier.is_active ? "Active" : "Inactive"}
+                        variant={supplier.is_active ? "success" : "danger"}
+                      />
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                    </div>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
       </div>
     </div>
+  );
+}
+
+function SupplierOverviewDrawer({
+  view,
+  pagination,
+  summary,
+  onClose,
+}: {
+  view: SupplierDrawerView | null;
+  pagination: PaginatedSuppliers;
+  summary: SupplierSummary;
+  onClose: () => void;
+}) {
+  const [drawerSearch, setDrawerSearch] = useState("");
+  const [expandedSupplierId, setExpandedSupplierId] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    setDrawerSearch("");
+    setExpandedSupplierId(null);
+  }, [view]);
+
+  const activeView = view ?? "all";
+
+  const config = {
+    all: {
+      title: "Registered Suppliers",
+      description:
+        "Review supplier partners loaded on the current page. Select a supplier to expand its procurement profile.",
+      total: summary.total,
+    },
+    active: {
+      title: "Active Suppliers",
+      description:
+        "Active suppliers are eligible for purchase orders and receiving workflows. Select a supplier to inspect its profile.",
+      total: summary.active,
+    },
+    inactive: {
+      title: "Inactive Suppliers",
+      description:
+        "Inactive suppliers remain on record but are restricted from procurement workflows. Select a supplier to inspect its profile.",
+      total: summary.inactive,
+    },
+  }[activeView];
+
+  const normalizedSearch = drawerSearch.trim().toLowerCase();
+
+  const matchingSuppliers = pagination.data.filter((supplier) => {
+    if (activeView === "active") return supplier.is_active;
+    if (activeView === "inactive") return !supplier.is_active;
+    return true;
+  });
+
+  const visibleSuppliers = normalizedSearch
+    ? matchingSuppliers.filter((supplier) =>
+        [
+          supplier.name,
+          supplier.code,
+          supplier.contact_person,
+          supplier.phone,
+          supplier.email,
+          supplier.address,
+          supplier.payment_terms,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedSearch),
+      )
+    : matchingSuppliers;
+
+  function toggleSupplierAccordion(supplierId: number): void {
+    setExpandedSupplierId((currentId) =>
+      currentId === supplierId ? null : supplierId,
+    );
+  }
+
+  return (
+    <AppDrawer
+      open={view !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={config.title}
+      description={config.description}
+      processing={false}
+    >
+      <div className="flex min-h-full flex-col bg-card">
+        <div className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-3xl font-semibold leading-none tabular-nums text-primary">
+                {formatNumber(config.total)}
+              </p>
+              <p className="mt-1 text-[9px] text-muted-foreground">
+                Matching supplier records
+              </p>
+            </div>
+
+            <Badge
+              variant="outline"
+              className="h-7 rounded-full border-primary/15 bg-primary/[0.055] px-2.5 text-[9px] text-primary"
+            >
+              Accordion view
+            </Badge>
+          </div>
+        </div>
+
+        <div className="border-b border-border/60 p-4">
+          <SearchInput
+            value={drawerSearch}
+            onChange={(event) => setDrawerSearch(event.target.value)}
+            onClear={() => setDrawerSearch("")}
+            placeholder="Search loaded suppliers..."
+          />
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          {visibleSuppliers.length === 0 ? (
+            <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-background/20 p-6 text-center">
+              <Truck className="size-6 text-muted-foreground" />
+              <p className="mt-3 text-sm font-semibold">No loaded matches</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Change the search or open another overview segment.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {visibleSuppliers.map((supplier) => {
+                const expanded = expandedSupplierId === supplier.id;
+
+                return (
+                  <section
+                    key={supplier.id}
+                    className={cn(
+                      "overflow-hidden rounded-xl border bg-background/25 transition-colors",
+                      expanded
+                        ? "border-primary/25 bg-primary/[0.025]"
+                        : "border-border/60",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      aria-controls={`supplier-overview-${supplier.id}`}
+                      onClick={() => toggleSupplierAccordion(supplier.id)}
+                      className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                    >
+                      <EntityAvatar
+                        icon={Truck}
+                        className={cn(
+                          "border-primary/15 bg-primary/[0.07] text-primary transition-colors",
+                          expanded && "border-primary/25 bg-primary/10",
+                        )}
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="truncate text-[11px] font-semibold">
+                            {supplier.name}
+                          </p>
+
+                          <StatusBadge
+                            label={supplier.is_active ? "Active" : "Inactive"}
+                            variant={supplier.is_active ? "success" : "danger"}
+                          />
+                        </div>
+
+                        <p className="mt-1 truncate font-mono text-[9px] text-muted-foreground">
+                          {supplier.code} ·{" "}
+                          {supplier.contact_person ?? "No contact person"}
+                        </p>
+                      </div>
+
+                      <ChevronRight
+                        className={cn(
+                          "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                          expanded && "rotate-90 text-primary",
+                        )}
+                      />
+                    </button>
+
+                    {expanded && (
+                      <div
+                        id={`supplier-overview-${supplier.id}`}
+                        className="border-t border-border/60 bg-card/20"
+                      >
+                        <div className="grid gap-2 p-3 sm:grid-cols-2">
+                          <SupplierAccordionMetric
+                            label="Contact person"
+                            value={supplier.contact_person ?? "Not provided"}
+                            icon={UserRound}
+                          />
+
+                          <SupplierAccordionMetric
+                            label="Primary phone"
+                            value={supplier.phone ?? "Not provided"}
+                            icon={Phone}
+                          />
+
+                          <SupplierAccordionMetric
+                            label="Email address"
+                            value={supplier.email ?? "Not provided"}
+                            icon={Mail}
+                          />
+
+                          <SupplierAccordionMetric
+                            label="Payment terms"
+                            value={supplier.payment_terms ?? "Not configured"}
+                            icon={ReceiptText}
+                          />
+
+                          <SupplierAccordionMetric
+                            label="Credit limit"
+                            value={formatCurrency(supplier.credit_limit)}
+                            icon={CircleDollarSign}
+                            valueClassName="font-semibold tabular-nums text-primary"
+                          />
+
+                          <SupplierAccordionMetric
+                            label="Tax number / TIN"
+                            value={supplier.tax_number ?? "Not provided"}
+                            icon={ReceiptText}
+                            valueClassName="font-mono"
+                          />
+                        </div>
+
+                        <div className="space-y-2 border-t border-border/50 p-3">
+                          <SupplierAccordionTextBlock
+                            label="Business address"
+                            value={supplier.address ?? "No business address recorded"}
+                            icon={MapPin}
+                          />
+
+                          <SupplierAccordionTextBlock
+                            label="Internal notes"
+                            value={supplier.notes ?? "No internal notes"}
+                            icon={ReceiptText}
+                          />
+                        </div>
+
+                        <div className="grid gap-2 border-t border-border/50 bg-background/20 p-3 sm:grid-cols-2">
+                          <SupplierAccordionMetric
+                            label="Added by"
+                            value={
+                              supplier.created_by
+                                ? supplier.created_by.name
+                                : "Creator not recorded"
+                            }
+                            icon={UserRound}
+                          />
+
+                          <SupplierAccordionMetric
+                            label="Last updated"
+                            value={formatDateTime(supplier.updated_at)}
+                            icon={CalendarDays}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </AppDrawer>
+  );
+}
+
+function SupplierAccordionMetric({
+  label,
+  value,
+  icon: Icon,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-start gap-2.5 rounded-lg border border-border/50 bg-background/25 p-2.5">
+      <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.055] text-primary">
+        <Icon className="size-3.5" />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className="text-[8px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+          {label}
+        </p>
+
+        <p
+          className={cn(
+            "mt-1 break-words text-[10px] leading-4 text-foreground/85",
+            valueClassName,
+          )}
+        >
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SupplierAccordionTextBlock({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+}) {
+  return (
+    <div className="rounded-lg border border-border/50 bg-background/25 p-3">
+      <div className="flex items-center gap-2">
+        <Icon className="size-3.5 text-primary" />
+        <p className="text-[8px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+          {label}
+        </p>
+      </div>
+
+      <p className="mt-2 whitespace-pre-wrap break-words text-[10px] leading-5 text-foreground/80">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function SupplierDetailsDrawer({
+  supplier,
+  statusProcessingId,
+  onClose,
+  onEdit,
+  onToggleStatus,
+  onDelete,
+}: {
+  supplier: Supplier | null;
+  statusProcessingId: number | null;
+  onClose: () => void;
+  onEdit: (supplier: Supplier) => void;
+  onToggleStatus: (supplier: Supplier) => void;
+  onDelete: (supplier: Supplier) => void;
+}) {
+  return (
+    <AppDrawer
+      open={supplier !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title="Supplier Record"
+      description="Review contact channels, commercial terms, procurement availability, and record history."
+      processing={false}
+    >
+      {supplier && (
+        <div className="flex min-h-full flex-col bg-card">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <section className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
+              <div className="flex items-start gap-3">
+                <EntityAvatar
+                  icon={Truck}
+                  className="size-11 border-primary/20 bg-primary/[0.08] text-primary"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
+                      Procurement supplier
+                    </p>
+                    <StatusBadge
+                      label={supplier.is_active ? "Active" : "Inactive"}
+                      variant={supplier.is_active ? "success" : "danger"}
+                    />
+                  </div>
+                  <h2 className="mt-2 text-lg font-semibold tracking-[-0.025em]">
+                    {supplier.name}
+                  </h2>
+                  <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+                    {supplier.code}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <div className="space-y-3 p-4">
+              <SupplierDetailSection
+                title="Communication"
+                description="Contact channels for supplier coordination."
+                icon={Phone}
+                iconClassName="border-primary/20 bg-primary/10 text-primary"
+              >
+                <SupplierDetailItem
+                  label="Contact person"
+                  value={supplier.contact_person ?? "Not provided"}
+                  icon={UserRound}
+                />
+                <SupplierDetailItem
+                  label="Primary phone"
+                  value={supplier.phone ?? "Not provided"}
+                  icon={Phone}
+                />
+                <SupplierDetailItem
+                  label="Alternate phone"
+                  value={supplier.alternate_phone ?? "Not provided"}
+                  icon={Phone}
+                />
+                <SupplierDetailItem
+                  label="Email address"
+                  value={supplier.email ?? "Not provided"}
+                  icon={Mail}
+                />
+              </SupplierDetailSection>
+
+              <SupplierDetailSection
+                title="Business Profile"
+                description="Registered address and tax identity."
+                icon={MapPin}
+                iconClassName="border-primary/20 bg-primary/10 text-primary"
+              >
+                <SupplierDetailItem
+                  label="Business address"
+                  value={supplier.address ?? "Not provided"}
+                  icon={MapPin}
+                  multiline
+                />
+                <SupplierDetailItem
+                  label="Tax number / TIN"
+                  value={supplier.tax_number ?? "Not provided"}
+                  icon={ReceiptText}
+                  mono
+                />
+              </SupplierDetailSection>
+
+              <SupplierDetailSection
+                title="Commercial Terms"
+                description="Payment, credit, ownership, and internal notes."
+                icon={Banknote}
+                iconClassName="border-primary/20 bg-primary/10 text-primary"
+              >
+                <SupplierDetailItem
+                  label="Payment terms"
+                  value={supplier.payment_terms ?? "Not configured"}
+                  icon={ReceiptText}
+                />
+                <SupplierDetailItem
+                  label="Credit limit"
+                  value={formatCurrency(supplier.credit_limit)}
+                  icon={CircleDollarSign}
+                  valueClassName="font-semibold tabular-nums text-primary"
+                />
+                <SupplierDetailItem
+                  label="Added by"
+                  value={
+                    supplier.created_by
+                      ? `${supplier.created_by.name}${supplier.created_by.email ? ` · ${supplier.created_by.email}` : ""}`
+                      : "Creator not recorded"
+                  }
+                  icon={UserRound}
+                />
+                <SupplierDetailItem
+                  label="Created"
+                  value={formatDateTime(supplier.created_at)}
+                  icon={CalendarDays}
+                />
+                <SupplierDetailItem
+                  label="Last updated"
+                  value={formatDateTime(supplier.updated_at)}
+                  icon={CalendarDays}
+                />
+                <SupplierDetailItem
+                  label="Notes"
+                  value={supplier.notes ?? "No internal notes"}
+                  icon={ReceiptText}
+                  multiline
+                />
+              </SupplierDetailSection>
+            </div>
+          </div>
+
+          <div className="grid gap-2 border-t border-border/60 bg-background/30 p-4 sm:grid-cols-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onEdit(supplier)}
+              className="h-9"
+            >
+              <Pencil className="size-3.5" />
+              Edit
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={statusProcessingId === supplier.id}
+              onClick={() => onToggleStatus(supplier)}
+              className="h-9"
+            >
+              {supplier.is_active ? (
+                <XCircle className="size-3.5" />
+              ) : (
+                <CheckCircle2 className="size-3.5" />
+              )}
+              {supplier.is_active ? "Deactivate" : "Activate"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onDelete(supplier)}
+              className="h-9 border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            >
+              <Trash2 className="size-3.5" />
+              Delete
+            </Button>
+          </div>
+        </div>
+      )}
+    </AppDrawer>
   );
 }
 
@@ -1542,6 +1787,7 @@ function SupplierNetworkMetric({
   progress,
   icon: Icon,
   tone,
+  onClick,
   className,
 }: {
   title: string;
@@ -1552,6 +1798,7 @@ function SupplierNetworkMetric({
   progress: number;
   icon: LucideIcon;
   tone: SupplierMetricTone;
+  onClick: () => void;
   className?: string;
 }) {
   const toneStyles: Record<
@@ -1591,9 +1838,11 @@ function SupplierNetworkMetric({
   const normalizedProgress = Math.min(100, Math.max(0, progress));
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
       className={cn(
-        "group relative flex min-h-[118px] min-w-0 flex-col overflow-hidden px-4 py-3.5 transition-colors hover:bg-muted/[0.025]",
+        "group relative flex min-h-[118px] min-w-0 flex-col overflow-hidden px-4 py-3.5 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35",
         className,
       )}
     >
@@ -1657,7 +1906,7 @@ function SupplierNetworkMetric({
           />
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -1666,6 +1915,15 @@ function SupplierNetworkMetric({
 | Formatting
 |--------------------------------------------------------------------------
 */
+
+function formatNumber(value: number | string | null): string {
+  const numericValue = Number(value ?? 0);
+
+  return new Intl.NumberFormat("en-PH", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(numericValue) ? numericValue : 0);
+}
 
 function formatDateTime(value: string | null): string {
   if (!value) {

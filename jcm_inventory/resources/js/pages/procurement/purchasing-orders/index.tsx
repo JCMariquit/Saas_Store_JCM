@@ -1,4 +1,4 @@
-import { ActionGroup } from "@/components/shared/action-group";
+import { AppDrawer } from "@/components/shared/app-drawer";
 import { AppPagination } from "@/components/shared/app-pagination";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
@@ -34,7 +34,7 @@ import {
   Building2,
   CalendarDays,
   CheckCircle2,
-  ChevronDown,
+  ChevronRight,
   CircleDollarSign,
   ClipboardCheck,
   Clock3,
@@ -54,7 +54,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  Fragment,
   type FormEvent,
   type ReactNode,
   useEffect,
@@ -253,6 +252,8 @@ type PurchaseOrderViewer = {
   can_submit_for_approval: boolean;
 };
 
+type PurchaseOrderDrawerView = "all" | "draft" | "pending" | "receiving" | "received";
+
 type PurchaseOrderPageProps = {
   purchase_orders: PaginatedPurchaseOrders;
   summary: PurchaseOrderSummary;
@@ -347,9 +348,11 @@ export default function PurchaseOrderIndex({
 }: PurchaseOrderPageProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const [expandedPurchaseOrderId, setExpandedPurchaseOrderId] = useState<
-    number | null
-  >(null);
+  const [selectedPurchaseOrder, setSelectedPurchaseOrder] =
+    useState<PurchaseOrder | null>(null);
+
+  const [pipelineDrawerView, setPipelineDrawerView] =
+    useState<PurchaseOrderDrawerView | null>(null);
 
   const [editingPurchaseOrder, setEditingPurchaseOrder] =
     useState<PurchaseOrder | null>(null);
@@ -641,7 +644,6 @@ export default function PurchaseOrderIndex({
     setWarehouseId("");
     setDateFrom("");
     setDateTo("");
-    setExpandedPurchaseOrderId(null);
 
     router.get(
       "/suppliers/purchase-orders",
@@ -654,10 +656,20 @@ export default function PurchaseOrderIndex({
     );
   }
 
-  function togglePurchaseOrderDetails(purchaseOrderId: number): void {
-    setExpandedPurchaseOrderId((currentId) =>
-      currentId === purchaseOrderId ? null : purchaseOrderId,
-    );
+  function openPurchaseOrderDetails(order: PurchaseOrder): void {
+    setSelectedPurchaseOrder(order);
+  }
+
+  function closePurchaseOrderDetails(): void {
+    setSelectedPurchaseOrder(null);
+  }
+
+  function openPipelineDrawer(view: PurchaseOrderDrawerView): void {
+    setPipelineDrawerView(view);
+  }
+
+  function closePipelineDrawer(): void {
+    setPipelineDrawerView(null);
   }
 
   /*
@@ -811,7 +823,11 @@ export default function PurchaseOrderIndex({
           </div>
 
           <div className="grid min-w-0 lg:grid-cols-[minmax(330px,1.08fr)_minmax(0,1.92fr)]">
-            <div className="relative overflow-hidden border-b border-border/60 p-4 lg:border-b-0 lg:border-r">
+            <button
+              type="button"
+              onClick={() => openPipelineDrawer("all")}
+              className="relative overflow-hidden border-b border-border/60 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35 lg:border-b-0 lg:border-r"
+            >
               <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-primary/10 blur-3xl" />
               <ShoppingCart className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-primary opacity-[0.025]" />
 
@@ -878,7 +894,7 @@ export default function PurchaseOrderIndex({
                   </div>
                 </div>
               </div>
-            </div>
+            </button>
 
             <div className="grid min-w-0 sm:grid-cols-2 xl:grid-cols-4">
               <PurchaseOrderNetworkMetric
@@ -890,6 +906,7 @@ export default function PurchaseOrderIndex({
                 progress={draftShare}
                 icon={ClipboardCheck}
                 tone="blue"
+                onClick={() => openPipelineDrawer("draft")}
                 className="border-b border-border/60 sm:border-r xl:border-b-0"
               />
 
@@ -902,6 +919,7 @@ export default function PurchaseOrderIndex({
                 progress={pendingShare}
                 icon={Clock3}
                 tone="amber"
+                onClick={() => openPipelineDrawer("pending")}
                 className="border-b border-border/60 xl:border-b-0 xl:border-r"
               />
 
@@ -914,6 +932,7 @@ export default function PurchaseOrderIndex({
                 progress={receivingShare}
                 icon={PackageOpen}
                 tone="violet"
+                onClick={() => openPipelineDrawer("receiving")}
                 className="border-b border-border/60 sm:border-b-0 sm:border-r"
               />
 
@@ -926,6 +945,7 @@ export default function PurchaseOrderIndex({
                 progress={receivedShare}
                 icon={PackageCheck}
                 tone="emerald"
+                onClick={() => openPipelineDrawer("received")}
               />
             </div>
           </div>
@@ -1082,11 +1102,7 @@ export default function PurchaseOrderIndex({
 
           <PurchaseOrderRegistryTable
             purchaseOrders={purchase_orders.data}
-            viewer={viewer}
-            expandedPurchaseOrderId={expandedPurchaseOrderId}
-            onToggleDetails={togglePurchaseOrderDetails}
-            onEdit={openEditDialog}
-            onAction={requestOrderAction}
+            onSelect={openPurchaseOrderDetails}
             onCreate={openCreateDialog}
           />
 
@@ -1096,6 +1112,31 @@ export default function PurchaseOrderIndex({
           />
         </SectionCard>
       </PageContainer>
+
+      <PurchaseOrderOverviewDrawer
+        view={pipelineDrawerView}
+        pagination={purchase_orders}
+        summary={summary}
+        onClose={closePipelineDrawer}
+        onSelect={(order) => {
+          closePipelineDrawer();
+          openPurchaseOrderDetails(order);
+        }}
+      />
+
+      <PurchaseOrderDetailsDrawer
+        order={selectedPurchaseOrder}
+        viewer={viewer}
+        onClose={closePurchaseOrderDetails}
+        onEdit={(order) => {
+          closePurchaseOrderDetails();
+          openEditDialog(order);
+        }}
+        onSubmit={(order) => {
+          closePurchaseOrderDetails();
+          requestOrderAction(order, "submit");
+        }}
+      />
 
       {/*
             |--------------------------------------------------------------------------
@@ -1629,73 +1670,35 @@ export default function PurchaseOrderIndex({
 
 type PurchaseOrderRegistryTableProps = {
   purchaseOrders: PurchaseOrder[];
-  viewer: PurchaseOrderViewer;
-  expandedPurchaseOrderId: number | null;
-  onToggleDetails: (purchaseOrderId: number) => void;
-  onEdit: (purchaseOrder: PurchaseOrder) => void;
-  onAction: (purchaseOrder: PurchaseOrder, action: OrderAction) => void;
+  onSelect: (order: PurchaseOrder) => void;
   onCreate: () => void;
 };
 
 function PurchaseOrderRegistryTable({
   purchaseOrders,
-  viewer,
-  expandedPurchaseOrderId,
-  onToggleDetails,
-  onEdit,
-  onAction,
+  onSelect,
   onCreate,
 }: PurchaseOrderRegistryTableProps) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20">
+    <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20 shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1040px] border-collapse">
-          <thead className="select-none border-b border-border/70 bg-muted/20">
+        <table className="w-full min-w-[1080px] border-collapse table-fixed">
+          <thead className="border-b border-primary/10 bg-primary/[0.025]">
             <tr>
-              <th scope="col" className="w-11 px-3 py-2.5 text-left">
-                <span className="sr-only">Expand details</span>
-              </th>
-
-              <th
-                scope="col"
-                className="min-w-[220px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-              >
+              <th className="w-[220px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                 Purchase Order
               </th>
-
-              <th
-                scope="col"
-                className="min-w-[200px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-              >
+              <th className="w-[220px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                 Supplier
               </th>
-
-              <th
-                scope="col"
-                className="min-w-[210px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-              >
-                Delivery
+              <th className="w-[220px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                Destination
               </th>
-
-              <th
-                scope="col"
-                className="min-w-[175px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-              >
-                Order Summary
+              <th className="w-[180px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                Fulfillment
               </th>
-
-              <th
-                scope="col"
-                className="min-w-[135px] px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-              >
-                Status
-              </th>
-
-              <th
-                scope="col"
-                className="w-[144px] px-3 py-2.5 text-right text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-              >
-                Action
+              <th className="w-[170px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                Total / Status
               </th>
             </tr>
           </thead>
@@ -1703,206 +1706,109 @@ function PurchaseOrderRegistryTable({
           <tbody className="divide-y divide-border/60">
             {purchaseOrders.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12">
+                <td colSpan={5} className="px-6 py-14">
                   <div className="mx-auto flex max-w-sm flex-col items-center text-center">
-                    <span className="flex size-11 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
-                      <ClipboardCheck className="size-5" />
-                    </span>
-
+                    <ShoppingCart className="size-7 text-muted-foreground" />
                     <h3 className="mt-3 text-sm font-semibold">
                       No purchase orders found
                     </h3>
-
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      Create a draft purchase order to begin ordering inventory
-                      from your suppliers.
+                      Create a draft purchase order to begin procurement.
                     </p>
-
                     <Button
                       type="button"
                       onClick={onCreate}
-                      className="mt-4 h-9 px-3.5 text-xs"
+                      className="mt-4 h-9 rounded-lg px-4 text-xs"
                     >
-                      <Plus className="size-3.5" />
+                      <Plus className="size-4" />
                       New Purchase Order
                     </Button>
                   </div>
                 </td>
               </tr>
             ) : (
-              purchaseOrders.map((purchaseOrder) => {
-                const isExpanded = expandedPurchaseOrderId === purchaseOrder.id;
-                const detailsId = `purchase-order-details-${purchaseOrder.id}`;
-                const isCreator =
-                  purchaseOrder.created_by?.id === viewer.user_id;
-
-                const canManageDraft =
-                  purchaseOrder.status === "draft" &&
-                  (viewer.is_owner || isCreator);
-
-                const canAdvanceDraft =
-                  purchaseOrder.status === "draft" && isCreator;
+              purchaseOrders.map((order) => {
+                const progress = getFulfillmentProgress(order);
 
                 return (
-                  <Fragment key={purchaseOrder.id}>
-                    <tr
-                      tabIndex={0}
-                      aria-expanded={isExpanded}
-                      aria-controls={detailsId}
-                      onClick={() => onToggleDetails(purchaseOrder.id)}
-                      onKeyDown={(event) => {
-                        if (event.target !== event.currentTarget) {
-                          return;
-                        }
-
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          onToggleDetails(purchaseOrder.id);
-                        }
-                      }}
-                      className={cn(
-                        "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
-                        isExpanded &&
-                          "bg-primary/[0.04] hover:bg-primary/[0.065]",
-                      )}
-                    >
-                      <td className="px-3 py-3 align-middle">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={
-                            isExpanded
-                              ? `Collapse ${purchaseOrder.po_number} details`
-                              : `Expand ${purchaseOrder.po_number} details`
-                          }
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onToggleDetails(purchaseOrder.id);
-                          }}
-                          className={cn(
-                            "size-7 rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary",
-                            isExpanded && "bg-primary/10 text-primary",
-                          )}
-                        >
-                          <ChevronDown
-                            className={cn(
-                              "size-3.5 transition-transform duration-200",
-                              isExpanded && "rotate-180",
-                            )}
-                          />
-                        </Button>
-                      </td>
-
-                      <td className="px-3 py-3.5 align-middle">
-                        <div className="flex min-w-0 items-center gap-2.5">
-                          <EntityAvatar
-                            icon={ClipboardCheck}
-                            className="border-primary/20 bg-primary/10 text-primary group-hover:border-primary/30 group-hover:bg-primary/15"
-                          />
-
-                          <p className="max-w-[190px] truncate text-[11px] font-semibold leading-4 text-foreground/90">
-                            {purchaseOrder.po_number}
-                          </p>
-                        </div>
-                      </td>
-
-                      <td className="px-3 py-3.5 align-middle">
-                        <div className="flex min-w-0 items-center gap-2.5">
-                          <EntityAvatar
-                            icon={Truck}
-                            className="border-primary/20 bg-primary/10 text-primary"
-                          />
-
-                          <p className="max-w-[165px] truncate text-[10px] font-medium leading-4 text-foreground/85">
-                            {purchaseOrder.supplier.name}
-                          </p>
-                        </div>
-                      </td>
-
-                      <td className="px-3 py-3.5 align-middle">
-                        <div className="space-y-1.5">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <Building2 className="size-3.5 shrink-0 text-primary" />
-
-                            <span className="max-w-[165px] truncate text-[10px] font-semibold text-foreground/90">
-                              {purchaseOrder.branch.name}
-                            </span>
-                          </div>
-
-                          <div className="flex min-w-0 items-center gap-2">
-                            <CalendarDays className="size-3.5 shrink-0 text-primary" />
-
-                            <span className="text-[9px] text-muted-foreground">
-                              {formatDate(purchaseOrder.expected_delivery_date)}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-3 py-3.5 align-middle">
-                        <div className="space-y-1">
-                          <p className="text-[12px] font-semibold tabular-nums text-primary">
-                            {formatCurrency(purchaseOrder.total_amount)}
-                          </p>
-
-                          <p className="text-[9px] text-muted-foreground">
-                            {purchaseOrder.items_count} product
-                            {purchaseOrder.items_count === 1 ? "" : "s"}
-                          </p>
-                        </div>
-                      </td>
-
-                      <td className="px-3 py-3.5 align-middle">
-                        <PurchaseOrderStatus
-                          status={purchaseOrder.status}
-                          label={purchaseOrder.status_label}
+                  <tr
+                    key={order.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onSelect(order)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onSelect(order);
+                      }
+                    }}
+                    className="group cursor-pointer bg-card/55 transition-colors hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <EntityAvatar
+                          icon={ClipboardCheck}
+                          className="border-primary/15 bg-primary/[0.07] text-primary"
                         />
-                      </td>
-
-                      <td className="px-3 py-3.5 text-right align-middle">
-                        <div
-                          className="inline-flex"
-                          onClick={(event) => event.stopPropagation()}
-                          onKeyDown={(event) => event.stopPropagation()}
-                        >
-                          <ActionGroup>
-                            {canManageDraft && purchaseOrder.items && (
-                              <IconButton
-                                label="Edit purchase order"
-                                onClick={() => onEdit(purchaseOrder)}
-                                className="text-primary hover:bg-primary/10 hover:text-primary"
-                              >
-                                <Pencil className="size-3.5" />
-                              </IconButton>
-                            )}
-
-                            {canAdvanceDraft && (
-                              <IconButton
-                                label="Submit for approval"
-                                onClick={() =>
-                                  onAction(purchaseOrder, "submit")
-                                }
-                                className="text-primary hover:bg-primary/10 hover:text-primary"
-                              >
-                                <Send className="size-3.5" />
-                              </IconButton>
-                            )}
-                          </ActionGroup>
+                        <div className="min-w-0">
+                          <p className="truncate font-mono text-[10px] font-semibold text-primary">
+                            {order.po_number}
+                          </p>
+                          <p className="mt-1 text-[8px] text-muted-foreground">
+                            {formatDate(order.order_date)} · {order.items_count} line{order.items_count === 1 ? "" : "s"}
+                          </p>
                         </div>
-                      </td>
-                    </tr>
-
-                    {isExpanded && (
-                      <tr id={detailsId} className="bg-muted/[0.08]">
-                        <td colSpan={7} className="px-3 pb-3 pt-0">
-                          <PurchaseOrderExpandedDetails
-                            purchaseOrder={purchaseOrder}
-                          />
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="truncate text-[11px] font-semibold">
+                        {order.supplier.name}
+                      </p>
+                      <p className="mt-1 truncate font-mono text-[8px] text-muted-foreground">
+                        {order.supplier.code ?? "No supplier code"}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="truncate text-[10px] font-semibold">
+                        {order.warehouse.name}
+                      </p>
+                      <p className="mt-1 truncate text-[8px] text-muted-foreground">
+                        {order.branch.name}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-between text-[9px]">
+                        <span className="text-muted-foreground">
+                          {formatQuantity(order.received_quantity)} / {formatQuantity(order.ordered_quantity)}
+                        </span>
+                        <span className="font-semibold text-primary">
+                          {progress}%
+                        </span>
+                      </div>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-[11px] font-semibold tabular-nums text-primary">
+                            {formatCurrency(order.total_amount)}
+                          </p>
+                          <div className="mt-1">
+                            <PurchaseOrderStatus
+                              status={order.status}
+                              label={order.status_label}
+                            />
+                          </div>
+                        </div>
+                        <ChevronRight className="size-4 shrink-0 text-muted-foreground group-hover:text-primary" />
+                      </div>
+                    </td>
+                  </tr>
                 );
               })
             )}
@@ -1910,6 +1816,199 @@ function PurchaseOrderRegistryTable({
         </table>
       </div>
     </div>
+  );
+}
+
+function PurchaseOrderOverviewDrawer({
+  view,
+  pagination,
+  summary,
+  onClose,
+  onSelect,
+}: {
+  view: PurchaseOrderDrawerView | null;
+  pagination: PaginatedPurchaseOrders;
+  summary: PurchaseOrderSummary;
+  onClose: () => void;
+  onSelect: (order: PurchaseOrder) => void;
+}) {
+  const activeView = view ?? "all";
+  const configs = {
+    all: {
+      title: "Purchase Order Pipeline",
+      total: summary.total,
+      description: "All purchase orders loaded on the current page.",
+    },
+    draft: {
+      title: "Draft Purchase Orders",
+      total: summary.draft,
+      description: "Editable orders that have not been submitted.",
+    },
+    pending: {
+      title: "Awaiting Approval",
+      total: summary.pending,
+      description: "Submitted orders waiting for owner approval.",
+    },
+    receiving: {
+      title: "Orders in Receiving",
+      total: summary.approved + summary.partially_received,
+      description: "Approved and partially received supplier orders.",
+    },
+    received: {
+      title: "Received Orders",
+      total: summary.received,
+      description: "Completed purchase orders with full receiving.",
+    },
+  }[activeView];
+
+  const visibleOrders = pagination.data.filter((order) => {
+    if (activeView === "draft") return order.status === "draft";
+    if (activeView === "pending") return order.status === "pending";
+    if (activeView === "receiving") {
+      return ["approved", "partially_received"].includes(order.status);
+    }
+    if (activeView === "received") return order.status === "received";
+    return true;
+  });
+
+  return (
+    <AppDrawer
+      open={view !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={configs.title}
+      description={configs.description}
+      processing={false}
+    >
+      <div className="flex min-h-full flex-col bg-card">
+        <div className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
+          <p className="text-3xl font-semibold leading-none tabular-nums text-primary">
+            {formatNumber(configs.total)}
+          </p>
+          <p className="mt-1 text-[9px] text-muted-foreground">
+            Matching workflow records
+          </p>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          {visibleOrders.length === 0 ? (
+            <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-background/20 p-6 text-center">
+              <ShoppingCart className="size-6 text-muted-foreground" />
+              <p className="mt-3 text-sm font-semibold">No loaded matches</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {visibleOrders.map((order) => (
+                <button
+                  key={order.id}
+                  type="button"
+                  onClick={() => onSelect(order)}
+                  className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-background/25 p-3 text-left transition hover:border-primary/20 hover:bg-primary/[0.035]"
+                >
+                  <EntityAvatar
+                    icon={ClipboardCheck}
+                    className="border-primary/15 bg-primary/[0.07] text-primary"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <p className="font-mono text-[10px] font-semibold text-primary">
+                        {order.po_number}
+                      </p>
+                      <PurchaseOrderStatus
+                        status={order.status}
+                        label={order.status_label}
+                      />
+                    </div>
+                    <p className="mt-1 truncate text-[9px] text-muted-foreground">
+                      {order.supplier.name} · {formatCurrency(order.total_amount)}
+                    </p>
+                  </div>
+                  <ChevronRight className="size-4 text-muted-foreground" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </AppDrawer>
+  );
+}
+
+function PurchaseOrderDetailsDrawer({
+  order,
+  viewer,
+  onClose,
+  onEdit,
+  onSubmit,
+}: {
+  order: PurchaseOrder | null;
+  viewer: PurchaseOrderViewer;
+  onClose: () => void;
+  onEdit: (order: PurchaseOrder) => void;
+  onSubmit: (order: PurchaseOrder) => void;
+}) {
+  if (!order) {
+    return (
+      <AppDrawer
+        open={false}
+        onOpenChange={() => undefined}
+        title="Purchase Order Record"
+        description=""
+        processing={false}
+      >
+        <div />
+      </AppDrawer>
+    );
+  }
+
+  const isCreator = order.created_by?.id === viewer.user_id;
+  const canEdit =
+    order.status === "draft" && (viewer.is_owner || isCreator);
+  const canSubmit = order.status === "draft" && isCreator;
+
+  return (
+    <AppDrawer
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title="Purchase Order Record"
+      description="Review supplier commitment, products, totals, fulfillment, and workflow history."
+      processing={false}
+    >
+      <div className="flex min-h-full flex-col bg-card">
+        <div className="min-h-0 flex-1 overflow-y-auto p-3">
+          <PurchaseOrderExpandedDetails purchaseOrder={order} />
+        </div>
+
+        {(canEdit || canSubmit) && (
+          <div className="grid gap-2 border-t border-border/60 bg-background/30 p-4 sm:grid-cols-2">
+            {canEdit && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onEdit(order)}
+                className="h-9"
+              >
+                <Pencil className="size-3.5" />
+                Edit Draft
+              </Button>
+            )}
+            {canSubmit && (
+              <Button
+                type="button"
+                onClick={() => onSubmit(order)}
+                className="h-9"
+              >
+                <Send className="size-3.5" />
+                Submit for Approval
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </AppDrawer>
   );
 }
 
@@ -1922,37 +2021,72 @@ function PurchaseOrderExpandedDetails({
   const items = purchaseOrder.items ?? [];
 
   return (
-    <div className="overflow-hidden rounded-xl border border-primary/15 bg-background/45 shadow-sm">
-      <div className="flex flex-col gap-2 border-b border-border/60 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
-            Complete Purchase Order Record
-          </p>
+    <div className="space-y-4">
+      <section className="overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.065] via-card/95 to-card shadow-sm">
+        <div className="border-b border-primary/10 bg-background/20 px-4 py-4 sm:px-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/[0.08] text-primary">
+                <ShoppingCart className="size-4.5" />
+              </span>
 
-          <p className="mt-0.5 text-[9px] text-muted-foreground">
-            Delivery, financial, fulfillment, product, and workflow information.
-          </p>
+              <div className="min-w-0">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
+                  Supplier purchase commitment
+                </p>
+                <h2 className="mt-1 break-words font-mono text-sm font-semibold text-foreground">
+                  {purchaseOrder.po_number}
+                </h2>
+                <p className="mt-1 break-words text-[10px] leading-5 text-muted-foreground">
+                  {purchaseOrder.supplier.name} · {purchaseOrder.warehouse.name}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <PurchaseOrderStatus
+                status={purchaseOrder.status}
+                label={purchaseOrder.status_label}
+              />
+              <Badge
+                variant="outline"
+                className="h-7 rounded-full border-primary/15 bg-primary/[0.055] px-2.5 text-[9px] font-semibold text-primary"
+              >
+                {progress}% received
+              </Badge>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge
-            variant="outline"
-            className="h-6 rounded-full border-border/70 bg-muted/20 px-2.5 font-mono text-[9px] text-muted-foreground"
-          >
-            {purchaseOrder.po_number}
-          </Badge>
-
-          <PurchaseOrderStatus
-            status={purchaseOrder.status}
-            label={purchaseOrder.status_label}
+        <div className="grid grid-cols-2 divide-x divide-y divide-border/60 sm:grid-cols-4 sm:divide-y-0">
+          <PurchaseOrderHeroMetric
+            label="Order total"
+            value={formatCurrency(purchaseOrder.total_amount)}
+            helper="Committed supplier value"
+          />
+          <PurchaseOrderHeroMetric
+            label="Product lines"
+            value={formatNumber(purchaseOrder.items_count)}
+            helper="Distinct ordered products"
+          />
+          <PurchaseOrderHeroMetric
+            label="Ordered"
+            value={formatQuantity(purchaseOrder.ordered_quantity)}
+            helper="Total requested quantity"
+          />
+          <PurchaseOrderHeroMetric
+            label="Received"
+            value={formatQuantity(purchaseOrder.received_quantity)}
+            helper={`${progress}% fulfillment`}
+            valueClassName="text-primary"
           />
         </div>
-      </div>
+      </section>
 
-      <div className="grid gap-3 p-3 lg:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]">
         <PurchaseOrderDetailSection
           title="Supplier & Schedule"
-          description="Supplier commitment and requested delivery dates."
+          description="Supplier identity, delivery dates, and commercial terms."
           icon={Truck}
           iconClassName="border-primary/20 bg-primary/10 text-primary"
         >
@@ -1965,25 +2099,21 @@ function PurchaseOrderExpandedDetails({
             }`}
             icon={Truck}
           />
-
           <PurchaseOrderDetailItem
-            label="Contact person"
+            label="Contact"
             value={purchaseOrder.supplier.contact_person ?? "Not provided"}
             icon={UserRound}
           />
-
           <PurchaseOrderDetailItem
             label="Order date"
             value={formatDate(purchaseOrder.order_date)}
             icon={CalendarDays}
           />
-
           <PurchaseOrderDetailItem
             label="Expected delivery"
             value={formatDate(purchaseOrder.expected_delivery_date)}
             icon={CalendarDays}
           />
-
           <PurchaseOrderDetailItem
             label="Payment terms"
             value={purchaseOrder.payment_terms ?? "Not configured"}
@@ -1993,9 +2123,9 @@ function PurchaseOrderExpandedDetails({
 
         <PurchaseOrderDetailSection
           title="Receiving Destination"
-          description="Branch and warehouse assigned to receive this order."
+          description="Business location and fulfillment position for this order."
           icon={Warehouse}
-          iconClassName="border-primary/20 bg-primary/10 text-primary"
+          iconClassName="border-cyan-500/20 bg-cyan-500/10 text-cyan-300"
         >
           <PurchaseOrderDetailItem
             label="Branch"
@@ -2004,7 +2134,6 @@ function PurchaseOrderExpandedDetails({
             }`}
             icon={Building2}
           />
-
           <PurchaseOrderDetailItem
             label="Warehouse"
             value={`${purchaseOrder.warehouse.name}${
@@ -2014,31 +2143,27 @@ function PurchaseOrderExpandedDetails({
             }`}
             icon={Warehouse}
           />
-
           <PurchaseOrderDetailItem
             label="Ordered quantity"
             value={`${formatQuantity(purchaseOrder.ordered_quantity)} units`}
             icon={Boxes}
           />
-
           <PurchaseOrderDetailItem
             label="Received quantity"
             value={`${formatQuantity(purchaseOrder.received_quantity)} units`}
             icon={PackageCheck}
           />
 
-          <div className="rounded-lg border border-primary/15 bg-primary/[0.05] p-2.5">
+          <div className="rounded-xl border border-primary/15 bg-primary/[0.045] p-3">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[8px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+              <span className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                 Fulfillment progress
               </span>
-
               <span className="text-[11px] font-semibold tabular-nums text-primary">
                 {progress}%
               </span>
             </div>
-
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
               <div
                 className={cn(
                   "h-full rounded-full transition-all duration-500",
@@ -2056,9 +2181,9 @@ function PurchaseOrderExpandedDetails({
 
         <PurchaseOrderDetailSection
           title="Financial Breakdown"
-          description="Complete calculation of the committed order value."
+          description="Calculation of the total supplier commitment."
           icon={CircleDollarSign}
-          iconClassName="border-primary/20 bg-primary/10 text-primary"
+          iconClassName="border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
         >
           <PurchaseOrderDetailItem
             label="Subtotal"
@@ -2066,51 +2191,48 @@ function PurchaseOrderExpandedDetails({
             icon={Banknote}
             valueClassName="font-semibold tabular-nums"
           />
-
           <PurchaseOrderDetailItem
             label="Discount"
             value={formatCurrency(purchaseOrder.discount_amount)}
             icon={CircleDollarSign}
           />
-
           <PurchaseOrderDetailItem
             label="Tax"
             value={formatCurrency(purchaseOrder.tax_amount)}
             icon={CircleDollarSign}
           />
-
           <PurchaseOrderDetailItem
             label="Shipping"
             value={formatCurrency(purchaseOrder.shipping_amount)}
             icon={Truck}
           />
-
-          <PurchaseOrderDetailItem
-            label="Order total"
-            value={formatCurrency(purchaseOrder.total_amount)}
-            icon={Banknote}
-            valueClassName="font-semibold tabular-nums text-primary"
-          />
+          <div className="mt-1 flex items-center justify-between gap-4 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.045] px-3 py-3">
+            <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              Order total
+            </span>
+            <span className="text-base font-semibold tabular-nums text-primary">
+              {formatCurrency(purchaseOrder.total_amount)}
+            </span>
+          </div>
         </PurchaseOrderDetailSection>
 
         <PurchaseOrderDetailSection
           title="Workflow & Audit"
-          description="Ownership, approvals, cancellation, and record dates."
+          description="Ownership, approval activity, and record timestamps."
           icon={ShieldCheck}
-          iconClassName="border-primary/20 bg-primary/10 text-primary"
+          iconClassName="border-violet-500/20 bg-violet-500/10 text-violet-300"
         >
           <PurchaseOrderDetailItem
             label="Created by"
             value={formatUserReference(purchaseOrder.created_by)}
             icon={UserRound}
+            multiline
           />
-
           <PurchaseOrderDetailItem
             label="Created"
             value={formatDateTime(purchaseOrder.created_at)}
             icon={CalendarDays}
           />
-
           {purchaseOrder.submitted_at && (
             <PurchaseOrderDetailItem
               label="Submitted"
@@ -2121,7 +2243,6 @@ function PurchaseOrderExpandedDetails({
               multiline
             />
           )}
-
           {purchaseOrder.approved_at && (
             <PurchaseOrderDetailItem
               label="Approved"
@@ -2132,7 +2253,6 @@ function PurchaseOrderExpandedDetails({
               multiline
             />
           )}
-
           {purchaseOrder.cancelled_at && (
             <PurchaseOrderDetailItem
               label="Cancelled"
@@ -2143,47 +2263,36 @@ function PurchaseOrderExpandedDetails({
               multiline
             />
           )}
-
           <PurchaseOrderDetailItem
             label="Last updated"
             value={formatDateTime(purchaseOrder.updated_at)}
             icon={CalendarDays}
           />
-
-          <PurchaseOrderDetailItem
-            label="Order notes"
-            value={purchaseOrder.notes ?? "No order notes"}
-            icon={FilePenLine}
-            multiline
-          />
         </PurchaseOrderDetailSection>
       </div>
 
-      <section className="border-t border-border/60 p-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <section className="overflow-hidden rounded-2xl border border-border/70 bg-background/25">
+        <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="text-[11px] font-semibold">Products & Receiving</h3>
-
-            <p className="mt-0.5 text-[8px] leading-4 text-muted-foreground">
-              Ordered products, costs, received quantities, and line notes.
+            <p className="mt-0.5 text-[9px] leading-4 text-muted-foreground">
+              Ordered products, agreed costs, fulfillment, and line notes.
             </p>
           </div>
-
           <div className="flex flex-wrap items-center gap-2">
             <Badge
               variant="outline"
-              className="h-6 gap-1.5 rounded-full border-cyan-500/15 bg-cyan-500/10 px-2.5 text-[9px] text-cyan-300"
+              className="h-6 rounded-full border-cyan-500/15 bg-cyan-500/10 px-2.5 text-[9px] text-cyan-300"
             >
-              <Boxes className="size-3" />
+              <Boxes className="mr-1 size-3" />
               {purchaseOrder.items_count} product
               {purchaseOrder.items_count === 1 ? "" : "s"}
             </Badge>
-
             <Badge
               variant="outline"
-              className="h-6 gap-1.5 rounded-full border-violet-500/15 bg-violet-500/10 px-2.5 text-[9px] text-violet-300"
+              className="h-6 rounded-full border-violet-500/15 bg-violet-500/10 px-2.5 text-[9px] text-violet-300"
             >
-              <PackageOpen className="size-3" />
+              <PackageOpen className="mr-1 size-3" />
               {formatQuantity(purchaseOrder.received_quantity)} /{" "}
               {formatQuantity(purchaseOrder.ordered_quantity)} received
             </Badge>
@@ -2191,80 +2300,123 @@ function PurchaseOrderExpandedDetails({
         </div>
 
         {items.length > 0 ? (
-          <div className="app-scrollbar-thin mt-3 overflow-x-auto rounded-lg border border-border/60">
-            <table className="w-full min-w-[900px] border-collapse text-left">
-              <thead className="border-b border-border/60 bg-muted/20">
-                <tr className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                  <th className="min-w-[230px] px-3 py-2.5">Product</th>
-                  <th className="w-28 px-3 py-2.5">Ordered</th>
-                  <th className="w-28 px-3 py-2.5">Received</th>
-                  <th className="w-36 px-3 py-2.5">Unit Cost</th>
-                  <th className="w-36 px-3 py-2.5">Line Total</th>
-                  <th className="min-w-[190px] px-3 py-2.5">Notes</th>
-                </tr>
-              </thead>
+          <div className="divide-y divide-border/60">
+            {items.map((item) => {
+              const itemProgress =
+                item.quantity > 0
+                  ? Math.min(
+                      100,
+                      Math.round((item.received_quantity / item.quantity) * 100),
+                    )
+                  : 0;
 
-              <tbody className="divide-y divide-border/50">
-                {items.map((item) => (
-                  <tr key={item.id} className="bg-card/10 align-top">
-                    <td className="px-3 py-2.5">
-                      <p className="text-[10px] font-semibold">
-                        {item.product_name}
-                      </p>
-
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <Badge
-                          variant="outline"
-                          className="h-5 rounded-md border-violet-500/15 bg-violet-500/[0.06] px-1.5 font-mono text-[8px] text-violet-300"
-                        >
-                          {item.product_sku ?? "NO SKU"}
-                        </Badge>
-
-                        <span className="text-[8px] text-muted-foreground">
-                          Unit: {item.unit}
-                        </span>
+              return (
+                <article key={item.id} className="p-4">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.07] text-primary">
+                      <Boxes className="size-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="break-words text-[11px] font-semibold text-foreground">
+                            {item.product_name}
+                          </p>
+                          <p className="mt-1 font-mono text-[8px] text-muted-foreground">
+                            {item.product_sku ?? "NO SKU"} · Unit: {item.unit}
+                          </p>
+                        </div>
+                        <p className="shrink-0 text-sm font-semibold tabular-nums text-primary">
+                          {formatCurrency(item.line_total)}
+                        </p>
                       </div>
-                    </td>
 
-                    <td className="px-3 py-2.5 text-[10px] font-medium tabular-nums">
-                      {formatQuantity(item.quantity)}
-                    </td>
+                      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        <PurchaseOrderLineMetric
+                          label="Ordered"
+                          value={formatQuantity(item.quantity)}
+                        />
+                        <PurchaseOrderLineMetric
+                          label="Received"
+                          value={formatQuantity(item.received_quantity)}
+                        />
+                        <PurchaseOrderLineMetric
+                          label="Unit cost"
+                          value={formatCurrency(item.unit_cost)}
+                        />
+                        <PurchaseOrderLineMetric
+                          label="Progress"
+                          value={`${itemProgress}%`}
+                          valueClassName="text-primary"
+                        />
+                      </div>
 
-                    <td className="px-3 py-2.5 text-[10px] font-medium tabular-nums text-cyan-400">
-                      {formatQuantity(item.received_quantity)}
-                    </td>
-
-                    <td className="px-3 py-2.5 text-[10px] tabular-nums">
-                      {formatCurrency(item.unit_cost)}
-                    </td>
-
-                    <td className="px-3 py-2.5 text-[10px] font-semibold tabular-nums text-primary">
-                      {formatCurrency(item.line_total)}
-                    </td>
-
-                    <td className="px-3 py-2.5 text-[9px] leading-4 text-muted-foreground">
-                      {item.notes ?? "No line notes"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      {item.notes && (
+                        <p className="mt-3 whitespace-pre-wrap break-words rounded-lg border border-border/50 bg-background/30 px-3 py-2 text-[9px] leading-4 text-muted-foreground">
+                          {item.notes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         ) : (
-          <div className="mt-3 rounded-lg border border-dashed border-border/70 bg-muted/[0.06] px-4 py-6 text-center">
-            <Boxes className="mx-auto size-5 text-muted-foreground" />
-
-            <p className="mt-2 text-[10px] font-semibold">
-              Item details are not included
-            </p>
-
-            <p className="mt-1 text-[9px] text-muted-foreground">
-              The order summary is available, but product line details were not
-              returned by the current controller response.
-            </p>
+          <div className="px-4 py-10 text-center text-[10px] text-muted-foreground">
+            Product line details were not returned by the current response.
           </div>
         )}
       </section>
+
+      {purchaseOrder.notes && (
+        <section className="rounded-2xl border border-primary/15 bg-primary/[0.035] p-4">
+          <div className="flex items-start gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+              <FilePenLine className="size-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
+                Order notes
+              </p>
+              <p className="mt-2 whitespace-pre-wrap break-words text-[10px] leading-5 text-muted-foreground">
+                {purchaseOrder.notes}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function PurchaseOrderHeroMetric({
+  label,
+  value,
+  helper,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="min-w-0 p-3.5">
+      <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-1.5 break-words text-[13px] font-semibold tabular-nums text-foreground",
+          valueClassName,
+        )}
+      >
+        {value}
+      </p>
+      <p className="mt-1 text-[8px] leading-4 text-muted-foreground">
+        {helper}
+      </p>
     </div>
   );
 }
@@ -2283,27 +2435,24 @@ function PurchaseOrderDetailSection({
   children: ReactNode;
 }) {
   return (
-    <section className="min-w-0 rounded-lg border border-border/60 bg-card/25 p-3">
-      <div className="flex items-start gap-2.5">
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-border/70 bg-background/25">
+      <div className="flex items-start gap-3 border-b border-border/60 bg-background/20 px-4 py-3">
         <span
           className={cn(
-            "inline-flex size-7 shrink-0 items-center justify-center rounded-lg border",
+            "inline-flex size-8 shrink-0 items-center justify-center rounded-xl border",
             iconClassName,
           )}
         >
-          <Icon className="size-3.5" />
+          <Icon className="size-4" />
         </span>
-
         <div className="min-w-0">
           <h3 className="text-[11px] font-semibold">{title}</h3>
-
           <p className="mt-0.5 text-[8px] leading-4 text-muted-foreground">
             {description}
           </p>
         </div>
       </div>
-
-      <div className="mt-3 space-y-2.5">{children}</div>
+      <div className="divide-y divide-border/50 px-4">{children}</div>
     </section>
   );
 }
@@ -2322,26 +2471,50 @@ function PurchaseOrderDetailItem({
   valueClassName?: string;
 }) {
   return (
-    <div className="flex min-w-0 items-start gap-2">
-      <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-muted/40 text-muted-foreground">
-        <Icon className="size-3" />
-      </span>
-
-      <div className="min-w-0">
-        <p className="text-[8px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+    <div className="grid min-w-0 grid-cols-[minmax(105px,0.42fr)_minmax(0,0.58fr)] gap-3 py-2.5">
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-muted/40 text-muted-foreground">
+          <Icon className="size-3" />
+        </span>
+        <p className="text-[8px] font-medium uppercase tracking-[0.09em] text-muted-foreground">
           {label}
         </p>
-
-        <div
-          className={cn(
-            "mt-0.5 text-[10px] leading-4 text-foreground/80",
-            multiline ? "whitespace-pre-wrap break-words" : "truncate",
-            valueClassName,
-          )}
-        >
-          {value}
-        </div>
       </div>
+      <div
+        className={cn(
+          "min-w-0 break-words text-right text-[10px] leading-4 text-foreground/85",
+          multiline && "whitespace-pre-wrap",
+          valueClassName,
+        )}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function PurchaseOrderLineMetric({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border/50 bg-background/30 px-2.5 py-2">
+      <p className="text-[7px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-1 break-words text-[10px] font-semibold tabular-nums text-foreground",
+          valueClassName,
+        )}
+      >
+        {value}
+      </p>
     </div>
   );
 }
@@ -2382,6 +2555,7 @@ function PurchaseOrderNetworkMetric({
   progress,
   icon: Icon,
   tone,
+  onClick,
   className,
 }: {
   title: string;
@@ -2392,6 +2566,7 @@ function PurchaseOrderNetworkMetric({
   progress: number;
   icon: LucideIcon;
   tone: "blue" | "amber" | "violet" | "emerald";
+  onClick: () => void;
   className?: string;
 }) {
   const toneStyles = {
@@ -2429,9 +2604,11 @@ function PurchaseOrderNetworkMetric({
   const normalizedProgress = Math.min(100, Math.max(0, progress));
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
       className={cn(
-        "group relative flex min-h-[118px] min-w-0 flex-col overflow-hidden px-4 py-3.5 transition-colors hover:bg-muted/[0.025]",
+        "group relative flex min-h-[118px] min-w-0 flex-col overflow-hidden px-4 py-3.5 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35",
         className,
       )}
     >
@@ -2495,7 +2672,7 @@ function PurchaseOrderNetworkMetric({
           />
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 

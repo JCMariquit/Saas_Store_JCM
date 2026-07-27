@@ -1,7 +1,7 @@
+import { AppDrawer } from "@/components/shared/app-drawer";
 import { AppPagination } from "@/components/shared/app-pagination";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { FilterBar } from "@/components/shared/filter-bar";
-import { IconButton } from "@/components/shared/icon-button";
 import { IconInput } from "@/components/shared/icon-input";
 import { PageContainer } from "@/components/shared/page-container";
 import { SearchInput } from "@/components/shared/search-input";
@@ -23,13 +23,12 @@ import { Head, router } from "@inertiajs/react";
 import {
   Banknote,
   Boxes,
-  Building2,
   CalendarDays,
   ChevronDown,
+  ChevronRight,
   CircleDollarSign,
   ClipboardCheck,
   Clock3,
-  Eye,
   FileText,
   History,
   PackageCheck,
@@ -42,7 +41,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  Fragment,
   type FormEvent,
   useEffect,
   useState,
@@ -215,6 +213,8 @@ type ReceivedOrderViewer = {
   is_owner: boolean;
 };
 
+type ReceivedOrderDrawerView = "all" | "receipts" | "month" | "value";
+
 type ReceivedOrderPageProps = {
   received_orders: PaginatedReceivedOrders;
   summary: ReceivedOrderSummary;
@@ -261,7 +261,12 @@ export default function ReceivedOrderIndex({
   filters,
   viewer,
 }: ReceivedOrderPageProps) {
-  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<ReceivedOrder | null>(
+    null,
+  );
+
+  const [archiveDrawerView, setArchiveDrawerView] =
+    useState<ReceivedOrderDrawerView | null>(null);
   const [search, setSearch] = useState(filters.search ?? "");
   const [supplierId, setSupplierId] = useState(filters.supplier_id ?? "");
   const [warehouseId, setWarehouseId] = useState(filters.warehouse_id ?? "");
@@ -308,7 +313,6 @@ export default function ReceivedOrderIndex({
     setWarehouseId("");
     setDateFrom("");
     setDateTo("");
-    setExpandedOrderId(null);
 
     router.get(
       "/procurement/received-orders",
@@ -321,8 +325,20 @@ export default function ReceivedOrderIndex({
     );
   }
 
-  function toggleOrderDetails(orderId: number): void {
-    setExpandedOrderId((currentId) => (currentId === orderId ? null : orderId));
+  function openOrderDetails(order: ReceivedOrder): void {
+    setSelectedOrder(order);
+  }
+
+  function closeOrderDetails(): void {
+    setSelectedOrder(null);
+  }
+
+  function openArchiveDrawer(view: ReceivedOrderDrawerView): void {
+    setArchiveDrawerView(view);
+  }
+
+  function closeArchiveDrawer(): void {
+    setArchiveDrawerView(null);
   }
 
   const hasActiveFilters = Boolean(
@@ -405,7 +421,11 @@ export default function ReceivedOrderIndex({
           </div>
 
           <div className="grid min-w-0 lg:grid-cols-[minmax(330px,1.08fr)_minmax(0,1.92fr)]">
-            <div className="relative overflow-hidden border-b border-border/60 p-4 lg:border-b-0 lg:border-r">
+            <button
+              type="button"
+              onClick={() => openArchiveDrawer("all")}
+              className="relative overflow-hidden border-b border-border/60 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35 lg:border-b-0 lg:border-r"
+            >
               <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-primary/10 blur-3xl" />
               <History className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-primary opacity-[0.025]" />
 
@@ -460,7 +480,7 @@ export default function ReceivedOrderIndex({
                   </div>
                 </div>
               </div>
-            </div>
+            </button>
 
             <div className="grid min-w-0 sm:grid-cols-2 xl:grid-cols-4">
               <ArchiveMetric
@@ -472,6 +492,7 @@ export default function ReceivedOrderIndex({
                 progress={monthlyShare}
                 icon={PackageCheck}
                 tone="emerald"
+                onClick={() => openArchiveDrawer("all")}
                 className="border-b border-border/60 sm:border-r xl:border-b-0"
               />
 
@@ -484,6 +505,7 @@ export default function ReceivedOrderIndex({
                 progress={Math.min(100, averageReceipts * 50)}
                 icon={ReceiptText}
                 tone="blue"
+                onClick={() => openArchiveDrawer("receipts")}
                 className="border-b border-border/60 xl:border-b-0 xl:border-r"
               />
 
@@ -496,6 +518,7 @@ export default function ReceivedOrderIndex({
                 progress={summary.total_orders > 0 ? 100 : 0}
                 icon={Boxes}
                 tone="violet"
+                onClick={() => openArchiveDrawer("month")}
                 className="border-b border-border/60 sm:border-b-0 sm:border-r"
               />
 
@@ -508,6 +531,7 @@ export default function ReceivedOrderIndex({
                 progress={summary.total_orders > 0 ? 100 : 0}
                 icon={CircleDollarSign}
                 tone="amber"
+                onClick={() => openArchiveDrawer("value")}
               />
             </div>
           </div>
@@ -632,8 +656,7 @@ export default function ReceivedOrderIndex({
 
           <ReceivedOrderTable
             orders={received_orders.data}
-            expandedOrderId={expandedOrderId}
-            onToggleDetails={toggleOrderDetails}
+            onSelect={openOrderDetails}
             hasActiveFilters={hasActiveFilters}
           />
 
@@ -643,6 +666,18 @@ export default function ReceivedOrderIndex({
           />
         </SectionCard>
       </PageContainer>
+      <ReceivedOrderOverviewDrawer
+        view={archiveDrawerView}
+        pagination={received_orders}
+        summary={summary}
+        onClose={closeArchiveDrawer}
+      />
+
+      <ReceivedOrderDetailsDrawer
+        order={selectedOrder}
+        onClose={closeOrderDetails}
+      />
+
     </AppLayout>
   );
 }
@@ -655,242 +690,124 @@ export default function ReceivedOrderIndex({
 
 function ReceivedOrderTable({
   orders,
-  expandedOrderId,
-  onToggleDetails,
+  onSelect,
   hasActiveFilters,
 }: {
   orders: ReceivedOrder[];
-  expandedOrderId: number | null;
-  onToggleDetails: (orderId: number) => void;
+  onSelect: (order: ReceivedOrder) => void;
   hasActiveFilters: boolean;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20">
+    <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20 shadow-sm">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1180px] border-collapse">
-          <thead className="select-none border-b border-border/70 bg-muted/20">
+        <table className="w-full min-w-[1060px] border-collapse table-fixed">
+          <thead className="border-b border-primary/10 bg-primary/[0.025]">
             <tr>
-              <th scope="col" className="w-11 px-3 py-2.5 text-left">
-                <span className="sr-only">Expand details</span>
+              <th className="w-[210px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                Purchase Order
               </th>
-
-              {[
-                ["Purchase Order", "min-w-[205px]"],
-                ["Supplier", "min-w-[195px]"],
-                ["Destination", "min-w-[210px]"],
-                ["Completion", "min-w-[175px]"],
-                ["Received Summary", "min-w-[195px]"],
-                ["Status", "min-w-[125px]"],
-                ["Action", "w-[92px] text-right"],
-              ].map(([label, width]) => (
-                <th
-                  key={label}
-                  scope="col"
-                  className={cn(
-                    "px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground",
-                    width,
-                  )}
-                >
-                  {label}
-                </th>
-              ))}
+              <th className="w-[220px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                Supplier
+              </th>
+              <th className="w-[220px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                Destination
+              </th>
+              <th className="w-[190px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                Completion
+              </th>
+              <th className="w-[190px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                Received Summary
+              </th>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-border/60">
             {orders.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-12">
+                <td colSpan={5} className="px-6 py-14">
                   <div className="mx-auto flex max-w-sm flex-col items-center text-center">
-                    <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
-                      <History className="size-5" />
-                    </span>
-
+                    <History className="size-7 text-muted-foreground" />
                     <h3 className="mt-3 text-sm font-semibold">
                       {hasActiveFilters
                         ? "No matching received orders"
                         : "No received orders yet"}
                     </h3>
-
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      {hasActiveFilters
-                        ? "Adjust or reset the filters to review other completed purchase orders."
-                        : "A purchase order appears here after all ordered products have been received."}
+                      Fully received purchase orders will appear in this archive.
                     </p>
                   </div>
                 </td>
               </tr>
             ) : (
-              orders.map((order) => {
-                const isExpanded = expandedOrderId === order.id;
-                const detailsId = `received-order-details-${order.id}`;
-
-                return (
-                  <Fragment key={order.id}>
-                    <tr
-                      tabIndex={0}
-                      aria-expanded={isExpanded}
-                      aria-controls={detailsId}
-                      onClick={() => onToggleDetails(order.id)}
-                      onKeyDown={(event) => {
-                        if (event.target !== event.currentTarget) {
-                          return;
-                        }
-
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          onToggleDetails(order.id);
-                        }
-                      }}
-                      className={cn(
-                        "group cursor-pointer bg-card/10 transition-colors hover:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
-                        isExpanded &&
-                          "bg-primary/[0.035] hover:bg-primary/[0.055]",
-                      )}
-                    >
-                      <td className="px-3 py-3 align-middle">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={
-                            isExpanded
-                              ? `Collapse ${order.po_number} details`
-                              : `Expand ${order.po_number} details`
-                          }
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onToggleDetails(order.id);
-                          }}
-                          className={cn(
-                            "size-7 rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary",
-                            isExpanded && "bg-primary/10 text-primary",
-                          )}
-                        >
-                          <ChevronDown
-                            className={cn(
-                              "size-3.5 transition-transform duration-200",
-                              isExpanded && "rotate-180",
-                            )}
-                          />
-                        </Button>
-                      </td>
-
-                      <td className="px-3 py-3.5 align-middle">
-                        <div className="flex min-w-0 items-center gap-2.5">
-                          <EntityAvatar
-                            icon={ClipboardCheck}
-                            className="border-primary/15 bg-primary/10 text-primary"
-                          />
-
-                          <div className="min-w-0">
-                            <p className="max-w-[165px] truncate font-mono text-[10px] font-semibold text-primary">
-                              {order.po_number}
-                            </p>
-
-                            <p className="mt-1 text-[9px] text-muted-foreground">
-                              Ordered {formatDate(order.order_date)}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-3 py-3.5 align-middle">
-                        <div className="flex min-w-0 items-center gap-2.5">
-                          <EntityAvatar
-                            icon={Truck}
-                            className="border-primary/15 bg-primary/10 text-primary"
-                          />
-
-                          <div className="min-w-0">
-                            <p className="max-w-[155px] truncate text-[10px] font-medium text-foreground/85">
-                              {order.supplier.name}
-                            </p>
-
-                            <p className="mt-1 truncate text-[9px] text-muted-foreground">
-                              {order.supplier.code ?? "No supplier code"}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="px-3 py-3.5 align-middle">
-                        <div className="space-y-1.5">
-                          <TableMeta
-                            icon={Warehouse}
-                            value={order.warehouse.name}
-                            className="text-primary"
-                          />
-
-                          <TableMeta
-                            icon={Building2}
-                            value={order.branch.name}
-                            className="text-primary"
-                            muted
-                          />
-                        </div>
-                      </td>
-
-                      <td className="px-3 py-3.5 align-middle">
-                        <p className="text-[10px] font-semibold text-foreground/90">
-                          {formatDate(order.completed_date)}
+              orders.map((order) => (
+                <tr
+                  key={order.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onSelect(order)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      onSelect(order);
+                    }
+                  }}
+                  className="group cursor-pointer bg-card/55 transition-colors hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <EntityAvatar
+                        icon={ClipboardCheck}
+                        className="border-primary/15 bg-primary/[0.07] text-primary"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate font-mono text-[10px] font-semibold text-primary">
+                          {order.po_number}
                         </p>
-
-                        <p className="mt-1 text-[9px] text-muted-foreground">
-                          {formatNumber(order.receipt_count)} receipt
-                          {order.receipt_count === 1 ? "" : "s"}
+                        <p className="mt-1 text-[8px] text-muted-foreground">
+                          {order.receipt_count} receipt{order.receipt_count === 1 ? "" : "s"} · {order.item_count} product{order.item_count === 1 ? "" : "s"}
                         </p>
-                      </td>
-
-                      <td className="px-3 py-3.5 align-middle">
-                        <p className="text-[11px] font-semibold tabular-nums text-primary">
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="truncate text-[11px] font-semibold">
+                      {order.supplier.name}
+                    </p>
+                    <p className="mt-1 truncate font-mono text-[8px] text-muted-foreground">
+                      {order.supplier.code ?? "No supplier code"}
+                    </p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="truncate text-[10px] font-semibold">
+                      {order.warehouse.name}
+                    </p>
+                    <p className="mt-1 truncate text-[8px] text-muted-foreground">
+                      {order.branch.name}
+                    </p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="text-[10px] font-semibold">
+                      {formatDate(order.completed_date ?? order.completed_at)}
+                    </p>
+                    <p className="mt-1 text-[8px] text-muted-foreground">
+                      Ordered {formatDate(order.order_date)}
+                    </p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-[11px] font-semibold tabular-nums">
                           {formatQuantity(order.received_quantity)} units
                         </p>
-
-                        <p className="mt-1 text-[9px] text-muted-foreground">
-                          {formatCurrency(order.received_value)} ·{" "}
-                          {formatNumber(order.item_count)} product
-                          {order.item_count === 1 ? "" : "s"}
+                        <p className="mt-1 text-[9px] font-semibold tabular-nums text-primary">
+                          {formatCurrency(order.received_value)}
                         </p>
-                      </td>
-
-                      <td className="px-3 py-3.5 align-middle">
-                        <StatusBadge
-                          label={order.status_label}
-                          variant="success"
-                        />
-                      </td>
-
-                      <td className="px-3 py-3.5 text-right align-middle">
-                        <div
-                          className="inline-flex"
-                          onClick={(event) => event.stopPropagation()}
-                          onKeyDown={(event) => event.stopPropagation()}
-                        >
-                          <IconButton
-                            label="View complete received order"
-                            onClick={() => onToggleDetails(order.id)}
-                            className={cn(
-                              "text-primary hover:bg-primary/10 hover:text-primary",
-                              isExpanded && "bg-primary/10",
-                            )}
-                          >
-                            <Eye className="size-3.5" />
-                          </IconButton>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {isExpanded && (
-                      <tr id={detailsId} className="bg-muted/[0.08]">
-                        <td colSpan={8} className="px-3 pb-3 pt-0">
-                          <ExpandedReceivedOrder order={order} />
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })
+                      </div>
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground group-hover:text-primary" />
+                    </div>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
@@ -899,42 +816,343 @@ function ReceivedOrderTable({
   );
 }
 
-/*
-|--------------------------------------------------------------------------
-| Expanded details
-|--------------------------------------------------------------------------
-*/
+function ReceivedOrderOverviewDrawer({
+  view,
+  pagination,
+  summary,
+  onClose,
+}: {
+  view: ReceivedOrderDrawerView | null;
+  pagination: PaginatedReceivedOrders;
+  summary: ReceivedOrderSummary;
+  onClose: () => void;
+}) {
+  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
+  const activeView = view ?? "all";
+
+  useEffect(() => {
+    setExpandedOrderId(null);
+  }, [view]);
+
+  const config = {
+    all: {
+      title: "Received Orders",
+      description: "Completed supplier orders loaded on the current page.",
+      total: summary.total_orders,
+    },
+    receipts: {
+      title: "Receipt Coverage",
+      description: "Orders and their linked receiving records.",
+      total: summary.total_receipts,
+    },
+    month: {
+      title: "Completed This Month",
+      description: "Recent completion activity represented in the archive.",
+      total: summary.completed_this_month,
+    },
+    value: {
+      title: "Received Value",
+      description: "Completed order values and warehouse intake totals.",
+      total: summary.received_value,
+    },
+  }[activeView];
+
+  const monthKey = new Date().toISOString().slice(0, 7);
+  const visibleOrders = pagination.data.filter((order) => {
+    if (activeView !== "month") return true;
+    const completed = order.completed_date ?? order.completed_at;
+    return Boolean(completed && completed.slice(0, 7) === monthKey);
+  });
+
+  return (
+    <AppDrawer
+      open={view !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title={config.title}
+      description={config.description}
+      processing={false}
+    >
+      <div className="flex min-h-full flex-col bg-card">
+        <div className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
+          <p className="text-3xl font-semibold leading-none tabular-nums text-primary">
+            {activeView === "value"
+              ? formatCurrency(config.total)
+              : formatNumber(config.total)}
+          </p>
+          <p className="mt-1 text-[9px] text-muted-foreground">
+            Select an order to expand its archive details below.
+          </p>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          {visibleOrders.length === 0 ? (
+            <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-background/20 p-6 text-center">
+              <History className="size-6 text-muted-foreground" />
+              <p className="mt-3 text-sm font-semibold">No loaded matches</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {visibleOrders.map((order) => {
+                const expanded = expandedOrderId === order.id;
+
+                return (
+                  <article
+                    key={order.id}
+                    className={cn(
+                      "overflow-hidden rounded-xl border bg-background/25 transition-colors",
+                      expanded
+                        ? "border-primary/25 bg-primary/[0.025]"
+                        : "border-border/60",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedOrderId((current) =>
+                          current === order.id ? null : order.id,
+                        )
+                      }
+                      aria-expanded={expanded}
+                      className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                    >
+                      <EntityAvatar
+                        icon={PackageCheck}
+                        className="border-primary/15 bg-primary/[0.07] text-primary"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="break-words font-mono text-[10px] font-semibold text-primary">
+                            {order.po_number}
+                          </p>
+                          <StatusBadge label={order.status_label} variant="success" />
+                        </div>
+                        <p className="mt-1 break-words text-[9px] text-muted-foreground">
+                          {order.supplier.name} · {formatCurrency(order.received_value)}
+                        </p>
+                      </div>
+                      <ChevronDown
+                        className={cn(
+                          "size-4 shrink-0 text-muted-foreground transition-transform",
+                          expanded && "rotate-180 text-primary",
+                        )}
+                      />
+                    </button>
+
+                    {expanded && (
+                      <div className="border-t border-border/60 bg-background/25 p-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <ReceivedAccordionMetric
+                            label="Warehouse"
+                            value={order.warehouse.name}
+                          />
+                          <ReceivedAccordionMetric
+                            label="Completed"
+                            value={formatDate(order.completed_date ?? order.completed_at)}
+                          />
+                          <ReceivedAccordionMetric
+                            label="Received quantity"
+                            value={formatQuantity(order.received_quantity)}
+                          />
+                          <ReceivedAccordionMetric
+                            label="Receipts"
+                            value={formatNumber(order.receipt_count)}
+                          />
+                        </div>
+
+                        <div className="mt-3 rounded-lg border border-border/50 bg-background/30 p-3">
+                          <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                            Product fulfillment
+                          </p>
+                          <div className="mt-2 space-y-2">
+                            {order.items.slice(0, 4).map((item) => (
+                              <div
+                                key={item.id}
+                                className="flex items-center justify-between gap-3 text-[9px]"
+                              >
+                                <div className="min-w-0">
+                                  <p className="break-words font-medium text-foreground/90">
+                                    {item.product_name}
+                                  </p>
+                                  <p className="mt-0.5 font-mono text-[8px] text-muted-foreground">
+                                    {item.product_sku ?? "NO SKU"}
+                                  </p>
+                                </div>
+                                <span className="shrink-0 font-semibold tabular-nums text-primary">
+                                  {formatQuantity(item.received_quantity)} / {formatQuantity(item.ordered_quantity)}
+                                </span>
+                              </div>
+                            ))}
+                            {order.items.length > 4 && (
+                              <p className="text-[8px] text-muted-foreground">
+                                +{order.items.length - 4} more product line
+                                {order.items.length - 4 === 1 ? "" : "s"}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-3 rounded-lg border border-border/50 bg-background/30 p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                              Receipt history
+                            </p>
+                            <span className="text-[9px] font-semibold tabular-nums text-primary">
+                              {formatCurrency(order.received_value)}
+                            </span>
+                          </div>
+
+                          {order.receipts.length === 0 ? (
+                            <p className="mt-2 text-[9px] text-muted-foreground">
+                              No receipt records were returned.
+                            </p>
+                          ) : (
+                            <div className="mt-2 space-y-2">
+                              {order.receipts.slice(0, 3).map((receipt) => (
+                                <div
+                                  key={receipt.id}
+                                  className="flex items-center justify-between gap-3 rounded-md border border-border/40 px-2.5 py-2"
+                                >
+                                  <div className="min-w-0">
+                                    <p className="break-words font-mono text-[9px] font-semibold text-foreground">
+                                      {receipt.receipt_number}
+                                    </p>
+                                    <p className="mt-0.5 text-[8px] text-muted-foreground">
+                                      {formatDate(receipt.received_date)} · {receipt.status_label}
+                                    </p>
+                                  </div>
+                                  <span className="shrink-0 text-[9px] font-semibold tabular-nums text-primary">
+                                    {formatCurrency(receipt.total_amount)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </AppDrawer>
+  );
+}
+
+function ReceivedAccordionMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-lg border border-border/50 bg-background/30 px-2.5 py-2">
+      <p className="text-[7px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 break-words text-[9px] font-semibold text-foreground">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function ReceivedOrderDetailsDrawer({
+  order,
+  onClose,
+}: {
+  order: ReceivedOrder | null;
+  onClose: () => void;
+}) {
+  return (
+    <AppDrawer
+      open={order !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title="Received Order Record"
+      description="Review products, receipts, supplier context, warehouse destination, totals, and workflow history."
+      processing={false}
+    >
+      {order && (
+        <div className="min-h-full overflow-y-auto bg-card">
+          <ExpandedReceivedOrder order={order} />
+        </div>
+      )}
+    </AppDrawer>
+  );
+}
 
 function ExpandedReceivedOrder({ order }: { order: ReceivedOrder }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-primary/10 bg-background/45 shadow-sm">
-      <div className="flex flex-col gap-2 border-b border-border/60 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
-            Complete Received Order Record
-          </p>
+    <div className="space-y-4 p-4">
+      <section className="overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.065] via-card/95 to-card shadow-sm">
+        <div className="border-b border-primary/10 bg-background/20 px-4 py-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-400">
+                <PackageCheck className="size-4.5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-emerald-400">
+                  Completed supplier order
+                </p>
+                <h2 className="mt-1 break-words font-mono text-sm font-semibold text-foreground">
+                  {order.po_number}
+                </h2>
+                <p className="mt-1 break-words text-[10px] leading-5 text-muted-foreground">
+                  {order.supplier.name} · {order.warehouse.name}
+                </p>
+              </div>
+            </div>
 
-          <p className="mt-0.5 text-[9px] text-muted-foreground">
-            Supplier, destination, finance, workflow, products, and receipt
-            history.
-          </p>
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <StatusBadge label={order.status_label} variant="success" />
+              <Badge
+                variant="outline"
+                className="h-7 rounded-full border-primary/15 bg-primary/[0.055] px-2.5 text-[9px] font-semibold text-primary"
+              >
+                {formatNumber(order.receipt_count)} receipt
+                {order.receipt_count === 1 ? "" : "s"}
+              </Badge>
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge
-            variant="outline"
-            className="h-6 rounded-full border-border/70 bg-muted/20 px-2.5 font-mono text-[9px] text-muted-foreground"
-          >
-            {order.po_number}
-          </Badge>
-
-          <StatusBadge label={order.status_label} variant="success" />
+        <div className="grid grid-cols-2 divide-x divide-y divide-border/60 sm:grid-cols-4 sm:divide-y-0">
+          <ReceivedHeroMetric
+            label="Received value"
+            value={formatCurrency(order.received_value)}
+            helper="Final warehouse intake"
+            valueClassName="text-primary"
+          />
+          <ReceivedHeroMetric
+            label="Products"
+            value={formatNumber(order.item_count)}
+            helper="Completed product lines"
+          />
+          <ReceivedHeroMetric
+            label="Quantity"
+            value={formatQuantity(order.received_quantity)}
+            helper="Total received units"
+          />
+          <ReceivedHeroMetric
+            label="Completed"
+            value={formatDate(order.completed_date ?? order.completed_at)}
+            helper="Archive completion date"
+          />
         </div>
-      </div>
+      </section>
 
-      <div className="grid gap-3 p-3 lg:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]">
         <InfoPanel
           title="Supplier & Terms"
+          description="Supplier identity and commercial information."
           icon={Truck}
           tone="amber"
           items={[
@@ -949,6 +1167,7 @@ function ExpandedReceivedOrder({ order }: { order: ReceivedOrder }) {
 
         <InfoPanel
           title="Destination & Dates"
+          description="Receiving location and completion timeline."
           icon={Warehouse}
           tone="violet"
           items={[
@@ -963,6 +1182,7 @@ function ExpandedReceivedOrder({ order }: { order: ReceivedOrder }) {
 
         <InfoPanel
           title="Financial Summary"
+          description="Order calculation and final received value."
           icon={CircleDollarSign}
           tone="emerald"
           items={[
@@ -977,6 +1197,7 @@ function ExpandedReceivedOrder({ order }: { order: ReceivedOrder }) {
 
         <InfoPanel
           title="Workflow Trail"
+          description="Creator, submission, approval, and receipt history."
           icon={Clock3}
           tone="blue"
           items={[
@@ -995,79 +1216,110 @@ function ExpandedReceivedOrder({ order }: { order: ReceivedOrder }) {
         />
       </div>
 
-      <div className="border-t border-border/60 p-3">
-        <OrderItemsTable order={order} />
-      </div>
-
-      <div className="border-t border-border/60 p-3">
-        <ReceiptHistory order={order} />
-      </div>
+      <OrderItemsTable order={order} />
+      <ReceiptHistory order={order} />
 
       {order.notes && (
-        <div className="border-t border-border/60 p-3">
-          <div className="flex items-start gap-2.5 rounded-lg border border-border/60 bg-card/25 p-3">
-            <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
-              <FileText className="size-3.5" />
+        <section className="rounded-2xl border border-primary/15 bg-primary/[0.035] p-4">
+          <div className="flex items-start gap-3">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
+              <FileText className="size-4" />
             </span>
-
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold">Order Notes</p>
-
-              <p className="mt-1 whitespace-pre-wrap break-words text-[10px] leading-5 text-muted-foreground">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-primary">
+                Order notes
+              </p>
+              <p className="mt-2 whitespace-pre-wrap break-words text-[10px] leading-5 text-muted-foreground">
                 {order.notes}
               </p>
             </div>
           </div>
-        </div>
+        </section>
       )}
+    </div>
+  );
+}
+
+function ReceivedHeroMetric({
+  label,
+  value,
+  helper,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  helper: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="min-w-0 p-3.5">
+      <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-1.5 break-words text-[12px] font-semibold tabular-nums text-foreground",
+          valueClassName,
+        )}
+      >
+        {value}
+      </p>
+      <p className="mt-1 text-[8px] leading-4 text-muted-foreground">
+        {helper}
+      </p>
     </div>
   );
 }
 
 function InfoPanel({
   title,
+  description,
   icon: Icon,
   tone,
   items,
 }: {
   title: string;
+  description: string;
   icon: LucideIcon;
   tone: "amber" | "violet" | "emerald" | "blue";
   items: Array<[string, string]>;
 }) {
   const tones = {
-    amber: "border-primary/15 bg-primary/10 text-primary",
-    violet: "border-primary/15 bg-primary/10 text-primary",
-    emerald: "border-primary/15 bg-primary/10 text-primary",
-    blue: "border-primary/15 bg-primary/10 text-primary",
+    amber: "border-amber-500/20 bg-amber-500/10 text-amber-400",
+    violet: "border-violet-500/20 bg-violet-500/10 text-violet-300",
+    emerald: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
+    blue: "border-primary/20 bg-primary/10 text-primary",
   };
 
   return (
-    <section className="overflow-hidden rounded-xl border border-border/60 bg-card/20">
-      <div className="flex items-center gap-2.5 border-b border-border/50 px-3 py-2.5">
+    <section className="overflow-hidden rounded-2xl border border-border/70 bg-background/25">
+      <div className="flex items-start gap-3 border-b border-border/60 bg-background/20 px-4 py-3">
         <span
           className={cn(
-            "inline-flex size-7 items-center justify-center rounded-lg border",
+            "inline-flex size-8 shrink-0 items-center justify-center rounded-xl border",
             tones[tone],
           )}
         >
-          <Icon className="size-3.5" />
+          <Icon className="size-4" />
         </span>
-
-        <p className="text-[10px] font-semibold">{title}</p>
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold">{title}</p>
+          <p className="mt-0.5 text-[8px] leading-4 text-muted-foreground">
+            {description}
+          </p>
+        </div>
       </div>
 
-      <div className="divide-y divide-border/40">
+      <div className="divide-y divide-border/50 px-4">
         {items.map(([label, value]) => (
           <div
             key={label}
-            className="grid grid-cols-[90px_minmax(0,1fr)] gap-3 px-3 py-2"
+            className="grid grid-cols-[minmax(105px,0.42fr)_minmax(0,0.58fr)] gap-3 py-2.5"
           >
-            <span className="text-[8px] uppercase tracking-[0.08em] text-muted-foreground">
+            <span className="text-[8px] font-medium uppercase tracking-[0.09em] text-muted-foreground">
               {label}
             </span>
-
-            <span className="min-w-0 break-words text-right text-[9px] font-medium text-foreground/85">
+            <span className="min-w-0 break-words text-right text-[10px] font-medium leading-4 text-foreground/85">
               {value}
             </span>
           </div>
@@ -1364,136 +1616,6 @@ function ReceiptCard({ receipt }: { receipt: ReceiptRecord }) {
 |--------------------------------------------------------------------------
 */
 
-function ArchiveMetric({
-  title,
-  value,
-  description,
-  footerLabel,
-  footerValue,
-  progress,
-  icon: Icon,
-  tone,
-  className,
-}: {
-  title: string;
-  value: number | string;
-  description: string;
-  footerLabel: string;
-  footerValue: string;
-  progress: number;
-  icon: LucideIcon;
-  tone: "blue" | "amber" | "violet" | "emerald";
-  className?: string;
-}) {
-  const tones = {
-    blue: {
-      icon: "border-primary/15 bg-primary/10 text-primary",
-      bar: "bg-primary",
-      value: "text-primary",
-    },
-    amber: {
-      icon: "border-primary/15 bg-primary/10 text-primary",
-      bar: "bg-primary",
-      value: "text-primary",
-    },
-    violet: {
-      icon: "border-primary/15 bg-primary/10 text-primary",
-      bar: "bg-primary",
-      value: "text-primary",
-    },
-    emerald: {
-      icon: "border-emerald-500/15 bg-emerald-500/10 text-emerald-400",
-      bar: "bg-emerald-400",
-      value: "text-emerald-300",
-    },
-  };
-
-  const selected = tones[tone];
-
-  return (
-    <article className={cn("min-w-0 p-4", className)}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-            {title}
-          </p>
-
-          <p
-            className={cn(
-              "mt-2 truncate text-xl font-semibold tabular-nums",
-              selected.value,
-            )}
-          >
-            {value}
-          </p>
-
-          <p className="mt-1 truncate text-[9px] text-muted-foreground">
-            {description}
-          </p>
-        </div>
-
-        <span
-          className={cn(
-            "inline-flex size-8 shrink-0 items-center justify-center rounded-lg border",
-            selected.icon,
-          )}
-        >
-          <Icon className="size-4" />
-        </span>
-      </div>
-
-      <div className="mt-4">
-        <div className="flex items-center justify-between gap-3 text-[8px] text-muted-foreground">
-          <span>{footerLabel}</span>
-          <span className="truncate font-medium text-foreground/75">
-            {footerValue}
-          </span>
-        </div>
-
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-background/60">
-          <div
-            className={cn(
-              "h-full rounded-full transition-[width] duration-500",
-              selected.bar,
-            )}
-            style={{
-              width: `${Math.max(0, Math.min(100, progress))}%`,
-            }}
-          />
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function TableMeta({
-  icon: Icon,
-  value,
-  className,
-  muted = false,
-}: {
-  icon: LucideIcon;
-  value: string;
-  className?: string;
-  muted?: boolean;
-}) {
-  return (
-    <div className="flex min-w-0 items-center gap-2">
-      <Icon className={cn("size-3.5 shrink-0", className)} />
-
-      <span
-        className={cn(
-          "max-w-[160px] truncate text-[10px] font-semibold",
-          muted
-            ? "text-[9px] font-normal text-muted-foreground"
-            : "text-foreground/90",
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
 
 function ReceiptMetric({
   label,
@@ -1515,7 +1637,7 @@ function ReceiptMetric({
 
       <p
         className={cn(
-          "mt-1.5 truncate text-[9px] font-semibold",
+          "mt-1.5 break-words text-[9px] font-semibold",
           valueClassName,
         )}
       >
@@ -1556,6 +1678,117 @@ function TextBlock({
         {value}
       </p>
     </div>
+  );
+}
+
+function ArchiveMetric({
+  title,
+  value,
+  description,
+  footerLabel,
+  footerValue,
+  progress,
+  icon: Icon,
+  tone,
+  onClick,
+  className,
+}: {
+  title: string;
+  value: number | string;
+  description: string;
+  footerLabel: string;
+  footerValue: string;
+  progress: number;
+  icon: LucideIcon;
+  tone: "blue" | "amber" | "violet" | "emerald";
+  onClick: () => void;
+  className?: string;
+}) {
+  const tones = {
+    blue: {
+      icon: "border-primary/15 bg-primary/10 text-primary",
+      bar: "bg-primary",
+      value: "text-primary",
+    },
+    amber: {
+      icon: "border-amber-500/15 bg-amber-500/10 text-amber-400",
+      bar: "bg-amber-400",
+      value: "text-amber-400",
+    },
+    violet: {
+      icon: "border-violet-500/15 bg-violet-500/10 text-violet-300",
+      bar: "bg-violet-400",
+      value: "text-violet-300",
+    },
+    emerald: {
+      icon: "border-emerald-500/15 bg-emerald-500/10 text-emerald-400",
+      bar: "bg-emerald-400",
+      value: "text-emerald-300",
+    },
+  } as const;
+
+  const selected = tones[tone];
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "group min-w-0 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35",
+        className,
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+            {title}
+          </p>
+
+          <p
+            className={cn(
+              "mt-2 truncate text-xl font-semibold leading-none tracking-[-0.03em] tabular-nums",
+              selected.value,
+            )}
+          >
+            {value}
+          </p>
+
+          <p className="mt-1 truncate text-[9px] text-muted-foreground">
+            {description}
+          </p>
+        </div>
+
+        <span
+          className={cn(
+            "inline-flex size-8 shrink-0 items-center justify-center rounded-lg border transition-transform group-hover:scale-105",
+            selected.icon,
+          )}
+        >
+          <Icon className="size-4" />
+        </span>
+      </div>
+
+      <div className="mt-4">
+        <div className="flex items-center justify-between gap-3 text-[8px] text-muted-foreground">
+          <span>{footerLabel}</span>
+          <span className="truncate font-medium text-foreground/75">
+            {footerValue}
+          </span>
+        </div>
+
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-background/60">
+          <div
+            className={cn(
+              "h-full rounded-full transition-[width] duration-500",
+              selected.bar,
+            )}
+            style={{
+              width: `${Math.max(0, Math.min(100, progress))}%`,
+            }}
+          />
+        </div>
+      </div>
+    </button>
   );
 }
 

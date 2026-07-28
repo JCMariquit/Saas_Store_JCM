@@ -3,17 +3,26 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Current JCM SaaS Product
+    | JCM SaaS connection
     |--------------------------------------------------------------------------
     |
-    | This Laravel application is the JCM Inventory product. The product code
-    | connects this app to its product, plans, roles, features and sidebars
-    | stored in the central JCM SaaS database.
+    | This must be the connection key in config/database.php, not the MySQL
+    | driver name. The expected key for this project is "saas".
     |
     */
+    'saas_connection' => env('JCM_SAAS_CONNECTION', 'saas'),
 
-    'product_code' => env(
-        'JCM_PRODUCT_CODE',
-        'JCM-INVENTORY-001'
-    ),
+    /*
+    |--------------------------------------------------------------------------
+    | Current product
+    |--------------------------------------------------------------------------
+    */
+    'product_code' => env('JCM_PRODUCT_CODE', 'JCM-INVENTORY-001'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Current access session
+    |--------------------------------------------------------------------------
+    */
+    'current_access_session_key' => 'jcm.current_access_id',
 ];

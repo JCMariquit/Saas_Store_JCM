@@ -19,7 +19,7 @@
 -- Current Database: `jcm_inventory_db`
 --
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `jcm_inventory_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `jcm_inventory_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
 
 USE `jcm_inventory_db`;
 
@@ -1779,7 +1779,7 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-28 15:49:28
+-- Dump completed on 2026-07-28 20:16:06
 
 
 -- ============================================================

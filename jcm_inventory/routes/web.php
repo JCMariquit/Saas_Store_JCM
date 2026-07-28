@@ -13,6 +13,10 @@ use App\Http\Controllers\ReceivingController;
 use App\Http\Controllers\ReceivedOrderController;
 use App\Http\Controllers\StockIssuanceController;
 use App\Http\Controllers\StockIssuanceHistoryController;
+use App\Http\Controllers\Subscriptions\SubscriptionActionController;
+use App\Http\Controllers\Subscriptions\SubscriptionCheckoutController;
+use App\Http\Controllers\Subscriptions\SubscriptionController;
+use App\Http\Controllers\Subscriptions\SubscriptionPaymentController;
 use App\Http\Controllers\RoleAccessController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\StockMovementController;
@@ -29,6 +33,61 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth'])->group(function () {
+    /*
+    |--------------------------------------------------------------------------
+    | Subscription and Billing
+    |--------------------------------------------------------------------------
+    |
+    | These routes intentionally stay OUTSIDE subscription.access.
+    | An expired or blocked owner must still be able to open this page,
+    | choose a plan, and submit a renewal payment.
+    |
+    */
+
+    Route::prefix('settings/subscription')
+        ->name('subscription.')
+        ->group(function () {
+            Route::get(
+                '/',
+                [SubscriptionController::class, 'index']
+            )->name('index');
+
+            Route::post(
+                '/checkout',
+                [SubscriptionCheckoutController::class, 'store']
+            )->name('checkout.store');
+
+            Route::post(
+                '/payment',
+                [SubscriptionPaymentController::class, 'store']
+            )->name('payment.store');
+
+            Route::patch(
+                '/cancel-at-period-end',
+                [
+                    SubscriptionActionController::class,
+                    'cancelAtPeriodEnd',
+                ]
+            )->name('cancel-at-period-end');
+
+            Route::patch(
+                '/resume',
+                [SubscriptionActionController::class, 'resume']
+            )->name('resume');
+        });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Subscription-protected Inventory application
+    |--------------------------------------------------------------------------
+    |
+    | Every operational Inventory route below inherits the account owner's
+    | subscription. When the owner is read-only, write requests are blocked.
+    |
+    */
+
+    Route::middleware('subscription.access')
+        ->group(function () {
     /*
     |--------------------------------------------------------------------------
     | Dashboard
@@ -461,7 +520,7 @@ Route::middleware(['auth'])->group(function () {
             Route::prefix('purchase-approvals')
                 ->name('purchase-approvals.')
                 ->middleware(
-                    'feature:purchase_orders'
+                    'feature:purchase_approvals'
                 )
                 ->controller(
                     PurchaseApprovalController::class
@@ -720,6 +779,8 @@ Route::middleware(['auth'])->group(function () {
         '/inventory/movements',
         '/inventory/stock-movements'
     );
+        });
+
 });
 
 require __DIR__.'/settings.php';

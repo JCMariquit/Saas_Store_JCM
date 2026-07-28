@@ -19,7 +19,7 @@
 -- Current Database: `jcm_saas_db`
 --
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `jcm_saas_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `jcm_saas_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci */;
 
 USE `jcm_saas_db`;
 
@@ -115,6 +115,42 @@ INSERT INTO `account_business_profiles` VALUES (1,1,'123','123',NULL,'mariquit.j
 UNLOCK TABLES;
 
 --
+-- Table structure for table `account_product_trials`
+--
+
+DROP TABLE IF EXISTS `account_product_trials`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `account_product_trials` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `account_owner_id` bigint(20) unsigned NOT NULL,
+  `product_id` bigint(20) unsigned NOT NULL,
+  `subscription_id` bigint(20) unsigned DEFAULT NULL,
+  `trial_started_at` timestamp NULL DEFAULT NULL,
+  `trial_ends_at` timestamp NULL DEFAULT NULL,
+  `consumed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `account_product_trials_owner_product_unique` (`account_owner_id`,`product_id`),
+  KEY `account_product_trials_subscription_index` (`subscription_id`),
+  KEY `account_product_trials_product_foreign` (`product_id`),
+  CONSTRAINT `account_product_trials_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `account_product_trials_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `account_product_trials_subscription_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `account_product_trials`
+--
+
+LOCK TABLES `account_product_trials` WRITE;
+/*!40000 ALTER TABLE `account_product_trials` DISABLE KEYS */;
+/*!40000 ALTER TABLE `account_product_trials` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `account_role_sidebar_items`
 --
 
@@ -176,6 +212,7 @@ CREATE TABLE `app_features` (
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `app_features_product_code_unique` (`product_id`,`feature_code`),
+  UNIQUE KEY `app_features_id_product_unique` (`id`,`product_id`),
   KEY `app_features_product_status_sort_index` (`product_id`,`status`,`sort_order`),
   CONSTRAINT `app_features_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -586,6 +623,7 @@ DROP TABLE IF EXISTS `plan_features`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `plan_features` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` bigint(20) unsigned NOT NULL,
   `plan_id` bigint(20) unsigned NOT NULL,
   `feature_id` bigint(20) unsigned NOT NULL,
   `is_enabled` tinyint(1) NOT NULL DEFAULT 1,
@@ -595,9 +633,14 @@ CREATE TABLE `plan_features` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `plan_features_unique` (`plan_id`,`feature_id`),
   KEY `plan_features_feature_index` (`feature_id`),
+  KEY `plan_features_product_plan_index` (`product_id`,`plan_id`),
+  KEY `plan_features_plan_product_foreign` (`plan_id`,`product_id`),
+  KEY `plan_features_feature_product_foreign` (`feature_id`,`product_id`),
   CONSTRAINT `plan_features_feature_foreign` FOREIGN KEY (`feature_id`) REFERENCES `app_features` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `plan_features_plan_foreign` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `plan_features_feature_product_foreign` FOREIGN KEY (`feature_id`, `product_id`) REFERENCES `app_features` (`id`, `product_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `plan_features_plan_foreign` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `plan_features_plan_product_foreign` FOREIGN KEY (`plan_id`, `product_id`) REFERENCES `plans` (`id`, `product_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -606,8 +649,117 @@ CREATE TABLE `plan_features` (
 
 LOCK TABLES `plan_features` WRITE;
 /*!40000 ALTER TABLE `plan_features` DISABLE KEYS */;
-INSERT INTO `plan_features` VALUES (1,12,3,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(2,12,1,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(3,12,2,1,NULL,'2026-07-13 02:00:58','2026-07-16 08:44:47'),(4,12,4,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(5,12,6,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(6,12,5,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(7,12,8,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(8,13,1,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(9,13,2,1,NULL,'2026-07-13 02:00:58','2026-07-16 08:44:47'),(10,13,3,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(11,13,4,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(12,13,5,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(13,13,6,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(14,13,7,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(15,13,8,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(16,13,9,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(17,13,10,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(18,13,11,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(19,13,12,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(20,13,13,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(21,13,14,1,NULL,'2026-07-13 02:00:58','2026-07-14 03:32:48'),(22,13,15,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(23,13,16,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(39,12,12,1,NULL,'2026-07-13 02:11:28','2026-07-13 02:11:28'),(40,12,13,1,NULL,'2026-07-13 02:11:28','2026-07-13 02:11:28'),(41,12,11,1,NULL,'2026-07-13 02:11:28','2026-07-13 02:11:28'),(43,12,33,1,NULL,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(44,13,33,1,NULL,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(46,12,34,1,NULL,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(47,13,34,1,NULL,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(48,12,35,1,NULL,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(49,13,35,1,NULL,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(50,12,36,1,NULL,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(51,13,36,1,NULL,'2026-07-28 03:26:29','2026-07-28 03:26:29');
+INSERT INTO `plan_features` VALUES (1,11,12,3,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(2,11,12,1,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(3,11,12,2,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(4,11,12,4,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(5,11,12,6,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(6,11,12,5,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(7,11,12,8,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(8,11,13,1,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(9,11,13,2,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(10,11,13,3,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(11,11,13,4,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(12,11,13,5,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(13,11,13,6,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(14,11,13,7,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(15,11,13,8,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(16,11,13,9,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(17,11,13,10,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(18,11,13,11,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(19,11,13,12,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(20,11,13,13,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(21,11,13,14,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(22,11,13,15,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(23,11,13,16,1,NULL,'2026-07-13 02:00:58','2026-07-28 11:37:27'),(39,11,12,12,1,NULL,'2026-07-13 02:11:28','2026-07-28 11:37:27'),(40,11,12,13,1,NULL,'2026-07-13 02:11:28','2026-07-28 11:37:27'),(41,11,12,11,1,NULL,'2026-07-13 02:11:28','2026-07-28 11:37:27'),(43,11,12,33,1,NULL,'2026-07-21 06:04:47','2026-07-28 11:37:27'),(44,11,13,33,1,NULL,'2026-07-21 06:04:47','2026-07-28 11:37:27'),(46,11,12,34,1,NULL,'2026-07-21 06:04:47','2026-07-28 11:37:27'),(47,11,13,34,1,NULL,'2026-07-21 06:04:47','2026-07-28 11:37:27'),(48,11,12,35,1,NULL,'2026-07-28 03:26:29','2026-07-28 11:37:27'),(49,11,13,35,1,NULL,'2026-07-28 03:26:29','2026-07-28 11:37:27'),(50,11,12,36,1,NULL,'2026-07-28 03:26:29','2026-07-28 11:37:27'),(51,11,13,36,1,NULL,'2026-07-28 03:26:29','2026-07-28 11:37:27'),(55,11,12,9,1,NULL,'2026-07-28 12:07:50','2026-07-28 12:07:50'),(56,11,12,10,1,NULL,'2026-07-28 12:07:50','2026-07-28 12:07:50');
 /*!40000 ALTER TABLE `plan_features` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `plan_limits`
+--
+
+DROP TABLE IF EXISTS `plan_limits`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `plan_limits` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `plan_id` bigint(20) unsigned NOT NULL,
+  `limit_code` varchar(100) NOT NULL,
+  `limit_value` bigint(20) unsigned DEFAULT NULL,
+  `is_unlimited` tinyint(1) NOT NULL DEFAULT 0,
+  `description` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `plan_limits_plan_code_unique` (`plan_id`,`limit_code`),
+  KEY `plan_limits_code_index` (`limit_code`),
+  CONSTRAINT `plan_limits_plan_foreign` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `plan_limits`
+--
+
+LOCK TABLES `plan_limits` WRITE;
+/*!40000 ALTER TABLE `plan_limits` DISABLE KEYS */;
+INSERT INTO `plan_limits` VALUES (1,12,'max_branches',1,0,'Maximum number of business branches.','2026-07-28 12:07:50','2026-07-28 12:07:50'),(2,12,'max_warehouses',1,0,'Maximum number of warehouses.','2026-07-28 12:07:50','2026-07-28 12:07:50'),(3,12,'max_team_members',0,0,'Solo Inventory is owner-only.','2026-07-28 12:07:50','2026-07-28 12:07:50'),(4,13,'max_branches',3,0,'Initial Team Inventory branch limit.','2026-07-28 12:07:50','2026-07-28 12:07:50'),(5,13,'max_warehouses',6,0,'Initial Team Inventory warehouse limit.','2026-07-28 12:07:50','2026-07-28 12:07:50'),(6,13,'max_team_members',10,0,'Initial Team Inventory manager/staff limit.','2026-07-28 12:07:50','2026-07-28 12:07:50');
+/*!40000 ALTER TABLE `plan_limits` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `plan_prices`
+--
+
+DROP TABLE IF EXISTS `plan_prices`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `plan_prices` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `plan_id` bigint(20) unsigned NOT NULL,
+  `billing_interval` enum('monthly','quarterly','yearly','custom') NOT NULL DEFAULT 'monthly',
+  `price` decimal(12,2) NOT NULL,
+  `compare_at_price` decimal(12,2) DEFAULT NULL,
+  `currency` char(3) NOT NULL DEFAULT 'PHP',
+  `duration_days` int(10) unsigned NOT NULL,
+  `trial_days_override` int(10) unsigned DEFAULT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT 0,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  `status` enum('active','inactive','archived') NOT NULL DEFAULT 'active',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `plan_prices_plan_interval_currency_unique` (`plan_id`,`billing_interval`,`currency`),
+  UNIQUE KEY `plan_prices_id_plan_unique` (`id`,`plan_id`),
+  KEY `plan_prices_catalog_index` (`plan_id`,`status`,`sort_order`),
+  CONSTRAINT `plan_prices_plan_foreign` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `plan_prices`
+--
+
+LOCK TABLES `plan_prices` WRITE;
+/*!40000 ALTER TABLE `plan_prices` DISABLE KEYS */;
+INSERT INTO `plan_prices` VALUES (1,12,'monthly',499.00,NULL,'PHP',30,NULL,1,10,'active','2026-07-28 12:07:50','2026-07-28 12:07:50'),(2,12,'quarterly',1425.00,1497.00,'PHP',90,NULL,0,20,'active','2026-07-28 12:07:50','2026-07-28 12:07:50'),(3,12,'yearly',4990.00,5988.00,'PHP',365,NULL,0,30,'active','2026-07-28 12:07:50','2026-07-28 12:07:50'),(4,13,'monthly',1299.00,NULL,'PHP',30,NULL,1,10,'active','2026-07-28 12:07:50','2026-07-28 12:07:50'),(5,13,'quarterly',3700.00,3897.00,'PHP',90,NULL,0,20,'active','2026-07-28 12:07:50','2026-07-28 12:07:50'),(6,13,'yearly',12990.00,15588.00,'PHP',365,NULL,0,30,'active','2026-07-28 12:07:50','2026-07-28 12:07:50');
+/*!40000 ALTER TABLE `plan_prices` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `plan_user_types`
+--
+
+DROP TABLE IF EXISTS `plan_user_types`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `plan_user_types` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` bigint(20) unsigned NOT NULL,
+  `plan_id` bigint(20) unsigned NOT NULL,
+  `product_user_type_id` bigint(20) unsigned NOT NULL,
+  `is_enabled` tinyint(1) NOT NULL DEFAULT 1,
+  `max_accounts` int(10) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `plan_user_types_plan_role_unique` (`plan_id`,`product_user_type_id`),
+  KEY `plan_user_types_product_plan_index` (`product_id`,`plan_id`,`is_enabled`),
+  KEY `plan_user_types_product_role_index` (`product_id`,`product_user_type_id`,`is_enabled`),
+  KEY `plan_user_types_plan_product_foreign` (`plan_id`,`product_id`),
+  KEY `plan_user_types_role_product_foreign` (`product_user_type_id`,`product_id`),
+  CONSTRAINT `plan_user_types_plan_product_foreign` FOREIGN KEY (`plan_id`, `product_id`) REFERENCES `plans` (`id`, `product_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `plan_user_types_role_product_foreign` FOREIGN KEY (`product_user_type_id`, `product_id`) REFERENCES `product_user_types` (`id`, `product_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `plan_user_types`
+--
+
+LOCK TABLES `plan_user_types` WRITE;
+/*!40000 ALTER TABLE `plan_user_types` DISABLE KEYS */;
+INSERT INTO `plan_user_types` VALUES (1,11,12,3,1,1,'2026-07-28 12:07:50','2026-07-28 12:07:50'),(2,11,13,3,1,1,'2026-07-28 12:07:50','2026-07-28 12:07:50'),(3,11,13,1,1,NULL,'2026-07-28 12:07:50','2026-07-28 12:07:50'),(4,11,13,5,1,NULL,'2026-07-28 12:07:50','2026-07-28 12:07:50');
+/*!40000 ALTER TABLE `plan_user_types` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -655,7 +807,7 @@ CREATE TABLE `plans` (
 
 LOCK TABLES `plans` WRITE;
 /*!40000 ALTER TABLE `plans` DISABLE KEYS */;
-INSERT INTO `plans` VALUES (9,10,'basic','Basic POS',499.00,'monthly','PHP',30,0,'Single owner POS with inventory and sales management.',0,0,0,NULL,1,NULL,1,10,'active','2026-06-09 07:03:22','2026-07-13 01:47:56'),(10,10,'business','Business POS',1299.00,'monthly','PHP',30,0,'POS with cashier, staff, and manager role-based access.',1,0,0,NULL,1,NULL,10,20,'active','2026-06-09 07:03:22','2026-07-13 01:47:56'),(11,10,'enterprise','Enterprise POS',1999.00,'monthly','PHP',30,0,'Multi branch POS with employee activity logs and audit trail.',1,1,1,365,NULL,NULL,NULL,30,'active','2026-06-09 07:03:22','2026-07-13 01:47:56'),(12,11,'solo','Solo Inventory',0.00,'monthly','PHP',30,0,'For one owner managing one branch and one warehouse.',0,0,0,NULL,1,1,0,10,'active','2026-07-13 01:47:56','2026-07-13 01:47:56'),(13,11,'team','Team Inventory',0.00,'monthly','PHP',30,0,'For owners with staff, multiple branches and warehouses.',1,1,0,NULL,NULL,NULL,NULL,20,'active','2026-07-13 01:47:56','2026-07-13 01:47:56');
+INSERT INTO `plans` VALUES (9,10,'basic','Basic POS',499.00,'monthly','PHP',30,0,'Single owner POS with inventory and sales management.',0,0,0,NULL,1,NULL,1,10,'active','2026-06-09 07:03:22','2026-07-13 01:47:56'),(10,10,'business','Business POS',1299.00,'monthly','PHP',30,0,'POS with cashier, staff, and manager role-based access.',1,0,0,NULL,1,NULL,10,20,'active','2026-06-09 07:03:22','2026-07-13 01:47:56'),(11,10,'enterprise','Enterprise POS',1999.00,'monthly','PHP',30,0,'Multi branch POS with employee activity logs and audit trail.',1,1,1,365,NULL,NULL,NULL,30,'active','2026-06-09 07:03:22','2026-07-13 01:47:56'),(12,11,'solo','Solo Inventory',499.00,'monthly','PHP',30,30,'Owner-only inventory management for one branch and one warehouse.',0,0,0,NULL,1,1,0,10,'active','2026-07-13 01:47:56','2026-07-28 12:07:49'),(13,11,'team','Team Inventory',1299.00,'monthly','PHP',30,30,'Inventory management with owner, manager and staff roles, multiple branches, and multiple warehouses.',1,1,0,NULL,3,6,10,20,'active','2026-07-13 01:47:56','2026-07-28 12:07:49');
 /*!40000 ALTER TABLE `plans` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -751,6 +903,42 @@ LOCK TABLES `product_overview` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `product_subscription_policies`
+--
+
+DROP TABLE IF EXISTS `product_subscription_policies`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `product_subscription_policies` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` bigint(20) unsigned NOT NULL,
+  `default_trial_days` int(10) unsigned NOT NULL DEFAULT 0,
+  `grace_period_days` int(10) unsigned NOT NULL DEFAULT 0,
+  `past_due_access_mode` enum('blocked','read_only') NOT NULL DEFAULT 'read_only',
+  `expired_access_mode` enum('blocked','read_only') NOT NULL DEFAULT 'read_only',
+  `allow_manual_payment` tinyint(1) NOT NULL DEFAULT 1,
+  `allow_auto_renew` tinyint(1) NOT NULL DEFAULT 0,
+  `lock_after_expiry_days` int(10) unsigned DEFAULT 30,
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `product_subscription_policies_product_unique` (`product_id`),
+  CONSTRAINT `product_subscription_policies_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `product_subscription_policies`
+--
+
+LOCK TABLES `product_subscription_policies` WRITE;
+/*!40000 ALTER TABLE `product_subscription_policies` DISABLE KEYS */;
+INSERT INTO `product_subscription_policies` VALUES (1,11,30,7,'read_only','read_only',1,0,30,'active','2026-07-28 12:07:50','2026-07-28 12:07:50');
+/*!40000 ALTER TABLE `product_subscription_policies` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `product_user_type_sidebar_items`
 --
 
@@ -799,6 +987,7 @@ CREATE TABLE `product_user_types` (
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `product_user_types_unique` (`product_id`,`user_type_id`),
+  UNIQUE KEY `product_user_types_id_product_unique` (`id`,`product_id`),
   KEY `product_user_types_user_type_index` (`user_type_id`),
   CONSTRAINT `product_user_types_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `product_user_types_user_type_foreign` FOREIGN KEY (`user_type_id`) REFERENCES `user_types` (`id`) ON UPDATE CASCADE
@@ -1194,34 +1383,52 @@ DROP TABLE IF EXISTS `subscriptions`;
 CREATE TABLE `subscriptions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `user_id` bigint(20) unsigned NOT NULL,
+  `account_owner_id` bigint(20) unsigned NOT NULL,
   `product_id` bigint(20) unsigned NOT NULL,
   `plan_id` bigint(20) unsigned NOT NULL,
+  `plan_price_id` bigint(20) unsigned DEFAULT NULL,
   `subscription_code` varchar(100) NOT NULL,
   `subscription_type` enum('trial','monthly','quarterly','yearly','custom') NOT NULL DEFAULT 'trial',
-  `status` enum('pending','trial','active','past_due','expired','cancelled','suspended','locked') NOT NULL DEFAULT 'pending',
+  `status` enum('pending','trial','active','past_due','grace_period','expired','cancelled','suspended','locked') NOT NULL DEFAULT 'pending',
   `start_date` date DEFAULT NULL,
   `end_date` date DEFAULT NULL,
+  `trial_ends_at` timestamp NULL DEFAULT NULL,
+  `current_period_start` timestamp NULL DEFAULT NULL,
+  `current_period_end` timestamp NULL DEFAULT NULL,
+  `grace_ends_at` timestamp NULL DEFAULT NULL,
+  `next_billing_at` timestamp NULL DEFAULT NULL,
   `duration_days` int(11) NOT NULL DEFAULT 0,
   `amount` decimal(10,2) DEFAULT NULL,
   `currency` char(3) NOT NULL DEFAULT 'PHP',
   `auto_renew` tinyint(1) NOT NULL DEFAULT 0,
+  `cancel_at_period_end` tinyint(1) NOT NULL DEFAULT 0,
   `activated_at` timestamp NULL DEFAULT NULL,
   `cancelled_at` timestamp NULL DEFAULT NULL,
+  `cancellation_reason` varchar(500) DEFAULT NULL,
   `ended_at` timestamp NULL DEFAULT NULL,
+  `last_payment_at` timestamp NULL DEFAULT NULL,
   `notes` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `live_scope_key` varchar(100) GENERATED ALWAYS AS (case when `status` in ('pending','trial','active','past_due','grace_period','suspended','locked') then concat(`account_owner_id`,':',`product_id`) else NULL end) STORED,
   PRIMARY KEY (`id`),
   UNIQUE KEY `subscription_code` (`subscription_code`),
+  UNIQUE KEY `subscriptions_id_product_owner_unique` (`id`,`product_id`,`account_owner_id`),
+  UNIQUE KEY `subscriptions_live_scope_unique` (`live_scope_key`),
   KEY `fk_subscriptions_user` (`user_id`),
   KEY `fk_subscriptions_product` (`product_id`),
   KEY `idx_subscriptions_plan_id` (`plan_id`),
   KEY `subscriptions_plan_product_index` (`plan_id`,`product_id`),
   KEY `subscriptions_user_product_status_index` (`user_id`,`product_id`,`status`),
   KEY `subscriptions_status_end_date_index` (`status`,`end_date`),
+  KEY `subscriptions_owner_product_status_index` (`account_owner_id`,`product_id`,`status`),
+  KEY `subscriptions_plan_price_index` (`plan_price_id`),
+  KEY `subscriptions_plan_price_plan_foreign` (`plan_price_id`,`plan_id`),
   CONSTRAINT `fk_subscriptions_plan_product` FOREIGN KEY (`plan_id`, `product_id`) REFERENCES `plans` (`id`, `product_id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_subscriptions_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON UPDATE CASCADE,
-  CONSTRAINT `fk_subscriptions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE
+  CONSTRAINT `fk_subscriptions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
+  CONSTRAINT `subscriptions_account_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
+  CONSTRAINT `subscriptions_plan_price_plan_foreign` FOREIGN KEY (`plan_price_id`, `plan_id`) REFERENCES `plan_prices` (`id`, `plan_id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1231,7 +1438,7 @@ CREATE TABLE `subscriptions` (
 
 LOCK TABLES `subscriptions` WRITE;
 /*!40000 ALTER TABLE `subscriptions` DISABLE KEYS */;
-INSERT INTO `subscriptions` VALUES (18,1,10,9,'SUB-1780991250','monthly','expired','2026-06-09','2026-07-09',30,499.00,'PHP',0,'2026-06-09 00:00:00',NULL,'2026-07-09 23:59:59','Basic POS subscription for testing','2026-06-09 07:47:30','2026-07-13 01:47:56'),(19,1,11,13,'SUB-INV-DEV-1-1783910021','monthly','active','2026-07-13','2027-07-13',365,0.00,'PHP',0,'2026-07-13 02:33:41',NULL,NULL,'Development access for JCM Inventory.','2026-07-13 02:33:41','2026-07-13 02:33:41');
+INSERT INTO `subscriptions` VALUES (18,1,1,10,9,NULL,'SUB-1780991250','monthly','expired','2026-06-09','2026-07-09',NULL,'2026-06-08 16:00:00','2026-07-09 15:59:59',NULL,NULL,30,499.00,'PHP',0,0,'2026-06-09 00:00:00',NULL,NULL,'2026-07-09 23:59:59',NULL,'Basic POS subscription for testing','2026-06-09 07:47:30','2026-07-28 11:37:28',NULL),(19,1,1,11,13,4,'SUB-INV-DEV-1-1783910021','monthly','active','2026-07-13','2027-07-13',NULL,'2026-07-12 16:00:00','2027-07-13 15:59:59',NULL,NULL,365,0.00,'PHP',0,0,'2026-07-13 02:33:41',NULL,NULL,NULL,NULL,'Development access for JCM Inventory.','2026-07-13 02:33:41','2026-07-28 12:15:50','1:11');
 /*!40000 ALTER TABLE `subscriptions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1312,11 +1519,15 @@ CREATE TABLE `user_product_access` (
   KEY `user_product_access_subscription_index` (`subscription_id`),
   KEY `user_product_access_product_user_type_foreign` (`product_user_type_id`),
   KEY `user_product_access_assigned_by_foreign` (`assigned_by`),
+  KEY `user_product_access_role_product_scope_foreign` (`product_user_type_id`,`product_id`),
+  KEY `user_product_access_subscription_scope_foreign` (`subscription_id`,`product_id`,`account_owner_id`),
   CONSTRAINT `user_product_access_assigned_by_foreign` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `user_product_access_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `user_product_access_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `user_product_access_product_user_type_foreign` FOREIGN KEY (`product_user_type_id`) REFERENCES `product_user_types` (`id`) ON UPDATE CASCADE,
+  CONSTRAINT `user_product_access_role_product_scope_foreign` FOREIGN KEY (`product_user_type_id`, `product_id`) REFERENCES `product_user_types` (`id`, `product_id`) ON UPDATE CASCADE,
   CONSTRAINT `user_product_access_subscription_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `user_product_access_subscription_scope_foreign` FOREIGN KEY (`subscription_id`, `product_id`, `account_owner_id`) REFERENCES `subscriptions` (`id`, `product_id`, `account_owner_id`) ON UPDATE CASCADE,
   CONSTRAINT `user_product_access_user_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1412,12 +1623,105 @@ INSERT INTO `users` VALUES (1,'June Charles Mariquit','junecharlesmariquit553@gm
 UNLOCK TABLES;
 
 --
+-- Temporary table structure for view `v_plan_allowed_roles`
+--
+
+DROP TABLE IF EXISTS `v_plan_allowed_roles`;
+/*!50001 DROP VIEW IF EXISTS `v_plan_allowed_roles`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+/*!50001 CREATE VIEW `v_plan_allowed_roles` AS SELECT
+ 1 AS `product_id`,
+  1 AS `product_code`,
+  1 AS `plan_id`,
+  1 AS `plan_code`,
+  1 AS `plan_name`,
+  1 AS `product_user_type_id`,
+  1 AS `type_code`,
+  1 AS `role_name`,
+  1 AS `max_accounts`,
+  1 AS `is_enabled` */;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary table structure for view `v_plan_catalog`
+--
+
+DROP TABLE IF EXISTS `v_plan_catalog`;
+/*!50001 DROP VIEW IF EXISTS `v_plan_catalog`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+/*!50001 CREATE VIEW `v_plan_catalog` AS SELECT
+ 1 AS `product_id`,
+  1 AS `product_code`,
+  1 AS `product_name`,
+  1 AS `plan_id`,
+  1 AS `plan_code`,
+  1 AS `plan_name`,
+  1 AS `description`,
+  1 AS `plan_sort_order`,
+  1 AS `plan_status`,
+  1 AS `plan_price_id`,
+  1 AS `billing_interval`,
+  1 AS `price`,
+  1 AS `compare_at_price`,
+  1 AS `currency`,
+  1 AS `duration_days`,
+  1 AS `trial_days`,
+  1 AS `is_default`,
+  1 AS `price_sort_order`,
+  1 AS `price_status` */;
+SET character_set_client = @saved_cs_client;
+
+--
 -- Dumping events for database 'jcm_saas_db'
 --
 
 --
 -- Dumping routines for database 'jcm_saas_db'
 --
+
+--
+-- Current Database: `jcm_saas_db`
+--
+
+USE `jcm_saas_db`;
+
+--
+-- Final view structure for view `v_plan_allowed_roles`
+--
+
+/*!50001 DROP VIEW IF EXISTS `v_plan_allowed_roles`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `v_plan_allowed_roles` AS select `product`.`id` AS `product_id`,`product`.`product_code` AS `product_code`,`plan`.`id` AS `plan_id`,`plan`.`plan_code` AS `plan_code`,`plan`.`plan_name` AS `plan_name`,`product_role`.`id` AS `product_user_type_id`,`user_type`.`type_code` AS `type_code`,coalesce(`product_role`.`display_name`,`user_type`.`name`) AS `role_name`,`plan_role`.`max_accounts` AS `max_accounts`,`plan_role`.`is_enabled` AS `is_enabled` from ((((`plan_user_types` `plan_role` join `products` `product` on(`product`.`id` = `plan_role`.`product_id`)) join `plans` `plan` on(`plan`.`id` = `plan_role`.`plan_id`)) join `product_user_types` `product_role` on(`product_role`.`id` = `plan_role`.`product_user_type_id`)) join `user_types` `user_type` on(`user_type`.`id` = `product_role`.`user_type_id`)) */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `v_plan_catalog`
+--
+
+/*!50001 DROP VIEW IF EXISTS `v_plan_catalog`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `v_plan_catalog` AS select `product`.`id` AS `product_id`,`product`.`product_code` AS `product_code`,`product`.`name` AS `product_name`,`plan`.`id` AS `plan_id`,`plan`.`plan_code` AS `plan_code`,`plan`.`plan_name` AS `plan_name`,`plan`.`description` AS `description`,`plan`.`sort_order` AS `plan_sort_order`,`plan`.`status` AS `plan_status`,`price`.`id` AS `plan_price_id`,`price`.`billing_interval` AS `billing_interval`,`price`.`price` AS `price`,`price`.`compare_at_price` AS `compare_at_price`,`price`.`currency` AS `currency`,`price`.`duration_days` AS `duration_days`,coalesce(`price`.`trial_days_override`,`plan`.`trial_days`) AS `trial_days`,`price`.`is_default` AS `is_default`,`price`.`sort_order` AS `price_sort_order`,`price`.`status` AS `price_status` from ((`products` `product` join `plans` `plan` on(`plan`.`product_id` = `product`.`id`)) join `plan_prices` `price` on(`price`.`plan_id` = `plan`.`id`)) */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -1428,4 +1732,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-28 15:49:29
+-- Dump completed on 2026-07-28 20:16:07

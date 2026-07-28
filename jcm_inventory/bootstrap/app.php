@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Middleware\EnsureFeatureAccess;
+use App\Http\Middleware\EnsureProductSubscription;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\ShareSubscriptionContext;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,10 +23,16 @@ return Application::configure(
             |--------------------------------------------------------------------------
             | Web middleware
             |--------------------------------------------------------------------------
+            |
+            | HandleInertiaRequests provides the standard Inertia shared props.
+            | ShareSubscriptionContext adds the current canonical JCM product
+            | access and owner subscription to every authenticated Inertia page.
+            |
             */
 
             $middleware->web(append: [
                 HandleInertiaRequests::class,
+                ShareSubscriptionContext::class,
                 AddLinkHeadersForPreloadedAssets::class,
             ]);
 
@@ -33,13 +41,19 @@ return Application::configure(
             | Custom middleware aliases
             |--------------------------------------------------------------------------
             |
-            | Usage:
-            | ->middleware('feature:products')
+            | feature:products
+            |     Checks plan feature entitlement and existing feature rules.
+            |
+            | subscription.access
+            |     Checks the owner's shared product subscription. Manager and
+            |     Staff inherit the same owner subscription status.
             |
             */
 
             $middleware->alias([
                 'feature' => EnsureFeatureAccess::class,
+                'subscription.access' =>
+                    EnsureProductSubscription::class,
             ]);
         }
     )

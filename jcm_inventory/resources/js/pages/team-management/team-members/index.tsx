@@ -285,6 +285,47 @@ export default function TeamMembersIndex({
     filters.branch_id,
   ]);
 
+  useEffect(() => {
+    const normalizedSearch = search.trim();
+
+    if (
+      normalizedSearch === (filters.search ?? "").trim() &&
+      status === (filters.status ?? "") &&
+      roleId === (filters.product_user_type_id ?? "") &&
+      branchId === (filters.branch_id ?? "")
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      router.get(
+        "/team/members",
+        {
+          search: normalizedSearch || undefined,
+          status: status || undefined,
+          product_user_type_id: roleId || undefined,
+          branch_id: branchId || undefined,
+        },
+        {
+          preserveState: true,
+          preserveScroll: true,
+          replace: true,
+        },
+      );
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    search,
+    status,
+    roleId,
+    branchId,
+    filters.search,
+    filters.status,
+    filters.product_user_type_id,
+    filters.branch_id,
+  ]);
+
   /*
     |--------------------------------------------------------------------------
     | Member dialog
@@ -470,25 +511,6 @@ export default function TeamMembersIndex({
     | Filters
     |--------------------------------------------------------------------------
     */
-
-  function applyFilters(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-
-    router.get(
-      "/team/members",
-      {
-        search: search.trim() || undefined,
-        status: status || undefined,
-        product_user_type_id: roleId || undefined,
-        branch_id: branchId || undefined,
-      },
-      {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-      },
-    );
-  }
 
   function resetFilters(): void {
     setSearch("");
@@ -1063,30 +1085,8 @@ export default function TeamMembersIndex({
           }
         >
           <FilterBar
-            onSubmit={applyFilters}
+            onSubmit={(event) => event.preventDefault()}
             contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_160px_190px_210px]"
-            actions={
-              <>
-                <Button
-                  type="submit"
-                  variant="secondary"
-                  className="h-10 px-4 text-sm"
-                >
-                  Apply Filters
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!hasActiveFilters}
-                  onClick={resetFilters}
-                  className="h-10 px-3 text-sm"
-                >
-                  <RefreshCw className="size-3.5" />
-                  Reset
-                </Button>
-              </>
-            }
           >
             <SearchInput
               value={search}
@@ -1165,7 +1165,7 @@ export default function TeamMembersIndex({
             getRowKey={(member) => member.id}
             emptyIcon={UserX}
             emptyTitle="No team members found"
-            emptyDescription="No team accounts matched the current filters. Reset the filters or add a new member."
+            emptyDescription="No team accounts matched the current filters. Clear the filters or add a new member."
             emptyAction={
               <div className="flex flex-wrap justify-center gap-2">
                 {hasActiveFilters && (

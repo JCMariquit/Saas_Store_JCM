@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\BusinessProfileController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
@@ -610,6 +611,73 @@ Route::middleware(['auth'])->group(function () {
                         'update'
                     )->name('update');
                 });
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Business Profile
+    |--------------------------------------------------------------------------
+    */
+
+    Route::redirect(
+        '/management/business-profile',
+        '/management/business-profile/general'
+    );
+
+    Route::prefix('management/business-profile')
+        ->name('business-profile.')
+        ->controller(
+            BusinessProfileController::class
+        )
+        ->group(function () {
+            /*
+            |--------------------------------------------------------------------------
+            | General Information
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get(
+                '/general',
+                'general'
+            )
+                ->middleware(
+                    'feature:business_profile_general'
+                )
+                ->name('general.index');
+
+            Route::post(
+                '/general',
+                'updateGeneral'
+            )
+                ->middleware(
+                    'feature:business_profile_general'
+                )
+                ->name('general.update');
+
+            /*
+            |--------------------------------------------------------------------------
+            | Branding
+            |--------------------------------------------------------------------------
+            */
+
+            Route::get(
+                '/branding',
+                'branding'
+            )
+                ->middleware(
+                    'feature:business_profile_branding'
+                )
+                ->name('branding.index');
+
+            Route::post(
+                '/branding',
+                'updateBranding'
+            )
+                ->middleware(
+                    'feature:business_profile_branding'
+                )
+                ->name('branding.update');
         });
 
     /*

@@ -510,9 +510,11 @@ CREATE TABLE `orders` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `order_code` varchar(100) NOT NULL,
   `user_id` bigint(20) unsigned NOT NULL,
+  `account_owner_id` bigint(20) unsigned NOT NULL,
   `product_id` bigint(20) unsigned DEFAULT NULL,
   `service_id` bigint(20) unsigned DEFAULT NULL,
   `plan_id` bigint(20) unsigned DEFAULT NULL,
+  `plan_price_id` bigint(20) unsigned DEFAULT NULL,
   `billing_type` enum('trial','monthly','quarterly','yearly','custom') NOT NULL DEFAULT 'monthly',
   `subscription_id` bigint(20) unsigned DEFAULT NULL,
   `order_type` enum('new_subscription','renewal','upgrade','downgrade','custom_service') NOT NULL DEFAULT 'new_subscription',
@@ -537,11 +539,18 @@ CREATE TABLE `orders` (
   KEY `orders_plan_product_index` (`plan_id`,`product_id`),
   KEY `orders_user_status_index` (`user_id`,`status`),
   KEY `orders_subscription_type_index` (`subscription_id`,`order_type`),
+  KEY `orders_owner_status_index` (`account_owner_id`,`status`),
+  KEY `orders_plan_price_index` (`plan_price_id`),
+  KEY `orders_subscription_scope_index` (`subscription_id`,`product_id`,`account_owner_id`),
+  KEY `orders_plan_price_plan_foreign` (`plan_price_id`,`plan_id`),
   CONSTRAINT `fk_orders_plan_product` FOREIGN KEY (`plan_id`, `product_id`) REFERENCES `plans` (`id`, `product_id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_orders_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_orders_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_orders_subscription` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE
+  CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
+  CONSTRAINT `orders_account_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
+  CONSTRAINT `orders_plan_price_plan_foreign` FOREIGN KEY (`plan_price_id`, `plan_id`) REFERENCES `plan_prices` (`id`, `plan_id`) ON UPDATE CASCADE,
+  CONSTRAINT `orders_subscription_scope_foreign` FOREIGN KEY (`subscription_id`, `product_id`, `account_owner_id`) REFERENCES `subscriptions` (`id`, `product_id`, `account_owner_id`) ON UPDATE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -812,6 +821,39 @@ INSERT INTO `plans` VALUES (9,10,'basic','Basic POS',499.00,'monthly','PHP',30,0
 UNLOCK TABLES;
 
 --
+-- Table structure for table `platform_roles`
+--
+
+DROP TABLE IF EXISTS `platform_roles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `platform_roles` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `role_code` varchar(50) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `is_system_role` tinyint(1) NOT NULL DEFAULT 1,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `platform_roles_code_unique` (`role_code`),
+  KEY `platform_roles_status_sort_index` (`status`,`sort_order`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `platform_roles`
+--
+
+LOCK TABLES `platform_roles` WRITE;
+/*!40000 ALTER TABLE `platform_roles` DISABLE KEYS */;
+INSERT INTO `platform_roles` VALUES (1,'super_admin','Super Administrator','Full control of the central JCM SaaS platform.',1,10,'active','2026-07-28 13:24:59','2026-07-28 13:24:59'),(2,'admin','Administrator','Administrative access to the central JCM SaaS platform.',1,20,'active','2026-07-28 13:24:59','2026-07-28 13:24:59'),(3,'user','Platform User','Standard JCM account that may access subscribed products.',1,100,'active','2026-07-28 13:24:59','2026-07-28 13:24:59');
+/*!40000 ALTER TABLE `platform_roles` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `product_features`
 --
 
@@ -991,7 +1033,7 @@ CREATE TABLE `product_user_types` (
   KEY `product_user_types_user_type_index` (`user_type_id`),
   CONSTRAINT `product_user_types_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `product_user_types_user_type_foreign` FOREIGN KEY (`user_type_id`) REFERENCES `user_types` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1000,7 +1042,7 @@ CREATE TABLE `product_user_types` (
 
 LOCK TABLES `product_user_types` WRITE;
 /*!40000 ALTER TABLE `product_user_types` DISABLE KEYS */;
-INSERT INTO `product_user_types` VALUES (1,11,2,'Manager','active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(2,10,2,'Manager','active','2026-07-13 02:00:57','2026-07-13 02:00:57'),(3,11,1,'Client / Owner','active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(4,10,1,'Client / Owner','active','2026-07-13 02:00:57','2026-07-13 02:00:57'),(5,11,3,'Staff','active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(6,10,3,'Staff','active','2026-07-13 02:00:57','2026-07-13 02:00:57');
+INSERT INTO `product_user_types` VALUES (1,11,2,'Manager','active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(2,10,2,'Manager','active','2026-07-13 02:00:57','2026-07-13 02:00:57'),(3,11,1,'Client / Owner','active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(4,10,1,'Client / Owner','active','2026-07-13 02:00:57','2026-07-13 02:00:57'),(5,11,3,'Staff','active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(6,10,3,'Staff','active','2026-07-13 02:00:57','2026-07-13 02:00:57'),(9,10,5,'Cashier','active','2026-07-28 13:17:39','2026-07-28 13:17:39');
 /*!40000 ALTER TABLE `product_user_types` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1297,6 +1339,7 @@ CREATE TABLE `subscription_cycles` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `subscription_id` bigint(20) unsigned NOT NULL,
   `plan_id` bigint(20) unsigned NOT NULL,
+  `plan_price_id` bigint(20) unsigned DEFAULT NULL,
   `order_id` bigint(20) unsigned DEFAULT NULL,
   `transaction_id` bigint(20) unsigned DEFAULT NULL,
   `cycle_number` int(10) unsigned NOT NULL,
@@ -1315,11 +1358,14 @@ CREATE TABLE `subscription_cycles` (
   KEY `subscription_cycles_plan_index` (`plan_id`),
   KEY `subscription_cycles_order_index` (`order_id`),
   KEY `subscription_cycles_transaction_index` (`transaction_id`),
+  KEY `subscription_cycles_plan_price_index` (`plan_price_id`),
+  KEY `subscription_cycles_plan_price_plan_foreign` (`plan_price_id`,`plan_id`),
   CONSTRAINT `subscription_cycles_order_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `subscription_cycles_plan_foreign` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON UPDATE CASCADE,
+  CONSTRAINT `subscription_cycles_plan_price_plan_foreign` FOREIGN KEY (`plan_price_id`, `plan_id`) REFERENCES `plan_prices` (`id`, `plan_id`) ON UPDATE CASCADE,
   CONSTRAINT `subscription_cycles_subscription_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `subscription_cycles_transaction_foreign` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1328,7 +1374,7 @@ CREATE TABLE `subscription_cycles` (
 
 LOCK TABLES `subscription_cycles` WRITE;
 /*!40000 ALTER TABLE `subscription_cycles` DISABLE KEYS */;
-INSERT INTO `subscription_cycles` VALUES (1,18,9,NULL,NULL,1,'monthly','expired','2026-06-09','2026-07-09',499.00,'PHP','2026-06-09 00:00:00','2026-07-09 23:59:59','2026-06-09 07:47:30','2026-07-13 01:47:56'),(2,19,13,NULL,NULL,1,'monthly','active','2026-07-13','2027-07-13',0.00,'PHP','2026-07-13 02:33:41',NULL,'2026-07-13 02:33:41','2026-07-13 02:33:41');
+INSERT INTO `subscription_cycles` VALUES (1,18,9,NULL,NULL,NULL,1,'monthly','expired','2026-06-09','2026-07-09',499.00,'PHP','2026-06-09 00:00:00','2026-07-09 23:59:59','2026-06-09 07:47:30','2026-07-13 01:47:56'),(2,19,13,6,NULL,NULL,1,'yearly','active','2026-07-28','2027-07-28',0.00,'PHP','2026-07-13 02:33:41',NULL,'2026-07-13 02:33:41','2026-07-28 13:41:53');
 /*!40000 ALTER TABLE `subscription_cycles` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1343,6 +1389,8 @@ CREATE TABLE `subscription_events` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `subscription_id` bigint(20) unsigned NOT NULL,
   `actor_user_id` bigint(20) unsigned DEFAULT NULL,
+  `order_id` bigint(20) unsigned DEFAULT NULL,
+  `transaction_id` bigint(20) unsigned DEFAULT NULL,
   `event_type` enum('created','trial_started','activated','renewed','upgraded','downgraded','payment_failed','past_due','suspended','resumed','expired','cancelled') NOT NULL,
   `old_plan_id` bigint(20) unsigned DEFAULT NULL,
   `new_plan_id` bigint(20) unsigned DEFAULT NULL,
@@ -1356,11 +1404,15 @@ CREATE TABLE `subscription_events` (
   KEY `subscription_events_actor_foreign` (`actor_user_id`),
   KEY `subscription_events_old_plan_foreign` (`old_plan_id`),
   KEY `subscription_events_new_plan_foreign` (`new_plan_id`),
+  KEY `subscription_events_order_index` (`order_id`),
+  KEY `subscription_events_transaction_index` (`transaction_id`),
   CONSTRAINT `subscription_events_actor_foreign` FOREIGN KEY (`actor_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `subscription_events_new_plan_foreign` FOREIGN KEY (`new_plan_id`) REFERENCES `plans` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `subscription_events_old_plan_foreign` FOREIGN KEY (`old_plan_id`) REFERENCES `plans` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `subscription_events_subscription_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  CONSTRAINT `subscription_events_order_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `subscription_events_subscription_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `subscription_events_transaction_foreign` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1369,7 +1421,7 @@ CREATE TABLE `subscription_events` (
 
 LOCK TABLES `subscription_events` WRITE;
 /*!40000 ALTER TABLE `subscription_events` DISABLE KEYS */;
-INSERT INTO `subscription_events` VALUES (1,18,1,'created',NULL,9,NULL,'active','Migrated from the original JCM SaaS subscription.',NULL,'2026-06-09 07:47:30'),(2,18,NULL,'expired',9,9,'active','expired','Automatically expired because its end date passed.',NULL,'2026-07-09 23:59:59'),(3,19,1,'activated',NULL,13,'pending','active','JCM Inventory development access activated.',NULL,'2026-07-13 02:33:41');
+INSERT INTO `subscription_events` VALUES (1,18,1,NULL,NULL,'created',NULL,9,NULL,'active','Migrated from the original JCM SaaS subscription.',NULL,'2026-06-09 07:47:30'),(2,18,NULL,NULL,NULL,'expired',9,9,'active','expired','Automatically expired because its end date passed.',NULL,'2026-07-09 23:59:59'),(3,19,1,NULL,NULL,'activated',NULL,13,'pending','active','JCM Inventory development access activated.',NULL,'2026-07-13 02:33:41'),(4,19,1,NULL,NULL,'activated',NULL,13,NULL,'active','Comped Inventory development subscription activated.','{\"source\": \"manual-development-injection\", \"comped\": true}','2026-07-28 13:41:53');
 /*!40000 ALTER TABLE `subscription_events` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1438,7 +1490,7 @@ CREATE TABLE `subscriptions` (
 
 LOCK TABLES `subscriptions` WRITE;
 /*!40000 ALTER TABLE `subscriptions` DISABLE KEYS */;
-INSERT INTO `subscriptions` VALUES (18,1,1,10,9,NULL,'SUB-1780991250','monthly','expired','2026-06-09','2026-07-09',NULL,'2026-06-08 16:00:00','2026-07-09 15:59:59',NULL,NULL,30,499.00,'PHP',0,0,'2026-06-09 00:00:00',NULL,NULL,'2026-07-09 23:59:59',NULL,'Basic POS subscription for testing','2026-06-09 07:47:30','2026-07-28 11:37:28',NULL),(19,1,1,11,13,4,'SUB-INV-DEV-1-1783910021','monthly','active','2026-07-13','2027-07-13',NULL,'2026-07-12 16:00:00','2027-07-13 15:59:59',NULL,NULL,365,0.00,'PHP',0,0,'2026-07-13 02:33:41',NULL,NULL,NULL,NULL,'Development access for JCM Inventory.','2026-07-13 02:33:41','2026-07-28 12:15:50','1:11');
+INSERT INTO `subscriptions` VALUES (18,1,1,10,9,NULL,'SUB-1780991250','monthly','expired','2026-06-09','2026-07-09',NULL,'2026-06-08 16:00:00','2026-07-09 15:59:59',NULL,NULL,30,499.00,'PHP',0,0,'2026-06-09 00:00:00',NULL,NULL,'2026-07-09 23:59:59',NULL,'Basic POS subscription for testing','2026-06-09 07:47:30','2026-07-28 11:37:28',NULL),(19,1,1,11,13,6,'SUB-INV-DEV-1-1783910021','yearly','active','2026-07-28','2027-07-28',NULL,'2026-07-28 13:41:53','2027-07-28 13:41:53',NULL,NULL,365,0.00,'PHP',0,0,'2026-07-13 02:33:41',NULL,NULL,NULL,NULL,'Comped Team Inventory development access for the owner account.','2026-07-13 02:33:41','2026-07-28 13:41:53','1:11');
 /*!40000 ALTER TABLE `subscriptions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1494,6 +1546,72 @@ LOCK TABLES `transactions` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `user_legacy_access_archive`
+--
+
+DROP TABLE IF EXISTS `user_legacy_access_archive`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `user_legacy_access_archive` (
+  `user_id` bigint(20) unsigned NOT NULL,
+  `legacy_role` varchar(50) DEFAULT NULL,
+  `legacy_client_id` bigint(20) unsigned DEFAULT NULL,
+  `legacy_branch_id` bigint(20) unsigned DEFAULT NULL,
+  `legacy_system_used` varchar(100) DEFAULT NULL,
+  `archived_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`user_id`),
+  CONSTRAINT `user_legacy_access_archive_user_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `user_legacy_access_archive`
+--
+
+LOCK TABLES `user_legacy_access_archive` WRITE;
+/*!40000 ALTER TABLE `user_legacy_access_archive` DISABLE KEYS */;
+INSERT INTO `user_legacy_access_archive` VALUES (1,'client',NULL,NULL,'pos','2026-07-28 13:24:59'),(7,'admin',NULL,NULL,NULL,'2026-07-28 13:24:59'),(12,'cashier',1,1,'pos','2026-07-28 13:24:59'),(13,'manager',1,1,'pos','2026-07-28 13:24:59'),(14,'manager',1,1,'pos','2026-07-28 13:24:59'),(15,'staff',1,1,'pos','2026-07-28 13:24:59'),(16,'staff',1,1,'pos','2026-07-28 13:24:59'),(17,'cashier',1,1,'pos','2026-07-28 13:24:59'),(18,'cashier',1,1,'pos','2026-07-28 13:24:59'),(19,'staff',1,3,NULL,'2026-07-28 13:24:59');
+/*!40000 ALTER TABLE `user_legacy_access_archive` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `user_platform_roles`
+--
+
+DROP TABLE IF EXISTS `user_platform_roles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `user_platform_roles` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `platform_role_id` bigint(20) unsigned NOT NULL,
+  `is_primary` tinyint(1) NOT NULL DEFAULT 0,
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `assigned_by` bigint(20) unsigned DEFAULT NULL,
+  `assigned_at` timestamp NULL DEFAULT current_timestamp(),
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_platform_roles_user_role_unique` (`user_id`,`platform_role_id`),
+  KEY `user_platform_roles_role_status_index` (`platform_role_id`,`status`),
+  KEY `user_platform_roles_assigned_by_index` (`assigned_by`),
+  CONSTRAINT `user_platform_roles_assigned_by_foreign` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `user_platform_roles_role_foreign` FOREIGN KEY (`platform_role_id`) REFERENCES `platform_roles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `user_platform_roles_user_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `user_platform_roles`
+--
+
+LOCK TABLES `user_platform_roles` WRITE;
+/*!40000 ALTER TABLE `user_platform_roles` DISABLE KEYS */;
+INSERT INTO `user_platform_roles` VALUES (1,1,3,1,'active',NULL,'2026-04-13 21:58:39','2026-07-28 13:24:59','2026-07-28 13:24:59'),(2,7,2,1,'active',NULL,'2026-04-13 21:58:39','2026-07-28 13:24:59','2026-07-28 13:24:59'),(3,12,3,1,'active',1,'2026-05-29 18:52:57','2026-07-28 13:24:59','2026-07-28 13:24:59'),(4,13,3,1,'active',1,'2026-06-05 01:41:18','2026-07-28 13:24:59','2026-07-28 13:24:59'),(5,14,3,1,'active',1,'2026-06-05 01:41:18','2026-07-28 13:24:59','2026-07-28 13:24:59'),(6,15,3,1,'active',1,'2026-06-05 01:41:18','2026-07-28 13:24:59','2026-07-28 13:24:59'),(7,16,3,1,'active',1,'2026-06-05 01:41:18','2026-07-28 13:24:59','2026-07-28 13:24:59'),(8,17,3,1,'active',1,'2026-06-05 01:43:20','2026-07-28 13:24:59','2026-07-28 13:24:59'),(9,18,3,1,'active',1,'2026-05-29 18:52:57','2026-07-28 13:24:59','2026-07-28 13:24:59'),(10,19,3,1,'active',1,'2026-07-14 03:59:29','2026-07-28 13:24:59','2026-07-28 13:24:59');
+/*!40000 ALTER TABLE `user_platform_roles` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `user_product_access`
 --
 
@@ -1510,6 +1628,7 @@ CREATE TABLE `user_product_access` (
   `status` enum('pending','active','inactive','removed') NOT NULL DEFAULT 'pending',
   `assigned_by` bigint(20) unsigned DEFAULT NULL,
   `joined_at` timestamp NULL DEFAULT NULL,
+  `last_accessed_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
@@ -1521,6 +1640,7 @@ CREATE TABLE `user_product_access` (
   KEY `user_product_access_assigned_by_foreign` (`assigned_by`),
   KEY `user_product_access_role_product_scope_foreign` (`product_user_type_id`,`product_id`),
   KEY `user_product_access_subscription_scope_foreign` (`subscription_id`,`product_id`,`account_owner_id`),
+  KEY `user_product_access_user_recent_index` (`user_id`,`last_accessed_at`),
   CONSTRAINT `user_product_access_assigned_by_foreign` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `user_product_access_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `user_product_access_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -1529,7 +1649,7 @@ CREATE TABLE `user_product_access` (
   CONSTRAINT `user_product_access_subscription_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `user_product_access_subscription_scope_foreign` FOREIGN KEY (`subscription_id`, `product_id`, `account_owner_id`) REFERENCES `subscriptions` (`id`, `product_id`, `account_owner_id`) ON UPDATE CASCADE,
   CONSTRAINT `user_product_access_user_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1538,8 +1658,78 @@ CREATE TABLE `user_product_access` (
 
 LOCK TABLES `user_product_access` WRITE;
 /*!40000 ALTER TABLE `user_product_access` DISABLE KEYS */;
-INSERT INTO `user_product_access` VALUES (1,1,10,4,1,18,'inactive',1,NULL,'2026-07-13 02:00:57','2026-07-13 02:00:57'),(2,1,11,3,1,19,'active',1,'2026-07-13 02:33:41','2026-07-13 02:33:41','2026-07-13 02:33:41'),(3,19,11,5,1,19,'active',1,'2026-07-14 03:59:29','2026-07-14 03:59:29','2026-07-23 01:00:53');
+INSERT INTO `user_product_access` VALUES (1,1,10,4,1,18,'inactive',1,NULL,NULL,'2026-07-13 02:00:57','2026-07-28 13:17:39'),(2,1,11,3,1,19,'active',1,'2026-07-13 02:33:41','2026-07-28 23:45:27','2026-07-13 02:33:41','2026-07-28 23:45:27'),(3,19,11,5,1,19,'active',1,'2026-07-14 03:59:29',NULL,'2026-07-14 03:59:29','2026-07-23 01:00:53'),(4,12,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(5,13,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(6,14,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(7,15,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(8,16,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(9,17,10,9,1,18,'inactive',1,'2026-06-05 01:43:20',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(10,18,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(11,19,10,6,1,18,'inactive',1,'2026-07-14 03:59:29',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39');
 /*!40000 ALTER TABLE `user_product_access` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `user_product_access_scopes`
+--
+
+DROP TABLE IF EXISTS `user_product_access_scopes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `user_product_access_scopes` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `access_id` bigint(20) unsigned NOT NULL,
+  `scope_type` varchar(50) NOT NULL,
+  `scope_id` bigint(20) unsigned NOT NULL,
+  `is_primary` tinyint(1) NOT NULL DEFAULT 0,
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `metadata` longtext DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_product_access_scopes_unique` (`access_id`,`scope_type`,`scope_id`),
+  KEY `user_product_access_scopes_lookup_index` (`access_id`,`scope_type`,`status`),
+  KEY `user_product_access_scopes_external_index` (`scope_type`,`scope_id`,`status`),
+  CONSTRAINT `user_product_access_scopes_access_foreign` FOREIGN KEY (`access_id`) REFERENCES `user_product_access` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `user_product_access_scopes`
+--
+
+LOCK TABLES `user_product_access_scopes` WRITE;
+/*!40000 ALTER TABLE `user_product_access_scopes` DISABLE KEYS */;
+INSERT INTO `user_product_access_scopes` VALUES (1,5,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(2,6,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(3,7,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(4,8,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(5,4,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(6,9,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(7,10,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(8,3,'branch',3,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"single_active_access\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:34:43','2026-07-28 13:34:43');
+/*!40000 ALTER TABLE `user_product_access_scopes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `user_product_preferences`
+--
+
+DROP TABLE IF EXISTS `user_product_preferences`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `user_product_preferences` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `default_access_id` bigint(20) unsigned DEFAULT NULL,
+  `last_access_id` bigint(20) unsigned DEFAULT NULL,
+  `landing_behavior` enum('last_used','default','selector') NOT NULL DEFAULT 'last_used',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_product_preferences_user_unique` (`user_id`),
+  KEY `user_product_preferences_default_access_index` (`default_access_id`),
+  KEY `user_product_preferences_last_access_index` (`last_access_id`),
+  CONSTRAINT `user_product_preferences_default_access_foreign` FOREIGN KEY (`default_access_id`) REFERENCES `user_product_access` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `user_product_preferences_last_access_foreign` FOREIGN KEY (`last_access_id`) REFERENCES `user_product_access` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `user_product_preferences_user_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `user_product_preferences`
+--
+
+LOCK TABLES `user_product_preferences` WRITE;
+/*!40000 ALTER TABLE `user_product_preferences` DISABLE KEYS */;
+INSERT INTO `user_product_preferences` VALUES (1,19,3,11,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(2,1,2,2,'last_used','2026-07-28 23:45:27','2026-07-28 23:45:27'),(3,12,NULL,4,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(4,13,NULL,5,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(5,14,NULL,6,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(6,15,NULL,7,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(7,16,NULL,8,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(8,17,NULL,9,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(9,18,NULL,10,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39');
+/*!40000 ALTER TABLE `user_product_preferences` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -1562,7 +1752,7 @@ CREATE TABLE `user_types` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_types_code_unique` (`type_code`),
   KEY `user_types_status_sort_index` (`status`,`sort_order`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1571,7 +1761,7 @@ CREATE TABLE `user_types` (
 
 LOCK TABLES `user_types` WRITE;
 /*!40000 ALTER TABLE `user_types` DISABLE KEYS */;
-INSERT INTO `user_types` VALUES (1,'owner','Client / Owner','Owner of a subscribed JCM SaaS account.',1,10,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(2,'manager','Manager','Manages operations assigned by the owner.',0,20,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(3,'staff','Staff','Performs assigned inventory tasks.',0,30,'active','2026-07-13 02:00:57','2026-07-13 02:11:28');
+INSERT INTO `user_types` VALUES (1,'owner','Client / Owner','Owner of a subscribed JCM SaaS account.',1,10,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(2,'manager','Manager','Manages operations assigned by the owner.',0,20,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(3,'staff','Staff','Performs assigned inventory tasks.',0,30,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(5,'cashier','Cashier','Processes sales and payment transactions for an assigned product account.',0,25,'active','2026-07-28 13:17:38','2026-07-28 13:17:38');
 /*!40000 ALTER TABLE `user_types` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1594,20 +1784,11 @@ CREATE TABLE `users` (
   `remember_token` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
-  `role` varchar(20) NOT NULL DEFAULT 'client',
-  `client_id` bigint(20) unsigned DEFAULT NULL,
-  `branch_id` bigint(20) unsigned DEFAULT NULL,
-  `system_used` enum('pos') DEFAULT NULL,
   `created_by` bigint(20) unsigned DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
   UNIQUE KEY `users_email_unique` (`email`),
-  KEY `users_role_client_id_index` (`role`,`client_id`),
   KEY `users_created_by_foreign` (`created_by`),
-  KEY `users_branch_id_index` (`branch_id`),
-  KEY `users_system_used_index` (`system_used`),
-  KEY `users_client_branch_system_index` (`client_id`,`branch_id`,`system_used`),
-  CONSTRAINT `users_client_id_foreign` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `users_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1618,7 +1799,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'June Charles Mariquit','junecharlesmariquit553@gmail.com',NULL,'$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi',NULL,NULL,NULL,'bCiTS8i0vfMumaF5bgJplgSy6OcBJP1me5FQhVuln6pYrZscKxPadt6yUr0s','2026-04-13 21:58:39','2026-04-13 21:58:39','client',NULL,NULL,'pos',NULL,1),(7,'admin','admin@gmail.com',NULL,'$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi',NULL,NULL,NULL,'AKzQuJt0QVa7Gfsmsdgbl7sZzNkzjrD04AxBAX7SjbmjrBx0ZVXnNHNNyqCn','2026-04-13 21:58:39','2026-04-13 21:58:39','admin',NULL,NULL,NULL,NULL,1),(12,'cashier','cashier@pos.com',NULL,'$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-05-29 18:52:57','2026-05-29 18:52:57','cashier',1,1,'pos',1,1),(13,'Store Manager 1','manager1@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18','manager',1,1,'pos',1,1),(14,'Store Manager 2','manager2@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18','manager',1,1,'pos',1,1),(15,'Store Staff 1','staff1@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18','staff',1,1,'pos',1,1),(16,'Store Staff 2','staff2@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-08 19:38:03','staff',1,1,'pos',1,1),(17,'Cashier 2','cashier2@pos.com','2026-06-05 01:43:20','$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',NULL,NULL,NULL,NULL,'2026-06-05 01:43:20','2026-06-05 01:43:20','cashier',1,1,'pos',1,1),(18,'cashier1','cashier1@pos.com',NULL,'$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-05-29 18:52:57','2026-05-29 18:52:57','cashier',1,1,'pos',1,1),(19,'staff','staff@inventory.com',NULL,'$2y$12$NdDKLmZaROoi/5YdtQeVYOE77wbMgLXLjAhHixLGlPC9VSUn0wfkK',NULL,NULL,NULL,NULL,'2026-07-14 03:59:29','2026-07-23 01:00:53','staff',1,3,NULL,1,1);
+INSERT INTO `users` VALUES (1,'June Charles Mariquit','junecharlesmariquit553@gmail.com',NULL,'$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi',NULL,NULL,NULL,'CbOavy3v6zyAxrf801oRZSArlHVDNPpJG8TfN6n4yoq2cpSpPxH8sPz3m9eC','2026-04-13 21:58:39','2026-04-13 21:58:39',NULL,1),(7,'admin','admin@gmail.com',NULL,'$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi',NULL,NULL,NULL,'AKzQuJt0QVa7Gfsmsdgbl7sZzNkzjrD04AxBAX7SjbmjrBx0ZVXnNHNNyqCn','2026-04-13 21:58:39','2026-04-13 21:58:39',NULL,1),(12,'cashier','cashier@pos.com',NULL,'$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-05-29 18:52:57','2026-05-29 18:52:57',1,1),(13,'Store Manager 1','manager1@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(14,'Store Manager 2','manager2@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(15,'Store Staff 1','staff1@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(16,'Store Staff 2','staff2@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-08 19:38:03',1,1),(17,'Cashier 2','cashier2@pos.com','2026-06-05 01:43:20','$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',NULL,NULL,NULL,NULL,'2026-06-05 01:43:20','2026-06-05 01:43:20',1,1),(18,'cashier1','cashier1@pos.com',NULL,'$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-05-29 18:52:57','2026-05-29 18:52:57',1,1),(19,'staff','staff@inventory.com',NULL,'$2y$12$NdDKLmZaROoi/5YdtQeVYOE77wbMgLXLjAhHixLGlPC9VSUn0wfkK',NULL,NULL,NULL,NULL,'2026-07-14 03:59:29','2026-07-23 01:00:53',1,1);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1674,6 +1855,96 @@ SET character_set_client = utf8;
 SET character_set_client = @saved_cs_client;
 
 --
+-- Temporary table structure for view `v_user_identity`
+--
+
+DROP TABLE IF EXISTS `v_user_identity`;
+/*!50001 DROP VIEW IF EXISTS `v_user_identity`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+/*!50001 CREATE VIEW `v_user_identity` AS SELECT
+ 1 AS `id`,
+  1 AS `name`,
+  1 AS `email`,
+  1 AS `email_verified_at`,
+  1 AS `is_active`,
+  1 AS `created_by`,
+  1 AS `created_at`,
+  1 AS `updated_at`,
+  1 AS `platform_roles`,
+  1 AS `product_count` */;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary table structure for view `v_user_product_portfolio`
+--
+
+DROP TABLE IF EXISTS `v_user_product_portfolio`;
+/*!50001 DROP VIEW IF EXISTS `v_user_product_portfolio`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+/*!50001 CREATE VIEW `v_user_product_portfolio` AS SELECT
+ 1 AS `access_id`,
+  1 AS `user_id`,
+  1 AS `user_name`,
+  1 AS `email`,
+  1 AS `account_owner_id`,
+  1 AS `account_owner_name`,
+  1 AS `product_id`,
+  1 AS `product_code`,
+  1 AS `product_slug`,
+  1 AS `product_name`,
+  1 AS `app_url`,
+  1 AS `role_code`,
+  1 AS `role_name`,
+  1 AS `membership_status`,
+  1 AS `subscription_id`,
+  1 AS `subscription_status`,
+  1 AS `plan_id`,
+  1 AS `plan_code`,
+  1 AS `plan_name`,
+  1 AS `joined_at`,
+  1 AS `last_accessed_at`,
+  1 AS `is_default_access`,
+  1 AS `is_last_access` */;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Temporary table structure for view `v_user_subscription_access`
+--
+
+DROP TABLE IF EXISTS `v_user_subscription_access`;
+/*!50001 DROP VIEW IF EXISTS `v_user_subscription_access`*/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+/*!50001 CREATE VIEW `v_user_subscription_access` AS SELECT
+ 1 AS `access_id`,
+  1 AS `user_id`,
+  1 AS `account_owner_id`,
+  1 AS `product_id`,
+  1 AS `product_code`,
+  1 AS `product_user_type_id`,
+  1 AS `role_code`,
+  1 AS `role_name`,
+  1 AS `membership_status`,
+  1 AS `subscription_id`,
+  1 AS `subscription_code`,
+  1 AS `subscription_status`,
+  1 AS `plan_id`,
+  1 AS `plan_code`,
+  1 AS `plan_name`,
+  1 AS `plan_price_id`,
+  1 AS `billing_interval`,
+  1 AS `price`,
+  1 AS `currency`,
+  1 AS `trial_ends_at`,
+  1 AS `current_period_start`,
+  1 AS `current_period_end`,
+  1 AS `grace_ends_at`,
+  1 AS `access_mode` */;
+SET character_set_client = @saved_cs_client;
+
+--
 -- Dumping events for database 'jcm_saas_db'
 --
 
@@ -1722,6 +1993,60 @@ USE `jcm_saas_db`;
 /*!50001 SET character_set_client      = @saved_cs_client */;
 /*!50001 SET character_set_results     = @saved_cs_results */;
 /*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `v_user_identity`
+--
+
+/*!50001 DROP VIEW IF EXISTS `v_user_identity`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `v_user_identity` AS select `user_record`.`id` AS `id`,`user_record`.`name` AS `name`,`user_record`.`email` AS `email`,`user_record`.`email_verified_at` AS `email_verified_at`,`user_record`.`is_active` AS `is_active`,`user_record`.`created_by` AS `created_by`,`user_record`.`created_at` AS `created_at`,`user_record`.`updated_at` AS `updated_at`,group_concat(distinct `platform_role`.`role_code` order by `platform_role`.`sort_order` ASC separator ',') AS `platform_roles`,count(distinct `product_access`.`product_id`) AS `product_count` from (((`users` `user_record` left join `user_platform_roles` `user_platform_role` on(`user_platform_role`.`user_id` = `user_record`.`id` and `user_platform_role`.`status` = 'active')) left join `platform_roles` `platform_role` on(`platform_role`.`id` = `user_platform_role`.`platform_role_id`)) left join `user_product_access` `product_access` on(`product_access`.`user_id` = `user_record`.`id` and `product_access`.`status` in ('pending','active','inactive'))) group by `user_record`.`id`,`user_record`.`name`,`user_record`.`email`,`user_record`.`email_verified_at`,`user_record`.`is_active`,`user_record`.`created_by`,`user_record`.`created_at`,`user_record`.`updated_at` */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `v_user_product_portfolio`
+--
+
+/*!50001 DROP VIEW IF EXISTS `v_user_product_portfolio`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `v_user_product_portfolio` AS select `access_record`.`id` AS `access_id`,`access_record`.`user_id` AS `user_id`,`user_record`.`name` AS `user_name`,`user_record`.`email` AS `email`,`access_record`.`account_owner_id` AS `account_owner_id`,`owner_record`.`name` AS `account_owner_name`,`access_record`.`product_id` AS `product_id`,`product_record`.`product_code` AS `product_code`,`product_record`.`slug` AS `product_slug`,`product_record`.`name` AS `product_name`,`product_record`.`app_url` AS `app_url`,`user_type_record`.`type_code` AS `role_code`,coalesce(`product_role`.`display_name`,`user_type_record`.`name`) AS `role_name`,`access_record`.`status` AS `membership_status`,`access_record`.`subscription_id` AS `subscription_id`,`subscription_record`.`status` AS `subscription_status`,`subscription_record`.`plan_id` AS `plan_id`,`plan_record`.`plan_code` AS `plan_code`,`plan_record`.`plan_name` AS `plan_name`,`access_record`.`joined_at` AS `joined_at`,`access_record`.`last_accessed_at` AS `last_accessed_at`,case when `preference_record`.`default_access_id` = `access_record`.`id` then 1 else 0 end AS `is_default_access`,case when `preference_record`.`last_access_id` = `access_record`.`id` then 1 else 0 end AS `is_last_access` from ((((((((`user_product_access` `access_record` join `users` `user_record` on(`user_record`.`id` = `access_record`.`user_id`)) join `users` `owner_record` on(`owner_record`.`id` = `access_record`.`account_owner_id`)) join `products` `product_record` on(`product_record`.`id` = `access_record`.`product_id`)) join `product_user_types` `product_role` on(`product_role`.`id` = `access_record`.`product_user_type_id`)) join `user_types` `user_type_record` on(`user_type_record`.`id` = `product_role`.`user_type_id`)) left join `subscriptions` `subscription_record` on(`subscription_record`.`id` = `access_record`.`subscription_id`)) left join `plans` `plan_record` on(`plan_record`.`id` = `subscription_record`.`plan_id`)) left join `user_product_preferences` `preference_record` on(`preference_record`.`user_id` = `access_record`.`user_id`)) */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
+
+--
+-- Final view structure for view `v_user_subscription_access`
+--
+
+/*!50001 DROP VIEW IF EXISTS `v_user_subscription_access`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_unicode_ci */;
+/*!50001 CREATE ALGORITHM=UNDEFINED */
+/*!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER */
+/*!50001 VIEW `v_user_subscription_access` AS select `access_record`.`id` AS `access_id`,`access_record`.`user_id` AS `user_id`,`access_record`.`account_owner_id` AS `account_owner_id`,`access_record`.`product_id` AS `product_id`,`product_record`.`product_code` AS `product_code`,`access_record`.`product_user_type_id` AS `product_user_type_id`,`user_type_record`.`type_code` AS `role_code`,coalesce(`product_role`.`display_name`,`user_type_record`.`name`) AS `role_name`,`access_record`.`status` AS `membership_status`,`subscription_record`.`id` AS `subscription_id`,`subscription_record`.`subscription_code` AS `subscription_code`,`subscription_record`.`status` AS `subscription_status`,`subscription_record`.`plan_id` AS `plan_id`,`plan_record`.`plan_code` AS `plan_code`,`plan_record`.`plan_name` AS `plan_name`,`subscription_record`.`plan_price_id` AS `plan_price_id`,`plan_price`.`billing_interval` AS `billing_interval`,`plan_price`.`price` AS `price`,`plan_price`.`currency` AS `currency`,`subscription_record`.`trial_ends_at` AS `trial_ends_at`,`subscription_record`.`current_period_start` AS `current_period_start`,`subscription_record`.`current_period_end` AS `current_period_end`,`subscription_record`.`grace_ends_at` AS `grace_ends_at`,case when `access_record`.`status` <> 'active' then 'blocked' when `subscription_record`.`status` in ('trial','active') then 'full' when `subscription_record`.`status` in ('past_due','grace_period') then coalesce(`policy_record`.`past_due_access_mode`,'read_only') when `subscription_record`.`status` = 'expired' then coalesce(`policy_record`.`expired_access_mode`,'read_only') else 'blocked' end AS `access_mode` from (((((((`user_product_access` `access_record` join `products` `product_record` on(`product_record`.`id` = `access_record`.`product_id`)) join `product_user_types` `product_role` on(`product_role`.`id` = `access_record`.`product_user_type_id`)) join `user_types` `user_type_record` on(`user_type_record`.`id` = `product_role`.`user_type_id`)) left join `subscriptions` `subscription_record` on(`subscription_record`.`id` = `access_record`.`subscription_id`)) left join `plans` `plan_record` on(`plan_record`.`id` = `subscription_record`.`plan_id`)) left join `plan_prices` `plan_price` on(`plan_price`.`id` = `subscription_record`.`plan_price_id`)) left join `product_subscription_policies` `policy_record` on(`policy_record`.`product_id` = `access_record`.`product_id`)) */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -1732,4 +2057,4 @@ USE `jcm_saas_db`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-28 20:16:07
+-- Dump completed on 2026-07-29  7:46:58

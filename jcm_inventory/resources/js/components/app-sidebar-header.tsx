@@ -5,7 +5,6 @@ import {
     LayoutDashboard,
     Menu,
     MessageSquare,
-    Search,
     Settings,
     Truck,
     Users,
@@ -14,6 +13,7 @@ import {
 } from 'lucide-react';
 
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { usePage } from '@inertiajs/react';
 import { NavUser } from '@/components/nav-user';
 import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
@@ -24,7 +24,10 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
+import type {
+    BreadcrumbItem as BreadcrumbItemType,
+    SharedData,
+} from '@/types';
 
 type HeaderContext = {
     label: string;
@@ -141,14 +144,24 @@ export function AppSidebarHeader({
 }) {
     const { toggleSidebar } = useSidebar();
 
+    const { businessProfile } =
+        usePage<SharedData>().props;
+
+    const businessName =
+        businessProfile.businessName.trim()
+        || 'JCM Inventory';
+
     const activePage =
         breadcrumbs[breadcrumbs.length - 1]?.title ?? 'Dashboard';
     const parentPage =
         breadcrumbs.length > 1
-            ? breadcrumbs[breadcrumbs.length - 2]?.title ?? defaultContext.label
-            : defaultContext.label;
+            ? breadcrumbs[breadcrumbs.length - 2]?.title ?? businessName
+            : businessName;
 
-    const context = resolveHeaderContext(breadcrumbs);
+    const context = resolveHeaderContext(
+        breadcrumbs,
+        businessName,
+    );
     const ContextIcon = context.icon;
 
     const actionButtonClass = [
@@ -270,64 +283,9 @@ export function AppSidebarHeader({
                     </div>
                 </div>
 
-                {/* Center: global search */}
-                <div className="relative hidden w-full max-w-[350px] lg:block xl:max-w-[390px]">
-                    <div
-                        className={[
-                            'group/search flex h-10 items-center gap-2.5',
-                            'rounded-xl',
-                            'border border-border/60',
-                            'bg-background/40',
-                            'px-3',
-                            'shadow-inner shadow-black/[0.015]',
-                            'transition-all duration-200',
-                            'focus-within:border-primary/25',
-                            'focus-within:bg-background/70',
-                            'focus-within:ring-4',
-                            'focus-within:ring-primary/5',
-                        ].join(' ')}
-                    >
-                        <Search className="size-4 shrink-0 text-muted-foreground/70 transition-colors group-focus-within/search:text-primary" />
-
-                        <input
-                            type="search"
-                            placeholder="Search inventory..."
-                            aria-label="Search inventory"
-                            className={[
-                                'min-w-0 flex-1 bg-transparent',
-                                'text-xs text-foreground',
-                                'outline-none',
-                                'placeholder:text-muted-foreground/60',
-                            ].join(' ')}
-                        />
-
-                        <span className="hidden h-6 min-w-6 items-center justify-center rounded-md border border-border/60 bg-card/80 px-1.5 text-[9px] font-medium text-muted-foreground xl:inline-flex">
-                            /
-                        </span>
-                    </div>
-                </div>
-
                 {/* Right: utility controls */}
-                <div className="relative flex shrink-0 items-center gap-2">
+                <div className="relative ml-auto flex shrink-0 items-center gap-2">
                     <div className="flex items-center gap-0.5 rounded-xl border border-border/60 bg-background/35 p-1 shadow-sm">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    aria-label="Search"
-                                    className={`${actionButtonClass} lg:hidden`}
-                                >
-                                    <Search className="size-[15px]" />
-                                </Button>
-                            </TooltipTrigger>
-
-                            <TooltipContent side="bottom">
-                                Search
-                            </TooltipContent>
-                        </Tooltip>
-
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button
@@ -399,6 +357,7 @@ export function AppSidebarHeader({
 
 function resolveHeaderContext(
     breadcrumbs: BreadcrumbItemType[],
+    businessName: string,
 ): HeaderContext {
     const breadcrumbText = breadcrumbs
         .map((breadcrumb) => breadcrumb.title)
@@ -409,5 +368,9 @@ function resolveHeaderContext(
         keywords.some((keyword) => breadcrumbText.includes(keyword)),
     );
 
-    return matchedContext?.context ?? defaultContext;
+    return matchedContext?.context
+        ?? {
+            ...defaultContext,
+            label: businessName,
+        };
 }

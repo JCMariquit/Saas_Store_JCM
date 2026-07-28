@@ -25,6 +25,8 @@ import {
     Warehouse,
 } from 'lucide-react';
 
+import type { SharedData } from '@/types';
+
 import AppLogo from './app-logo';
 
 import {
@@ -98,10 +100,10 @@ type SidebarPayload = {
     sections: DynamicSidebarSection[];
 };
 
-type SidebarPageProps = {
-    [key: string]: unknown;
-    sidebar?: SidebarPayload;
-};
+type SidebarPageProps =
+    SharedData & {
+        sidebar?: SidebarPayload;
+    };
 
 type NavigationToneStyle = {
     itemActive: string;
@@ -943,7 +945,10 @@ export function AppSidebar() {
     const page =
         usePage<SidebarPageProps>();
 
-    const { sidebar } = page.props;
+    const {
+        sidebar,
+        businessProfile,
+    } = page.props;
 
     const sections = React.useMemo(
         () => sidebar?.sections ?? [],
@@ -994,32 +999,9 @@ export function AppSidebar() {
         sidebar?.product?.name ??
         'JCM Inventory';
 
-    const roleName =
-        sidebar?.access?.roleName ??
-        'Inventory User';
-
-    const subscriptionStatus =
-        sidebar?.subscription?.status
-            ? sidebar.subscription.status
-                  .replaceAll(
-                      '_',
-                      ' ',
-                  )
-                  .replace(
-                      /\b\w/g,
-                      (character) =>
-                          character.toUpperCase(),
-                  )
-            : 'No subscription';
-
-    const subscriptionHealthy = [
-        'active',
-        'trialing',
-        'trial',
-    ].includes(
-        sidebar?.subscription?.status
-            ?.toLowerCase() ?? '',
-    );
+    const businessName =
+        businessProfile.businessName.trim()
+        || productName;
 
     return (
         <>
@@ -1077,7 +1059,7 @@ export function AppSidebar() {
                                 size="lg"
                                 asChild
                                 tooltip={
-                                    productName
+                                    businessName
                                 }
                                 className={[
                                     'h-auto overflow-hidden rounded-2xl border',
@@ -1188,61 +1170,35 @@ export function AppSidebar() {
                             </div>
                         )}
 
-                    {!collapsed &&
-                        sidebar?.access && (
-                            <div className="mx-3 mt-auto pb-3 pt-1">
-                                <div className="app-theme-access-card relative overflow-hidden rounded-2xl border p-3">
-                                    <div className="pointer-events-none absolute -bottom-10 -right-8 size-24 rounded-full bg-primary/10 blur-3xl" />
+                    {!collapsed && (
+                        <div className="mx-3 mt-auto pb-3 pt-1">
+                            <div className="app-theme-access-card relative overflow-hidden rounded-2xl border p-3">
+                                <div className="pointer-events-none absolute -bottom-10 -right-8 size-24 rounded-full bg-primary/10 blur-3xl" />
 
-                                    <div className="relative flex items-center gap-2.5">
-                                        <span className="app-theme-access-icon inline-flex size-8 shrink-0 items-center justify-center rounded-lg border">
-                                            <ShieldCheck className="size-3.5" />
-                                        </span>
+                                <div className="relative flex items-center gap-2.5">
+                                    <span className="app-theme-access-icon inline-flex size-8 shrink-0 items-center justify-center rounded-lg border">
+                                        <Sparkles className="size-3.5" />
+                                    </span>
 
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-[8px] font-semibold uppercase tracking-[0.13em] text-sidebar-foreground/35">
-                                                Access
-                                                profile
-                                            </p>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[8px] font-semibold uppercase tracking-[0.13em] text-sidebar-foreground/35">
+                                            Powered by
+                                        </p>
 
-                                            <p className="mt-0.5 truncate text-[11px] font-semibold text-sidebar-foreground/80">
-                                                {
-                                                    roleName
-                                                }
-                                            </p>
-                                        </div>
-
-                                        <span
-                                            className={[
-                                                'inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-1',
-                                                'text-[7px] font-semibold uppercase tracking-[0.08em]',
-                                                subscriptionHealthy
-                                                    ? 'border-emerald-500/15 bg-emerald-500/[0.07] text-emerald-400'
-                                                    : 'border-amber-500/15 bg-amber-500/[0.07] text-amber-400',
-                                            ].join(
-                                                ' ',
-                                            )}
-                                        >
-                                            <span
-                                                className={[
-                                                    'size-1.5 rounded-full',
-                                                    subscriptionHealthy
-                                                        ? 'bg-emerald-400'
-                                                        : 'bg-amber-400',
-                                                ].join(
-                                                    ' ',
-                                                )}
-                                            />
-
-                                            {
-                                                subscriptionStatus
-                                            }
-                                        </span>
+                                        <p className="mt-0.5 truncate text-[11px] font-semibold text-sidebar-foreground/80">
+                                            JCM Websolution
+                                        </p>
                                     </div>
+
+                                    <span className="inline-flex shrink-0 rounded-full border border-primary/15 bg-primary/[0.07] px-1.5 py-1 text-[7px] font-semibold uppercase tracking-[0.08em] text-primary">
+                                        System
+                                    </span>
                                 </div>
                             </div>
-                        )}
+                        </div>
+                    )}
                 </SidebarContent>
+
             </Sidebar>
         </>
     );

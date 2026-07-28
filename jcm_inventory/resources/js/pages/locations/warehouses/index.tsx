@@ -43,7 +43,6 @@ import {
   Pencil,
   Phone,
   Plus,
-  RefreshCw,
   ShieldCheck,
   Star,
   Trash2,
@@ -229,6 +228,73 @@ export default function WarehouseIndex({
     setBranchId(filters.branch_id ? String(filters.branch_id) : "");
   }, [filters.search, filters.status, filters.branch_id]);
 
+  useEffect(() => {
+    const normalizedSearch = search.trim();
+
+    if (
+      normalizedSearch ===
+      (filters.search ?? "").trim()
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      router.get(
+        "/locations/warehouses",
+        {
+          search: normalizedSearch || undefined,
+          status: status || undefined,
+          branch_id: branchId || undefined,
+        },
+        {
+          preserveState: true,
+          preserveScroll: true,
+          replace: true,
+        },
+      );
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    search,
+    status,
+    branchId,
+    filters.search,
+  ]);
+
+  useEffect(() => {
+    const currentBranchId = filters.branch_id
+      ? String(filters.branch_id)
+      : "";
+
+    if (
+      status === (filters.status ?? "") &&
+      branchId === currentBranchId
+    ) {
+      return;
+    }
+
+    router.get(
+      "/locations/warehouses",
+      {
+        search: search.trim() || undefined,
+        status: status || undefined,
+        branch_id: branchId || undefined,
+      },
+      {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+      },
+    );
+  }, [
+    status,
+    branchId,
+    search,
+    filters.status,
+    filters.branch_id,
+  ]);
+
   /*
     |--------------------------------------------------------------------------
     | Form dialog
@@ -311,40 +377,6 @@ export default function WarehouseIndex({
     | Filters
     |--------------------------------------------------------------------------
     */
-
-  function applyFilters(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-
-    router.get(
-      "/locations/warehouses",
-      {
-        search: search.trim() || undefined,
-        status: status || undefined,
-        branch_id: branchId || undefined,
-      },
-      {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-      },
-    );
-  }
-
-  function resetFilters(): void {
-    setSearch("");
-    setStatus("");
-    setBranchId("");
-
-    router.get(
-      "/locations/warehouses",
-      {},
-      {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-      },
-    );
-  }
 
   /*
     |--------------------------------------------------------------------------
@@ -935,29 +967,10 @@ export default function WarehouseIndex({
           }
         >
           <FilterBar
-            onSubmit={applyFilters}
-            contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_190px_170px]"
-            actions={
-              <>
-                <Button
-                  type="submit"
-                  variant="secondary"
-                  className="h-10 px-4 text-sm"
-                >
-                  Apply Filters
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={resetFilters}
-                  className="h-10 px-3 text-sm"
-                >
-                  <RefreshCw className="size-3.5" />
-                  Reset
-                </Button>
-              </>
+            onSubmit={(event) =>
+              event.preventDefault()
             }
+            contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_190px_170px]"
           >
             <SearchInput
               value={search}

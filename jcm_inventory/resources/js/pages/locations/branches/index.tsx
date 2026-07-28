@@ -219,6 +219,75 @@ export default function BranchIndex({
         filters.status,
     ]);
 
+    useEffect(() => {
+        const normalizedSearch =
+            search.trim();
+
+        if (
+            normalizedSearch ===
+            (filters.search ?? '').trim()
+        ) {
+            return;
+        }
+
+        const timeoutId =
+            window.setTimeout(() => {
+                router.get(
+                    '/locations/branches',
+                    {
+                        search:
+                            normalizedSearch ||
+                            undefined,
+                        status:
+                            status ||
+                            undefined,
+                    },
+                    {
+                        preserveState: true,
+                        preserveScroll: true,
+                        replace: true,
+                    },
+                );
+            }, 300);
+
+        return () =>
+            window.clearTimeout(timeoutId);
+    }, [
+        search,
+        status,
+        filters.search,
+    ]);
+
+    useEffect(() => {
+        if (
+            status ===
+            (filters.status ?? '')
+        ) {
+            return;
+        }
+
+        router.get(
+            '/locations/branches',
+            {
+                search:
+                    search.trim() ||
+                    undefined,
+                status:
+                    status ||
+                    undefined,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
+    }, [
+        status,
+        search,
+        filters.status,
+    ]);
+
     /*
     |--------------------------------------------------------------------------
     | Branch form dialog
@@ -314,43 +383,6 @@ export default function BranchIndex({
     | Search and filters
     |--------------------------------------------------------------------------
     */
-
-    function applyFilters(
-        event: FormEvent<HTMLFormElement>,
-    ): void {
-        event.preventDefault();
-
-        router.get(
-            '/locations/branches',
-            {
-                search:
-                    search.trim() || undefined,
-
-                status:
-                    status || undefined,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    }
-
-    function resetFilters(): void {
-        setSearch('');
-        setStatus('');
-
-        router.get(
-            '/locations/branches',
-            {},
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    }
 
     /*
     |--------------------------------------------------------------------------
@@ -992,30 +1024,10 @@ export default function BranchIndex({
                     }
                 >
                     <FilterBar
-                        onSubmit={applyFilters}
-                        contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-[minmax(220px,1fr)_180px]"
-                        actions={
-                            <>
-                                <Button
-                                    type="submit"
-                                    variant="secondary"
-                                    className="h-10 px-4 text-sm"
-                                >
-                                    Apply Filters
-                                </Button>
-
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={
-                                        resetFilters
-                                    }
-                                    className="h-10 px-4 text-sm"
-                                >
-                                    Reset
-                                </Button>
-                            </>
+                        onSubmit={(event) =>
+                            event.preventDefault()
                         }
+                        contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-[minmax(220px,1fr)_180px]"
                     >
                         <SearchInput
                             value={search}

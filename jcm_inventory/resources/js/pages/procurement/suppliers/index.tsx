@@ -41,7 +41,6 @@ import {
   Phone,
   Plus,
   ReceiptText,
-  RefreshCw,
   ShieldCheck,
   Trash2,
   Truck,
@@ -226,6 +225,46 @@ export default function SupplierIndex({
     setSort(filters.sort ?? "latest");
   }, [filters.search, filters.status, filters.sort]);
 
+  useEffect(() => {
+    const normalizedSearch = search.trim();
+    const currentSearch = (filters.search ?? "").trim();
+    const currentStatus = filters.status ?? "";
+    const currentSort = filters.sort ?? "latest";
+
+    if (
+      normalizedSearch === currentSearch &&
+      status === currentStatus &&
+      sort === currentSort
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      router.get(
+        "/suppliers",
+        {
+          search: normalizedSearch || undefined,
+          status: status || undefined,
+          sort: sort !== "latest" ? sort : undefined,
+        },
+        {
+          preserveState: true,
+          preserveScroll: true,
+          replace: true,
+        },
+      );
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    search,
+    status,
+    sort,
+    filters.search,
+    filters.status,
+    filters.sort,
+  ]);
+
   /*
     |--------------------------------------------------------------------------
     | Form dialog
@@ -315,40 +354,6 @@ export default function SupplierIndex({
     |--------------------------------------------------------------------------
     */
 
-  function applyFilters(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-
-    router.get(
-      "/suppliers",
-      {
-        search: search.trim() || undefined,
-        status: status || undefined,
-        sort: sort !== "latest" ? sort : undefined,
-      },
-      {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-      },
-    );
-  }
-
-  function resetFilters(): void {
-    setSearch("");
-    setStatus("");
-    setSort("latest");
-
-    router.get(
-      "/suppliers",
-      {},
-      {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-      },
-    );
-  }
-
   function openSupplierDetails(supplier: Supplier): void {
     setSelectedSupplier(supplier);
   }
@@ -417,8 +422,6 @@ export default function SupplierIndex({
 
   const inactivePercentage =
     summary.total > 0 ? Math.max(0, 100 - operationalPercentage) : 0;
-
-  const hasActiveFilters = Boolean(search || status || sort !== "latest");
 
   const networkStatusLabel =
     summary.total === 0
@@ -637,31 +640,9 @@ export default function SupplierIndex({
             }
           >
             <FilterBar
-              onSubmit={applyFilters}
-              contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_170px_180px]"
-              actions={
-                <>
-                  <Button
-                    type="submit"
-                    variant="secondary"
-                    className="h-10 px-4 text-sm"
-                  >
-                    Apply Filters
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={resetFilters}
-                    disabled={!hasActiveFilters}
-                    className="h-10 px-3 text-sm"
-                  >
-                    <RefreshCw className="size-3.5" />
-                    Reset
-                  </Button>
-                </>
-              }
-            >
+            onSubmit={(event) => event.preventDefault()}
+            contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_170px_180px]"
+          >
               <SearchInput
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}

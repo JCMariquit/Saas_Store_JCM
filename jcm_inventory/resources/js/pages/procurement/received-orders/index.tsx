@@ -2,13 +2,11 @@ import { AppDrawer } from "@/components/shared/app-drawer";
 import { AppPagination } from "@/components/shared/app-pagination";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { FilterBar } from "@/components/shared/filter-bar";
-import { IconInput } from "@/components/shared/icon-input";
 import { PageContainer } from "@/components/shared/page-container";
 import { SearchInput } from "@/components/shared/search-input";
 import { SectionCard } from "@/components/shared/section-card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -33,7 +31,6 @@ import {
   History,
   PackageCheck,
   ReceiptText,
-  RotateCcw,
   ShieldCheck,
   Truck,
   UserRound,
@@ -41,7 +38,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  type FormEvent,
   useEffect,
   useState,
 } from "react";
@@ -287,43 +283,50 @@ export default function ReceivedOrderIndex({
     filters.date_to,
   ]);
 
-  function applyFilters(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
+  useEffect(() => {
+    const normalizedSearch = search.trim();
 
-    router.get(
-      "/procurement/received-orders",
-      {
-        search: search.trim() || undefined,
-        supplier_id: supplierId || undefined,
-        warehouse_id: warehouseId || undefined,
-        date_from: dateFrom || undefined,
-        date_to: dateTo || undefined,
-      },
-      {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-      },
-    );
-  }
+    if (
+      normalizedSearch === (filters.search ?? "").trim() &&
+      supplierId === (filters.supplier_id ?? "") &&
+      warehouseId === (filters.warehouse_id ?? "") &&
+      dateFrom === (filters.date_from ?? "") &&
+      dateTo === (filters.date_to ?? "")
+    ) {
+      return;
+    }
 
-  function resetFilters(): void {
-    setSearch("");
-    setSupplierId("");
-    setWarehouseId("");
-    setDateFrom("");
-    setDateTo("");
+    const timeoutId = window.setTimeout(() => {
+      router.get(
+        "/procurement/received-orders",
+        {
+          search: normalizedSearch || undefined,
+          supplier_id: supplierId || undefined,
+          warehouse_id: warehouseId || undefined,
+          date_from: dateFrom || undefined,
+          date_to: dateTo || undefined,
+        },
+        {
+          preserveState: true,
+          preserveScroll: true,
+          replace: true,
+        },
+      );
+    }, 300);
 
-    router.get(
-      "/procurement/received-orders",
-      {},
-      {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-      },
-    );
-  }
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    search,
+    supplierId,
+    warehouseId,
+    dateFrom,
+    dateTo,
+    filters.search,
+    filters.supplier_id,
+    filters.warehouse_id,
+    filters.date_from,
+    filters.date_to,
+  ]);
 
   function openOrderDetails(order: ReceivedOrder): void {
     setSelectedOrder(order);
@@ -552,30 +555,8 @@ export default function ReceivedOrderIndex({
           }
         >
           <FilterBar
-            onSubmit={applyFilters}
-            contentClassName="grid w-full min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(260px,1fr)_200px_210px_155px_155px]"
-            actions={
-              <>
-                <Button
-                  type="submit"
-                  variant="secondary"
-                  className="h-10 px-4 text-sm"
-                >
-                  Apply Filters
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={resetFilters}
-                  disabled={!hasActiveFilters}
-                  className="h-10 px-3 text-sm"
-                >
-                  <RotateCcw className="size-3.5" />
-                  Reset
-                </Button>
-              </>
-            }
+            onSubmit={(event) => event.preventDefault()}
+            contentClassName="grid w-full min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(280px,1.25fr)_210px_225px_minmax(360px,1.35fr)]"
           >
             <SearchInput
               value={search}
@@ -628,29 +609,16 @@ export default function ReceivedOrderIndex({
               </SelectContent>
             </Select>
 
-            <IconInput
-              id="received_date_from"
-              icon={CalendarDays}
-              type="date"
-              value={dateFrom}
-              title="Completion date from"
-              aria-label="Completion date from"
-              onChange={(event) => setDateFrom(event.target.value)}
-              className="h-10"
-              iconClassName="text-primary"
-            />
-
-            <IconInput
-              id="received_date_to"
-              icon={CalendarDays}
-              type="date"
-              value={dateTo}
-              min={dateFrom || undefined}
-              title="Completion date to"
-              aria-label="Completion date to"
-              onChange={(event) => setDateTo(event.target.value)}
-              className="h-10"
-              iconClassName="text-primary"
+            <ProcurementDateRangeFilter
+              title="Completed"
+              description="Show fully received orders completed within this period."
+              fromId="received_date_from"
+              toId="received_date_to"
+              fromValue={dateFrom}
+              toValue={dateTo}
+              onFromChange={setDateFrom}
+              onToChange={setDateTo}
+              className="md:col-span-2 xl:col-span-3 2xl:col-span-1"
             />
           </FilterBar>
 
@@ -1789,6 +1757,120 @@ function ArchiveMetric({
         </div>
       </div>
     </button>
+  );
+}
+
+
+function ProcurementDateRangeFilter({
+  title,
+  description,
+  fromId,
+  toId,
+  fromValue,
+  toValue,
+  onFromChange,
+  onToChange,
+  className,
+}: {
+  title: string;
+  description: string;
+  fromId: string;
+  toId: string;
+  fromValue: string;
+  toValue: string;
+  onFromChange: (value: string) => void;
+  onToChange: (value: string) => void;
+  className?: string;
+}) {
+  const hasDateFilter = Boolean(fromValue || toValue);
+
+  function changeFromDate(value: string): void {
+    onFromChange(value);
+
+    if (value && toValue && toValue < value) {
+      onToChange(value);
+    }
+  }
+
+  function clearDateRange(): void {
+    onFromChange("");
+    onToChange("");
+  }
+
+  return (
+    <section
+      className={cn("min-w-0", className)}
+      aria-label={title}
+      title={description}
+    >
+      <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-border/70 bg-background/25 p-1.5 transition-colors focus-within:border-primary/25 focus-within:bg-primary/[0.018] sm:h-10 sm:flex-row sm:items-center sm:gap-0 sm:p-0">
+        <div className="flex h-8 shrink-0 items-center gap-2 rounded-md bg-primary/[0.055] px-2.5 text-primary sm:h-full sm:rounded-l-lg sm:rounded-r-none sm:border-r sm:border-border/60">
+          <CalendarDays className="size-3.5 shrink-0" />
+
+          <span className="whitespace-nowrap text-[9px] font-semibold text-foreground">
+            {title}
+          </span>
+        </div>
+
+        <label
+          htmlFor={fromId}
+          className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 transition-colors hover:bg-primary/[0.025] sm:rounded-none"
+        >
+          <span className="shrink-0 text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            From
+          </span>
+
+          <input
+            id={fromId}
+            type="date"
+            value={fromValue}
+            aria-label={`${title}: start date`}
+            onChange={(event) => changeFromDate(event.target.value)}
+            className="h-7 min-w-0 flex-1 bg-transparent px-1 text-[10px] text-foreground outline-none [color-scheme:dark]"
+          />
+        </label>
+
+        <span
+          aria-hidden="true"
+          className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline-flex"
+        >
+          →
+        </span>
+
+        <label
+          htmlFor={toId}
+          className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 transition-colors hover:bg-primary/[0.025] sm:rounded-none"
+        >
+          <span className="shrink-0 text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            To
+          </span>
+
+          <input
+            id={toId}
+            type="date"
+            value={toValue}
+            min={fromValue || undefined}
+            aria-label={`${title}: end date`}
+            onChange={(event) => onToChange(event.target.value)}
+            className="h-7 min-w-0 flex-1 bg-transparent px-1 text-[10px] text-foreground outline-none [color-scheme:dark]"
+          />
+        </label>
+
+        {hasDateFilter && (
+          <button
+            type="button"
+            onClick={clearDateRange}
+            aria-label={`Clear ${title.toLowerCase()}`}
+            title={`Clear ${title.toLowerCase()}`}
+            className="flex h-8 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background/35 px-2.5 text-sm leading-none text-muted-foreground transition hover:border-primary/20 hover:bg-primary/[0.055] hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:mr-1 sm:size-8 sm:px-0"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        )}
+      </div>
+
+      <p className="sr-only">{description}</p>
+    </section>
   );
 }
 

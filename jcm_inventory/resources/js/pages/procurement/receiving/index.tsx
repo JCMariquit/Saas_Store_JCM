@@ -31,7 +31,6 @@ import {
   Banknote,
   Boxes,
   CalendarDays,
-  CheckCircle2,
   ChevronRight,
   ClipboardList,
   PackageCheck,
@@ -39,6 +38,7 @@ import {
   Plus,
   ReceiptText,
   RotateCcw,
+  Clock3,
   ShieldCheck,
   Truck,
   Trash2,
@@ -392,6 +392,55 @@ export default function ReceivingIndex({
     setDateFrom(filters.date_from ?? "");
     setDateTo(filters.date_to ?? "");
   }, [
+    filters.search,
+    filters.status,
+    filters.supplier_id,
+    filters.warehouse_id,
+    filters.date_from,
+    filters.date_to,
+  ]);
+
+  useEffect(() => {
+    const normalizedSearch = search.trim();
+
+    if (
+      normalizedSearch === (filters.search ?? "").trim() &&
+      status === (filters.status ?? "") &&
+      supplierId === (filters.supplier_id ?? "") &&
+      warehouseId === (filters.warehouse_id ?? "") &&
+      dateFrom === (filters.date_from ?? "") &&
+      dateTo === (filters.date_to ?? "")
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      router.get(
+        "/suppliers/receiving",
+        {
+          search: normalizedSearch || undefined,
+          status: status || undefined,
+          supplier_id: supplierId || undefined,
+          warehouse_id: warehouseId || undefined,
+          date_from: dateFrom || undefined,
+          date_to: dateTo || undefined,
+        },
+        {
+          preserveState: true,
+          preserveScroll: true,
+          replace: true,
+        },
+      );
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    search,
+    status,
+    supplierId,
+    warehouseId,
+    dateFrom,
+    dateTo,
     filters.search,
     filters.status,
     filters.supplier_id,
@@ -798,82 +847,78 @@ export default function ReceivingIndex({
     setReceivingDrawerView(null);
   }
 
-  function applyReceiptFilters(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-
-    router.get(
-      "/suppliers/receiving",
-      {
-        search: search.trim() || undefined,
-        status: status || undefined,
-        supplier_id: supplierId || undefined,
-        warehouse_id: warehouseId || undefined,
-        date_from: dateFrom || undefined,
-        date_to: dateTo || undefined,
-      },
-      {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-      },
-    );
-  }
-
-  function resetReceiptFilters(): void {
-    setSearch("");
-    setStatus("");
-    setSupplierId("");
-    setWarehouseId("");
-    setDateFrom("");
-    setDateTo("");
-
-    router.get(
-      "/suppliers/receiving",
-      {},
-      { preserveState: true, preserveScroll: true, replace: true },
-    );
-  }
-
   /*
     |--------------------------------------------------------------------------
     | Receiving overview
     |--------------------------------------------------------------------------
     */
 
-  const postedPercentage =
-    summary.total > 0
-      ? Math.min(100, Math.round((summary.posted / summary.total) * 100))
-      : 0;
+  const readyOrderCount = purchase_orders.length;
 
-  const voidedPercentage =
-    summary.total > 0
-      ? Math.min(100, Math.round((summary.voided / summary.total) * 100))
-      : 0;
-
-  const averageReceivedValue =
-    summary.posted > 0 ? summary.received_value / summary.posted : 0;
-
-  const hasActiveReceiptFilters = Boolean(
-    search.trim() || status || supplierId || warehouseId || dateFrom || dateTo,
+  const pendingIntakeQuantity = purchase_orders.reduce(
+    (orderTotal, order) =>
+      orderTotal +
+      order.items.reduce(
+        (itemTotal, item) =>
+          itemTotal + Number(item.remaining_quantity || 0),
+        0,
+      ),
+    0,
   );
 
+  const pendingIntakeValue = purchase_orders.reduce(
+    (orderTotal, order) =>
+      orderTotal +
+      order.items.reduce(
+        (itemTotal, item) =>
+          itemTotal +
+          Number(item.remaining_quantity || 0) *
+            Number(item.unit_cost || 0),
+        0,
+      ),
+    0,
+  );
+
+  const correctableReceipts = receipts.data.filter(
+    (receipt) => receipt.status === "posted" && receipt.can_void,
+  );
+
+  const reversedReceipts = receipts.data.filter(
+    (receipt) => receipt.status === "voided",
+  );
+
+  const correctionReceipts = receipts.data.filter(
+    (receipt) => receipt.can_void || receipt.status === "voided",
+  );
+
+  const readyQueueProgress =
+    readyOrderCount > 0
+      ? Math.min(100, Math.max(12, readyOrderCount * 18))
+      : 0;
+
+  const correctionProgress =
+    correctionReceipts.length > 0
+      ? Math.min(100, Math.max(12, correctionReceipts.length * 20))
+      : 0;
+
+  const reversalProgress =
+    summary.voided > 0
+      ? Math.min(100, Math.max(12, summary.voided * 15))
+      : 0;
+
   const receivingStatusLabel =
-    summary.total === 0
-      ? "No receiving history"
-      : summary.voided > 0
-        ? `${formatNumber(summary.voided)} reversed receipt${summary.voided === 1 ? "" : "s"}`
-        : purchase_orders.length > 0
-          ? `${formatNumber(purchase_orders.length)} approved order${purchase_orders.length === 1 ? "" : "s"} ready`
-          : "Receiving register healthy";
+    readyOrderCount > 0
+      ? `${formatNumber(readyOrderCount)} order${readyOrderCount === 1 ? "" : "s"} ready for intake`
+      : correctableReceipts.length > 0
+        ? `${formatNumber(correctableReceipts.length)} receipt${correctableReceipts.length === 1 ? "" : "s"} available for correction`
+        : "Receiving queue clear";
 
   const receivingStatusClass =
-    summary.total === 0
-      ? "border-slate-500/20 bg-slate-500/10 text-slate-300"
-      : summary.voided > 0
-        ? "border-red-500/20 bg-red-500/10 text-red-300"
-        : purchase_orders.length > 0
-          ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
-          : "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
+    readyOrderCount > 0
+      ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
+      : correctableReceipts.length > 0
+        ? "border-blue-500/20 bg-blue-500/10 text-blue-300"
+        : "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
 
   /*
     |--------------------------------------------------------------------------
@@ -886,7 +931,7 @@ export default function ReceivingIndex({
       <Head title="Receiving" />
 
       <PageContainer className="gap-4 md:gap-5">
-        {/* Procurement receiving overview */}
+        {/* Procurement receiving operations */}
 
         <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.08] via-card/70 to-card/40">
           <div className="flex flex-col gap-3 border-b border-border/60 bg-background/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -897,12 +942,12 @@ export default function ReceivingIndex({
 
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold text-foreground">
-                  Procurement Receiving Flow
+                  Receiving Operations Center
                 </p>
 
                 <p className="mt-0.5 text-[10px] text-muted-foreground">
-                  Approved orders ready for intake, posted deliveries, warehouse
-                  stock updates, and reversal health.
+                  Process approved supplier deliveries and handle receipt corrections
+                  without duplicating the completed-order archive.
                 </p>
               </div>
             </div>
@@ -914,12 +959,10 @@ export default function ReceivingIndex({
                 receivingStatusClass,
               )}
             >
-              {summary.total === 0 ? (
-                <ReceiptText className="mr-1 size-3" />
-              ) : summary.voided > 0 ? (
-                <RotateCcw className="mr-1 size-3" />
-              ) : purchase_orders.length > 0 ? (
+              {readyOrderCount > 0 ? (
                 <PackageCheck className="mr-1 size-3" />
+              ) : correctableReceipts.length > 0 ? (
+                <ReceiptText className="mr-1 size-3" />
               ) : (
                 <ShieldCheck className="mr-1 size-3" />
               )}
@@ -931,14 +974,14 @@ export default function ReceivingIndex({
           <div className="grid min-w-0 lg:grid-cols-[minmax(330px,1.08fr)_minmax(0,1.92fr)]">
             <button
               type="button"
-              onClick={() => openReceivingDrawer("posted")}
+              onClick={() => openReceivingDrawer("ready")}
               className="relative overflow-hidden border-b border-border/60 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35 lg:border-b-0 lg:border-r"
             >
               <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-primary/10 blur-3xl" />
               <ArrowDownToLine className="pointer-events-none absolute -bottom-8 -right-5 size-28 text-primary opacity-[0.025]" />
 
               <div className="relative grid gap-4 sm:grid-cols-[64px_minmax(0,1fr)] sm:items-center">
-                <div className="flex size-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+                <div className="flex size-16 items-center justify-center rounded-2xl border border-amber-500/20 bg-amber-500/[0.08] text-amber-300">
                   <PackageCheck className="size-7" />
                 </div>
 
@@ -946,51 +989,39 @@ export default function ReceivingIndex({
                   <div className="flex items-end justify-between gap-4">
                     <div>
                       <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
-                        Posted receipt integrity
+                        Ready for warehouse intake
                       </p>
 
                       <p className="mt-2 text-[27px] font-semibold leading-none tracking-[-0.04em]">
-                        {formatNumber(summary.posted)}
-
-                        <span className="mx-1.5 text-base font-medium text-muted-foreground">
-                          /
-                        </span>
-
-                        {formatNumber(summary.total)}
+                        {formatNumber(readyOrderCount)}
                       </p>
                     </div>
 
                     <div className="text-right">
-                      <p className="text-lg font-semibold tabular-nums text-primary">
-                        {postedPercentage}%
+                      <p className="text-lg font-semibold tabular-nums text-amber-300">
+                        {formatQuantity(pendingIntakeQuantity)}
                       </p>
 
                       <p className="mt-1 text-[8px] uppercase tracking-wider text-muted-foreground">
-                        Posted
+                        Units pending
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-background/60">
+                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-background/60">
                     <div
-                      className="h-full bg-emerald-400 transition-all duration-500"
-                      style={{ width: `${postedPercentage}%` }}
-                    />
-
-                    <div
-                      className="h-full bg-red-400 transition-all duration-500"
-                      style={{ width: `${voidedPercentage}%` }}
+                      className="h-full rounded-full bg-amber-400 transition-all duration-500"
+                      style={{ width: `${readyQueueProgress}%` }}
                     />
                   </div>
 
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-[9px] text-muted-foreground">
                     <span>
-                      {formatQuantity(summary.received_quantity)} units received
+                      Approved and partially received purchase orders
                     </span>
 
-                    <span>
-                      {formatNumber(purchase_orders.length)} approved order
-                      {purchase_orders.length === 1 ? "" : "s"} ready
+                    <span className="font-semibold tabular-nums text-primary">
+                      {formatCurrency(pendingIntakeValue)}
                     </span>
                   </div>
                 </div>
@@ -999,60 +1030,60 @@ export default function ReceivingIndex({
 
             <div className="grid min-w-0 sm:grid-cols-2 xl:grid-cols-4">
               <ReceivingNetworkMetric
-                title="Receiving Records"
-                value={formatNumber(summary.total)}
-                description="Supplier delivery receipts"
-                footerLabel="Posted share"
-                footerValue={`${postedPercentage}%`}
-                footerProgress={postedPercentage}
-                icon={ReceiptText}
-                tone="blue"
-                onClick={() => openReceivingDrawer("all")}
+                title="Ready Orders"
+                value={formatNumber(readyOrderCount)}
+                description="Supplier deliveries awaiting intake"
+                footerLabel="Queue activity"
+                footerValue={`${formatQuantity(pendingIntakeQuantity)} units`}
+                footerProgress={readyQueueProgress}
+                icon={PackageCheck}
+                tone="amber"
+                onClick={() => openReceivingDrawer("ready")}
                 className="border-b border-border/60 sm:border-r xl:border-b-0"
               />
 
               <ReceivingNetworkMetric
-                title="Posted Receipts"
-                value={formatNumber(summary.posted)}
-                description="Applied to warehouse stock"
-                footerLabel="Receipt integrity"
-                footerValue={`${postedPercentage}%`}
-                footerProgress={postedPercentage}
-                icon={CheckCircle2}
+                title="Pending Intake"
+                value={formatQuantity(pendingIntakeQuantity)}
+                description="Remaining quantity to receive"
+                footerLabel="Estimated intake value"
+                footerValue={formatCurrency(pendingIntakeValue)}
+                footerProgress={readyQueueProgress}
+                icon={Boxes}
+                tone="blue"
+                onClick={() => openReceivingDrawer("ready")}
+                className="border-b border-border/60 xl:border-b-0 xl:border-r"
+              />
+
+              <ReceivingNetworkMetric
+                title="Correctable Receipts"
+                value={formatNumber(correctableReceipts.length)}
+                description="Posted receipts still eligible for voiding"
+                footerLabel="Operational records"
+                footerValue={`${formatNumber(correctionReceipts.length)} loaded`}
+                footerProgress={correctionProgress}
+                icon={ReceiptText}
                 tone="emerald"
                 onClick={() => openReceivingDrawer("posted")}
-                className="border-b border-border/60 xl:border-b-0 xl:border-r"
+                className="border-b border-border/60 sm:border-b-0 sm:border-r"
               />
 
               <ReceivingNetworkMetric
                 title="Reversed Receipts"
                 value={formatNumber(summary.voided)}
-                description="Voided receiving records"
-                footerLabel="Reversal rate"
-                footerValue={`${voidedPercentage}%`}
-                footerProgress={voidedPercentage}
+                description="Completed receipt reversals"
+                footerLabel="Reversal audit"
+                footerValue={`${formatNumber(reversedReceipts.length)} loaded`}
+                footerProgress={reversalProgress}
                 icon={RotateCcw}
                 tone="red"
                 onClick={() => openReceivingDrawer("voided")}
-                className="border-b border-border/60 sm:border-b-0 sm:border-r"
-              />
-
-              <ReceivingNetworkMetric
-                title="Received Value"
-                value={formatCurrency(summary.received_value)}
-                description="Posted acquisition value"
-                footerLabel="Average per posted receipt"
-                footerValue={formatCurrency(averageReceivedValue)}
-                footerProgress={postedPercentage}
-                icon={Banknote}
-                tone="amber"
-                onClick={() => openReceivingDrawer("ready")}
               />
             </div>
           </div>
         </section>
 
-        {/* Receiving register */}
+        {/* Receiving work queues */}
 
         <SectionCard
           title="Receiving Approval Queue"
@@ -1074,38 +1105,38 @@ export default function ReceivingIndex({
         </SectionCard>
 
         <SectionCard
-          title="Receiving Register"
-          description="Review posted and voided supplier receipts, exact batch layers, warehouse impact, and reversal eligibility."
+          title="Receipt Corrections & Reversals"
+          description="Only posted receipts still eligible for voiding and completed reversals appear here. Fully completed procurement history remains in Received Orders."
           actions={
-            <Badge
-              variant="outline"
-              className="h-7 rounded-full border-primary/15 bg-primary/[0.06] px-2.5 text-[10px] font-medium text-primary"
-            >
-              <ReceiptText className="mr-1 size-3" />
-              {formatNumber(receipts.total)} receipt{receipts.total === 1 ? "" : "s"}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                variant="outline"
+                className="h-7 rounded-full border-blue-500/20 bg-blue-500/[0.06] px-2.5 text-[10px] font-medium text-blue-300"
+              >
+                <ReceiptText className="mr-1 size-3" />
+                {formatNumber(correctableReceipts.length)} correctable
+              </Badge>
+
+              <Badge
+                variant="outline"
+                className="h-7 rounded-full border-red-500/20 bg-red-500/[0.06] px-2.5 text-[10px] font-medium text-red-300"
+              >
+                <RotateCcw className="mr-1 size-3" />
+                {formatNumber(reversedReceipts.length)} reversed
+              </Badge>
+            </div>
           }
         >
+          <CalloutCard
+            tone="info"
+            icon={ShieldCheck}
+            title="Operational correction view"
+            description="This section is for reversible posted receipts and completed reversals only. Use Received Orders for the completed procurement archive."
+          />
+
           <FilterBar
-            onSubmit={applyReceiptFilters}
-            contentClassName="grid w-full gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_160px_180px_180px_150px_150px]"
-            actions={
-              <>
-                <Button type="submit" variant="secondary" className="h-10 px-4 text-sm">
-                  Apply Filters
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!hasActiveReceiptFilters}
-                  onClick={resetReceiptFilters}
-                  className="h-10 px-3 text-sm"
-                >
-                  <RotateCcw className="size-3.5" />
-                  Reset
-                </Button>
-              </>
-            }
+            onSubmit={(event) => event.preventDefault()}
+            contentClassName="grid w-full min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(260px,1.2fr)_165px_190px_210px_minmax(360px,1.35fr)]"
           >
             <SearchInput
               value={search}
@@ -1166,28 +1197,25 @@ export default function ReceivingIndex({
               </SelectContent>
             </Select>
 
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(event) => setDateFrom(event.target.value)}
-              className="h-10"
-              aria-label="Receipt date from"
-            />
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(event) => setDateTo(event.target.value)}
-              className="h-10"
-              aria-label="Receipt date to"
+            <ProcurementDateRangeFilter
+              title="Receipt date"
+              description="Show correction or reversal records received within this period."
+              fromId="receipt_date_from"
+              toId="receipt_date_to"
+              fromValue={dateFrom}
+              toValue={dateTo}
+              onFromChange={setDateFrom}
+              onToChange={setDateTo}
+              className="md:col-span-2 xl:col-span-2 2xl:col-span-1"
             />
           </FilterBar>
 
           <ReceiptRegisterTable
-            receipts={receipts.data}
+            receipts={correctionReceipts}
             onSelect={setViewingReceipt}
           />
 
-          <AppPagination pagination={receipts} itemLabel="receipts" />
+          <AppPagination pagination={receipts} itemLabel="receipt result pages" />
         </SectionCard>
       </PageContainer>
 
@@ -1195,16 +1223,7 @@ export default function ReceivingIndex({
         view={receivingDrawerView}
         receipts={receipts}
         purchaseOrders={purchase_orders}
-        summary={summary}
         onClose={closeReceivingDrawer}
-        onSelectReceipt={(receipt) => {
-          closeReceivingDrawer();
-          setViewingReceipt(receipt);
-        }}
-        onSelectOrder={(order) => {
-          closeReceivingDrawer();
-          openReadyOrderDetails(order);
-        }}
       />
 
       <ReadyOrderDetailsDrawer
@@ -2483,49 +2502,67 @@ function ReceivingOverviewDrawer({
   view,
   receipts,
   purchaseOrders,
-  summary,
   onClose,
-  onSelectReceipt,
-  onSelectOrder,
 }: {
   view: ReceivingDrawerView | null;
   receipts: PaginatedReceipts;
   purchaseOrders: PurchaseOrderOption[];
-  summary: ReceivingSummary;
   onClose: () => void;
-  onSelectReceipt: (receipt: Receipt) => void;
-  onSelectOrder: (order: PurchaseOrderOption) => void;
 }) {
+  const [expandedReceiptId, setExpandedReceiptId] = useState<number | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const activeView = view ?? "all";
+
+  useEffect(() => {
+    setExpandedReceiptId(null);
+    setExpandedOrderId(null);
+  }, [view]);
+
+  const correctableReceiptRecords = receipts.data.filter(
+    (receipt) => receipt.status === "posted" && receipt.can_void,
+  );
+
+  const reversedReceiptRecords = receipts.data.filter(
+    (receipt) => receipt.status === "voided",
+  );
+
+  const correctionReceiptRecords = receipts.data.filter(
+    (receipt) => receipt.can_void || receipt.status === "voided",
+  );
 
   const config = {
     all: {
-      title: "Receiving Records",
-      description: "Review receipt records loaded on the current page.",
-      total: summary.total,
+      title: "Receipt Corrections & Reversals",
+      description:
+        "Operational receipt records loaded on the current page. Expand a record to inspect its correction or reversal context.",
+      total: correctionReceiptRecords.length,
     },
     posted: {
-      title: "Posted Receipts",
-      description: "Posted receipts have already updated warehouse inventory.",
-      total: summary.posted,
+      title: "Correctable Posted Receipts",
+      description:
+        "Posted receipts that are still eligible for safe reversal.",
+      total: correctableReceiptRecords.length,
     },
     voided: {
       title: "Reversed Receipts",
-      description: "Voided receiving records and their reversal audit trail.",
-      total: summary.voided,
+      description:
+        "Completed receiving reversals and their audit details.",
+      total: reversedReceiptRecords.length,
     },
     ready: {
       title: "Orders Ready to Receive",
-      description: "Approved and partially received purchase orders awaiting intake.",
+      description:
+        "Approved and partially received purchase orders awaiting warehouse intake.",
       total: purchaseOrders.length,
     },
   }[activeView];
 
-  const visibleReceipts = receipts.data.filter((receipt) => {
-    if (activeView === "posted") return receipt.status === "posted";
-    if (activeView === "voided") return receipt.status === "voided";
-    return true;
-  });
+  const visibleReceipts =
+    activeView === "posted"
+      ? correctableReceiptRecords
+      : activeView === "voided"
+        ? reversedReceiptRecords
+        : correctionReceiptRecords;
 
   return (
     <AppDrawer
@@ -2539,12 +2576,23 @@ function ReceivingOverviewDrawer({
     >
       <div className="flex min-h-full flex-col bg-card">
         <div className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
-          <p className="text-3xl font-semibold leading-none tabular-nums text-primary">
-            {formatNumber(config.total)}
-          </p>
-          <p className="mt-1 text-[9px] text-muted-foreground">
-            Matching procurement records
-          </p>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-3xl font-semibold leading-none tabular-nums text-primary">
+                {formatNumber(config.total)}
+              </p>
+              <p className="mt-1 text-[9px] text-muted-foreground">
+                Matching procurement records
+              </p>
+            </div>
+
+            <Badge
+              variant="outline"
+              className="h-7 rounded-full border-primary/15 bg-primary/[0.055] px-2.5 text-[9px] text-primary"
+            >
+              Accordion view
+            </Badge>
+          </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -2553,67 +2601,385 @@ function ReceivingOverviewDrawer({
               <ReceivingDrawerEmpty icon={PackageCheck} />
             ) : (
               <div className="space-y-2">
-                {purchaseOrders.map((order) => (
-                  <button
-                    key={order.id}
-                    type="button"
-                    onClick={() => onSelectOrder(order)}
-                    className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-background/25 p-3 text-left transition hover:border-primary/20 hover:bg-primary/[0.035]"
-                  >
-                    <EntityAvatar
-                      icon={PackageCheck}
-                      className="border-primary/15 bg-primary/[0.07] text-primary"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-mono text-[10px] font-semibold text-primary">
-                        {order.po_number}
-                      </p>
-                      <p className="mt-1 truncate text-[9px] text-muted-foreground">
-                        {order.supplier.name} · {order.warehouse.name}
-                      </p>
-                    </div>
-                    <ChevronRight className="size-4 text-muted-foreground" />
-                  </button>
-                ))}
+                {purchaseOrders.map((order) => {
+                  const expanded = expandedOrderId === order.id;
+                  const remainingQuantity = order.items.reduce(
+                    (total, item) =>
+                      total + Number(item.remaining_quantity || 0),
+                    0,
+                  );
+
+                  return (
+                    <article
+                      key={order.id}
+                      className={cn(
+                        "overflow-hidden rounded-xl border bg-background/25 transition-colors",
+                        expanded
+                          ? "border-primary/25 bg-primary/[0.025]"
+                          : "border-border/60",
+                      )}
+                    >
+                      <button
+                        type="button"
+                        aria-expanded={expanded}
+                        aria-controls={`receiving-ready-${order.id}`}
+                        onClick={() =>
+                          setExpandedOrderId((currentId) =>
+                            currentId === order.id ? null : order.id,
+                          )
+                        }
+                        className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                      >
+                        <EntityAvatar
+                          icon={PackageCheck}
+                          className="border-primary/15 bg-primary/[0.07] text-primary"
+                        />
+
+                        <div className="min-w-0 flex-1">
+                          <p className="font-mono text-[10px] font-semibold text-primary">
+                            {order.po_number}
+                          </p>
+
+                          <p className="mt-1 truncate text-[9px] text-muted-foreground">
+                            {order.supplier.name} · {order.warehouse.name}
+                          </p>
+                        </div>
+
+                        <ChevronRight
+                          className={cn(
+                            "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                            expanded && "rotate-90 text-primary",
+                          )}
+                        />
+                      </button>
+
+                      {expanded && (
+                        <div
+                          id={`receiving-ready-${order.id}`}
+                          className="border-t border-border/60 bg-card/20"
+                        >
+                          <div className="grid gap-2 p-3 sm:grid-cols-2">
+                            <ReceivingAccordionMetric
+                              label="Supplier"
+                              value={order.supplier.name}
+                              icon={Truck}
+                            />
+
+                            <ReceivingAccordionMetric
+                              label="Warehouse"
+                              value={order.warehouse.name}
+                              icon={Warehouse}
+                            />
+
+                            <ReceivingAccordionMetric
+                              label="Order date"
+                              value={formatDate(order.order_date)}
+                              icon={CalendarDays}
+                            />
+
+                            <ReceivingAccordionMetric
+                              label="Expected delivery"
+                              value={formatDate(order.expected_delivery_date)}
+                              icon={CalendarDays}
+                            />
+
+                            <ReceivingAccordionMetric
+                              label="Remaining quantity"
+                              value={formatQuantity(remainingQuantity)}
+                              icon={Boxes}
+                              valueClassName="font-semibold tabular-nums text-amber-300"
+                            />
+
+                            <ReceivingAccordionMetric
+                              label="Order total"
+                              value={formatCurrency(order.total_amount)}
+                              icon={Banknote}
+                              valueClassName="font-semibold tabular-nums text-primary"
+                            />
+                          </div>
+
+                          <div className="border-t border-border/50 p-3">
+                            <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                              Products awaiting intake
+                            </p>
+
+                            <div className="mt-2 space-y-2">
+                              {order.items.slice(0, 5).map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-background/20 px-2.5 py-2"
+                                >
+                                  <div className="min-w-0">
+                                    <p className="break-words text-[9px] font-semibold text-foreground/90">
+                                      {item.product_name}
+                                    </p>
+
+                                    <p className="mt-0.5 font-mono text-[8px] text-muted-foreground">
+                                      {item.product_sku ?? "NO SKU"}
+                                    </p>
+                                  </div>
+
+                                  <div className="shrink-0 text-right">
+                                    <p className="text-[9px] font-semibold tabular-nums text-amber-300">
+                                      {formatQuantity(item.remaining_quantity)} remaining
+                                    </p>
+
+                                    <p className="mt-0.5 text-[8px] text-muted-foreground">
+                                      {item.batch_tracking_enabled
+                                        ? "Batch controlled"
+                                        : "Standard stock"}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+
+                              {order.items.length > 5 && (
+                                <p className="text-[8px] text-muted-foreground">
+                                  +{order.items.length - 5} more product line
+                                  {order.items.length - 5 === 1 ? "" : "s"}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="border-t border-primary/10 bg-primary/[0.025] p-3">
+                            <p className="text-[9px] leading-4 text-muted-foreground">
+                              Use the main Ready-to-Receive table to open the complete order record and start the supplier delivery form.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
               </div>
             )
           ) : visibleReceipts.length === 0 ? (
             <ReceivingDrawerEmpty icon={ReceiptText} />
           ) : (
             <div className="space-y-2">
-              {visibleReceipts.map((receipt) => (
-                <button
-                  key={receipt.id}
-                  type="button"
-                  onClick={() => onSelectReceipt(receipt)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-background/25 p-3 text-left transition hover:border-primary/20 hover:bg-primary/[0.035]"
-                >
-                  <EntityAvatar
-                    icon={ReceiptText}
-                    className="border-primary/15 bg-primary/[0.07] text-primary"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <p className="font-mono text-[10px] font-semibold text-primary">
-                        {receipt.receipt_number}
-                      </p>
-                      <StatusBadge
-                        label={receipt.status_label}
-                        variant={receipt.status === "posted" ? "success" : "danger"}
+              {visibleReceipts.map((receipt) => {
+                const expanded = expandedReceiptId === receipt.id;
+
+                return (
+                  <article
+                    key={receipt.id}
+                    className={cn(
+                      "overflow-hidden rounded-xl border bg-background/25 transition-colors",
+                      expanded
+                        ? "border-primary/25 bg-primary/[0.025]"
+                        : "border-border/60",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      aria-controls={`receiving-receipt-${receipt.id}`}
+                      onClick={() =>
+                        setExpandedReceiptId((currentId) =>
+                          currentId === receipt.id ? null : receipt.id,
+                        )
+                      }
+                      className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                    >
+                      <EntityAvatar
+                        icon={ReceiptText}
+                        className="border-primary/15 bg-primary/[0.07] text-primary"
                       />
-                    </div>
-                    <p className="mt-1 truncate text-[9px] text-muted-foreground">
-                      {receipt.supplier.name} · {formatCurrency(receipt.total_amount)}
-                    </p>
-                  </div>
-                  <ChevronRight className="size-4 text-muted-foreground" />
-                </button>
-              ))}
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="font-mono text-[10px] font-semibold text-primary">
+                            {receipt.receipt_number}
+                          </p>
+
+                          <StatusBadge
+                            label={receipt.status_label}
+                            variant={
+                              receipt.status === "posted" ? "success" : "danger"
+                            }
+                          />
+                        </div>
+
+                        <p className="mt-1 truncate text-[9px] text-muted-foreground">
+                          {receipt.supplier.name} ·{" "}
+                          {formatCurrency(receipt.total_amount)}
+                        </p>
+                      </div>
+
+                      <ChevronRight
+                        className={cn(
+                          "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                          expanded && "rotate-90 text-primary",
+                        )}
+                      />
+                    </button>
+
+                    {expanded && (
+                      <div
+                        id={`receiving-receipt-${receipt.id}`}
+                        className="border-t border-border/60 bg-card/20"
+                      >
+                        <div className="grid gap-2 p-3 sm:grid-cols-2">
+                          <ReceivingAccordionMetric
+                            label="Purchase order"
+                            value={receipt.purchase_order.po_number}
+                            icon={ClipboardList}
+                          />
+
+                          <ReceivingAccordionMetric
+                            label="Warehouse"
+                            value={receipt.warehouse.name}
+                            icon={Warehouse}
+                          />
+
+                          <ReceivingAccordionMetric
+                            label="Received date"
+                            value={formatDate(receipt.received_date)}
+                            icon={CalendarDays}
+                          />
+
+                          <ReceivingAccordionMetric
+                            label="Delivery reference"
+                            value={receipt.delivery_reference ?? "Not provided"}
+                            icon={ReceiptText}
+                          />
+
+                          <ReceivingAccordionMetric
+                            label="Received quantity"
+                            value={formatQuantity(receipt.total_quantity)}
+                            icon={Boxes}
+                          />
+
+                          <ReceivingAccordionMetric
+                            label="Receipt value"
+                            value={formatCurrency(receipt.total_amount)}
+                            icon={Banknote}
+                            valueClassName="font-semibold tabular-nums text-primary"
+                          />
+                        </div>
+
+                        <div className="border-t border-border/50 p-3">
+                          <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                            Received product lines
+                          </p>
+
+                          <div className="mt-2 space-y-2">
+                            {receipt.items.slice(0, 5).map((item) => (
+                              <div
+                                key={item.id}
+                                className="rounded-lg border border-border/40 bg-background/20 px-2.5 py-2"
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="break-words text-[9px] font-semibold text-foreground/90">
+                                      {item.product_name}
+                                    </p>
+
+                                    <p className="mt-0.5 font-mono text-[8px] text-muted-foreground">
+                                      {item.product_sku ?? "NO SKU"}
+                                    </p>
+                                  </div>
+
+                                  <div className="shrink-0 text-right">
+                                    <p className="text-[9px] font-semibold tabular-nums text-primary">
+                                      {formatQuantity(item.quantity_received)} {item.unit}
+                                    </p>
+
+                                    <p className="mt-0.5 text-[8px] text-muted-foreground">
+                                      {formatCurrency(item.line_total)}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {item.batches.length > 0 && (
+                                  <p className="mt-2 text-[8px] text-muted-foreground">
+                                    {item.batches.length} batch allocation
+                                    {item.batches.length === 1 ? "" : "s"}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+
+                            {receipt.items.length > 5 && (
+                              <p className="text-[8px] text-muted-foreground">
+                                +{receipt.items.length - 5} more product line
+                                {receipt.items.length - 5 === 1 ? "" : "s"}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid gap-2 border-t border-border/50 bg-background/20 p-3 sm:grid-cols-2">
+                          <ReceivingAccordionMetric
+                            label="Received by"
+                            value={receipt.received_by?.name ?? "Unknown user"}
+                            icon={UserRound}
+                          />
+
+                          <ReceivingAccordionMetric
+                            label="Recorded"
+                            value={formatDateTime(receipt.created_at)}
+                            icon={Clock3}
+                          />
+                        </div>
+
+                        {receipt.status === "voided" && (
+                          <div className="border-t border-red-500/15 bg-red-500/[0.035] p-3">
+                            <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-red-300">
+                              Reversal record
+                            </p>
+
+                            <p className="mt-1 text-[9px] leading-4 text-muted-foreground">
+                              {receipt.void_reason ?? "No void reason provided."}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
     </AppDrawer>
+  );
+}
+
+function ReceivingAccordionMetric({
+  label,
+  value,
+  icon: Icon,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-start gap-2.5 rounded-lg border border-border/50 bg-background/25 p-2.5">
+      <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.055] text-primary">
+        <Icon className="size-3.5" />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className="text-[8px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+          {label}
+        </p>
+
+        <p
+          className={cn(
+            "mt-1 break-words text-[10px] leading-4 text-foreground/85",
+            valueClassName,
+          )}
+        >
+          {value}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -3029,6 +3395,120 @@ function ReceiptSummaryRow({
         {value}
       </span>
     </div>
+  );
+}
+
+
+function ProcurementDateRangeFilter({
+  title,
+  description,
+  fromId,
+  toId,
+  fromValue,
+  toValue,
+  onFromChange,
+  onToChange,
+  className,
+}: {
+  title: string;
+  description: string;
+  fromId: string;
+  toId: string;
+  fromValue: string;
+  toValue: string;
+  onFromChange: (value: string) => void;
+  onToChange: (value: string) => void;
+  className?: string;
+}) {
+  const hasDateFilter = Boolean(fromValue || toValue);
+
+  function changeFromDate(value: string): void {
+    onFromChange(value);
+
+    if (value && toValue && toValue < value) {
+      onToChange(value);
+    }
+  }
+
+  function clearDateRange(): void {
+    onFromChange("");
+    onToChange("");
+  }
+
+  return (
+    <section
+      className={cn("min-w-0", className)}
+      aria-label={title}
+      title={description}
+    >
+      <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-border/70 bg-background/25 p-1.5 transition-colors focus-within:border-primary/25 focus-within:bg-primary/[0.018] sm:h-10 sm:flex-row sm:items-center sm:gap-0 sm:p-0">
+        <div className="flex h-8 shrink-0 items-center gap-2 rounded-md bg-primary/[0.055] px-2.5 text-primary sm:h-full sm:rounded-l-lg sm:rounded-r-none sm:border-r sm:border-border/60">
+          <CalendarDays className="size-3.5 shrink-0" />
+
+          <span className="whitespace-nowrap text-[9px] font-semibold text-foreground">
+            {title}
+          </span>
+        </div>
+
+        <label
+          htmlFor={fromId}
+          className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 transition-colors hover:bg-primary/[0.025] sm:rounded-none"
+        >
+          <span className="shrink-0 text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            From
+          </span>
+
+          <input
+            id={fromId}
+            type="date"
+            value={fromValue}
+            aria-label={`${title}: start date`}
+            onChange={(event) => changeFromDate(event.target.value)}
+            className="h-7 min-w-0 flex-1 bg-transparent px-1 text-[10px] text-foreground outline-none [color-scheme:dark]"
+          />
+        </label>
+
+        <span
+          aria-hidden="true"
+          className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline-flex"
+        >
+          →
+        </span>
+
+        <label
+          htmlFor={toId}
+          className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 transition-colors hover:bg-primary/[0.025] sm:rounded-none"
+        >
+          <span className="shrink-0 text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            To
+          </span>
+
+          <input
+            id={toId}
+            type="date"
+            value={toValue}
+            min={fromValue || undefined}
+            aria-label={`${title}: end date`}
+            onChange={(event) => onToChange(event.target.value)}
+            className="h-7 min-w-0 flex-1 bg-transparent px-1 text-[10px] text-foreground outline-none [color-scheme:dark]"
+          />
+        </label>
+
+        {hasDateFilter && (
+          <button
+            type="button"
+            onClick={clearDateRange}
+            aria-label={`Clear ${title.toLowerCase()}`}
+            title={`Clear ${title.toLowerCase()}`}
+            className="flex h-8 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background/35 px-2.5 text-sm leading-none text-muted-foreground transition hover:border-primary/20 hover:bg-primary/[0.055] hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:mr-1 sm:size-8 sm:px-0"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        )}
+      </div>
+
+      <p className="sr-only">{description}</p>
+    </section>
   );
 }
 

@@ -3,7 +3,6 @@ import { AppPagination } from "@/components/shared/app-pagination";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { FilterBar } from "@/components/shared/filter-bar";
-import { IconInput } from "@/components/shared/icon-input";
 import { PageContainer } from "@/components/shared/page-container";
 import { SearchInput } from "@/components/shared/search-input";
 import { SectionCard } from "@/components/shared/section-card";
@@ -31,7 +30,6 @@ import {
   ClipboardCheck,
   Clock3,
   FileText,
-  RotateCcw,
   ShieldCheck,
   Truck,
   Undo2,
@@ -40,7 +38,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  type FormEvent,
   type ReactNode,
   useEffect,
   useMemo,
@@ -270,9 +267,50 @@ export default function PurchaseApprovalIndex({
     filters.date_to,
   ]);
 
-  const hasActiveFilters = Boolean(
-    search.trim() || supplierId || warehouseId || dateFrom || dateTo,
-  );
+  useEffect(() => {
+    const normalizedSearch = search.trim();
+
+    if (
+      normalizedSearch === (filters.search ?? "").trim() &&
+      supplierId === (filters.supplier_id ?? "") &&
+      warehouseId === (filters.warehouse_id ?? "") &&
+      dateFrom === (filters.date_from ?? "") &&
+      dateTo === (filters.date_to ?? "")
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      router.get(
+        "/suppliers/purchase-approvals",
+        {
+          search: normalizedSearch || undefined,
+          supplier_id: supplierId || undefined,
+          warehouse_id: warehouseId || undefined,
+          date_from: dateFrom || undefined,
+          date_to: dateTo || undefined,
+        },
+        {
+          preserveState: true,
+          preserveScroll: true,
+          replace: true,
+        },
+      );
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    search,
+    supplierId,
+    warehouseId,
+    dateFrom,
+    dateTo,
+    filters.search,
+    filters.supplier_id,
+    filters.warehouse_id,
+    filters.date_from,
+    filters.date_to,
+  ]);
 
   const oldestWaitingDays = useMemo(
     () => daysSince(summary.oldest_submitted_at),
@@ -299,44 +337,6 @@ export default function PurchaseApprovalIndex({
         : "border-amber-500/20 bg-amber-500/10 text-amber-300";
 
   const actionDialog = getApprovalActionDialog(actionTarget);
-
-  function applyFilters(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-
-    router.get(
-      "/suppliers/purchase-approvals",
-      {
-        search: search.trim() || undefined,
-        supplier_id: supplierId || undefined,
-        warehouse_id: warehouseId || undefined,
-        date_from: dateFrom || undefined,
-        date_to: dateTo || undefined,
-      },
-      {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-      },
-    );
-  }
-
-  function resetFilters(): void {
-    setSearch("");
-    setSupplierId("");
-    setWarehouseId("");
-    setDateFrom("");
-    setDateTo("");
-
-    router.get(
-      "/suppliers/purchase-approvals",
-      {},
-      {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-      },
-    );
-  }
 
   function openApprovalDetails(order: PurchaseOrder): void {
     setSelectedPurchaseOrder(order);
@@ -597,30 +597,8 @@ export default function PurchaseApprovalIndex({
           }
         >
           <FilterBar
-            onSubmit={applyFilters}
-            contentClassName="grid w-full min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(240px,1fr)_190px_210px_155px_155px]"
-            actions={
-              <>
-                <Button
-                  type="submit"
-                  variant="secondary"
-                  className="h-10 px-4 text-sm"
-                >
-                  Apply Filters
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={resetFilters}
-                  disabled={!hasActiveFilters}
-                  className="h-10 px-3 text-sm"
-                >
-                  <RotateCcw className="size-3.5" />
-                  Reset
-                </Button>
-              </>
-            }
+            onSubmit={(event) => event.preventDefault()}
+            contentClassName="grid w-full min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(270px,1.25fr)_205px_225px_minmax(360px,1.35fr)]"
           >
             <SearchInput
               value={search}
@@ -671,29 +649,16 @@ export default function PurchaseApprovalIndex({
               </SelectContent>
             </Select>
 
-            <IconInput
-              id="approval_date_from"
-              icon={CalendarDays}
-              type="date"
-              value={dateFrom}
-              title="Submitted date from"
-              aria-label="Submitted date from"
-              onChange={(event) => setDateFrom(event.target.value)}
-              className="h-10"
-              iconClassName="text-primary"
-            />
-
-            <IconInput
-              id="approval_date_to"
-              icon={CalendarDays}
-              type="date"
-              value={dateTo}
-              min={dateFrom || undefined}
-              title="Submitted date to"
-              aria-label="Submitted date to"
-              onChange={(event) => setDateTo(event.target.value)}
-              className="h-10"
-              iconClassName="text-primary"
+            <ProcurementDateRangeFilter
+              title="Submitted"
+              description="Show approval requests submitted within this period."
+              fromId="approval_date_from"
+              toId="approval_date_to"
+              fromValue={dateFrom}
+              toValue={dateTo}
+              onFromChange={setDateFrom}
+              onToChange={setDateTo}
+              className="md:col-span-2 xl:col-span-3 2xl:col-span-1"
             />
           </FilterBar>
 
@@ -720,10 +685,6 @@ export default function PurchaseApprovalIndex({
         pagination={purchase_orders}
         summary={summary}
         onClose={closeApprovalDrawer}
-        onSelect={(order) => {
-          closeApprovalDrawer();
-          openApprovalDetails(order);
-        }}
       />
 
       <ApprovalDetailsDrawer
@@ -900,54 +861,68 @@ function ApprovalOverviewDrawer({
   pagination,
   summary,
   onClose,
-  onSelect,
 }: {
   view: ApprovalDrawerView | null;
   pagination: PaginatedPurchaseOrders;
   summary: ApprovalSummary;
   onClose: () => void;
-  onSelect: (order: PurchaseOrder) => void;
 }) {
+  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const activeView = view ?? "all";
   const today = new Date().toISOString().slice(0, 10);
+
+  useEffect(() => {
+    setExpandedOrderId(null);
+  }, [view]);
 
   const configs = {
     all: {
       title: "Approval Queue",
       value: formatNumber(summary.pending_orders),
-      description: "Submitted purchase orders awaiting owner review.",
+      description:
+        "Submitted purchase orders awaiting owner review. Select a request to expand its approval context.",
     },
     value: {
       title: "Pending Commitment",
       value: formatCurrency(summary.pending_value),
-      description: "Unapproved supplier value represented by the queue.",
+      description:
+        "Financial commitment represented by the current approval queue.",
     },
     today: {
       title: "Submitted Today",
       value: formatNumber(summary.submitted_today),
-      description: "New requests submitted during the current day.",
+      description:
+        "Purchase orders submitted today for owner review.",
     },
     oldest: {
-      title: "Oldest Approval Requests",
-      value: summary.oldest_submitted_at
-        ? formatDateTime(summary.oldest_submitted_at)
-        : "—",
-      description: "Queue records ordered by waiting priority.",
+      title: "Oldest Requests",
+      value: formatWaitingTime(daysSince(summary.oldest_submitted_at)),
+      description:
+        "Approval requests ordered from the longest waiting submission.",
     },
   }[activeView];
 
-  const visibleOrders = pagination.data
-    .filter((order) => {
-      if (activeView !== "today") return true;
-      return Boolean(order.submitted_at?.slice(0, 10) === today);
-    })
-    .sort((a, b) => {
-      if (activeView !== "oldest") return 0;
-      return (
-        new Date(a.submitted_at ?? 0).getTime() -
-        new Date(b.submitted_at ?? 0).getTime()
-      );
+  let visibleOrders = pagination.data.filter((order) => {
+    if (activeView !== "today") return true;
+
+    return Boolean(
+      order.submitted_at && order.submitted_at.slice(0, 10) === today,
+    );
+  });
+
+  if (activeView === "oldest") {
+    visibleOrders = [...visibleOrders].sort((left, right) => {
+      const leftTime = left.submitted_at
+        ? new Date(left.submitted_at).getTime()
+        : Number.MAX_SAFE_INTEGER;
+
+      const rightTime = right.submitted_at
+        ? new Date(right.submitted_at).getTime()
+        : Number.MAX_SAFE_INTEGER;
+
+      return leftTime - rightTime;
     });
+  }
 
   return (
     <AppDrawer
@@ -961,52 +936,262 @@ function ApprovalOverviewDrawer({
     >
       <div className="flex min-h-full flex-col bg-card">
         <div className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
-          <p className="text-2xl font-semibold leading-none tabular-nums text-primary">
-            {configs.value}
-          </p>
-          <p className="mt-1 text-[9px] text-muted-foreground">
-            Approval queue summary
-          </p>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-3xl font-semibold leading-none tabular-nums text-primary">
+                {configs.value}
+              </p>
+              <p className="mt-1 text-[9px] text-muted-foreground">
+                Matching approval records
+              </p>
+            </div>
+
+            <Badge
+              variant="outline"
+              className="h-7 rounded-full border-primary/15 bg-primary/[0.055] px-2.5 text-[9px] text-primary"
+            >
+              Accordion view
+            </Badge>
+          </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {visibleOrders.length === 0 ? (
             <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-background/20 p-6 text-center">
-              <ShieldCheck className="size-6 text-muted-foreground" />
+              <ClipboardCheck className="size-6 text-muted-foreground" />
               <p className="mt-3 text-sm font-semibold">No loaded matches</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {visibleOrders.map((order) => (
-                <button
-                  key={order.id}
-                  type="button"
-                  onClick={() => onSelect(order)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-background/25 p-3 text-left transition hover:border-primary/20 hover:bg-primary/[0.035]"
-                >
-                  <EntityAvatar
-                    icon={ClipboardCheck}
-                    className="border-primary/15 bg-primary/[0.07] text-primary"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-mono text-[10px] font-semibold text-primary">
-                      {order.po_number}
-                    </p>
-                    <p className="mt-1 truncate text-[9px] text-muted-foreground">
-                      {order.supplier.name} · {formatCurrency(order.total_amount)}
-                    </p>
-                    <p className="mt-1 text-[8px] text-amber-400">
-                      Waiting {formatWaitingTime(daysSince(order.submitted_at))}
-                    </p>
-                  </div>
-                  <ChevronRight className="size-4 text-muted-foreground" />
-                </button>
-              ))}
+              {visibleOrders.map((order) => {
+                const expanded = expandedOrderId === order.id;
+                const waitingDays = daysSince(order.submitted_at);
+
+                return (
+                  <article
+                    key={order.id}
+                    className={cn(
+                      "overflow-hidden rounded-xl border bg-background/25 transition-colors",
+                      expanded
+                        ? "border-primary/25 bg-primary/[0.025]"
+                        : "border-border/60",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      aria-controls={`approval-overview-${order.id}`}
+                      onClick={() =>
+                        setExpandedOrderId((currentId) =>
+                          currentId === order.id ? null : order.id,
+                        )
+                      }
+                      className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                    >
+                      <EntityAvatar
+                        icon={ClipboardCheck}
+                        className="border-primary/15 bg-primary/[0.07] text-primary"
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="font-mono text-[10px] font-semibold text-primary">
+                            {order.po_number}
+                          </p>
+
+                          <Badge
+                            variant="outline"
+                            className="h-5 rounded-full border-amber-500/20 bg-amber-500/10 px-2 text-[8px] font-semibold text-amber-300"
+                          >
+                            Awaiting approval
+                          </Badge>
+                        </div>
+
+                        <p className="mt-1 truncate text-[9px] text-muted-foreground">
+                          {order.supplier.name} · {formatCurrency(order.total_amount)}
+                        </p>
+                      </div>
+
+                      <ChevronRight
+                        className={cn(
+                          "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                          expanded && "rotate-90 text-primary",
+                        )}
+                      />
+                    </button>
+
+                    {expanded && (
+                      <div
+                        id={`approval-overview-${order.id}`}
+                        className="border-t border-border/60 bg-card/20"
+                      >
+                        <div className="grid gap-2 p-3 sm:grid-cols-2">
+                          <ApprovalAccordionMetric
+                            label="Supplier"
+                            value={order.supplier.name}
+                            icon={Truck}
+                          />
+
+                          <ApprovalAccordionMetric
+                            label="Warehouse"
+                            value={order.warehouse.name}
+                            icon={Warehouse}
+                          />
+
+                          <ApprovalAccordionMetric
+                            label="Submitted"
+                            value={formatDateTime(order.submitted_at)}
+                            icon={CalendarDays}
+                          />
+
+                          <ApprovalAccordionMetric
+                            label="Waiting time"
+                            value={formatWaitingTime(waitingDays)}
+                            icon={Clock3}
+                            valueClassName={
+                              waitingDays >= 3 ? "font-semibold text-red-300" : undefined
+                            }
+                          />
+
+                          <ApprovalAccordionMetric
+                            label="Order date"
+                            value={formatDate(order.order_date)}
+                            icon={CalendarDays}
+                          />
+
+                          <ApprovalAccordionMetric
+                            label="Expected delivery"
+                            value={formatDate(order.expected_delivery_date)}
+                            icon={CalendarDays}
+                          />
+
+                          <ApprovalAccordionMetric
+                            label="Ordered quantity"
+                            value={formatQuantity(order.ordered_quantity)}
+                            icon={Boxes}
+                          />
+
+                          <ApprovalAccordionMetric
+                            label="Order total"
+                            value={formatCurrency(order.total_amount)}
+                            icon={CircleDollarSign}
+                            valueClassName="font-semibold tabular-nums text-primary"
+                          />
+                        </div>
+
+                        <div className="border-t border-border/50 p-3">
+                          <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                            Requested products
+                          </p>
+
+                          <div className="mt-2 space-y-2">
+                            {order.items.slice(0, 5).map((item) => (
+                              <div
+                                key={item.id}
+                                className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-background/20 px-2.5 py-2"
+                              >
+                                <div className="min-w-0">
+                                  <p className="break-words text-[9px] font-semibold text-foreground/90">
+                                    {item.product_name}
+                                  </p>
+
+                                  <p className="mt-0.5 font-mono text-[8px] text-muted-foreground">
+                                    {item.product_sku ?? "NO SKU"}
+                                  </p>
+                                </div>
+
+                                <div className="shrink-0 text-right">
+                                  <p className="text-[9px] font-semibold tabular-nums text-primary">
+                                    {formatQuantity(item.quantity)} {item.unit}
+                                  </p>
+
+                                  <p className="mt-0.5 text-[8px] text-muted-foreground">
+                                    {formatCurrency(item.line_total)}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+
+                            {order.items.length > 5 && (
+                              <p className="text-[8px] text-muted-foreground">
+                                +{order.items.length - 5} more product line
+                                {order.items.length - 5 === 1 ? "" : "s"}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="grid gap-2 border-t border-border/50 bg-background/20 p-3 sm:grid-cols-2">
+                          <ApprovalAccordionMetric
+                            label="Submitted by"
+                            value={
+                              order.submitted_by
+                                ? order.submitted_by.name
+                                : "Submitter not recorded"
+                            }
+                            icon={UserRound}
+                          />
+
+                          <ApprovalAccordionMetric
+                            label="Payment terms"
+                            value={order.payment_terms ?? "Not configured"}
+                            icon={FileText}
+                          />
+                        </div>
+
+                        <div className="border-t border-amber-500/15 bg-amber-500/[0.035] p-3">
+                          <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-amber-300">
+                            Approval workflow
+                          </p>
+                          <p className="mt-1 text-[9px] leading-4 text-muted-foreground">
+                            Use the main Approval Queue table to open the complete review and perform Approve or Return to Draft actions.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
     </AppDrawer>
+  );
+}
+
+function ApprovalAccordionMetric({
+  label,
+  value,
+  icon: Icon,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-start gap-2.5 rounded-lg border border-border/50 bg-background/25 p-2.5">
+      <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.055] text-primary">
+        <Icon className="size-3.5" />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className="text-[8px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+          {label}
+        </p>
+
+        <p
+          className={cn(
+            "mt-1 break-words text-[10px] leading-4 text-foreground/85",
+            valueClassName,
+          )}
+        >
+          {value}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -1617,6 +1802,120 @@ function getApprovalActionDialog(target: ApprovalActionTarget | null): {
     confirmText: "Return to Draft",
     destructive: true,
   };
+}
+
+
+function ProcurementDateRangeFilter({
+  title,
+  description,
+  fromId,
+  toId,
+  fromValue,
+  toValue,
+  onFromChange,
+  onToChange,
+  className,
+}: {
+  title: string;
+  description: string;
+  fromId: string;
+  toId: string;
+  fromValue: string;
+  toValue: string;
+  onFromChange: (value: string) => void;
+  onToChange: (value: string) => void;
+  className?: string;
+}) {
+  const hasDateFilter = Boolean(fromValue || toValue);
+
+  function changeFromDate(value: string): void {
+    onFromChange(value);
+
+    if (value && toValue && toValue < value) {
+      onToChange(value);
+    }
+  }
+
+  function clearDateRange(): void {
+    onFromChange("");
+    onToChange("");
+  }
+
+  return (
+    <section
+      className={cn("min-w-0", className)}
+      aria-label={title}
+      title={description}
+    >
+      <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-border/70 bg-background/25 p-1.5 transition-colors focus-within:border-primary/25 focus-within:bg-primary/[0.018] sm:h-10 sm:flex-row sm:items-center sm:gap-0 sm:p-0">
+        <div className="flex h-8 shrink-0 items-center gap-2 rounded-md bg-primary/[0.055] px-2.5 text-primary sm:h-full sm:rounded-l-lg sm:rounded-r-none sm:border-r sm:border-border/60">
+          <CalendarDays className="size-3.5 shrink-0" />
+
+          <span className="whitespace-nowrap text-[9px] font-semibold text-foreground">
+            {title}
+          </span>
+        </div>
+
+        <label
+          htmlFor={fromId}
+          className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 transition-colors hover:bg-primary/[0.025] sm:rounded-none"
+        >
+          <span className="shrink-0 text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            From
+          </span>
+
+          <input
+            id={fromId}
+            type="date"
+            value={fromValue}
+            aria-label={`${title}: start date`}
+            onChange={(event) => changeFromDate(event.target.value)}
+            className="h-7 min-w-0 flex-1 bg-transparent px-1 text-[10px] text-foreground outline-none [color-scheme:dark]"
+          />
+        </label>
+
+        <span
+          aria-hidden="true"
+          className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline-flex"
+        >
+          →
+        </span>
+
+        <label
+          htmlFor={toId}
+          className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 transition-colors hover:bg-primary/[0.025] sm:rounded-none"
+        >
+          <span className="shrink-0 text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            To
+          </span>
+
+          <input
+            id={toId}
+            type="date"
+            value={toValue}
+            min={fromValue || undefined}
+            aria-label={`${title}: end date`}
+            onChange={(event) => onToChange(event.target.value)}
+            className="h-7 min-w-0 flex-1 bg-transparent px-1 text-[10px] text-foreground outline-none [color-scheme:dark]"
+          />
+        </label>
+
+        {hasDateFilter && (
+          <button
+            type="button"
+            onClick={clearDateRange}
+            aria-label={`Clear ${title.toLowerCase()}`}
+            title={`Clear ${title.toLowerCase()}`}
+            className="flex h-8 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background/35 px-2.5 text-sm leading-none text-muted-foreground transition hover:border-primary/20 hover:bg-primary/[0.055] hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:mr-1 sm:size-8 sm:px-0"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        )}
+      </div>
+
+      <p className="sr-only">{description}</p>
+    </section>
+  );
 }
 
 /*

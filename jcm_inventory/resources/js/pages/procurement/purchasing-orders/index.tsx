@@ -7,7 +7,6 @@ import { FormDialog } from "@/components/shared/form-dialog";
 import { FormField } from "@/components/shared/form-field";
 import { FormSection } from "@/components/shared/form-section";
 import { IconButton } from "@/components/shared/icon-button";
-import { IconInput } from "@/components/shared/icon-input";
 import { PageContainer } from "@/components/shared/page-container";
 import { SearchInput } from "@/components/shared/search-input";
 import { SectionCard } from "@/components/shared/section-card";
@@ -43,7 +42,6 @@ import {
   PackageOpen,
   Pencil,
   Plus,
-  RotateCcw,
   Send,
   ShieldCheck,
   ShoppingCart,
@@ -393,6 +391,55 @@ export default function PurchaseOrderIndex({
     filters.date_to,
   ]);
 
+  useEffect(() => {
+    const normalizedSearch = search.trim();
+
+    if (
+      normalizedSearch === (filters.search ?? "").trim() &&
+      status === (filters.status ?? "") &&
+      supplierId === (filters.supplier_id ?? "") &&
+      warehouseId === (filters.warehouse_id ?? "") &&
+      dateFrom === (filters.date_from ?? "") &&
+      dateTo === (filters.date_to ?? "")
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      router.get(
+        "/suppliers/purchase-orders",
+        {
+          search: normalizedSearch || undefined,
+          status: status || undefined,
+          supplier_id: supplierId || undefined,
+          warehouse_id: warehouseId || undefined,
+          date_from: dateFrom || undefined,
+          date_to: dateTo || undefined,
+        },
+        {
+          preserveState: true,
+          preserveScroll: true,
+          replace: true,
+        },
+      );
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    search,
+    status,
+    supplierId,
+    warehouseId,
+    dateFrom,
+    dateTo,
+    filters.search,
+    filters.status,
+    filters.supplier_id,
+    filters.warehouse_id,
+    filters.date_from,
+    filters.date_to,
+  ]);
+
   /*
     |--------------------------------------------------------------------------
     | Derived form values
@@ -616,46 +663,6 @@ export default function PurchaseOrderIndex({
     |--------------------------------------------------------------------------
     */
 
-  function applyFilters(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-
-    router.get(
-      "/suppliers/purchase-orders",
-      {
-        search: search.trim() || undefined,
-        status: status || undefined,
-        supplier_id: supplierId || undefined,
-        warehouse_id: warehouseId || undefined,
-        date_from: dateFrom || undefined,
-        date_to: dateTo || undefined,
-      },
-      {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-      },
-    );
-  }
-
-  function resetFilters(): void {
-    setSearch("");
-    setStatus("");
-    setSupplierId("");
-    setWarehouseId("");
-    setDateFrom("");
-    setDateTo("");
-
-    router.get(
-      "/suppliers/purchase-orders",
-      {},
-      {
-        preserveState: true,
-        preserveScroll: true,
-        replace: true,
-      },
-    );
-  }
-
   function openPurchaseOrderDetails(order: PurchaseOrder): void {
     setSelectedPurchaseOrder(order);
   }
@@ -744,10 +751,6 @@ export default function PurchaseOrderIndex({
     summary.total > 0
       ? Math.round((summary.cancelled / summary.total) * 100)
       : 0;
-
-  const hasActiveFilters = Boolean(
-    search.trim() || status || supplierId || warehouseId || dateFrom || dateTo,
-  );
 
   const pipelineStatusLabel =
     summary.total === 0
@@ -979,30 +982,8 @@ export default function PurchaseOrderIndex({
           }
         >
           <FilterBar
-            onSubmit={applyFilters}
-            contentClassName="grid w-full min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(240px,1fr)_155px_190px_190px_155px_155px]"
-            actions={
-              <>
-                <Button
-                  type="submit"
-                  variant="secondary"
-                  className="h-10 px-4 text-sm"
-                >
-                  Apply Filters
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={resetFilters}
-                  disabled={!hasActiveFilters}
-                  className="h-10 px-3 text-sm"
-                >
-                  <RotateCcw className="size-3.5" />
-                  Reset
-                </Button>
-              </>
-            }
+            onSubmit={(event) => event.preventDefault()}
+            contentClassName="grid w-full min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(260px,1.25fr)_160px_195px_210px_minmax(360px,1.35fr)]"
           >
             <SearchInput
               value={search}
@@ -1074,29 +1055,16 @@ export default function PurchaseOrderIndex({
               </SelectContent>
             </Select>
 
-            <IconInput
-              id="filter_date_from"
-              icon={CalendarDays}
-              type="date"
-              value={dateFrom}
-              title="Order date from"
-              aria-label="Order date from"
-              onChange={(event) => setDateFrom(event.target.value)}
-              className="h-10"
-              iconClassName="text-primary"
-            />
-
-            <IconInput
-              id="filter_date_to"
-              icon={CalendarDays}
-              type="date"
-              value={dateTo}
-              min={dateFrom || undefined}
-              title="Order date to"
-              aria-label="Order date to"
-              onChange={(event) => setDateTo(event.target.value)}
-              className="h-10"
-              iconClassName="text-primary"
+            <ProcurementDateRangeFilter
+              title="Order date"
+              description="Show purchase orders dated within this period."
+              fromId="filter_date_from"
+              toId="filter_date_to"
+              fromValue={dateFrom}
+              toValue={dateTo}
+              onFromChange={setDateFrom}
+              onToChange={setDateTo}
+              className="md:col-span-2 xl:col-span-2 2xl:col-span-1"
             />
           </FilterBar>
 
@@ -1118,10 +1086,6 @@ export default function PurchaseOrderIndex({
         pagination={purchase_orders}
         summary={summary}
         onClose={closePipelineDrawer}
-        onSelect={(order) => {
-          closePipelineDrawer();
-          openPurchaseOrderDetails(order);
-        }}
       />
 
       <PurchaseOrderDetailsDrawer
@@ -1824,50 +1788,62 @@ function PurchaseOrderOverviewDrawer({
   pagination,
   summary,
   onClose,
-  onSelect,
 }: {
   view: PurchaseOrderDrawerView | null;
   pagination: PaginatedPurchaseOrders;
   summary: PurchaseOrderSummary;
   onClose: () => void;
-  onSelect: (order: PurchaseOrder) => void;
 }) {
+  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const activeView = view ?? "all";
+
+  useEffect(() => {
+    setExpandedOrderId(null);
+  }, [view]);
+
   const configs = {
     all: {
       title: "Purchase Order Pipeline",
       total: summary.total,
-      description: "All purchase orders loaded on the current page.",
+      description:
+        "Purchase orders loaded on the current page. Select an order to expand its workflow details.",
     },
     draft: {
       title: "Draft Purchase Orders",
       total: summary.draft,
-      description: "Editable orders that have not been submitted.",
+      description:
+        "Editable orders that have not been submitted. Select an order to inspect its products and totals.",
     },
     pending: {
       title: "Awaiting Approval",
       total: summary.pending,
-      description: "Submitted orders waiting for owner approval.",
+      description:
+        "Submitted orders waiting for owner approval. Select an order to inspect its commitment.",
     },
     receiving: {
       title: "Orders in Receiving",
       total: summary.approved + summary.partially_received,
-      description: "Approved and partially received supplier orders.",
+      description:
+        "Approved and partially received supplier orders. Select an order to inspect fulfillment.",
     },
     received: {
       title: "Received Orders",
       total: summary.received,
-      description: "Completed purchase orders with full receiving.",
+      description:
+        "Completed purchase orders with full receiving. Select an order to inspect the final record.",
     },
   }[activeView];
 
   const visibleOrders = pagination.data.filter((order) => {
     if (activeView === "draft") return order.status === "draft";
     if (activeView === "pending") return order.status === "pending";
+
     if (activeView === "receiving") {
       return ["approved", "partially_received"].includes(order.status);
     }
+
     if (activeView === "received") return order.status === "received";
+
     return true;
   });
 
@@ -1883,12 +1859,23 @@ function PurchaseOrderOverviewDrawer({
     >
       <div className="flex min-h-full flex-col bg-card">
         <div className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
-          <p className="text-3xl font-semibold leading-none tabular-nums text-primary">
-            {formatNumber(configs.total)}
-          </p>
-          <p className="mt-1 text-[9px] text-muted-foreground">
-            Matching workflow records
-          </p>
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-3xl font-semibold leading-none tabular-nums text-primary">
+                {formatNumber(configs.total)}
+              </p>
+              <p className="mt-1 text-[9px] text-muted-foreground">
+                Matching workflow records
+              </p>
+            </div>
+
+            <Badge
+              variant="outline"
+              className="h-7 rounded-full border-primary/15 bg-primary/[0.055] px-2.5 text-[9px] text-primary"
+            >
+              Accordion view
+            </Badge>
+          </div>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -1899,39 +1886,240 @@ function PurchaseOrderOverviewDrawer({
             </div>
           ) : (
             <div className="space-y-2">
-              {visibleOrders.map((order) => (
-                <button
-                  key={order.id}
-                  type="button"
-                  onClick={() => onSelect(order)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-background/25 p-3 text-left transition hover:border-primary/20 hover:bg-primary/[0.035]"
-                >
-                  <EntityAvatar
-                    icon={ClipboardCheck}
-                    className="border-primary/15 bg-primary/[0.07] text-primary"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <p className="font-mono text-[10px] font-semibold text-primary">
-                        {order.po_number}
-                      </p>
-                      <PurchaseOrderStatus
-                        status={order.status}
-                        label={order.status_label}
+              {visibleOrders.map((order) => {
+                const expanded = expandedOrderId === order.id;
+                const progress = getFulfillmentProgress(order);
+                const items = order.items ?? [];
+
+                return (
+                  <article
+                    key={order.id}
+                    className={cn(
+                      "overflow-hidden rounded-xl border bg-background/25 transition-colors",
+                      expanded
+                        ? "border-primary/25 bg-primary/[0.025]"
+                        : "border-border/60",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      aria-controls={`purchase-order-overview-${order.id}`}
+                      onClick={() =>
+                        setExpandedOrderId((currentId) =>
+                          currentId === order.id ? null : order.id,
+                        )
+                      }
+                      className="flex w-full items-center gap-3 p-3 text-left transition hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                    >
+                      <EntityAvatar
+                        icon={ClipboardCheck}
+                        className="border-primary/15 bg-primary/[0.07] text-primary"
                       />
-                    </div>
-                    <p className="mt-1 truncate text-[9px] text-muted-foreground">
-                      {order.supplier.name} · {formatCurrency(order.total_amount)}
-                    </p>
-                  </div>
-                  <ChevronRight className="size-4 text-muted-foreground" />
-                </button>
-              ))}
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="font-mono text-[10px] font-semibold text-primary">
+                            {order.po_number}
+                          </p>
+
+                          <PurchaseOrderStatus
+                            status={order.status}
+                            label={order.status_label}
+                          />
+                        </div>
+
+                        <p className="mt-1 truncate text-[9px] text-muted-foreground">
+                          {order.supplier.name} · {formatCurrency(order.total_amount)}
+                        </p>
+                      </div>
+
+                      <ChevronRight
+                        className={cn(
+                          "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                          expanded && "rotate-90 text-primary",
+                        )}
+                      />
+                    </button>
+
+                    {expanded && (
+                      <div
+                        id={`purchase-order-overview-${order.id}`}
+                        className="border-t border-border/60 bg-card/20"
+                      >
+                        <div className="grid gap-2 p-3 sm:grid-cols-2">
+                          <ProcurementAccordionMetric
+                            label="Supplier"
+                            value={order.supplier.name}
+                            icon={Truck}
+                          />
+
+                          <ProcurementAccordionMetric
+                            label="Warehouse"
+                            value={order.warehouse.name}
+                            icon={Warehouse}
+                          />
+
+                          <ProcurementAccordionMetric
+                            label="Order date"
+                            value={formatDate(order.order_date)}
+                            icon={CalendarDays}
+                          />
+
+                          <ProcurementAccordionMetric
+                            label="Expected delivery"
+                            value={formatDate(order.expected_delivery_date)}
+                            icon={CalendarDays}
+                          />
+
+                          <ProcurementAccordionMetric
+                            label="Ordered quantity"
+                            value={formatQuantity(order.ordered_quantity)}
+                            icon={Boxes}
+                          />
+
+                          <ProcurementAccordionMetric
+                            label="Received quantity"
+                            value={formatQuantity(order.received_quantity)}
+                            icon={PackageCheck}
+                          />
+
+                          <ProcurementAccordionMetric
+                            label="Order total"
+                            value={formatCurrency(order.total_amount)}
+                            icon={CircleDollarSign}
+                            valueClassName="font-semibold tabular-nums text-primary"
+                          />
+
+                          <ProcurementAccordionMetric
+                            label="Payment terms"
+                            value={order.payment_terms ?? "Not configured"}
+                            icon={Banknote}
+                          />
+                        </div>
+
+                        <div className="border-t border-border/50 p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                              Fulfillment progress
+                            </p>
+                            <span className="text-[10px] font-semibold tabular-nums text-primary">
+                              {progress}%
+                            </span>
+                          </div>
+
+                          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-background/70">
+                            <div
+                              className="h-full rounded-full bg-primary"
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="border-t border-border/50 p-3">
+                          <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                            Product lines
+                          </p>
+
+                          {items.length === 0 ? (
+                            <p className="mt-2 text-[9px] text-muted-foreground">
+                              Product details were not returned for this order.
+                            </p>
+                          ) : (
+                            <div className="mt-2 space-y-2">
+                              {items.slice(0, 5).map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-background/20 px-2.5 py-2"
+                                >
+                                  <div className="min-w-0">
+                                    <p className="break-words text-[9px] font-semibold text-foreground/90">
+                                      {item.product_name}
+                                    </p>
+                                    <p className="mt-0.5 font-mono text-[8px] text-muted-foreground">
+                                      {item.product_sku ?? "NO SKU"}
+                                    </p>
+                                  </div>
+
+                                  <div className="shrink-0 text-right">
+                                    <p className="text-[9px] font-semibold tabular-nums text-primary">
+                                      {formatQuantity(item.quantity)} {item.unit}
+                                    </p>
+                                    <p className="mt-0.5 text-[8px] text-muted-foreground">
+                                      {formatCurrency(item.line_total)}
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+
+                              {items.length > 5 && (
+                                <p className="text-[8px] text-muted-foreground">
+                                  +{items.length - 5} more product line
+                                  {items.length - 5 === 1 ? "" : "s"}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid gap-2 border-t border-border/50 bg-background/20 p-3 sm:grid-cols-2">
+                          <ProcurementAccordionMetric
+                            label="Created by"
+                            value={formatUserReference(order.created_by)}
+                            icon={UserRound}
+                          />
+
+                          <ProcurementAccordionMetric
+                            label="Last updated"
+                            value={formatDateTime(order.updated_at)}
+                            icon={Clock3}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
     </AppDrawer>
+  );
+}
+
+function ProcurementAccordionMetric({
+  label,
+  value,
+  icon: Icon,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-start gap-2.5 rounded-lg border border-border/50 bg-background/25 p-2.5">
+      <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.055] text-primary">
+        <Icon className="size-3.5" />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <p className="text-[8px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+          {label}
+        </p>
+
+        <p
+          className={cn(
+            "mt-1 break-words text-[10px] leading-4 text-foreground/85",
+            valueClassName,
+          )}
+        >
+          {value}
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -2819,6 +3007,120 @@ function getOrderActionDialog(target: OrderActionTarget | null): {
         destructive: false,
       };
   }
+}
+
+
+function ProcurementDateRangeFilter({
+  title,
+  description,
+  fromId,
+  toId,
+  fromValue,
+  toValue,
+  onFromChange,
+  onToChange,
+  className,
+}: {
+  title: string;
+  description: string;
+  fromId: string;
+  toId: string;
+  fromValue: string;
+  toValue: string;
+  onFromChange: (value: string) => void;
+  onToChange: (value: string) => void;
+  className?: string;
+}) {
+  const hasDateFilter = Boolean(fromValue || toValue);
+
+  function changeFromDate(value: string): void {
+    onFromChange(value);
+
+    if (value && toValue && toValue < value) {
+      onToChange(value);
+    }
+  }
+
+  function clearDateRange(): void {
+    onFromChange("");
+    onToChange("");
+  }
+
+  return (
+    <section
+      className={cn("min-w-0", className)}
+      aria-label={title}
+      title={description}
+    >
+      <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-border/70 bg-background/25 p-1.5 transition-colors focus-within:border-primary/25 focus-within:bg-primary/[0.018] sm:h-10 sm:flex-row sm:items-center sm:gap-0 sm:p-0">
+        <div className="flex h-8 shrink-0 items-center gap-2 rounded-md bg-primary/[0.055] px-2.5 text-primary sm:h-full sm:rounded-l-lg sm:rounded-r-none sm:border-r sm:border-border/60">
+          <CalendarDays className="size-3.5 shrink-0" />
+
+          <span className="whitespace-nowrap text-[9px] font-semibold text-foreground">
+            {title}
+          </span>
+        </div>
+
+        <label
+          htmlFor={fromId}
+          className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 transition-colors hover:bg-primary/[0.025] sm:rounded-none"
+        >
+          <span className="shrink-0 text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            From
+          </span>
+
+          <input
+            id={fromId}
+            type="date"
+            value={fromValue}
+            aria-label={`${title}: start date`}
+            onChange={(event) => changeFromDate(event.target.value)}
+            className="h-7 min-w-0 flex-1 bg-transparent px-1 text-[10px] text-foreground outline-none [color-scheme:dark]"
+          />
+        </label>
+
+        <span
+          aria-hidden="true"
+          className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline-flex"
+        >
+          →
+        </span>
+
+        <label
+          htmlFor={toId}
+          className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 transition-colors hover:bg-primary/[0.025] sm:rounded-none"
+        >
+          <span className="shrink-0 text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            To
+          </span>
+
+          <input
+            id={toId}
+            type="date"
+            value={toValue}
+            min={fromValue || undefined}
+            aria-label={`${title}: end date`}
+            onChange={(event) => onToChange(event.target.value)}
+            className="h-7 min-w-0 flex-1 bg-transparent px-1 text-[10px] text-foreground outline-none [color-scheme:dark]"
+          />
+        </label>
+
+        {hasDateFilter && (
+          <button
+            type="button"
+            onClick={clearDateRange}
+            aria-label={`Clear ${title.toLowerCase()}`}
+            title={`Clear ${title.toLowerCase()}`}
+            className="flex h-8 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background/35 px-2.5 text-sm leading-none text-muted-foreground transition hover:border-primary/20 hover:bg-primary/[0.055] hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:mr-1 sm:size-8 sm:px-0"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        )}
+      </div>
+
+      <p className="sr-only">{description}</p>
+    </section>
+  );
 }
 
 /*

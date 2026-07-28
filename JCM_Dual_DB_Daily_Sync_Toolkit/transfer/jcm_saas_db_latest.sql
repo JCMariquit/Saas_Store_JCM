@@ -24,6 +24,97 @@ CREATE DATABASE /*!32312 IF NOT EXISTS*/ `jcm_saas_db` /*!40100 DEFAULT CHARACTE
 USE `jcm_saas_db`;
 
 --
+-- Table structure for table `account_business_branding`
+--
+
+DROP TABLE IF EXISTS `account_business_branding`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `account_business_branding` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `account_owner_id` bigint(20) unsigned NOT NULL,
+  `tagline` varchar(180) DEFAULT NULL,
+  `logo_disk` varchar(50) NOT NULL DEFAULT 'public',
+  `logo_path` varchar(500) DEFAULT NULL,
+  `square_logo_path` varchar(500) DEFAULT NULL,
+  `favicon_path` varchar(500) DEFAULT NULL,
+  `logo_alt_text` varchar(180) DEFAULT NULL,
+  `primary_color` char(7) DEFAULT NULL,
+  `secondary_color` char(7) DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `account_business_branding_owner_unique` (`account_owner_id`),
+  KEY `account_business_branding_created_by_index` (`created_by`),
+  KEY `account_business_branding_updated_by_index` (`updated_by`),
+  CONSTRAINT `account_business_branding_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `account_business_branding_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `account_business_branding_updated_by_foreign` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `account_business_branding`
+--
+
+LOCK TABLES `account_business_branding` WRITE;
+/*!40000 ALTER TABLE `account_business_branding` DISABLE KEYS */;
+INSERT INTO `account_business_branding` VALUES (1,1,'Tagline Testing','public','business-profiles/1/VbXdl0jWe7ntViO1W2yDbhuMdnS5KYnic7mym34S.png','business-profiles/1/kf5zR1Vz8hbak10DA8GJzXFVLFs22bvAN21TEprz.png','business-profiles/1/kp53wvGKMkEwuYAz3f7TVg3WIAs4owWnKpPJy0Dj.png','Alt Logo test testing',NULL,NULL,1,1,'2026-07-28 05:34:17','2026-07-28 05:34:17');
+/*!40000 ALTER TABLE `account_business_branding` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `account_business_profiles`
+--
+
+DROP TABLE IF EXISTS `account_business_profiles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `account_business_profiles` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `account_owner_id` bigint(20) unsigned NOT NULL,
+  `business_name` varchar(180) NOT NULL,
+  `business_category` varchar(120) DEFAULT NULL,
+  `short_description` text DEFAULT NULL,
+  `contact_email` varchar(180) DEFAULT NULL,
+  `contact_phone` varchar(50) DEFAULT NULL,
+  `alternate_phone` varchar(50) DEFAULT NULL,
+  `website_url` varchar(255) DEFAULT NULL,
+  `facebook_url` varchar(255) DEFAULT NULL,
+  `address_line` varchar(255) DEFAULT NULL,
+  `barangay` varchar(120) DEFAULT NULL,
+  `city_municipality` varchar(120) DEFAULT NULL,
+  `province` varchar(120) DEFAULT NULL,
+  `postal_code` varchar(20) DEFAULT NULL,
+  `country_code` char(2) NOT NULL DEFAULT 'PH',
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `updated_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `account_business_profiles_owner_unique` (`account_owner_id`),
+  KEY `account_business_profiles_email_index` (`contact_email`),
+  KEY `account_business_profiles_created_by_index` (`created_by`),
+  KEY `account_business_profiles_updated_by_index` (`updated_by`),
+  CONSTRAINT `account_business_profiles_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `account_business_profiles_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `account_business_profiles_updated_by_foreign` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `account_business_profiles`
+--
+
+LOCK TABLES `account_business_profiles` WRITE;
+/*!40000 ALTER TABLE `account_business_profiles` DISABLE KEYS */;
+INSERT INTO `account_business_profiles` VALUES (1,1,'123','123',NULL,'mariquit.junecharles@marsu.edu.ph','01','01',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'PH',1,1,'2026-07-28 05:34:51','2026-07-28 05:34:51');
+/*!40000 ALTER TABLE `account_business_profiles` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `account_role_sidebar_items`
 --
 
@@ -52,7 +143,7 @@ CREATE TABLE `account_role_sidebar_items` (
   CONSTRAINT `account_role_sidebar_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `account_role_sidebar_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `account_role_sidebar_role_foreign` FOREIGN KEY (`product_user_type_id`) REFERENCES `product_user_types` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=66 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=71 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -61,7 +152,7 @@ CREATE TABLE `account_role_sidebar_items` (
 
 LOCK TABLES `account_role_sidebar_items` WRITE;
 /*!40000 ALTER TABLE `account_role_sidebar_items` DISABLE KEYS */;
-INSERT INTO `account_role_sidebar_items` VALUES (14,1,11,5,1,1,1,'2026-07-14 06:10:40','2026-07-14 06:10:40'),(15,1,11,5,3,1,1,'2026-07-14 06:10:40','2026-07-14 06:10:40'),(16,1,11,5,6,1,1,'2026-07-14 06:10:40','2026-07-14 06:10:40'),(17,1,11,5,17,1,1,'2026-07-14 06:10:40','2026-07-14 06:10:40'),(18,1,11,5,18,1,1,'2026-07-14 06:10:40','2026-07-14 06:10:40'),(43,1,11,1,1,1,1,'2026-07-16 05:49:25','2026-07-16 05:49:25'),(44,1,11,1,3,1,1,'2026-07-16 05:49:25','2026-07-16 05:49:25'),(45,1,11,1,4,1,1,'2026-07-16 05:49:25','2026-07-16 05:49:25'),(46,1,11,1,5,1,1,'2026-07-16 05:49:25','2026-07-16 05:49:25'),(47,1,11,1,6,1,1,'2026-07-16 05:49:25','2026-07-16 05:49:25'),(48,1,11,1,7,1,1,'2026-07-16 05:49:25','2026-07-16 05:49:25'),(49,1,11,1,16,1,1,'2026-07-16 05:49:25','2026-07-16 05:49:25'),(50,1,11,1,17,1,1,'2026-07-16 05:49:25','2026-07-16 05:49:25'),(51,1,11,1,18,1,1,'2026-07-16 05:49:25','2026-07-16 05:49:25'),(52,1,11,1,19,1,1,'2026-07-16 05:49:25','2026-07-16 05:49:25'),(53,1,11,1,20,1,1,'2026-07-16 05:49:25','2026-07-16 05:49:25'),(54,1,11,1,21,1,1,'2026-07-16 05:49:25','2026-07-16 05:49:25'),(55,1,11,1,34,1,1,'2026-07-21 03:09:47','2026-07-21 03:09:47'),(59,1,11,5,36,1,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(60,1,11,1,36,1,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(62,1,11,5,37,1,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(63,1,11,1,37,1,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(65,1,11,1,38,1,1,'2026-07-22 03:57:12','2026-07-22 03:57:12');
+INSERT INTO `account_role_sidebar_items` VALUES (66,1,11,3,39,1,1,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(67,1,11,3,40,1,1,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(68,1,11,3,41,1,1,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(69,1,11,1,1,1,1,'2026-07-28 07:15:53','2026-07-28 07:15:53'),(70,1,11,5,1,1,1,'2026-07-28 07:16:02','2026-07-28 07:16:02');
 /*!40000 ALTER TABLE `account_role_sidebar_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -87,7 +178,7 @@ CREATE TABLE `app_features` (
   UNIQUE KEY `app_features_product_code_unique` (`product_id`,`feature_code`),
   KEY `app_features_product_status_sort_index` (`product_id`,`status`,`sort_order`),
   CONSTRAINT `app_features_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -96,7 +187,7 @@ CREATE TABLE `app_features` (
 
 LOCK TABLES `app_features` WRITE;
 /*!40000 ALTER TABLE `app_features` DISABLE KEYS */;
-INSERT INTO `app_features` VALUES (1,11,'dashboard','Dashboard','Main Inventory dashboard.',1,10,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(2,11,'inventory_overview','Stock Overview','Inventory health, valuation, warehouse distribution, movement, and replenishment overview.',1,20,'active','2026-07-13 02:00:57','2026-07-16 08:44:47'),(3,11,'categories','Categories','Inventory category management.',1,30,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(4,11,'products','Products','Inventory product management.',1,40,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(5,11,'stock_management','Stock Management','Current stock management.',1,50,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(6,11,'stock_adjustment','Stock Adjustment','Increase, decrease or correct stock.',1,60,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(7,11,'stock_transfer','Stock Transfer','Transfer stock between warehouses.',1,90,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(8,11,'stock_movements','Stock Movements','View stock movement history.',1,100,'active','2026-07-13 02:00:57','2026-07-13 06:28:46'),(9,11,'branch_management','Branch Management','Manage business branches.',1,70,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(10,11,'warehouse_management','Warehouse Management','Manage warehouse locations.',1,80,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(11,11,'supplier_management','Supplier Management','Manage supplier records.',1,110,'active','2026-07-13 02:00:57','2026-07-14 01:41:09'),(12,11,'purchase_orders','Purchase Orders','Create and track purchase orders.',1,120,'active','2026-07-13 02:00:57','2026-07-14 01:41:09'),(13,11,'receiving','Receiving','Receive ordered inventory.',1,130,'active','2026-07-13 02:00:57','2026-07-14 01:41:09'),(14,11,'team_overview','Team Overview','View team account summaries, role distribution, and team activity.',1,140,'active','2026-07-13 02:00:57','2026-07-14 03:32:48'),(15,11,'staff_management','Team Members','Create and manage manager and staff accounts.',1,150,'active','2026-07-13 02:00:57','2026-07-14 02:43:32'),(16,11,'roles_access','Roles & Access','Manage module access for inventory team roles.',1,160,'active','2026-07-13 02:00:57','2026-07-14 02:43:32'),(33,11,'stock_issuance_terminal','Withdraw Stock','Withdraw available inventory for internal use, employee or department use, damaged, expired, lost, giveaway, and other authorized stock-out transactions.',1,55,'active','2026-07-21 06:04:47','2026-07-22 03:18:58'),(34,11,'stock_issuance_history','Withdrawal History','View posted, voided, and reversed inventory withdrawal transactions with item and audit details.',1,56,'active','2026-07-21 06:04:47','2026-07-22 03:18:58');
+INSERT INTO `app_features` VALUES (1,11,'dashboard','Dashboard','Main Inventory dashboard.',1,10,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(2,11,'inventory_overview','Stock Overview','Inventory health, valuation, warehouse distribution, movement, and replenishment overview.',1,20,'active','2026-07-13 02:00:57','2026-07-16 08:44:47'),(3,11,'categories','Categories','Inventory category management.',1,30,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(4,11,'products','Products','Inventory product management.',1,40,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(5,11,'stock_management','Stock Management','Current stock management.',1,50,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(6,11,'stock_adjustment','Stock Adjustment','Increase, decrease or correct stock.',1,60,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(7,11,'stock_transfer','Stock Transfer','Transfer stock between warehouses.',1,90,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(8,11,'stock_movements','Stock Movements','View stock movement history.',1,100,'active','2026-07-13 02:00:57','2026-07-13 06:28:46'),(9,11,'branch_management','Branch Management','Manage business branches.',1,70,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(10,11,'warehouse_management','Warehouse Management','Manage warehouse locations.',1,80,'active','2026-07-13 02:00:57','2026-07-13 02:11:28'),(11,11,'supplier_management','Supplier Management','Manage supplier records.',1,110,'active','2026-07-13 02:00:57','2026-07-14 01:41:09'),(12,11,'purchase_orders','Purchase Orders','Create and track purchase orders.',1,120,'active','2026-07-13 02:00:57','2026-07-14 01:41:09'),(13,11,'receiving','Receiving','Receive ordered inventory.',1,130,'active','2026-07-13 02:00:57','2026-07-14 01:41:09'),(14,11,'team_overview','Team Overview','View team account summaries, role distribution, and team activity.',1,140,'active','2026-07-13 02:00:57','2026-07-14 03:32:48'),(15,11,'staff_management','Team Members','Create and manage manager and staff accounts.',1,150,'active','2026-07-13 02:00:57','2026-07-14 02:43:32'),(16,11,'roles_access','Roles & Access','Manage module access for inventory team roles.',1,160,'active','2026-07-13 02:00:57','2026-07-14 02:43:32'),(33,11,'stock_issuance_terminal','Withdraw Stock','Withdraw available inventory for internal use, employee or department use, damaged, expired, lost, giveaway, and other authorized stock-out transactions.',1,55,'active','2026-07-21 06:04:47','2026-07-22 03:18:58'),(34,11,'stock_issuance_history','Withdrawal History','View posted, voided, and reversed inventory withdrawal transactions with item and audit details.',1,56,'active','2026-07-21 06:04:47','2026-07-22 03:18:58'),(35,11,'business_profile_general','Business Profile - General Information','Manage the shared business name, description, contact information, and primary address.',1,170,'active','2026-07-28 03:26:29','2026-07-28 03:26:29'),(36,11,'business_profile_branding','Business Profile - Branding','Manage the shared business logo, icon, tagline, and brand colors.',1,180,'active','2026-07-28 03:26:29','2026-07-28 03:26:29');
 /*!40000 ALTER TABLE `app_features` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -506,7 +597,7 @@ CREATE TABLE `plan_features` (
   KEY `plan_features_feature_index` (`feature_id`),
   CONSTRAINT `plan_features_feature_foreign` FOREIGN KEY (`feature_id`) REFERENCES `app_features` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `plan_features_plan_foreign` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -515,7 +606,7 @@ CREATE TABLE `plan_features` (
 
 LOCK TABLES `plan_features` WRITE;
 /*!40000 ALTER TABLE `plan_features` DISABLE KEYS */;
-INSERT INTO `plan_features` VALUES (1,12,3,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(2,12,1,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(3,12,2,1,NULL,'2026-07-13 02:00:58','2026-07-16 08:44:47'),(4,12,4,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(5,12,6,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(6,12,5,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(7,12,8,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(8,13,1,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(9,13,2,1,NULL,'2026-07-13 02:00:58','2026-07-16 08:44:47'),(10,13,3,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(11,13,4,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(12,13,5,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(13,13,6,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(14,13,7,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(15,13,8,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(16,13,9,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(17,13,10,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(18,13,11,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(19,13,12,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(20,13,13,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(21,13,14,1,NULL,'2026-07-13 02:00:58','2026-07-14 03:32:48'),(22,13,15,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(23,13,16,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(39,12,12,1,NULL,'2026-07-13 02:11:28','2026-07-13 02:11:28'),(40,12,13,1,NULL,'2026-07-13 02:11:28','2026-07-13 02:11:28'),(41,12,11,1,NULL,'2026-07-13 02:11:28','2026-07-13 02:11:28'),(43,12,33,1,NULL,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(44,13,33,1,NULL,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(46,12,34,1,NULL,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(47,13,34,1,NULL,'2026-07-21 06:04:47','2026-07-21 06:04:47');
+INSERT INTO `plan_features` VALUES (1,12,3,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(2,12,1,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(3,12,2,1,NULL,'2026-07-13 02:00:58','2026-07-16 08:44:47'),(4,12,4,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(5,12,6,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(6,12,5,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(7,12,8,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(8,13,1,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(9,13,2,1,NULL,'2026-07-13 02:00:58','2026-07-16 08:44:47'),(10,13,3,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(11,13,4,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(12,13,5,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(13,13,6,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(14,13,7,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(15,13,8,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(16,13,9,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(17,13,10,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(18,13,11,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(19,13,12,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(20,13,13,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(21,13,14,1,NULL,'2026-07-13 02:00:58','2026-07-14 03:32:48'),(22,13,15,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(23,13,16,1,NULL,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(39,12,12,1,NULL,'2026-07-13 02:11:28','2026-07-13 02:11:28'),(40,12,13,1,NULL,'2026-07-13 02:11:28','2026-07-13 02:11:28'),(41,12,11,1,NULL,'2026-07-13 02:11:28','2026-07-13 02:11:28'),(43,12,33,1,NULL,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(44,13,33,1,NULL,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(46,12,34,1,NULL,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(47,13,34,1,NULL,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(48,12,35,1,NULL,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(49,13,35,1,NULL,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(50,12,36,1,NULL,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(51,13,36,1,NULL,'2026-07-28 03:26:29','2026-07-28 03:26:29');
 /*!40000 ALTER TABLE `plan_features` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -678,7 +769,7 @@ CREATE TABLE `product_user_type_sidebar_items` (
   KEY `product_user_type_sidebar_item_index` (`sidebar_item_id`),
   CONSTRAINT `product_user_type_sidebar_item_foreign` FOREIGN KEY (`sidebar_item_id`) REFERENCES `sidebar_items` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `product_user_type_sidebar_role_foreign` FOREIGN KEY (`product_user_type_id`) REFERENCES `product_user_types` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=74 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=77 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -687,7 +778,7 @@ CREATE TABLE `product_user_type_sidebar_items` (
 
 LOCK TABLES `product_user_type_sidebar_items` WRITE;
 /*!40000 ALTER TABLE `product_user_type_sidebar_items` DISABLE KEYS */;
-INSERT INTO `product_user_type_sidebar_items` VALUES (2,3,16,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(3,3,1,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(4,3,3,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(5,3,2,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(6,3,17,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(7,3,20,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(8,3,21,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(9,3,23,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(10,3,22,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(11,3,18,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(12,3,6,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(13,3,19,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(14,3,7,1,'2026-07-13 02:00:58','2026-07-20 04:29:27'),(15,3,9,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(16,3,8,1,'2026-07-13 02:00:58','2026-07-14 03:32:48'),(17,3,5,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(32,1,4,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(33,1,16,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(34,1,1,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(35,1,3,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(36,1,2,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(37,1,17,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(38,1,20,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(39,1,21,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(40,1,18,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(41,1,6,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(42,1,19,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(43,1,7,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(44,1,5,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(47,5,1,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(48,5,3,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(49,5,17,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(50,5,18,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(51,5,6,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(57,3,4,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(59,3,33,1,'2026-07-20 04:29:27','2026-07-20 04:29:27'),(60,3,34,1,'2026-07-21 03:09:47','2026-07-21 03:09:47'),(61,1,34,1,'2026-07-21 03:09:47','2026-07-21 03:09:47'),(66,3,36,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(67,1,36,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(68,5,36,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(69,3,37,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(70,1,37,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(71,5,37,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(72,1,38,1,'2026-07-22 03:57:12','2026-07-22 03:57:12'),(73,3,38,1,'2026-07-22 03:57:12','2026-07-22 03:57:12');
+INSERT INTO `product_user_type_sidebar_items` VALUES (2,3,16,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(3,3,1,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(4,3,3,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(5,3,2,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(6,3,17,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(7,3,20,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(8,3,21,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(9,3,23,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(10,3,22,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(11,3,18,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(12,3,6,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(13,3,19,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(14,3,7,1,'2026-07-13 02:00:58','2026-07-20 04:29:27'),(15,3,9,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(16,3,8,1,'2026-07-13 02:00:58','2026-07-14 03:32:48'),(17,3,5,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(32,1,4,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(33,1,16,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(34,1,1,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(35,1,3,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(36,1,2,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(37,1,17,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(38,1,20,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(39,1,21,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(40,1,18,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(41,1,6,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(42,1,19,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(43,1,7,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(44,1,5,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(47,5,1,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(48,5,3,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(49,5,17,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(50,5,18,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(51,5,6,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(57,3,4,1,'2026-07-13 02:00:58','2026-07-13 02:11:28'),(59,3,33,1,'2026-07-20 04:29:27','2026-07-20 04:29:27'),(60,3,34,1,'2026-07-21 03:09:47','2026-07-21 03:09:47'),(61,1,34,1,'2026-07-21 03:09:47','2026-07-21 03:09:47'),(66,3,36,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(67,1,36,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(68,5,36,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(69,3,37,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(70,1,37,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(71,5,37,1,'2026-07-21 06:04:47','2026-07-21 06:04:47'),(72,1,38,1,'2026-07-22 03:57:12','2026-07-22 03:57:12'),(73,3,38,1,'2026-07-22 03:57:12','2026-07-22 03:57:12'),(74,3,39,1,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(75,3,40,1,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(76,3,41,1,'2026-07-28 03:26:29','2026-07-28 03:26:29');
 /*!40000 ALTER TABLE `product_user_type_sidebar_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -993,7 +1084,7 @@ CREATE TABLE `sidebar_items` (
   CONSTRAINT `sidebar_items_feature_foreign` FOREIGN KEY (`feature_id`) REFERENCES `app_features` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `sidebar_items_parent_foreign` FOREIGN KEY (`parent_id`) REFERENCES `sidebar_items` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `sidebar_items_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=42 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1002,7 +1093,7 @@ CREATE TABLE `sidebar_items` (
 
 LOCK TABLES `sidebar_items` WRITE;
 /*!40000 ALTER TABLE `sidebar_items` DISABLE KEYS */;
-INSERT INTO `sidebar_items` VALUES (1,11,NULL,1,'dashboard','overview','link','Main Dashboard','dashboard','/dashboard','LayoutDashboard','TEST',5,10,1,1,'active','2026-07-13 02:00:58','2026-07-23 05:58:25'),(2,11,NULL,2,'inventory-overview','overview','link','Stock Overview','inventory.overview','/inventory/overview','BarChart3','TEST',5,20,1,1,'active','2026-07-13 02:00:58','2026-07-23 05:58:25'),(3,11,NULL,NULL,'inventory-group','management','group','Inventory',NULL,NULL,'Boxes','TEST',5,10,1,1,'active','2026-07-13 02:00:58','2026-07-23 05:58:25'),(4,11,38,9,'branches','management','link','Branches','branches.index','/locations/branches','Building2',NULL,NULL,10,1,1,'active','2026-07-13 02:00:58','2026-07-24 05:57:07'),(5,11,38,10,'warehouses','management','link','Warehouses','warehouses.index','/locations/warehouses','Warehouse',NULL,NULL,20,1,1,'active','2026-07-13 02:00:58','2026-07-24 05:57:01'),(6,11,3,8,'stock-movements','management','link','Stock Movements','stock-movements.index','/inventory/stock-movements','History',NULL,NULL,60,1,1,'active','2026-07-13 02:00:58','2026-07-24 05:44:50'),(7,11,NULL,NULL,'suppliers-group','management','group','Procurement',NULL,NULL,'ShoppingCart','TEST',5,30,1,1,'active','2026-07-13 02:00:58','2026-07-23 05:58:25'),(8,11,NULL,14,'team-overview','overview','link','Team Overview','team.overview','/team/overview','Users','TEST',5,30,1,1,'active','2026-07-13 02:00:58','2026-07-23 05:58:25'),(9,11,NULL,NULL,'team-group','management','group','Team Management',NULL,NULL,'Users','TEST',5,40,1,1,'active','2026-07-13 02:00:58','2026-07-23 05:58:25'),(16,11,3,3,'categories','management','link','Categories','inventory.categories.index','/inventory/categories','Tags',NULL,NULL,10,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(17,11,3,4,'products','management','link','Products','inventory.products.index','/inventory/products','Package2',NULL,NULL,20,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(18,11,3,5,'stock-management','management','link','Stock Management','inventory.stocks.index','/inventory/stocks','Boxes',NULL,NULL,30,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(19,11,7,11,'suppliers','management','link','Suppliers','suppliers.index','/suppliers','Truck',NULL,NULL,10,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(20,11,7,12,'purchase-orders','management','link','Purchase Orders','suppliers.purchase-orders.index','/suppliers/purchase-orders','ClipboardCheck',NULL,NULL,20,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(21,11,7,13,'receiving','management','link','Receiving','suppliers.receiving.index','/suppliers/receiving','PackageCheck',NULL,NULL,40,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(22,11,9,15,'staff-accounts','management','link','Team Members','team.members.index','/team/members','Users',NULL,NULL,10,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(23,11,9,16,'roles-access','management','link','Roles & Access','team.roles.index','/team/roles','UserCog',NULL,NULL,20,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(33,11,7,12,'purchase-approvals','management','link','Purchase Approvals','suppliers.purchase-approvals.index','/suppliers/purchase-approvals','ClipboardCheck',NULL,NULL,30,1,1,'active','2026-07-20 04:29:27','2026-07-22 03:57:12'),(34,11,7,13,'received-orders','management','link','Received Orders','procurement.received-orders.index','/procurement/received-orders','History',NULL,NULL,50,1,1,'active','2026-07-21 03:09:47','2026-07-22 03:57:12'),(36,11,3,33,'stock-issuance-terminal','management','link','Withdraw Stock','inventory.withdraw.index','/inventory/withdraw','PackageMinus',NULL,NULL,40,1,1,'active','2026-07-21 06:04:47','2026-07-22 03:57:12'),(37,11,3,34,'stock-issuance-history','management','link','Withdrawal History','inventory.history.index','/inventory/history','History',NULL,NULL,50,1,1,'active','2026-07-21 06:04:47','2026-07-22 03:57:12'),(38,11,NULL,NULL,'locations-group','management','group','Locations',NULL,NULL,'MapPin','TEST',5,20,1,1,'active','2026-07-22 03:57:12','2026-07-23 05:58:25');
+INSERT INTO `sidebar_items` VALUES (1,11,NULL,1,'dashboard','overview','link','Main Dashboard','dashboard','/dashboard','LayoutDashboard','TEST',5,10,1,1,'active','2026-07-13 02:00:58','2026-07-23 05:58:25'),(2,11,NULL,2,'inventory-overview','overview','link','Stock Overview','inventory.overview','/inventory/overview','BarChart3','TEST',5,20,1,1,'active','2026-07-13 02:00:58','2026-07-23 05:58:25'),(3,11,NULL,NULL,'inventory-group','management','group','Inventory',NULL,NULL,'Boxes','TEST',5,10,1,1,'active','2026-07-13 02:00:58','2026-07-23 05:58:25'),(4,11,38,9,'branches','management','link','Branches','branches.index','/locations/branches','Building2',NULL,NULL,10,1,1,'active','2026-07-13 02:00:58','2026-07-24 05:57:07'),(5,11,38,10,'warehouses','management','link','Warehouses','warehouses.index','/locations/warehouses','Warehouse',NULL,NULL,20,1,1,'active','2026-07-13 02:00:58','2026-07-24 05:57:01'),(6,11,3,8,'stock-movements','management','link','Stock Movements','stock-movements.index','/inventory/stock-movements','History',NULL,NULL,60,1,1,'active','2026-07-13 02:00:58','2026-07-24 05:44:50'),(7,11,NULL,NULL,'suppliers-group','management','group','Procurement',NULL,NULL,'ShoppingCart','TEST',5,30,1,1,'active','2026-07-13 02:00:58','2026-07-23 05:58:25'),(8,11,NULL,14,'team-overview','overview','link','Team Overview','team.overview','/team/overview','Users','TEST',5,30,1,1,'active','2026-07-13 02:00:58','2026-07-23 05:58:25'),(9,11,NULL,NULL,'team-group','management','group','Team Management',NULL,NULL,'Users','TEST',5,40,1,1,'active','2026-07-13 02:00:58','2026-07-23 05:58:25'),(16,11,3,3,'categories','management','link','Categories','inventory.categories.index','/inventory/categories','Tags',NULL,NULL,10,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(17,11,3,4,'products','management','link','Products','inventory.products.index','/inventory/products','Package2',NULL,NULL,20,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(18,11,3,5,'stock-management','management','link','Stock Management','inventory.stocks.index','/inventory/stocks','Boxes',NULL,NULL,30,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(19,11,7,11,'suppliers','management','link','Suppliers','suppliers.index','/suppliers','Truck',NULL,NULL,10,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(20,11,7,12,'purchase-orders','management','link','Purchase Orders','suppliers.purchase-orders.index','/suppliers/purchase-orders','ClipboardCheck',NULL,NULL,20,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(21,11,7,13,'receiving','management','link','Receiving','suppliers.receiving.index','/suppliers/receiving','PackageCheck',NULL,NULL,40,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(22,11,9,15,'staff-accounts','management','link','Team Members','team.members.index','/team/members','Users',NULL,NULL,10,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(23,11,9,16,'roles-access','management','link','Roles & Access','team.roles.index','/team/roles','UserCog',NULL,NULL,20,1,1,'active','2026-07-13 02:00:58','2026-07-22 03:57:12'),(33,11,7,12,'purchase-approvals','management','link','Purchase Approvals','suppliers.purchase-approvals.index','/suppliers/purchase-approvals','ClipboardCheck',NULL,NULL,30,1,1,'active','2026-07-20 04:29:27','2026-07-22 03:57:12'),(34,11,7,13,'received-orders','management','link','Received Orders','procurement.received-orders.index','/procurement/received-orders','History',NULL,NULL,50,1,1,'active','2026-07-21 03:09:47','2026-07-22 03:57:12'),(36,11,3,33,'stock-issuance-terminal','management','link','Withdraw Stock','inventory.withdraw.index','/inventory/withdraw','PackageMinus',NULL,NULL,40,1,1,'active','2026-07-21 06:04:47','2026-07-22 03:57:12'),(37,11,3,34,'stock-issuance-history','management','link','Withdrawal History','inventory.history.index','/inventory/history','History',NULL,NULL,50,1,1,'active','2026-07-21 06:04:47','2026-07-22 03:57:12'),(38,11,NULL,NULL,'locations-group','management','group','Locations',NULL,NULL,'MapPin','TEST',5,20,1,1,'active','2026-07-22 03:57:12','2026-07-23 05:58:25'),(39,11,NULL,NULL,'business-profile-group','management','group','Business Profile',NULL,NULL,'Building2','TEST',5,50,1,1,'active','2026-07-28 03:26:29','2026-07-28 07:11:42'),(40,11,39,35,'business-profile-general','management','link','General Information','business-profile.general.index','/management/business-profile/general','FileText',NULL,NULL,10,1,1,'active','2026-07-28 03:26:29','2026-07-28 03:26:29'),(41,11,39,36,'business-profile-branding','management','link','Branding','business-profile.branding.index','/management/business-profile/branding','Image',NULL,NULL,20,1,1,'active','2026-07-28 03:26:29','2026-07-28 03:26:29');
 /*!40000 ALTER TABLE `sidebar_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1337,4 +1428,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-27 10:49:28
+-- Dump completed on 2026-07-28 15:49:29

@@ -1,6 +1,5 @@
 import { AppPagination } from '@/components/shared/app-pagination';
 import { FilterBar } from '@/components/shared/filter-bar';
-import { IconInput } from '@/components/shared/icon-input';
 import { PageContainer } from '@/components/shared/page-container';
 import { SearchInput } from '@/components/shared/search-input';
 import { SectionCard } from '@/components/shared/section-card';
@@ -33,7 +32,6 @@ import {
     PackageMinus,
     ReceiptText,
     RotateCcw,
-    Search,
     ShieldAlert,
     UserRound,
     Warehouse,
@@ -525,6 +523,55 @@ export default function StockWithdrawalHistory({
     ]);
 
     useEffect(() => {
+        const normalizedSearch = search.trim();
+
+        if (
+            normalizedSearch === (filters.search ?? '').trim() &&
+            status === (filters.status ?? '') &&
+            reason === (filters.reason ?? '') &&
+            warehouseId === (filters.warehouse_id ?? '') &&
+            dateFrom === (filters.date_from ?? '') &&
+            dateTo === (filters.date_to ?? '')
+        ) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            router.get(
+                HISTORY_URL,
+                {
+                        search: normalizedSearch || undefined,
+                        status: status || undefined,
+                        reason: reason || undefined,
+                        warehouse_id: warehouseId || undefined,
+                        date_from: dateFrom || undefined,
+                        date_to: dateTo || undefined,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        }, 300);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [
+        search,
+        status,
+        reason,
+        warehouseId,
+        dateFrom,
+        dateTo,
+        filters.search,
+        filters.status,
+        filters.reason,
+        filters.warehouse_id,
+        filters.date_from,
+        filters.date_to,
+    ]);
+
+    useEffect(() => {
         if (!selectedIssuance && !voidTarget) {
             return;
         }
@@ -616,42 +663,6 @@ export default function StockWithdrawalHistory({
             [issuances.data],
         );
 
-    function applyFilters(
-        event: FormEvent<HTMLFormElement>,
-    ): void {
-        event.preventDefault();
-
-        router.get(
-            HISTORY_URL,
-            {
-                search:
-                    search.trim() ||
-                    undefined,
-
-                status:
-                    status || undefined,
-
-                reason:
-                    reason || undefined,
-
-                warehouse_id:
-                    warehouseId ||
-                    undefined,
-
-                date_from:
-                    dateFrom ||
-                    undefined,
-
-                date_to:
-                    dateTo || undefined,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    }
 
     function resetFilters(): void {
         setSearch('');
@@ -754,35 +765,8 @@ export default function StockWithdrawalHistory({
                     }
                 >
                     <FilterBar
-                        onSubmit={applyFilters}
-                        contentClassName="grid w-full min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(240px,1fr)_155px_190px_205px_155px_155px]"
-                        actions={
-                            <>
-                                <Button
-                                    type="submit"
-                                    variant="secondary"
-                                    className="h-10 border border-primary/15 bg-primary/[0.06] px-4 text-sm text-primary hover:bg-primary/[0.1] hover:text-primary"
-                                >
-                                    <Search className="size-3.5" />
-                                    Apply Filters
-                                </Button>
-
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={
-                                        resetFilters
-                                    }
-                                    disabled={
-                                        !hasActiveFilters
-                                    }
-                                    className="h-10 px-3 text-sm"
-                                >
-                                    <RotateCcw className="size-3.5" />
-                                    Reset
-                                </Button>
-                            </>
-                        }
+                        onSubmit={(event) => event.preventDefault()}
+                        contentClassName="grid w-full min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(240px,1fr)_155px_190px_205px_minmax(360px,1.35fr)]"
                     >
                         <SearchInput
                             value={search}
@@ -948,50 +932,16 @@ export default function StockWithdrawalHistory({
                             </SelectContent>
                         </Select>
 
-                        <IconInput
-                            id="issuance_date_from"
-                            icon={
-                                CalendarDays
-                            }
-                            type="date"
-                            value={dateFrom}
-                            title="Withdrawal date from"
-                            aria-label="Withdrawal date from"
-                            onChange={(
-                                event,
-                            ) =>
-                                setDateFrom(
-                                    event.target
-                                        .value,
-                                )
-                            }
-                            className="h-10"
-                            iconClassName="text-primary"
-                        />
-
-                        <IconInput
-                            id="issuance_date_to"
-                            icon={
-                                CalendarDays
-                            }
-                            type="date"
-                            value={dateTo}
-                            min={
-                                dateFrom ||
-                                undefined
-                            }
-                            title="Withdrawal date to"
-                            aria-label="Withdrawal date to"
-                            onChange={(
-                                event,
-                            ) =>
-                                setDateTo(
-                                    event.target
-                                        .value,
-                                )
-                            }
-                            className="h-10"
-                            iconClassName="text-primary"
+                        <InventoryDateRangeFilter
+                            title="Withdrawal date"
+                            description="Show stock withdrawals posted within this period."
+                            fromId="issuance_date_from"
+                            toId="issuance_date_to"
+                            fromValue={dateFrom}
+                            toValue={dateTo}
+                            onFromChange={setDateFrom}
+                            onToChange={setDateTo}
+                            className="md:col-span-2 xl:col-span-2 2xl:col-span-1"
                         />
                     </FilterBar>
 
@@ -1528,6 +1478,117 @@ export default function StockWithdrawalHistory({
 | Withdrawal details side drawer
 |--------------------------------------------------------------------------
 */
+
+function InventoryDateRangeFilter({
+    title,
+    description,
+    fromId,
+    toId,
+    fromValue,
+    toValue,
+    onFromChange,
+    onToChange,
+    className,
+}: {
+    title: string;
+    description: string;
+    fromId: string;
+    toId: string;
+    fromValue: string;
+    toValue: string;
+    onFromChange: (value: string) => void;
+    onToChange: (value: string) => void;
+    className?: string;
+}) {
+    const hasDateFilter = Boolean(fromValue || toValue);
+
+    function changeFromDate(value: string): void {
+        onFromChange(value);
+
+        if (value && toValue && toValue < value) {
+            onToChange(value);
+        }
+    }
+
+    function clearDateRange(): void {
+        onFromChange('');
+        onToChange('');
+    }
+
+    return (
+        <section
+            className={cn('min-w-0', className)}
+            aria-label={title}
+            title={description}
+        >
+            <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-border/70 bg-background/25 p-1.5 transition-colors focus-within:border-primary/25 focus-within:bg-primary/[0.018] sm:h-10 sm:flex-row sm:items-center sm:gap-0 sm:p-0">
+                <div className="flex h-8 shrink-0 items-center gap-2 rounded-md bg-primary/[0.055] px-2.5 text-primary sm:h-full sm:rounded-l-lg sm:rounded-r-none sm:border-r sm:border-border/60">
+                    <CalendarDays className="size-3.5 shrink-0" />
+                    <span className="whitespace-nowrap text-[9px] font-semibold text-foreground">
+                        {title}
+                    </span>
+                </div>
+
+                <label
+                    htmlFor={fromId}
+                    className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 transition-colors hover:bg-primary/[0.025] sm:rounded-none"
+                >
+                    <span className="shrink-0 text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                        From
+                    </span>
+                    <input
+                        id={fromId}
+                        type="date"
+                        value={fromValue}
+                        aria-label={`${title}: start date`}
+                        onChange={(event) => changeFromDate(event.target.value)}
+                        className="h-7 min-w-0 flex-1 bg-transparent px-1 text-[10px] text-foreground outline-none [color-scheme:dark]"
+                    />
+                </label>
+
+                <span
+                    aria-hidden="true"
+                    className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline-flex"
+                >
+                    →
+                </span>
+
+                <label
+                    htmlFor={toId}
+                    className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 transition-colors hover:bg-primary/[0.025] sm:rounded-none"
+                >
+                    <span className="shrink-0 text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                        To
+                    </span>
+                    <input
+                        id={toId}
+                        type="date"
+                        value={toValue}
+                        min={fromValue || undefined}
+                        aria-label={`${title}: end date`}
+                        onChange={(event) => onToChange(event.target.value)}
+                        className="h-7 min-w-0 flex-1 bg-transparent px-1 text-[10px] text-foreground outline-none [color-scheme:dark]"
+                    />
+                </label>
+
+                {hasDateFilter && (
+                    <button
+                        type="button"
+                        onClick={clearDateRange}
+                        aria-label={`Clear ${title.toLowerCase()}`}
+                        title={`Clear ${title.toLowerCase()}`}
+                        className="flex h-8 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background/35 px-2.5 text-sm leading-none text-muted-foreground transition hover:border-primary/20 hover:bg-primary/[0.055] hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:mr-1 sm:size-8 sm:px-0"
+                    >
+                        <span aria-hidden="true">×</span>
+                    </button>
+                )}
+            </div>
+
+            <p className="sr-only">{description}</p>
+        </section>
+    );
+}
+
 
 function WithdrawalDetailsDrawer({
     issuance,

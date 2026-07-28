@@ -38,7 +38,6 @@ import {
     Package2,
     Pencil,
     Plus,
-    RefreshCw,
     Search,
     Tags,
     Trash2,
@@ -239,6 +238,43 @@ export default function CategoryIndex({
         filters.parent_id,
     ]);
 
+    useEffect(() => {
+        const normalizedSearch = search.trim();
+
+        if (
+            normalizedSearch === (filters.search ?? '').trim() &&
+            status === (filters.status ?? '') &&
+            parentFilter === (filters.parent_id ?? '')
+        ) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            router.get(
+                '/inventory/categories',
+                {
+                        search: normalizedSearch || undefined,
+                        status: status || undefined,
+                        parent_id: parentFilter || undefined,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        }, 300);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [
+        search,
+        status,
+        parentFilter,
+        filters.search,
+        filters.status,
+        filters.parent_id,
+    ]);
+
     /*
     |--------------------------------------------------------------------------
     | Form dialog
@@ -351,49 +387,6 @@ export default function CategoryIndex({
     |--------------------------------------------------------------------------
     */
 
-    function applyFilters(
-        event: FormEvent<HTMLFormElement>,
-    ): void {
-        event.preventDefault();
-
-        router.get(
-            '/inventory/categories',
-            {
-                search:
-                    search.trim() || undefined,
-                status: status || undefined,
-                parent_id:
-                    parentFilter || undefined,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    }
-
-    function resetFilters(): void {
-        setSearch('');
-        setStatus('');
-        setParentFilter('');
-
-        router.get(
-            '/inventory/categories',
-            {},
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Status and delete actions
-    |--------------------------------------------------------------------------
-    */
 
     function toggleStatus(
         category: Category,
@@ -501,10 +494,6 @@ export default function CategoryIndex({
                   100 - rootPercentage,
               )
             : 0;
-
-    const hasActiveFilters = Boolean(
-        search || status || parentFilter,
-    );
 
     const deleteHasRelations = Boolean(
         deleteTarget &&
@@ -881,30 +870,8 @@ export default function CategoryIndex({
                     }
                 >
                     <FilterBar
-                        onSubmit={applyFilters}
+                        onSubmit={(event) => event.preventDefault()}
                         contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_230px_170px]"
-                        actions={
-                            <>
-                                <Button
-                                    type="submit"
-                                    variant="secondary"
-                                    className="h-10 px-4 text-sm"
-                                >
-                                    Apply Filters
-                                </Button>
-
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={resetFilters}
-                                    disabled={!hasActiveFilters}
-                                    className="h-10 px-3 text-sm"
-                                >
-                                    <RefreshCw className="size-3.5" />
-                                    Reset
-                                </Button>
-                            </>
-                        }
                     >
                         <SearchInput
                             value={search}

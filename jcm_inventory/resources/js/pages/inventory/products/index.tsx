@@ -38,7 +38,6 @@ import {
     Package2,
     Pencil,
     Plus,
-    RefreshCw,
     Tags,
     Trash2,
     XCircle,
@@ -309,6 +308,51 @@ export default function ProductIndex({
         filters.batch_tracking,
     ]);
 
+    useEffect(() => {
+        const normalizedSearch = search.trim();
+
+        if (
+            normalizedSearch === (filters.search ?? '').trim() &&
+            status === (filters.status ?? '') &&
+            categoryId === (filters.category_id ? String(filters.category_id) : '') &&
+            stockTracking === (filters.stock_tracking ?? '') &&
+            batchTracking === (filters.batch_tracking ?? '')
+        ) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            router.get(
+                '/inventory/products',
+                {
+                        search: normalizedSearch || undefined,
+                        status: status || undefined,
+                        category_id: categoryId || undefined,
+                        stock_tracking: stockTracking || undefined,
+                        batch_tracking: batchTracking || undefined,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        }, 300);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [
+        search,
+        status,
+        categoryId,
+        stockTracking,
+        batchTracking,
+        filters.search,
+        filters.status,
+        filters.category_id,
+        filters.stock_tracking,
+        filters.batch_tracking,
+    ]);
+
     /*
     |--------------------------------------------------------------------------
     | Dialog
@@ -443,49 +487,6 @@ export default function ProductIndex({
     |--------------------------------------------------------------------------
     */
 
-    function applyFilters(
-        event: FormEvent<HTMLFormElement>,
-    ): void {
-        event.preventDefault();
-
-        router.get(
-            '/inventory/products',
-            {
-                search:
-                    search.trim() || undefined,
-                status: status || undefined,
-                category_id:
-                    categoryId || undefined,
-                stock_tracking:
-                    stockTracking || undefined,
-                batch_tracking:
-                    batchTracking || undefined,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    }
-
-    function resetFilters(): void {
-        setSearch('');
-        setStatus('');
-        setCategoryId('');
-        setStockTracking('');
-        setBatchTracking('');
-
-        router.get(
-            '/inventory/products',
-            {},
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    }
 
 
     function buildProductReportUrl(
@@ -645,14 +646,6 @@ export default function ProductIndex({
     const activeCategoryCount = categories.filter(
         (category) => category.is_active,
     ).length;
-
-    const hasActiveFilters = Boolean(
-        search ||
-            status ||
-            categoryId ||
-            stockTracking ||
-            batchTracking,
-    );
 
     const catalogHealthLabel =
         summary.total === 0
@@ -970,30 +963,8 @@ export default function ProductIndex({
                     }
                 >
                     <FilterBar
-                        onSubmit={applyFilters}
+                        onSubmit={(event) => event.preventDefault()}
                         contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_180px_155px_155px_140px]"
-                        actions={
-                            <>
-                                <Button
-                                    type="submit"
-                                    variant="secondary"
-                                    className="h-10 px-4 text-sm"
-                                >
-                                    Apply Filters
-                                </Button>
-
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={resetFilters}
-                                    disabled={!hasActiveFilters}
-                                    className="h-10 px-3 text-sm"
-                                >
-                                    <RefreshCw className="size-3.5" />
-                                    Reset
-                                </Button>
-                            </>
-                        }
                     >
                         <SearchInput
                             value={search}

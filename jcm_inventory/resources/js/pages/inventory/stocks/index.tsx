@@ -49,7 +49,6 @@ import {
     Layers3,
     Package2,
     Plus,
-    RefreshCw,
     Settings2,
     Trash2,
     TriangleAlert,
@@ -535,6 +534,55 @@ export default function StockIndex({
         filters.category_id,
     ]);
 
+    useEffect(() => {
+        const normalizedSearch = search.trim();
+
+        if (
+            normalizedSearch === (filters.search ?? '').trim() &&
+            status === (filters.status ?? '') &&
+            batchStatus === (filters.batch_status ?? '') &&
+            branchId === (filters.branch_id ? String(filters.branch_id) : '') &&
+            warehouseId === (filters.warehouse_id ? String(filters.warehouse_id) : '') &&
+            categoryId === (filters.category_id ? String(filters.category_id) : '')
+        ) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            router.get(
+                '/inventory/stocks',
+                {
+                        search: normalizedSearch || undefined,
+                        status: status || undefined,
+                        batch_status: batchStatus || undefined,
+                        branch_id: branchId || undefined,
+                        warehouse_id: warehouseId || undefined,
+                        category_id: categoryId || undefined,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        }, 300);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [
+        search,
+        status,
+        batchStatus,
+        branchId,
+        warehouseId,
+        categoryId,
+        filters.search,
+        filters.status,
+        filters.batch_status,
+        filters.branch_id,
+        filters.warehouse_id,
+        filters.category_id,
+    ]);
+
     const filteredWarehouses = useMemo(() => {
         if (!branchId) {
             return warehouses;
@@ -993,51 +1041,6 @@ export default function StockIndex({
     |--------------------------------------------------------------------------
     */
 
-    function applyFilters(
-        event: FormEvent<HTMLFormElement>,
-    ): void {
-        event.preventDefault();
-
-        router.get(
-            '/inventory/stocks',
-            {
-                search:
-                    search.trim() || undefined,
-                status: status || undefined,
-                batch_status: batchStatus || undefined,
-                branch_id:
-                    branchId || undefined,
-                warehouse_id:
-                    warehouseId || undefined,
-                category_id:
-                    categoryId || undefined,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    }
-
-    function resetFilters(): void {
-        setSearch('');
-        setStatus('');
-        setBatchStatus('');
-        setBranchId('');
-        setWarehouseId('');
-        setCategoryId('');
-
-        router.get(
-            '/inventory/stocks',
-            {},
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            },
-        );
-    }
 
     function handleBranchChange(
         value: string,
@@ -1146,15 +1149,6 @@ export default function StockIndex({
                   ),
               )
             : 0;
-
-    const hasActiveFilters = Boolean(
-        search ||
-            status ||
-            batchStatus ||
-            branchId ||
-            warehouseId ||
-            categoryId,
-    );
 
     const inventoryHealthLabel =
         summary.records === 0
@@ -1536,30 +1530,8 @@ export default function StockIndex({
                     }
                 >
                     <FilterBar
-                        onSubmit={applyFilters}
+                        onSubmit={(event) => event.preventDefault()}
                         contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[minmax(240px,1fr)_repeat(5,minmax(130px,0.62fr))]"
-                        actions={
-                            <>
-                                <Button
-                                    type="submit"
-                                    variant="secondary"
-                                    className="h-10 px-4 text-sm"
-                                >
-                                    Apply Filters
-                                </Button>
-
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={resetFilters}
-                                    disabled={!hasActiveFilters}
-                                    className="h-10 px-3 text-sm"
-                                >
-                                    <RefreshCw className="size-3.5" />
-                                    Reset
-                                </Button>
-                            </>
-                        }
                     >
                         <SearchInput
                             value={search}

@@ -765,11 +765,5 @@ class StockOverviewController extends Controller
         );
     }
 
-    private function resolveBranchScope(object $user): ?int
-    {
-        $branchId = (int) ($user->branch_id ?? 0);
-
-        return $branchId > 0 ? $branchId : null;
-    }
 
 }

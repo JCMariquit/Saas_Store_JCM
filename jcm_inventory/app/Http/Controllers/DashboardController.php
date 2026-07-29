@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Inventory\InventoryAccessContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Query\Builder;
@@ -11,6 +12,11 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    public function __construct(
+        private readonly InventoryAccessContext $access
+    ) {
+    }
+
     private const RANGE_DAYS = [
         '7d' => 7,
         '30d' => 30,
@@ -39,13 +45,9 @@ class DashboardController extends Controller
 
     public function index(Request $request): Response
     {
-        $user = $request->user();
-
-        abort_unless($user, 401);
-
-        $tenantId = (int) ($user->client_id ?: $user->id);
-
-        abort_if($tenantId <= 0, 403, 'No inventory tenant is assigned to this account.');
+        $context = $this->access->resolve($request);
+        $tenantId = $context['account_owner_id'];
+        $branchId = $context['branch_id'];
 
         $range = $request->string('range')->toString();
 
@@ -59,7 +61,6 @@ class DashboardController extends Controller
         $previousEnd = $start->subSecond();
         $previousStart = $previousEnd->subDays($days - 1)->startOfDay();
 
-        $branchId = $this->resolveBranchScope($user);
         $db = app('db')->connection();
 
         $stockQuery = $this->stockPositionQuery(
@@ -754,18 +755,6 @@ class DashboardController extends Controller
         );
     }
 
-    private function resolveBranchScope(object $user): ?int
-    {
-        $role = strtolower((string) ($user->role ?? 'client'));
-
-        if (in_array($role, ['client', 'owner', 'admin'], true)) {
-            return null;
-        }
-
-        $branchId = (int) ($user->branch_id ?? 0);
-
-        return $branchId > 0 ? $branchId : null;
-    }
 
     private function percentageChange(
         float|int $current,

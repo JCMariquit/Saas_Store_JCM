@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Supplier;
+use App\Services\Inventory\InventoryAccessContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,11 @@ use Inertia\Response;
 
 class SupplierController extends Controller
 {
+    public function __construct(
+        private readonly InventoryAccessContext $access
+    ) {
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Supplier List
@@ -687,26 +693,6 @@ class SupplierController extends Controller
     private function getTenantId(
         Request $request
     ): int {
-        $tenantId = (int) (
-            $request->user()->client_id ?? 0
-        );
-
-        /*
-         * Temporary local development fallback.
-         */
-        if (
-            $tenantId <= 0
-            && app()->environment('local')
-        ) {
-            return 1;
-        }
-
-        abort_if(
-            $tenantId <= 0,
-            403,
-            'Your account is not assigned to a client.'
-        );
-
-        return $tenantId;
+        return $this->access->tenantId($request);
     }
 }

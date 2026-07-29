@@ -854,6 +854,9 @@ class BusinessProfileController extends Controller
                         [
                             'trial',
                             'active',
+                            'past_due',
+                            'grace_period',
+                            'expired',
                         ]
                     );
             })
@@ -874,7 +877,7 @@ class BusinessProfileController extends Controller
         abort_unless(
             $context,
             403,
-            'Your account does not have active access to JCM Inventory.'
+            'Your account does not have available access to JCM Inventory.'
         );
 
         abort_unless(

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Services\Inventory\InventoryAccessContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
@@ -11,8 +12,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 class StockReportController extends Controller
 {
+    public function __construct(
+        private readonly InventoryAccessContext $access
+    ) {
+    }
+
     public function pdf(Request $request): Response
     {
+        $this->ensureExportAccess($request);
         $data = $this->reportData($request);
 
         return Pdf::loadView(
@@ -25,6 +32,8 @@ class StockReportController extends Controller
 
     public function excelPreview(Request $request): Response
     {
+        $this->ensureExportAccess($request);
+
         return response()->view(
             'reports.inventory.stocks.excel-preview',
             [
@@ -36,6 +45,8 @@ class StockReportController extends Controller
 
     public function excel(Request $request): Response
     {
+        $this->ensureExportAccess($request);
+
         $filename = 'inventory-stock-report-' . now()->format('Y-m-d-His') . '.xls';
 
         return response()->view(
@@ -56,7 +67,8 @@ class StockReportController extends Controller
 
     private function reportData(Request $request): array
     {
-        $tenantId = $this->getTenantId($request);
+        $context = $this->access->resolve($request);
+        $tenantId = $context['account_owner_id'];
         $db = DB::connection('mysql');
         $warningDays = (int) (
             $db->table('inventory_settings')
@@ -68,7 +80,12 @@ class StockReportController extends Controller
             'search' => trim((string) $request->input('search', '')),
             'status' => trim((string) $request->input('status', '')),
             'batch_status' => trim((string) $request->input('batch_status', '')),
-            'branch_id' => (int) $request->input('branch_id', 0),
+            'branch_id' => (int) (
+                $this->access->selectedBranchId(
+                    $context,
+                    $request->input('branch_id')
+                ) ?? 0
+            ),
             'warehouse_id' => (int) $request->input('warehouse_id', 0),
             'category_id' => (int) $request->input('category_id', 0),
         ];
@@ -210,16 +227,12 @@ class StockReportController extends Controller
             }));
     }
 
-    private function getTenantId(Request $request): int
+    private function ensureExportAccess(Request $request): void
     {
-        $tenantId = (int) ($request->user()?->client_id ?? 0);
-
-        if ($tenantId <= 0 && app()->environment('local')) {
-            return 1;
-        }
-
-        abort_if($tenantId <= 0, 403, 'Your account is not assigned to a client.');
-
-        return $tenantId;
+        abort_unless(
+            $this->access->canExport($request),
+            403,
+            'PDF and Excel exports are unavailable while the subscription is read-only.'
+        );
     }
 }

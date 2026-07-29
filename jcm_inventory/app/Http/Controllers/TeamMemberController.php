@@ -156,17 +156,45 @@ class TeamMemberController extends Controller
             )
             ->when(
                 $branchId > 0,
-                fn ($query) => $query->where(
-                    'users.branch_id',
+                function ($query) use (
                     $branchId
-                )
+                ): void {
+                    $query->whereExists(
+                        function (
+                            $scopeQuery
+                        ) use (
+                            $branchId
+                        ): void {
+                            $scopeQuery
+                                ->selectRaw('1')
+                                ->from(
+                                    'user_product_access_scopes as filter_scope'
+                                )
+                                ->whereColumn(
+                                    'filter_scope.access_id',
+                                    'access.id'
+                                )
+                                ->where(
+                                    'filter_scope.scope_type',
+                                    'branch'
+                                )
+                                ->where(
+                                    'filter_scope.scope_id',
+                                    $branchId
+                                )
+                                ->where(
+                                    'filter_scope.status',
+                                    'active'
+                                );
+                        }
+                    );
+                }
             )
             ->select([
                 'users.id',
                 'users.name',
                 'users.email',
                 'users.email_verified_at',
-                'users.branch_id',
                 'users.is_active as account_is_active',
                 'users.created_by',
                 'users.created_at',
@@ -185,6 +213,35 @@ class TeamMemberController extends Controller
 
                 'creator.name as created_by_name',
             ])
+            ->selectSub(
+                DB::connection('saas')
+                    ->table(
+                        'user_product_access_scopes as branch_scope'
+                    )
+                    ->select(
+                        'branch_scope.scope_id'
+                    )
+                    ->whereColumn(
+                        'branch_scope.access_id',
+                        'access.id'
+                    )
+                    ->where(
+                        'branch_scope.scope_type',
+                        'branch'
+                    )
+                    ->where(
+                        'branch_scope.status',
+                        'active'
+                    )
+                    ->orderByDesc(
+                        'branch_scope.is_primary'
+                    )
+                    ->orderBy(
+                        'branch_scope.id'
+                    )
+                    ->limit(1),
+                'branch_id'
+            )
             ->orderByDesc('users.created_at')
             ->orderByDesc('users.id')
             ->paginate(15)
@@ -514,7 +571,7 @@ class TeamMemberController extends Controller
             ],
         ]);
 
-        $role = $this->findAssignableRole(
+        $this->findAssignableRole(
             productId: $productId,
             productUserTypeId: (int) $validated[
                 'product_user_type_id'
@@ -534,10 +591,23 @@ class TeamMemberController extends Controller
                 $validated,
                 $context,
                 $ownerId,
-                $productId,
-                $role
+                $productId
             ): void {
                 $now = now();
+
+                $assignedBy =
+                    (int) $request->user()->id;
+
+                /*
+                |--------------------------------------------------------------------------
+                | Central user identity
+                |--------------------------------------------------------------------------
+                |
+                | Product role, owner, product, subscription, and branch are no
+                | longer stored in users. The users table contains identity and
+                | account fields only.
+                |
+                */
 
                 $userId = DB::connection('saas')
                     ->table('users')
@@ -554,21 +624,8 @@ class TeamMemberController extends Controller
                             $validated['password']
                         ),
 
-                        'role' =>
-                            $role->type_code,
-
-                        'client_id' =>
-                            $ownerId,
-
-                        'branch_id' =>
-                            (int) $validated[
-                                'branch_id'
-                            ],
-
-                        'system_used' => null,
-
                         'created_by' =>
-                            $request->user()->id,
+                            $assignedBy,
 
                         'is_active' => true,
 
@@ -576,9 +633,20 @@ class TeamMemberController extends Controller
                         'updated_at' => $now,
                     ]);
 
-                DB::connection('saas')
+                $this->assignPlatformUserRole(
+                    userId: (int) $userId,
+                    assignedBy: $assignedBy
+                );
+
+                /*
+                |--------------------------------------------------------------------------
+                | Product membership
+                |--------------------------------------------------------------------------
+                */
+
+                $accessId = DB::connection('saas')
                     ->table('user_product_access')
-                    ->insert([
+                    ->insertGetId([
                         'user_id' => $userId,
 
                         'product_id' =>
@@ -600,13 +668,27 @@ class TeamMemberController extends Controller
                         'status' => 'active',
 
                         'assigned_by' =>
-                            $request->user()->id,
+                            $assignedBy,
 
                         'joined_at' => $now,
 
                         'created_at' => $now,
                         'updated_at' => $now,
                     ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | Product-scoped branch
+                |--------------------------------------------------------------------------
+                */
+
+                $this->syncBranchScope(
+                    accessId: (int) $accessId,
+                    branchId: (int) $validated[
+                        'branch_id'
+                    ],
+                    assignedBy: $assignedBy
+                );
             }
         );
 
@@ -669,7 +751,7 @@ class TeamMemberController extends Controller
             ],
         ]);
 
-        $role = $this->findAssignableRole(
+        $this->findAssignableRole(
             productId: $productId,
             productUserTypeId: (int) $validated[
                 'product_user_type_id'
@@ -685,10 +767,10 @@ class TeamMemberController extends Controller
 
         DB::connection('saas')->transaction(
             function () use (
+                $request,
                 $validated,
                 $member,
-                $teamMember,
-                $role
+                $teamMember
             ): void {
                 $userData = [
                     'name' => trim(
@@ -698,14 +780,6 @@ class TeamMemberController extends Controller
                     'email' => mb_strtolower(
                         trim($validated['email'])
                     ),
-
-                    'role' =>
-                        $role->type_code,
-
-                    'branch_id' =>
-                        (int) $validated[
-                            'branch_id'
-                        ],
 
                     'updated_at' => now(),
                 ];
@@ -743,6 +817,22 @@ class TeamMemberController extends Controller
 
                         'updated_at' => now(),
                     ]);
+
+                $this->syncBranchScope(
+                    accessId:
+                        (int) $teamMember
+                            ->access_id,
+
+                    branchId:
+                        (int) $validated[
+                            'branch_id'
+                        ],
+
+                    assignedBy:
+                        (int) $request
+                            ->user()
+                            ->id
+                );
             }
         );
 
@@ -888,6 +978,20 @@ class TeamMemberController extends Controller
                     )
                     ->update([
                         'status' => 'removed',
+                        'updated_at' => now(),
+                    ]);
+
+                DB::connection('saas')
+                    ->table(
+                        'user_product_access_scopes'
+                    )
+                    ->where(
+                        'access_id',
+                        $teamMember->access_id
+                    )
+                    ->update([
+                        'is_primary' => false,
+                        'status' => 'inactive',
                         'updated_at' => now(),
                     ]);
 
@@ -1138,6 +1242,139 @@ class TeamMemberController extends Controller
         }
     }
 
+    private function assignPlatformUserRole(
+        int $userId,
+        int $assignedBy
+    ): void {
+        $platformRoleId = DB::connection('saas')
+            ->table('platform_roles')
+            ->where(
+                'role_code',
+                'user'
+            )
+            ->where(
+                'status',
+                'active'
+            )
+            ->value('id');
+
+        if (! $platformRoleId) {
+            throw ValidationException::withMessages([
+                'name' =>
+                    'The platform user role is not configured.',
+            ]);
+        }
+
+        $now = now();
+
+        DB::connection('saas')
+            ->table('user_platform_roles')
+            ->upsert(
+                [
+                    [
+                        'user_id' => $userId,
+
+                        'platform_role_id' =>
+                            (int) $platformRoleId,
+
+                        'is_primary' => true,
+                        'status' => 'active',
+
+                        'assigned_by' =>
+                            $assignedBy,
+
+                        'assigned_at' => $now,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ],
+                ],
+                [
+                    'user_id',
+                    'platform_role_id',
+                ],
+                [
+                    'is_primary',
+                    'status',
+                    'assigned_by',
+                    'assigned_at',
+                    'updated_at',
+                ]
+            );
+    }
+
+    private function syncBranchScope(
+        int $accessId,
+        int $branchId,
+        int $assignedBy
+    ): void {
+        $now = now();
+
+        DB::connection('saas')
+            ->table(
+                'user_product_access_scopes'
+            )
+            ->where(
+                'access_id',
+                $accessId
+            )
+            ->where(
+                'scope_type',
+                'branch'
+            )
+            ->update([
+                'is_primary' => false,
+                'status' => 'inactive',
+                'updated_at' => $now,
+            ]);
+
+        DB::connection('saas')
+            ->table(
+                'user_product_access_scopes'
+            )
+            ->upsert(
+                [
+                    [
+                        'access_id' =>
+                            $accessId,
+
+                        'scope_type' =>
+                            'branch',
+
+                        'scope_id' =>
+                            $branchId,
+
+                        'is_primary' => true,
+                        'status' => 'active',
+
+                        'metadata' => json_encode(
+                            [
+                                'source' =>
+                                    'team-management',
+
+                                'assigned_by' =>
+                                    $assignedBy,
+                            ],
+                            JSON_UNESCAPED_SLASHES
+                        ),
+
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ],
+                ],
+                [
+                    'access_id',
+                    'scope_type',
+                    'scope_id',
+                ],
+                [
+                    'is_primary',
+                    'status',
+                    'metadata',
+                    'updated_at',
+                ]
+            );
+    }
+
     private function findTeamMember(
         int $ownerId,
         int $productId,
@@ -1183,18 +1420,47 @@ class TeamMemberController extends Controller
                 'user_types.is_owner_type',
                 false
             )
-            ->first([
+            ->select([
                 'users.id',
                 'users.name',
                 'users.email',
-                'users.branch_id',
                 'users.is_active',
 
                 'access.id as access_id',
                 'access.status as access_status',
                 'access.joined_at',
                 'access.product_user_type_id',
-            ]);
+            ])
+            ->selectSub(
+                DB::connection('saas')
+                    ->table(
+                        'user_product_access_scopes as branch_scope'
+                    )
+                    ->select(
+                        'branch_scope.scope_id'
+                    )
+                    ->whereColumn(
+                        'branch_scope.access_id',
+                        'access.id'
+                    )
+                    ->where(
+                        'branch_scope.scope_type',
+                        'branch'
+                    )
+                    ->where(
+                        'branch_scope.status',
+                        'active'
+                    )
+                    ->orderByDesc(
+                        'branch_scope.is_primary'
+                    )
+                    ->orderBy(
+                        'branch_scope.id'
+                    )
+                    ->limit(1),
+                'branch_id'
+            )
+            ->first();
 
         abort_if(
             ! $member,

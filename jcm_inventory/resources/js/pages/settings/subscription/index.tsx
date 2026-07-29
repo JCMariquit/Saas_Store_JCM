@@ -26,7 +26,7 @@ import {
     Users,
     Warehouse,
 } from 'lucide-react';
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 
 interface SubscriptionPageProps {
     current: SubscriptionSummary | null;
@@ -35,13 +35,28 @@ interface SubscriptionPageProps {
     paymentMethods: PaymentMethod[];
 }
 
-interface PaymentForm {
+type PaymentForm = {
     order_id: number | '';
     payment_method_id: number | '';
     reference_number: string;
     account_name: string;
     account_number: string;
     payment_proof: File | null;
+};
+
+declare function route(
+    name: string,
+    params?: Record<string, unknown>,
+): string;
+
+type SubscriptionPlanFeature =
+    SubscriptionPlan['features'][number];
+
+interface PlanFeatureGroup {
+    key: string;
+    title: string;
+    description: string;
+    features: SubscriptionPlanFeature[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -58,6 +73,76 @@ const intervals: Array<{
     { value: 'monthly', label: 'Monthly' },
     { value: 'quarterly', label: 'Quarterly' },
     { value: 'yearly', label: 'Yearly' },
+];
+
+const featureGroupDefinitions: Array<{
+    key: string;
+    title: string;
+    description: string;
+    codes: readonly string[];
+}> = [
+    {
+        key: 'inventory',
+        title: 'Inventory essentials',
+        description:
+            'Core catalog, product, stock, and adjustment tools.',
+        codes: [
+            'dashboard',
+            'inventory_overview',
+            'categories',
+            'products',
+            'stock_management',
+            'stock_adjustment',
+        ],
+    },
+    {
+        key: 'stock-operations',
+        title: 'Stock operations',
+        description:
+            'Withdrawal, movement, and warehouse transfer workflows.',
+        codes: [
+            'stock_issuance_terminal',
+            'stock_issuance_history',
+            'stock_movements',
+            'stock_transfer',
+        ],
+    },
+    {
+        key: 'procurement',
+        title: 'Procurement',
+        description:
+            'Supplier, purchasing, approval, receiving, and order history.',
+        codes: [
+            'supplier_management',
+            'purchase_orders',
+            'purchase_approvals',
+            'receiving',
+            'received_order_history',
+        ],
+    },
+    {
+        key: 'locations-team',
+        title: 'Locations and team',
+        description:
+            'Branch, warehouse, staff, and role administration.',
+        codes: [
+            'branch_management',
+            'warehouse_management',
+            'team_overview',
+            'staff_management',
+            'roles_access',
+        ],
+    },
+    {
+        key: 'business-settings',
+        title: 'Business settings',
+        description:
+            'Organization profile and visual branding.',
+        codes: [
+            'business_profile_general',
+            'business_profile_branding',
+        ],
+    },
 ];
 
 function formatMoney(value: number, currency = 'PHP'): string {
@@ -107,6 +192,79 @@ function limitText(
     return String(limit.value ?? 0);
 }
 
+function groupedPlanFeatures(
+    plan: SubscriptionPlan,
+): PlanFeatureGroup[] {
+    const assignedFeatureCodes =
+        new Set<string>();
+
+    const groups: PlanFeatureGroup[] =
+        featureGroupDefinitions
+            .map(
+                (
+                    group,
+                ): PlanFeatureGroup => {
+                    const features:
+                        SubscriptionPlanFeature[] =
+                        plan.features.filter(
+                            (
+                                feature,
+                            ): boolean =>
+                                group.codes.includes(
+                                    feature.code,
+                                ),
+                        );
+
+                    features.forEach(
+                        (
+                            feature,
+                        ): void => {
+                            assignedFeatureCodes.add(
+                                feature.code,
+                            );
+                        },
+                    );
+
+                    return {
+                        key: group.key,
+                        title: group.title,
+                        description:
+                            group.description,
+                        features,
+                    };
+                },
+            )
+            .filter(
+                (
+                    group,
+                ): boolean =>
+                    group.features.length > 0,
+            );
+
+    const ungroupedFeatures:
+        SubscriptionPlanFeature[] =
+        plan.features.filter(
+            (
+                feature,
+            ): boolean =>
+                !assignedFeatureCodes.has(
+                    feature.code,
+                ),
+        );
+
+    if (ungroupedFeatures.length > 0) {
+        groups.push({
+            key: 'other',
+            title: 'Other included tools',
+            description:
+                'Additional modules enabled for this plan.',
+            features: ungroupedFeatures,
+        });
+    }
+
+    return groups;
+}
+
 export default function SubscriptionIndex({
     current,
     plans,
@@ -128,11 +286,6 @@ export default function SubscriptionIndex({
         account_number: '',
         payment_proof: null,
     });
-
-    const currentPlan = useMemo(
-        () => plans.find((plan) => plan.id === current?.plan_id) ?? null,
-        [current?.plan_id, plans],
-    );
 
     const isOwner = current?.is_owner ?? true;
     const accessMode = current?.access_mode ?? 'blocked';
@@ -176,23 +329,23 @@ export default function SubscriptionIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Subscription & Billing" />
 
-            <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 p-4 md:p-6">
+            <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 p-4 md:p-5">
                 <section className="overflow-hidden rounded-2xl border border-border/70 bg-card">
-                    <div className="relative p-5 md:p-7">
+                    <div className="relative p-4 md:p-5">
                         <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.13),transparent_68%)] lg:block" />
 
                         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                             <div className="max-w-2xl">
-                                <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                                <div className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
                                     <CreditCard className="size-4" />
                                     JCM Inventory Subscription
                                 </div>
 
-                                <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+                                <h1 className="text-xl font-bold tracking-tight md:text-2xl">
                                     Subscription & Billing
                                 </h1>
 
-                                <p className="mt-2 text-sm leading-6 text-muted-foreground md:text-base">
+                                <p className="mt-1.5 max-w-xl text-xs leading-5 text-muted-foreground md:text-sm">
                                     Manage the owner subscription shared by your
                                     Inventory team, review plan entitlements, and
                                     submit manual payments.
@@ -220,7 +373,7 @@ export default function SubscriptionIndex({
                     </div>
                 </section>
 
-                <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     <MetricCard
                         icon={<Crown className="size-4" />}
                         label="Current plan"
@@ -251,7 +404,13 @@ export default function SubscriptionIndex({
                         icon={<Users className="size-4" />}
                         label="Shared access"
                         value={
-                            current?.plan_code === 'team'
+                            [
+                                'team',
+                                'premium',
+                            ].includes(
+                                current?.plan_code ??
+                                    '',
+                            )
                                 ? 'Owner + Team'
                                 : 'Owner only'
                         }
@@ -287,29 +446,31 @@ export default function SubscriptionIndex({
                     </section>
                 )}
 
-                <section className="rounded-2xl border border-border/70 bg-card p-4 md:p-6">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <section className="rounded-2xl border border-border/70 bg-card p-4 md:p-5">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                         <div>
-                            <div className="flex items-center gap-2 text-sm font-semibold text-primary">
-                                <Sparkles className="size-4" />
+                            <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                                <Sparkles className="size-3.5" />
                                 Available plans
                             </div>
-                            <h2 className="mt-1 text-xl font-bold">
-                                Choose the right operating tier
+
+                            <h2 className="mt-1 text-lg font-bold tracking-tight">
+                                Select an operating plan
                             </h2>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                                The owner pays once. Manager and Staff access
-                                follows the owner&apos;s Team subscription.
+
+                            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
+                                One owner subscription controls the included
+                                modules, locations, and team access.
                             </p>
                         </div>
 
-                        <div className="inline-flex rounded-xl border border-border bg-muted/35 p-1">
+                        <div className="inline-flex w-fit rounded-lg border border-border bg-muted/30 p-1">
                             {intervals.map((item) => (
                                 <button
                                     key={item.value}
                                     type="button"
                                     onClick={() => setInterval(item.value)}
-                                    className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                                    className={`rounded-md px-3 py-1.5 text-[11px] font-semibold transition ${
                                         interval === item.value
                                             ? 'bg-background text-foreground shadow-sm'
                                             : 'text-muted-foreground hover:text-foreground'
@@ -321,54 +482,69 @@ export default function SubscriptionIndex({
                         </div>
                     </div>
 
-                    <div className="mt-6 grid gap-5 lg:grid-cols-2">
+                    <div className="mt-5 grid items-start gap-4 lg:grid-cols-2">
                         {plans.map((plan) => {
-                            const price = priceFor(plan, interval);
-                            const isCurrent = current?.plan_id === plan.id;
-                            const isTeam = plan.code === 'team';
+                            const price = priceFor(
+                                plan,
+                                interval,
+                            );
+
+                            const isCurrent =
+                                current?.plan_id ===
+                                plan.id;
+
+                            const isPremium = [
+                                'team',
+                                'premium',
+                            ].includes(plan.code);
+
+                            const featureGroups =
+                                groupedPlanFeatures(
+                                    plan,
+                                );
 
                             return (
                                 <article
                                     key={plan.id}
-                                    className={`relative overflow-hidden rounded-2xl border p-5 md:p-6 ${
+                                    className={`relative overflow-hidden rounded-xl border p-4 md:p-5 ${
                                         isCurrent
                                             ? 'border-primary/40 bg-primary/[0.04]'
                                             : 'border-border bg-background/45'
                                     }`}
                                 >
                                     {isCurrent && (
-                                        <div className="absolute right-4 top-4 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                                        <div className="absolute right-3 top-3 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-primary">
                                             Current plan
                                         </div>
                                     )}
 
                                     <div className="flex items-start gap-3">
                                         <div
-                                            className={`flex size-11 items-center justify-center rounded-xl border ${
-                                                isTeam
+                                            className={`flex size-9 items-center justify-center rounded-lg border ${
+                                                isPremium
                                                     ? 'border-primary/20 bg-primary/10 text-primary'
                                                     : 'border-border bg-muted/40 text-muted-foreground'
                                             }`}
                                         >
-                                            {isTeam ? (
-                                                <Users className="size-5" />
+                                            {isPremium ? (
+                                                <Users className="size-4" />
                                             ) : (
-                                                <PackageCheck className="size-5" />
+                                                <PackageCheck className="size-4" />
                                             )}
                                         </div>
 
                                         <div className="min-w-0">
-                                            <h3 className="text-lg font-bold">
+                                            <h3 className="text-base font-bold">
                                                 {plan.name}
                                             </h3>
-                                            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                                            <p className="mt-1 pr-16 text-xs leading-5 text-muted-foreground">
                                                 {plan.description}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="mt-6 flex items-end gap-2">
-                                        <span className="text-3xl font-bold tracking-tight">
+                                    <div className="mt-4 flex items-end gap-1.5">
+                                        <span className="text-2xl font-bold tracking-tight">
                                             {price
                                                 ? formatMoney(
                                                       price.price,
@@ -377,14 +553,14 @@ export default function SubscriptionIndex({
                                                 : 'Unavailable'}
                                         </span>
                                         {price && (
-                                            <span className="pb-1 text-sm text-muted-foreground">
+                                            <span className="pb-0.5 text-xs text-muted-foreground">
                                                 / {humanize(price.billing_interval)}
                                             </span>
                                         )}
                                     </div>
 
                                     {price?.compare_at_price && (
-                                        <p className="mt-1 text-xs text-muted-foreground">
+                                        <p className="mt-1 text-[11px] text-muted-foreground">
                                             Regular total{' '}
                                             <span className="line-through">
                                                 {formatMoney(
@@ -395,9 +571,9 @@ export default function SubscriptionIndex({
                                         </p>
                                     )}
 
-                                    <div className="mt-5 grid grid-cols-3 gap-2">
+                                    <div className="mt-4 grid grid-cols-3 divide-x divide-border/70 overflow-hidden rounded-lg border border-border/70 bg-muted/[0.14]">
                                         <PlanStat
-                                            icon={<Building2 className="size-4" />}
+                                            icon={<Building2 className="size-3.5" />}
                                             label="Branches"
                                             value={limitText(
                                                 plan,
@@ -405,8 +581,9 @@ export default function SubscriptionIndex({
                                                 '—',
                                             )}
                                         />
+
                                         <PlanStat
-                                            icon={<Warehouse className="size-4" />}
+                                            icon={<Warehouse className="size-3.5" />}
                                             label="Warehouses"
                                             value={limitText(
                                                 plan,
@@ -414,8 +591,9 @@ export default function SubscriptionIndex({
                                                 '—',
                                             )}
                                         />
+
                                         <PlanStat
-                                            icon={<Users className="size-4" />}
+                                            icon={<Users className="size-3.5" />}
                                             label="Team"
                                             value={limitText(
                                                 plan,
@@ -425,18 +603,81 @@ export default function SubscriptionIndex({
                                         />
                                     </div>
 
-                                    <div className="mt-5 space-y-2">
-                                        {plan.features.slice(0, 7).map((feature) => (
-                                            <div
-                                                key={feature.code}
-                                                className="flex items-start gap-2 text-sm"
-                                            >
-                                                <Check className="mt-0.5 size-4 shrink-0 text-emerald-400" />
-                                                <span className="text-muted-foreground">
-                                                    {feature.name}
-                                                </span>
+                                    <div className="mt-4 overflow-hidden rounded-lg border border-border/70">
+                                        <div className="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/[0.14] px-3 py-2.5">
+                                            <div>
+                                                <p className="text-xs font-semibold">
+                                                    Plan inclusions
+                                                </p>
+
+                                                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                                                    Modules enabled for {plan.name}
+                                                </p>
                                             </div>
-                                        ))}
+
+                                            <span className="shrink-0 rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-emerald-400">
+                                                {plan.features.length}{' '}
+                                                modules
+                                            </span>
+                                        </div>
+
+                                        {featureGroups.length > 0 ? (
+                                            <div className="divide-y divide-border/55">
+                                                {featureGroups.map(
+                                                    (group) => (
+                                                        <div
+                                                            key={
+                                                                group.key
+                                                            }
+                                                            className="px-3 py-3"
+                                                        >
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/75">
+                                                                    {
+                                                                        group.title
+                                                                    }
+                                                                </p>
+
+                                                                <span className="text-[9px] font-medium text-muted-foreground">
+                                                                    {
+                                                                        group.features
+                                                                            .length
+                                                                    }{' '}
+                                                                    included
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="mt-2 grid gap-x-5 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                                                                {group.features.map(
+                                                                    (
+                                                                        feature,
+                                                                    ) => (
+                                                                        <div
+                                                                            key={
+                                                                                feature.code
+                                                                            }
+                                                                            className="flex min-w-0 items-center gap-2 py-0.5"
+                                                                        >
+                                                                            <Check className="size-3.5 shrink-0 text-emerald-400" />
+
+                                                                            <span className="truncate text-[11px] font-medium text-foreground/80">
+                                                                                {
+                                                                                    feature.name
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                    ),
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ),
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="px-3 py-5 text-center text-xs text-muted-foreground">
+                                                No enabled modules were returned for this plan.
+                                            </div>
+                                        )}
                                     </div>
 
                                     <button
@@ -450,7 +691,7 @@ export default function SubscriptionIndex({
                                         onClick={() =>
                                             price && startCheckout(price.id)
                                         }
-                                        className={`mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                                        className={`mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${
                                             isCurrent
                                                 ? 'border border-border bg-muted/50 text-muted-foreground hover:bg-muted'
                                                 : 'bg-primary text-primary-foreground hover:bg-primary/90'
@@ -479,6 +720,13 @@ export default function SubscriptionIndex({
                             );
                         })}
                     </div>
+
+                    <p className="mt-4 border-t border-border/60 pt-4 text-[11px] leading-5 text-muted-foreground">
+                        Basic covers core inventory and procurement for one
+                        owner. Premium adds locations, stock movement and
+                        transfer controls, received-order history, and team
+                        management.
+                    </p>
                 </section>
 
                 {pendingOrder && (
@@ -714,13 +962,17 @@ function MetricCard({
     detail: string;
 }) {
     return (
-        <div className="rounded-2xl border border-border/70 bg-card p-4">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        <div className="rounded-xl border border-border/70 bg-card p-3.5">
+            <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 <span className="text-primary">{icon}</span>
                 {label}
             </div>
-            <p className="mt-3 truncate text-lg font-bold">{value}</p>
-            <p className="mt-1 truncate text-xs text-muted-foreground">
+
+            <p className="mt-2 truncate text-base font-bold">
+                {value}
+            </p>
+
+            <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
                 {detail}
             </p>
         </div>
@@ -737,14 +989,18 @@ function PlanStat({
     value: string;
 }) {
     return (
-        <div className="rounded-xl border border-border bg-muted/25 p-3">
+        <div className="min-w-0 px-3 py-2.5">
             <div className="flex items-center gap-1.5 text-muted-foreground">
                 {icon}
-                <span className="text-[10px] font-semibold uppercase tracking-[0.12em]">
+
+                <span className="truncate text-[8px] font-semibold uppercase tracking-[0.1em]">
                     {label}
                 </span>
             </div>
-            <p className="mt-2 text-sm font-bold">{value}</p>
+
+            <p className="mt-1 text-xs font-bold">
+                {value}
+            </p>
         </div>
     );
 }

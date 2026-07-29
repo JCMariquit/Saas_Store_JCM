@@ -304,6 +304,96 @@ function resolveActiveGroupId(
     return null;
 }
 
+function visibleItemForCurrentPlan(
+    item: DynamicSidebarItem,
+): DynamicSidebarItem | null {
+    /*
+     * Premium-only items are intentionally hidden from Basic navigation.
+     * Subscription-locked items remain visible because they belong to the
+     * user's current plan and only require renewal.
+     */
+    if (item.planLocked) {
+        return null;
+    }
+
+    if (item.type !== 'group') {
+        return item;
+    }
+
+    const children = item.children
+        .map(visibleItemForCurrentPlan)
+        .filter(
+            (
+                child,
+            ): child is DynamicSidebarItem =>
+                child !== null,
+        );
+
+    if (children.length === 0) {
+        return null;
+    }
+
+    return {
+        ...item,
+        planLocked: false,
+        lockReason:
+            item.subscriptionLocked
+                ? 'subscription'
+                : null,
+        requiredPlan: null,
+        children,
+    };
+}
+
+function visibleSectionsForCurrentPlan(
+    sections: DynamicSidebarSection[],
+): DynamicSidebarSection[] {
+    return sections
+        .map((section) => ({
+            ...section,
+            items: section.items
+                .map(
+                    visibleItemForCurrentPlan,
+                )
+                .filter(
+                    (
+                        item,
+                    ): item is DynamicSidebarItem =>
+                        item !== null,
+                ),
+        }))
+        .filter(
+            (section) =>
+                section.items.length > 0,
+        );
+}
+
+function findUpgradePlan(
+    sections: DynamicSidebarSection[],
+): RequiredPlan | null {
+    for (const section of sections) {
+        for (const item of section.items) {
+            if (
+                item.planLocked &&
+                item.requiredPlan
+            ) {
+                return item.requiredPlan;
+            }
+
+            for (const child of item.children) {
+                if (
+                    child.planLocked &&
+                    child.requiredPlan
+                ) {
+                    return child.requiredPlan;
+                }
+            }
+        }
+    }
+
+    return null;
+}
+
 /*
 |--------------------------------------------------------------------------
 | Badge
@@ -1219,6 +1309,85 @@ function SectionItems({
 
 /*
 |--------------------------------------------------------------------------
+| Premium upgrade entry
+|--------------------------------------------------------------------------
+*/
+
+function PremiumUpgradeEntry({
+    plan,
+    collapsed,
+    onClick,
+}: {
+    plan: RequiredPlan;
+    collapsed: boolean;
+    onClick: () => void;
+}) {
+    if (collapsed) {
+        return (
+            <SidebarMenu className="items-center px-0">
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        type="button"
+                        tooltip={`Upgrade to ${plan.name}`}
+                        onClick={onClick}
+                        className={[
+                            'group relative size-10 justify-center rounded-xl border px-0',
+                            'border-violet-500/20 bg-violet-500/[0.055]',
+                            'text-violet-300 transition-all duration-200',
+                            'hover:border-violet-500/35 hover:bg-violet-500/[0.1]',
+                        ].join(' ')}
+                    >
+                        <Crown className="size-[15px]" />
+
+                        <span
+                            aria-hidden="true"
+                            className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-violet-400 ring-2 ring-sidebar"
+                        />
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+        );
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={[
+                'group mx-3 w-[calc(100%-1.5rem)] overflow-hidden rounded-xl border p-3 text-left',
+                'border-violet-500/20 bg-violet-500/[0.045]',
+                'transition-all duration-200',
+                'hover:border-violet-500/35 hover:bg-violet-500/[0.075]',
+            ].join(' ')}
+        >
+            <div className="flex items-start gap-2.5">
+                <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-500/[0.09] text-violet-300">
+                    <Crown className="size-3.5" />
+                </span>
+
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                        <p className="truncate text-[11px] font-semibold text-sidebar-foreground/85">
+                            Upgrade to {plan.name}
+                        </p>
+
+                        <span className="ml-auto shrink-0 rounded-full border border-violet-500/20 bg-violet-500/[0.08] px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-[0.08em] text-violet-300">
+                            PRO
+                        </span>
+                    </div>
+
+                    <p className="mt-1 text-[9px] leading-4 text-sidebar-foreground/42">
+                        Unlock locations, stock movement controls,
+                        received-order history, and team access.
+                    </p>
+                </div>
+            </div>
+        </button>
+    );
+}
+
+/*
+|--------------------------------------------------------------------------
 | App sidebar
 |--------------------------------------------------------------------------
 */
@@ -1237,9 +1406,25 @@ export function AppSidebar() {
         businessProfile,
     } = page.props;
 
-    const sections = React.useMemo(
+    const allSections = React.useMemo(
         () => sidebar?.sections ?? [],
         [sidebar?.sections],
+    );
+
+    const sections = React.useMemo(
+        () =>
+            visibleSectionsForCurrentPlan(
+                allSections,
+            ),
+        [allSections],
+    );
+
+    const upgradePlan = React.useMemo(
+        () =>
+            findUpgradePlan(
+                allSections,
+            ),
+        [allSections],
     );
 
     const activeGroupId =
@@ -1269,6 +1454,11 @@ export function AppSidebar() {
         DynamicSidebarItem | null
     >(null);
 
+    const [
+        upgradeDialogOpen,
+        setUpgradeDialogOpen,
+    ] = React.useState(false);
+
     React.useEffect(() => {
         setOpenGroupId(
             activeGroupId,
@@ -1288,6 +1478,20 @@ export function AppSidebar() {
             },
             [],
         );
+
+    const upgradePlanPrice =
+        formatPlanPrice(
+            upgradePlan,
+        );
+
+    const upgradeDescription =
+        upgradePlan
+            ? `Upgrade to ${upgradePlan.name}${
+                  upgradePlanPrice
+                      ? ` starting at ${upgradePlanPrice} per month`
+                      : ''
+              } to unlock multiple branches and warehouses, stock movements and transfers, received-order history, and team management.`
+            : '';
 
     const lockedPlanPrice =
         formatPlanPrice(
@@ -1475,6 +1679,40 @@ export function AppSidebar() {
                         ),
                     )}
 
+                    {upgradePlan && (
+                        <div
+                            className={
+                                collapsed
+                                    ? 'px-0'
+                                    : 'pt-1'
+                            }
+                        >
+                            {!collapsed && (
+                                <div className="mb-2 flex items-center gap-2 px-5">
+                                    <span className="size-1 rounded-full bg-violet-400/60" />
+
+                                    <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/35">
+                                        Upgrade
+                                    </p>
+
+                                    <span className="h-px min-w-0 flex-1 bg-violet-500/15" />
+                                </div>
+                            )}
+
+                            <PremiumUpgradeEntry
+                                plan={upgradePlan}
+                                collapsed={
+                                    collapsed
+                                }
+                                onClick={() =>
+                                    setUpgradeDialogOpen(
+                                        true,
+                                    )
+                                }
+                            />
+                        </div>
+                    )}
+
                     {sections.length === 0 &&
                         !collapsed && (
                             <div className="mx-3 rounded-2xl border border-amber-500/12 bg-amber-500/[0.045] px-4 py-4">
@@ -1534,6 +1772,30 @@ export function AppSidebar() {
                 </SidebarContent>
 
             </Sidebar>
+
+            <ConfirmDialog
+                open={upgradeDialogOpen}
+                onOpenChange={
+                    setUpgradeDialogOpen
+                }
+                title={
+                    upgradePlan
+                        ? `Unlock ${upgradePlan.name}`
+                        : 'Unlock Premium Inventory'
+                }
+                description={
+                    upgradeDescription
+                }
+                confirmText="View Premium Plan"
+                processing={false}
+                onConfirm={() => {
+                    setUpgradeDialogOpen(false);
+
+                    router.visit(
+                        '/settings/subscription',
+                    );
+                }}
+            />
 
             <ConfirmDialog
                 open={lockedItem !== null}

@@ -18,14 +18,6 @@ class TeamOverviewController extends Controller
 
         abort_unless($user, 401);
 
-        $accountOwnerId = (int) ($user->client_id ?: $user->id);
-
-        abort_if(
-            $accountOwnerId <= 0,
-            403,
-            'No SaaS account owner is assigned to this user.',
-        );
-
         $saas = DB::connection('saas');
         $inventory = DB::connection();
 
@@ -50,6 +42,15 @@ class TeamOverviewController extends Controller
             404,
             'The JCM Inventory product record was not found.',
         );
+
+        $accessContext = $this->currentProductAccess(
+            saas: $saas,
+            userId: (int) $user->id,
+            productId: (int) $product->id,
+        );
+
+        $accountOwnerId =
+            $accessContext['account_owner_id'];
 
         $team = $this->teamAccounts(
             saas: $saas,
@@ -250,6 +251,76 @@ class TeamOverviewController extends Controller
         ]);
     }
 
+    /**
+     * Resolve the current user's canonical Inventory membership.
+     *
+     * The subscription middleware controls full/read-only access.
+     * This method only resolves the selected account owner from
+     * user_product_access and does not depend on legacy users fields.
+     *
+     * @return array{
+     *     access_id: int,
+     *     account_owner_id: int,
+     *     is_owner: bool
+     * }
+     */
+    private function currentProductAccess(
+        ConnectionInterface $saas,
+        int $userId,
+        int $productId,
+    ): array {
+        $access = $saas
+            ->table('user_product_access as upa')
+            ->join(
+                'product_user_types as put',
+                'put.id',
+                '=',
+                'upa.product_user_type_id',
+            )
+            ->join(
+                'user_types as ut',
+                'ut.id',
+                '=',
+                'put.user_type_id',
+            )
+            ->where('upa.user_id', $userId)
+            ->where('upa.product_id', $productId)
+            ->where('upa.status', 'active')
+            ->orderByDesc('ut.is_owner_type')
+            ->orderByDesc('upa.id')
+            ->first([
+                'upa.id as access_id',
+                'upa.account_owner_id',
+                'ut.is_owner_type',
+            ]);
+
+        abort_unless(
+            $access,
+            403,
+            'You do not have active JCM Inventory access.',
+        );
+
+        $accountOwnerId =
+            (int) $access->account_owner_id;
+
+        abort_if(
+            $accountOwnerId <= 0,
+            403,
+            'No SaaS account owner is assigned to this access record.',
+        );
+
+        return [
+            'access_id' =>
+                (int) $access->access_id,
+
+            'account_owner_id' =>
+                $accountOwnerId,
+
+            'is_owner' =>
+                (bool) $access->is_owner_type,
+        ];
+    }
+
     private function teamAccounts(
         ConnectionInterface $saas,
         int $accountOwnerId,
@@ -279,7 +350,6 @@ class TeamOverviewController extends Controller
                 'u.name',
                 'u.email',
                 'u.email_verified_at',
-                'u.branch_id',
                 'u.is_active as account_is_active',
                 'u.created_at as user_created_at',
                 'upa.id as access_id',
@@ -291,6 +361,31 @@ class TeamOverviewController extends Controller
                     'COALESCE(put.display_name, ut.name) as role_name',
                 ),
             ])
+            ->selectSub(
+                $saas
+                    ->table(
+                        'user_product_access_scopes as branch_scope',
+                    )
+                    ->select('branch_scope.scope_id')
+                    ->whereColumn(
+                        'branch_scope.access_id',
+                        'upa.id',
+                    )
+                    ->where(
+                        'branch_scope.scope_type',
+                        'branch',
+                    )
+                    ->where(
+                        'branch_scope.status',
+                        'active',
+                    )
+                    ->orderByDesc(
+                        'branch_scope.is_primary',
+                    )
+                    ->orderBy('branch_scope.id')
+                    ->limit(1),
+                'branch_id',
+            )
             ->orderByDesc('upa.joined_at')
             ->orderByDesc('upa.id')
             ->get();

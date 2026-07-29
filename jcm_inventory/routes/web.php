@@ -5,7 +5,10 @@ use App\Http\Controllers\BusinessProfileController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\Reports\CategoryReportController;
 use App\Http\Controllers\Reports\ProductReportController;
+use App\Http\Controllers\Reports\StockIssuanceReportController;
+use App\Http\Controllers\Reports\StockMovementReportController;
 use App\Http\Controllers\Reports\StockReportController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseApprovalController;
@@ -330,9 +333,10 @@ Route::middleware(['auth'])->group(function () {
 
             Route::prefix('withdraw')
                 ->name('withdraw.')
-                ->middleware(
-                    'feature:stock_issuance_terminal'
-                )
+                ->middleware([
+                    'feature:stock_issuance_terminal',
+                    'subscription.capability:active',
+                ])
                 ->controller(
                     StockIssuanceController::class
                 )
@@ -352,9 +356,10 @@ Route::middleware(['auth'])->group(function () {
 
             Route::prefix('history')
                 ->name('history.')
-                ->middleware(
-                    'feature:stock_issuance_history'
-                )
+                ->middleware([
+                    'feature:stock_issuance_history',
+                    'subscription.capability:active',
+                ])
                 ->controller(
                     StockIssuanceHistoryController::class
                 )
@@ -375,9 +380,10 @@ Route::middleware(['auth'])->group(function () {
 
             Route::prefix('stock-movements')
                 ->name('stock-movements.')
-                ->middleware(
-                    'feature:stock_movements'
-                )
+                ->middleware([
+                    'feature:stock_movements',
+                    'subscription.capability:active',
+                ])
                 ->controller(
                     StockMovementController::class
                 )
@@ -425,12 +431,114 @@ Route::middleware(['auth'])->group(function () {
         ->controller(StockReportController::class)
         ->group(function () {
             Route::get('/pdf', 'pdf')
+                ->middleware(
+                    'subscription.capability:export'
+                )
                 ->name('pdf');
 
             Route::get('/excel-preview', 'excelPreview')
+                ->middleware(
+                    'subscription.capability:export'
+                )
                 ->name('excel-preview');
 
             Route::get('/excel', 'excel')
+                ->middleware(
+                    'subscription.capability:export'
+                )
+                ->name('excel');
+        });
+
+    Route::prefix('reports/inventory/categories')
+        ->name('reports.inventory.categories.')
+        ->middleware('feature:categories')
+        ->controller(CategoryReportController::class)
+        ->group(function () {
+            Route::get('/pdf', 'pdf')
+                ->middleware(
+                    'subscription.capability:export'
+                )
+                ->name('pdf');
+
+            Route::get(
+                '/excel-preview',
+                'excelPreview'
+            )
+                ->middleware(
+                    'subscription.capability:export'
+                )
+                ->name('excel-preview');
+
+            Route::get('/excel', 'excel')
+                ->middleware(
+                    'subscription.capability:export'
+                )
+                ->name('excel');
+        });
+
+    Route::prefix('reports/inventory/withdrawals')
+        ->name('reports.inventory.withdrawals.')
+        ->middleware(
+            'feature:stock_issuance_history'
+        )
+        ->controller(
+            StockIssuanceReportController::class
+        )
+        ->group(function () {
+            Route::get('/pdf', 'pdf')
+                ->middleware(
+                    'subscription.capability:export'
+                )
+                ->name('pdf');
+
+            Route::get(
+                '/excel-preview',
+                'excelPreview'
+            )
+                ->middleware(
+                    'subscription.capability:export'
+                )
+                ->name('excel-preview');
+
+            Route::get('/excel', 'excel')
+                ->middleware(
+                    'subscription.capability:export'
+                )
+                ->name('excel');
+        });
+
+    Route::prefix(
+        'reports/inventory/stock-movements'
+    )
+        ->name(
+            'reports.inventory.stock-movements.'
+        )
+        ->middleware(
+            'feature:stock_movements'
+        )
+        ->controller(
+            StockMovementReportController::class
+        )
+        ->group(function () {
+            Route::get('/pdf', 'pdf')
+                ->middleware(
+                    'subscription.capability:export'
+                )
+                ->name('pdf');
+
+            Route::get(
+                '/excel-preview',
+                'excelPreview'
+            )
+                ->middleware(
+                    'subscription.capability:export'
+                )
+                ->name('excel-preview');
+
+            Route::get('/excel', 'excel')
+                ->middleware(
+                    'subscription.capability:export'
+                )
                 ->name('excel');
         });
 
@@ -445,7 +553,9 @@ Route::middleware(['auth'])->group(function () {
         '/procurement/received-orders',
         [ReceivedOrderController::class, 'index']
     )
-        ->middleware('feature:receiving')
+        ->middleware(
+            'feature:received_order_history'
+        )
         ->name('procurement.received-orders.index');
 
 
@@ -597,7 +707,9 @@ Route::middleware(['auth'])->group(function () {
 
             Route::prefix('received-orders')
                 ->name('received-orders.')
-                ->middleware('feature:receiving')
+                ->middleware(
+                    'feature:received_order_history'
+                )
                 ->controller(
                     ReceivedOrderController::class
                 )

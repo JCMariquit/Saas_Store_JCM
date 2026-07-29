@@ -1,6 +1,7 @@
 import { AppDrawer } from '@/components/shared/app-drawer';
 import { AppDrawerActions } from '@/components/shared/app-drawer-actions';
 import { AppPagination } from '@/components/shared/app-pagination';
+import { ReportExportButtons } from '@/components/reports/report-export-buttons';
 import { CalloutCard } from '@/components/shared/callout-card';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { ContextCard } from '@/components/shared/context-card';
@@ -43,9 +44,6 @@ import {
     CheckCircle2,
     CircleDollarSign,
     ClipboardPenLine,
-    Eye,
-    FileSpreadsheet,
-    FileText,
     Layers3,
     Package2,
     Plus,
@@ -675,31 +673,6 @@ export default function StockIndex({
         warehouseId,
         categoryId,
     ]);
-
-    const stockPdfUrl =
-        `/reports/inventory/stocks/pdf${reportQueryString}`;
-
-    const stockExcelPreviewUrl =
-        `/reports/inventory/stocks/excel-preview${reportQueryString}`;
-
-    const stockExcelUrl =
-        `/reports/inventory/stocks/excel${reportQueryString}`;
-
-    function openStockReport(url: string): void {
-        if (stocks.total === 0) {
-            return;
-        }
-
-        const reportWindow = window.open(
-            url,
-            '_blank',
-            'noopener,noreferrer',
-        );
-
-        if (reportWindow) {
-            reportWindow.opener = null;
-        }
-    }
 
     function openDetailsDrawer(
         stock: WarehouseStock,
@@ -1476,46 +1449,13 @@ export default function StockIndex({
                                 {stocks.total === 1 ? '' : 's'}
                             </Badge>
 
-                            <Button
-                                type="button"
-                                variant="outline"
-                                disabled={stocks.total === 0}
-                                onClick={() =>
-                                    openStockReport(stockPdfUrl)
-                                }
-                                className="h-9 rounded-lg px-3 text-xs"
-                            >
-                                <FileText className="size-3.5" />
-                                PDF
-                            </Button>
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                disabled={stocks.total === 0}
-                                onClick={() =>
-                                    openStockReport(
-                                        stockExcelPreviewUrl,
-                                    )
-                                }
-                                className="h-9 rounded-lg px-3 text-xs"
-                            >
-                                <Eye className="size-3.5" />
-                                Excel Preview
-                            </Button>
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                disabled={stocks.total === 0}
-                                onClick={() =>
-                                    openStockReport(stockExcelUrl)
-                                }
-                                className="h-9 rounded-lg px-3 text-xs"
-                            >
-                                <FileSpreadsheet className="size-3.5" />
-                                Excel
-                            </Button>
+                            <ReportExportButtons
+                                pdfUrl={`/reports/inventory/stocks/pdf${reportQueryString}`}
+                                excelPreviewUrl={`/reports/inventory/stocks/excel-preview${reportQueryString}`}
+                                recordCount={stocks.total}
+                                resourceLabel="the Warehouse Stock Directory"
+                                className="flex flex-wrap items-center gap-2"
+                            />
 
                             <Button
                                 type="button"

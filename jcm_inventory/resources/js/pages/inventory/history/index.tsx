@@ -1,4 +1,5 @@
 import { AppPagination } from '@/components/shared/app-pagination';
+import { ReportExportButtons } from '@/components/reports/report-export-buttons';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { PageContainer } from '@/components/shared/page-container';
 import { SearchInput } from '@/components/shared/search-input';
@@ -664,6 +665,56 @@ export default function StockWithdrawalHistory({
         );
 
 
+    const withdrawalReportQuery = (() => {
+        const query = new URLSearchParams();
+
+        if (filters.search?.trim()) {
+            query.set(
+                'search',
+                filters.search.trim(),
+            );
+        }
+
+        if (filters.status) {
+            query.set(
+                'status',
+                filters.status,
+            );
+        }
+
+        if (filters.reason) {
+            query.set(
+                'reason',
+                filters.reason,
+            );
+        }
+
+        if (filters.warehouse_id) {
+            query.set(
+                'warehouse_id',
+                filters.warehouse_id,
+            );
+        }
+
+        if (filters.date_from) {
+            query.set(
+                'date_from',
+                filters.date_from,
+            );
+        }
+
+        if (filters.date_to) {
+            query.set(
+                'date_to',
+                filters.date_to,
+            );
+        }
+
+        const value = query.toString();
+
+        return value ? `?${value}` : '';
+    })();
+
     function resetFilters(): void {
         setSearch('');
         setStatus('');
@@ -761,6 +812,14 @@ export default function StockWithdrawalHistory({
                             >
                                 −{formatNumber(pageQuantity)} on this page
                             </Badge>
+
+                            <ReportExportButtons
+                                pdfUrl={`/reports/inventory/withdrawals/pdf${withdrawalReportQuery}`}
+                                excelPreviewUrl={`/reports/inventory/withdrawals/excel-preview${withdrawalReportQuery}`}
+                                recordCount={issuances.total}
+                                resourceLabel="Withdrawal History"
+                                className="flex flex-wrap items-center gap-2"
+                            />
                         </div>
                     }
                 >

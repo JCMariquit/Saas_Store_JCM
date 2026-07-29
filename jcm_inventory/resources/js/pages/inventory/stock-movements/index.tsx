@@ -1,6 +1,8 @@
 import { AppDrawer } from '@/components/shared/app-drawer';
+import { ReportExportButtons } from '@/components/reports/report-export-buttons';
 import { AppPagination } from '@/components/shared/app-pagination';
 import { FilterBar } from '@/components/shared/filter-bar';
+import { IconInput } from '@/components/shared/icon-input';
 import { PageContainer } from '@/components/shared/page-container';
 import { SearchInput } from '@/components/shared/search-input';
 import { SectionCard } from '@/components/shared/section-card';
@@ -31,12 +33,14 @@ import {
     Package2,
     RefreshCw,
     Scale,
+    Search,
     ShieldCheck,
     Warehouse,
     X,
     type LucideIcon,
 } from 'lucide-react';
 import {
+    type FormEvent,
     type ReactNode,
     useEffect,
     useState,
@@ -181,7 +185,7 @@ type MovementControlDrawerView =
 |--------------------------------------------------------------------------
 */
 
-const MOVEMENTS_URL = '/stock-movements';
+const MOVEMENTS_URL = '/inventory/stock-movements';
 const ALL_VALUE = 'all';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -245,55 +249,6 @@ export default function StockMovementIndex({
     ]);
 
     useEffect(() => {
-        const normalizedSearch = search.trim();
-
-        if (
-            normalizedSearch === (filters.search ?? '').trim() &&
-            movementType === (filters.movement_type ?? '') &&
-            direction === (filters.direction ?? '') &&
-            warehouseId === (filters.warehouse_id ?? '') &&
-            dateFrom === (filters.date_from ?? '') &&
-            dateTo === (filters.date_to ?? '')
-        ) {
-            return;
-        }
-
-        const timeoutId = window.setTimeout(() => {
-            router.get(
-                MOVEMENTS_URL,
-                {
-                        search: normalizedSearch || undefined,
-                        movement_type: movementType || undefined,
-                        direction: direction || undefined,
-                        warehouse_id: warehouseId || undefined,
-                        date_from: dateFrom || undefined,
-                        date_to: dateTo || undefined,
-                },
-                {
-                    preserveState: true,
-                    preserveScroll: true,
-                    replace: true,
-                },
-            );
-        }, 300);
-
-        return () => window.clearTimeout(timeoutId);
-    }, [
-        search,
-        movementType,
-        direction,
-        warehouseId,
-        dateFrom,
-        dateTo,
-        filters.search,
-        filters.movement_type,
-        filters.direction,
-        filters.warehouse_id,
-        filters.date_from,
-        filters.date_to,
-    ]);
-
-    useEffect(() => {
         if (!selectedMovement) {
             return;
         }
@@ -345,6 +300,26 @@ export default function StockMovementIndex({
             dateTo,
     );
 
+    function applyFilters(event: FormEvent<HTMLFormElement>): void {
+        event.preventDefault();
+
+        router.get(
+            MOVEMENTS_URL,
+            {
+                search: search.trim() || undefined,
+                movement_type: movementType || undefined,
+                direction: direction || undefined,
+                warehouse_id: warehouseId || undefined,
+                date_from: dateFrom || undefined,
+                date_to: dateTo || undefined,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
+    }
 
     function resetFilters(): void {
         setSearch('');
@@ -364,6 +339,56 @@ export default function StockMovementIndex({
             },
         );
     }
+
+    const movementReportQuery = (() => {
+        const query = new URLSearchParams();
+
+        if (filters.search?.trim()) {
+            query.set(
+                'search',
+                filters.search.trim(),
+            );
+        }
+
+        if (filters.movement_type) {
+            query.set(
+                'movement_type',
+                filters.movement_type,
+            );
+        }
+
+        if (filters.direction) {
+            query.set(
+                'direction',
+                filters.direction,
+            );
+        }
+
+        if (filters.warehouse_id) {
+            query.set(
+                'warehouse_id',
+                filters.warehouse_id,
+            );
+        }
+
+        if (filters.date_from) {
+            query.set(
+                'date_from',
+                filters.date_from,
+            );
+        }
+
+        if (filters.date_to) {
+            query.set(
+                'date_to',
+                filters.date_to,
+            );
+        }
+
+        const value = query.toString();
+
+        return value ? `?${value}` : '';
+    })();
 
     function openMovementDrawer(
         view: MovementControlDrawerView,
@@ -412,12 +437,42 @@ export default function StockMovementIndex({
                             >
                                 {formatNumber(movements.total)} records
                             </Badge>
+
+                            <ReportExportButtons
+                                pdfUrl={`/reports/inventory/stock-movements/pdf${movementReportQuery}`}
+                                excelPreviewUrl={`/reports/inventory/stock-movements/excel-preview${movementReportQuery}`}
+                                recordCount={movements.total}
+                                resourceLabel="Stock Movement History"
+                                className="flex flex-wrap items-center gap-2"
+                            />
                         </div>
                     }
                 >
                     <FilterBar
-                        onSubmit={(event) => event.preventDefault()}
-                        contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_150px_190px_200px_minmax(360px,1.35fr)]"
+                        onSubmit={applyFilters}
+                        contentClassName="grid w-full min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_150px_190px_200px_155px_155px]"
+                        actions={
+                            <>
+                                <Button
+                                    type="submit"
+                                    className="h-10 border border-primary/25 bg-primary/10 px-4 text-sm font-semibold text-primary hover:bg-primary/15 hover:text-primary"
+                                >
+                                    <Search className="size-3.5" />
+                                    Apply Filters
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={resetFilters}
+                                    disabled={!hasActiveFilters}
+                                    className="h-10 px-3 text-sm"
+                                >
+                                    <RefreshCw className="size-3.5" />
+                                    Reset
+                                </Button>
+                            </>
+                        }
                     >
                         <SearchInput
                             value={search}
@@ -494,16 +549,29 @@ export default function StockMovementIndex({
                             </SelectContent>
                         </Select>
 
-                        <InventoryDateRangeFilter
-                            title="Movement date"
-                            description="Show stock movements recorded within this period."
-                            fromId="movement_date_from"
-                            toId="movement_date_to"
-                            fromValue={dateFrom}
-                            toValue={dateTo}
-                            onFromChange={setDateFrom}
-                            onToChange={setDateTo}
-                            className="sm:col-span-2 xl:col-span-1"
+                        <IconInput
+                            id="movement_date_from"
+                            icon={CalendarDays}
+                            type="date"
+                            value={dateFrom}
+                            onChange={(event) => setDateFrom(event.target.value)}
+                            aria-label="Movement date from"
+                            title="Movement date from"
+                            className="h-10"
+                            iconClassName="group-focus-within:text-primary"
+                        />
+
+                        <IconInput
+                            id="movement_date_to"
+                            icon={CalendarDays}
+                            type="date"
+                            min={dateFrom || undefined}
+                            value={dateTo}
+                            onChange={(event) => setDateTo(event.target.value)}
+                            aria-label="Movement date to"
+                            title="Movement date to"
+                            className="h-10"
+                            iconClassName="group-focus-within:text-primary"
                         />
                     </FilterBar>
                     <div className="border-t border-border/60">
@@ -548,117 +616,6 @@ export default function StockMovementIndex({
 | Compact movement ledger
 |--------------------------------------------------------------------------
 */
-
-function InventoryDateRangeFilter({
-    title,
-    description,
-    fromId,
-    toId,
-    fromValue,
-    toValue,
-    onFromChange,
-    onToChange,
-    className,
-}: {
-    title: string;
-    description: string;
-    fromId: string;
-    toId: string;
-    fromValue: string;
-    toValue: string;
-    onFromChange: (value: string) => void;
-    onToChange: (value: string) => void;
-    className?: string;
-}) {
-    const hasDateFilter = Boolean(fromValue || toValue);
-
-    function changeFromDate(value: string): void {
-        onFromChange(value);
-
-        if (value && toValue && toValue < value) {
-            onToChange(value);
-        }
-    }
-
-    function clearDateRange(): void {
-        onFromChange('');
-        onToChange('');
-    }
-
-    return (
-        <section
-            className={cn('min-w-0', className)}
-            aria-label={title}
-            title={description}
-        >
-            <div className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-border/70 bg-background/25 p-1.5 transition-colors focus-within:border-primary/25 focus-within:bg-primary/[0.018] sm:h-10 sm:flex-row sm:items-center sm:gap-0 sm:p-0">
-                <div className="flex h-8 shrink-0 items-center gap-2 rounded-md bg-primary/[0.055] px-2.5 text-primary sm:h-full sm:rounded-l-lg sm:rounded-r-none sm:border-r sm:border-border/60">
-                    <CalendarDays className="size-3.5 shrink-0" />
-                    <span className="whitespace-nowrap text-[9px] font-semibold text-foreground">
-                        {title}
-                    </span>
-                </div>
-
-                <label
-                    htmlFor={fromId}
-                    className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 transition-colors hover:bg-primary/[0.025] sm:rounded-none"
-                >
-                    <span className="shrink-0 text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                        From
-                    </span>
-                    <input
-                        id={fromId}
-                        type="date"
-                        value={fromValue}
-                        aria-label={`${title}: start date`}
-                        onChange={(event) => changeFromDate(event.target.value)}
-                        className="h-7 min-w-0 flex-1 bg-transparent px-1 text-[10px] text-foreground outline-none [color-scheme:dark]"
-                    />
-                </label>
-
-                <span
-                    aria-hidden="true"
-                    className="hidden shrink-0 text-[11px] text-muted-foreground sm:inline-flex"
-                >
-                    →
-                </span>
-
-                <label
-                    htmlFor={toId}
-                    className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2 transition-colors hover:bg-primary/[0.025] sm:rounded-none"
-                >
-                    <span className="shrink-0 text-[8px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                        To
-                    </span>
-                    <input
-                        id={toId}
-                        type="date"
-                        value={toValue}
-                        min={fromValue || undefined}
-                        aria-label={`${title}: end date`}
-                        onChange={(event) => onToChange(event.target.value)}
-                        className="h-7 min-w-0 flex-1 bg-transparent px-1 text-[10px] text-foreground outline-none [color-scheme:dark]"
-                    />
-                </label>
-
-                {hasDateFilter && (
-                    <button
-                        type="button"
-                        onClick={clearDateRange}
-                        aria-label={`Clear ${title.toLowerCase()}`}
-                        title={`Clear ${title.toLowerCase()}`}
-                        className="flex h-8 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background/35 px-2.5 text-sm leading-none text-muted-foreground transition hover:border-primary/20 hover:bg-primary/[0.055] hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 sm:mr-1 sm:size-8 sm:px-0"
-                    >
-                        <span aria-hidden="true">×</span>
-                    </button>
-                )}
-            </div>
-
-            <p className="sr-only">{description}</p>
-        </section>
-    );
-}
-
 
 function MovementLedgerTable({
     movements,

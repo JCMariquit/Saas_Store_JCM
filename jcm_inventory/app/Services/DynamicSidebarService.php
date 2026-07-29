@@ -20,6 +20,19 @@ final class DynamicSidebarService
     ];
 
     /**
+     * These modules require a fully paid/trial subscription even though
+     * their page request may use GET.
+     *
+     * Core record directories such as Products, Categories, and Stock
+     * Management remain visible in read-only mode.
+     */
+    private const ACTIVE_ONLY_ITEM_KEYS = [
+        'stock-issuance-terminal',
+        'stock-issuance-history',
+        'stock-movements',
+    ];
+
+    /**
      * Subscription states that retain their plan identity and sidebar.
      *
      * Active and trial accounts have full access.
@@ -86,11 +99,19 @@ final class DynamicSidebarService
             $sidebarItemIds
         );
 
+        $requiredPlans =
+            $this->requiredPlansForRows(
+                (int) $product->id,
+                (int) $subscription->plan_id,
+                $rows
+            );
+
         return $this->payload(
             $product,
             $access,
             $subscription,
-            $rows
+            $rows,
+            $requiredPlans
         );
     }
 
@@ -252,6 +273,149 @@ final class DynamicSidebarService
                 $permissionItemIds
             )
         ) > 0;
+    }
+
+    /**
+     * Return the first active plan that includes a feature missing from the
+     * user's current plan. A null result means the feature is already in the
+     * plan, does not exist, is unavailable, or is denied by role configuration.
+     *
+     * @return array{
+     *     id:int,
+     *     code:string,
+     *     name:string,
+     *     monthlyPrice:float,
+     *     currency:string
+     * }|null
+     */
+    public function requiredPlanForFeature(
+        User $user,
+        string $productCode,
+        string $featureCode
+    ): ?array {
+        $product = $this->findProduct(
+            $productCode
+        );
+
+        if (! $product) {
+            return null;
+        }
+
+        $access = $this->resolveAccess(
+            $user,
+            (int) $product->id
+        );
+
+        if (! $access) {
+            return null;
+        }
+
+        $subscription =
+            $this->resolveSubscription(
+                $access,
+                (int) $product->id
+            );
+
+        if (! $subscription) {
+            return null;
+        }
+
+        $feature = DB::connection('saas')
+            ->table('app_features')
+            ->where(
+                'product_id',
+                $product->id
+            )
+            ->where(
+                'feature_code',
+                $featureCode
+            )
+            ->where(
+                'status',
+                'active'
+            )
+            ->where(
+                'is_developer_ready',
+                1
+            )
+            ->first([
+                'id',
+                'feature_code',
+            ]);
+
+        if (! $feature) {
+            return null;
+        }
+
+        $currentPlanHasFeature =
+            DB::connection('saas')
+                ->table('plan_features')
+                ->where(
+                    'plan_id',
+                    $subscription->plan_id
+                )
+                ->where(
+                    'feature_id',
+                    $feature->id
+                )
+                ->where(
+                    'is_enabled',
+                    1
+                )
+                ->exists();
+
+        if ($currentPlanHasFeature) {
+            return null;
+        }
+
+        $plan = DB::connection('saas')
+            ->table(
+                'plan_features as plan_feature'
+            )
+            ->join(
+                'plans as plan',
+                'plan.id',
+                '=',
+                'plan_feature.plan_id'
+            )
+            ->where(
+                'plan.product_id',
+                $product->id
+            )
+            ->where(
+                'plan_feature.feature_id',
+                $feature->id
+            )
+            ->where(
+                'plan_feature.is_enabled',
+                1
+            )
+            ->where(
+                'plan.status',
+                'active'
+            )
+            ->where(
+                'plan.id',
+                '!=',
+                $subscription->plan_id
+            )
+            ->orderBy(
+                'plan.sort_order'
+            )
+            ->orderBy(
+                'plan.id'
+            )
+            ->first([
+                'plan.id',
+                'plan.plan_code',
+                'plan.plan_name',
+                'plan.price',
+                'plan.currency',
+            ]);
+
+        return $plan
+            ? $this->planReference($plan)
+            : null;
     }
 
     private function findProduct(
@@ -502,6 +666,11 @@ final class DynamicSidebarService
             'subscription.current_period_end',
             'subscription.grace_ends_at',
             'subscription.cancel_at_period_end',
+            'plan.plan_code',
+            'plan.plan_name',
+            'plan.price as plan_monthly_price',
+            'plan.currency as plan_currency',
+            'plan.sort_order as plan_sort_order',
         ];
     }
 
@@ -766,18 +935,8 @@ final class DynamicSidebarService
                             'sidebar.feature_id'
                         )
                         ->orWhere(
-                            function (
-                                $featureQuery
-                            ): void {
-                                $featureQuery
-                                    ->where(
-                                        'feature.status',
-                                        'active'
-                                    )
-                                    ->whereNotNull(
-                                        'plan_feature.id'
-                                    );
-                            }
+                            'feature.status',
+                            'active'
                         );
                 }
             )
@@ -799,6 +958,7 @@ final class DynamicSidebarService
             ->get([
                 'sidebar.id',
                 'sidebar.parent_id',
+                'sidebar.feature_id',
                 'sidebar.item_key',
                 'sidebar.section_key',
                 'sidebar.item_type',
@@ -808,6 +968,9 @@ final class DynamicSidebarService
                 'sidebar.icon_key',
                 'sidebar.sort_order',
                 'sidebar.is_developer_ready',
+                'feature.feature_code',
+                'feature.is_developer_ready as feature_is_developer_ready',
+                'plan_feature.id as current_plan_feature_id',
                 DB::raw(
                     'COALESCE(
                         badge.badge_code,
@@ -820,11 +983,146 @@ final class DynamicSidebarService
             ]);
     }
 
+    /**
+     * @return array<int, array{
+     *     id:int,
+     *     code:string,
+     *     name:string,
+     *     monthlyPrice:float,
+     *     currency:string
+     * }>
+     */
+    private function requiredPlansForRows(
+        int $productId,
+        int $currentPlanId,
+        Collection $rows
+    ): array {
+        $featureIds = $rows
+            ->filter(
+                fn (object $row): bool =>
+                    $row->feature_id !== null
+                    && $row->current_plan_feature_id
+                        === null
+                    && (bool) (
+                        $row
+                            ->feature_is_developer_ready
+                        ?? false
+                    )
+            )
+            ->pluck('feature_id')
+            ->map(
+                fn ($id): int => (int) $id
+            )
+            ->unique()
+            ->values()
+            ->all();
+
+        if (count($featureIds) === 0) {
+            return [];
+        }
+
+        $plans = DB::connection('saas')
+            ->table(
+                'plan_features as plan_feature'
+            )
+            ->join(
+                'plans as plan',
+                'plan.id',
+                '=',
+                'plan_feature.plan_id'
+            )
+            ->where(
+                'plan.product_id',
+                $productId
+            )
+            ->whereIn(
+                'plan_feature.feature_id',
+                $featureIds
+            )
+            ->where(
+                'plan_feature.is_enabled',
+                1
+            )
+            ->where(
+                'plan.status',
+                'active'
+            )
+            ->where(
+                'plan.id',
+                '!=',
+                $currentPlanId
+            )
+            ->orderBy(
+                'plan.sort_order'
+            )
+            ->orderBy(
+                'plan.id'
+            )
+            ->get([
+                'plan_feature.feature_id',
+                'plan.id',
+                'plan.plan_code',
+                'plan.plan_name',
+                'plan.price',
+                'plan.currency',
+            ]);
+
+        $result = [];
+
+        foreach ($plans as $plan) {
+            $featureId =
+                (int) $plan->feature_id;
+
+            if (
+                ! array_key_exists(
+                    $featureId,
+                    $result
+                )
+            ) {
+                $result[$featureId] =
+                    $this->planReference(
+                        $plan
+                    );
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array{
+     *     id:int,
+     *     code:string,
+     *     name:string,
+     *     monthlyPrice:float,
+     *     currency:string
+     * }
+     */
+    private function planReference(
+        object $plan
+    ): array {
+        return [
+            'id' => (int) $plan->id,
+            'code' =>
+                (string) $plan->plan_code,
+            'name' =>
+                (string) $plan->plan_name,
+            'monthlyPrice' =>
+                (float) $plan->price,
+            'currency' =>
+                (string) (
+                    $plan->currency
+                    ?? 'PHP'
+                ),
+        ];
+    }
+
     private function payload(
         object $product,
         object $access,
         object $subscription,
-        Collection $rows
+        Collection $rows,
+        array $requiredPlans
     ): array {
         return [
             'product' => [
@@ -853,6 +1151,18 @@ final class DynamicSidebarService
                     (int) $subscription->id,
                 'planId' =>
                     (int) $subscription->plan_id,
+                'planCode' =>
+                    (string) $subscription
+                        ->plan_code,
+                'planName' =>
+                    (string) $subscription
+                        ->plan_name,
+                'monthlyPrice' =>
+                    (float) $subscription
+                        ->plan_monthly_price,
+                'currency' =>
+                    (string) $subscription
+                        ->plan_currency,
                 'planPriceId' =>
                     $subscription->plan_price_id
                         ? (int) $subscription
@@ -893,20 +1203,71 @@ final class DynamicSidebarService
             ],
             'sections' =>
                 $this->buildSections(
-                    $rows
+                    $rows,
+                    $requiredPlans,
+                    (string) $subscription
+                        ->status
                 ),
         ];
     }
 
     private function buildSections(
-        Collection $rows
+        Collection $rows,
+        array $requiredPlans,
+        string $subscriptionStatus
     ): array {
         $items = [];
+
+        $isReadOnly = in_array(
+            $subscriptionStatus,
+            self::READ_ONLY_SUBSCRIPTION_STATUSES,
+            true
+        );
 
         foreach ($rows as $row) {
             $url = $this->resolveUrl(
                 $row
             );
+
+            $featureDeveloperReady =
+                $row->feature_id === null
+                || (bool) (
+                    $row
+                        ->feature_is_developer_ready
+                    ?? false
+                );
+
+            $planLocked =
+                $row->item_type === 'link'
+                && $row->feature_id !== null
+                && $row->current_plan_feature_id
+                    === null
+                && (bool) $row
+                    ->is_developer_ready
+                && $featureDeveloperReady
+                && $url !== '#';
+
+            $subscriptionLocked =
+                $row->item_type === 'link'
+                && $isReadOnly
+                && in_array(
+                    $row->item_key,
+                    self::ACTIVE_ONLY_ITEM_KEYS,
+                    true
+                )
+                && ! $planLocked
+                && (bool) $row
+                    ->is_developer_ready
+                && $featureDeveloperReady
+                && $url !== '#';
+
+            $lockReason = $planLocked
+                ? 'plan'
+                : (
+                    $subscriptionLocked
+                        ? 'subscription'
+                        : null
+                );
 
             $items[$row->id] = [
                 'id' => (int) $row->id,
@@ -921,14 +1282,33 @@ final class DynamicSidebarService
                 'url' => $url,
                 'iconKey' =>
                     $row->icon_key,
+                'featureCode' =>
+                    $row->feature_code,
                 'disabled' =>
                     $row->item_type
                         === 'link'
                     && (
                         ! (bool) $row
                             ->is_developer_ready
+                        || ! $featureDeveloperReady
                         || $url === '#'
                     ),
+                'planLocked' =>
+                    $planLocked,
+                'subscriptionLocked' =>
+                    $subscriptionLocked,
+                'lockReason' =>
+                    $lockReason,
+                'requiredPlan' =>
+                    $planLocked
+                    && $row->feature_id !== null
+                        ? (
+                            $requiredPlans[
+                                (int) $row
+                                    ->feature_id
+                            ] ?? null
+                        )
+                        : null,
                 'sortOrder' =>
                     (int) $row->sort_order,
                 'badge' =>
@@ -982,6 +1362,67 @@ final class DynamicSidebarService
                     <=>
                     $second['sortOrder']
             );
+
+            if (
+                $item['type'] !== 'group'
+                || count(
+                    $item['children']
+                ) === 0
+            ) {
+                continue;
+            }
+
+            $lockedChildren = array_values(
+                array_filter(
+                    $item['children'],
+                    fn (array $child): bool =>
+                        $child['lockReason']
+                            !== null
+                )
+            );
+
+            if (
+                count($lockedChildren)
+                !== count(
+                    $item['children']
+                )
+            ) {
+                continue;
+            }
+
+            $lockReasons = array_values(
+                array_unique(
+                    array_map(
+                        fn (array $child): string =>
+                            (string) $child[
+                                'lockReason'
+                            ],
+                        $lockedChildren
+                    )
+                )
+            );
+
+            if (count($lockReasons) !== 1) {
+                continue;
+            }
+
+            $item['lockReason'] =
+                $lockReasons[0];
+
+            $item['planLocked'] =
+                $lockReasons[0] === 'plan';
+
+            $item['subscriptionLocked'] =
+                $lockReasons[0]
+                    === 'subscription';
+
+            $item['requiredPlan'] =
+                collect($lockedChildren)
+                    ->pluck(
+                        'requiredPlan'
+                    )
+                    ->filter()
+                    ->first();
         }
 
         unset($item);

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import {
     BarChart3,
     Beaker,
@@ -11,12 +11,19 @@ import {
     Clock3,
     Code2,
     FlaskConical,
+    Crown,
+    FileText,
     History,
+    Image as ImageIcon,
     LayoutDashboard,
+    LockKeyhole,
+    MapPin,
     Package2,
     PackageCheck,
+    PackageMinus,
     Settings,
     ShieldCheck,
+    ShoppingCart,
     Sparkles,
     Tags,
     Truck,
@@ -25,6 +32,7 @@ import {
     Warehouse,
 } from 'lucide-react';
 
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import type { SharedData } from '@/types';
 
 import AppLogo from './app-logo';
@@ -54,6 +62,19 @@ type DynamicBadge = {
     styleKey: string | null;
 };
 
+type RequiredPlan = {
+    id: number;
+    code: string;
+    name: string;
+    monthlyPrice: number;
+    currency: string;
+};
+
+type SidebarLockReason =
+    | 'plan'
+    | 'subscription'
+    | null;
+
 type DynamicSidebarItem = {
     id: number;
     key: string;
@@ -62,7 +83,12 @@ type DynamicSidebarItem = {
     title: string;
     url: string;
     iconKey: string | null;
+    featureCode: string | null;
     disabled: boolean;
+    planLocked: boolean;
+    subscriptionLocked: boolean;
+    lockReason: SidebarLockReason;
+    requiredPlan: RequiredPlan | null;
     sortOrder: number;
     badge: DynamicBadge | null;
     children: DynamicSidebarItem[];
@@ -93,7 +119,13 @@ type SidebarPayload = {
     subscription: {
         id: number;
         planId: number;
+        planCode: string;
+        planName: string;
+        monthlyPrice: number;
+        currency: string;
         status: string;
+        accessMode: 'full' | 'read_only' | 'blocked';
+        isReadOnly: boolean;
         endDate: string | null;
     } | null;
 
@@ -131,12 +163,19 @@ const iconMap: Record<string, IconComponent> = {
     Clock3,
     Code2,
     FlaskConical,
+    Crown,
+    FileText,
     History,
+    Image: ImageIcon,
     LayoutDashboard,
+    LockKeyhole,
+    MapPin,
     Package2,
     PackageCheck,
+    PackageMinus,
     Settings,
     ShieldCheck,
+    ShoppingCart,
     Sparkles,
     Tags,
     Truck,
@@ -217,6 +256,8 @@ function resolveActiveChildId(
         .filter(
             (item) =>
                 !item.disabled &&
+                !item.planLocked &&
+                !item.subscriptionLocked &&
                 isUrlActive(
                     currentUrl,
                     item.url,
@@ -338,6 +379,80 @@ function MenuBadge({
 
 /*
 |--------------------------------------------------------------------------
+| Subscription / plan lock helpers
+|--------------------------------------------------------------------------
+*/
+
+function isItemLocked(
+    item: DynamicSidebarItem,
+): boolean {
+    return (
+        item.planLocked ||
+        item.subscriptionLocked
+    );
+}
+
+function formatPlanPrice(
+    plan: RequiredPlan | null,
+): string | null {
+    if (
+        !plan ||
+        !Number.isFinite(plan.monthlyPrice)
+    ) {
+        return null;
+    }
+
+    return new Intl.NumberFormat('en-PH', {
+        style: 'currency',
+        currency: plan.currency || 'PHP',
+        maximumFractionDigits: 0,
+    }).format(plan.monthlyPrice);
+}
+
+function PlanLockBadge({
+    item,
+}: {
+    item: DynamicSidebarItem;
+}) {
+    if (!item.lockReason) {
+        return null;
+    }
+
+    const isPlanLock =
+        item.lockReason === 'plan';
+
+    return (
+        <span
+            title={
+                isPlanLock
+                    ? `${
+                          item.requiredPlan?.name ??
+                          'Premium plan'
+                      } required`
+                    : 'Subscription renewal required'
+            }
+            className={[
+                'ml-auto inline-flex h-5 shrink-0 items-center gap-1',
+                'rounded-full border px-1.5',
+                'text-[8px] font-semibold uppercase tracking-[0.08em]',
+                isPlanLock
+                    ? 'border-violet-500/20 bg-violet-500/[0.08] text-violet-300'
+                    : 'border-amber-500/20 bg-amber-500/[0.08] text-amber-300',
+            ].join(' ')}
+        >
+            {isPlanLock ? (
+                <Crown className="size-2.5" />
+            ) : (
+                <LockKeyhole className="size-2.5" />
+            )}
+
+            {isPlanLock ? 'PRO' : 'RENEW'}
+        </span>
+    );
+}
+
+/*
+|--------------------------------------------------------------------------
 | Direct item content
 |--------------------------------------------------------------------------
 */
@@ -355,7 +470,11 @@ function DirectItemContent({
         item.iconKey,
     );
 
-    const toneStyle = themeNavigationStyle;
+    const locked =
+        isItemLocked(item);
+
+    const toneStyle =
+        themeNavigationStyle;
 
     return (
         <>
@@ -376,10 +495,27 @@ function DirectItemContent({
                     'transition-all duration-200',
                     active
                         ? toneStyle.iconActive
-                        : 'border-transparent bg-transparent text-sidebar-foreground/40 group-hover:border-primary/20 group-hover:bg-primary/[0.06] group-hover:text-primary',
+                        : locked
+                          ? 'border-amber-500/15 bg-amber-500/[0.05] text-sidebar-foreground/45 group-hover:border-amber-500/25 group-hover:text-amber-300'
+                          : 'border-transparent bg-transparent text-sidebar-foreground/40 group-hover:border-primary/20 group-hover:bg-primary/[0.06] group-hover:text-primary',
                 ].join(' ')}
             >
                 <Icon className="size-[15px]" />
+
+                {locked && (
+                    <span
+                        aria-hidden="true"
+                        className={[
+                            'absolute -right-1 -top-1 inline-flex size-3.5 items-center justify-center rounded-full',
+                            'border border-sidebar bg-sidebar',
+                            item.planLocked
+                                ? 'text-violet-300'
+                                : 'text-amber-300',
+                        ].join(' ')}
+                    >
+                        <LockKeyhole className="size-2.5" />
+                    </span>
+                )}
 
                 {active && collapsed && (
                     <span
@@ -406,9 +542,15 @@ function DirectItemContent({
                         {item.title}
                     </span>
 
-                    <MenuBadge
-                        badge={item.badge}
-                    />
+                    {locked ? (
+                        <PlanLockBadge
+                            item={item}
+                        />
+                    ) : (
+                        <MenuBadge
+                            badge={item.badge}
+                        />
+                    )}
                 </>
             )}
         </>
@@ -423,8 +565,12 @@ function DirectItemContent({
 
 function DirectItem({
     item,
+    onLockedItem,
 }: {
     item: DynamicSidebarItem;
+    onLockedItem: (
+        item: DynamicSidebarItem,
+    ) => void;
 }) {
     const { url } = usePage();
     const { state } = useSidebar();
@@ -432,14 +578,19 @@ function DirectItem({
     const collapsed =
         state === 'collapsed';
 
+    const locked =
+        isItemLocked(item);
+
     const active =
         !item.disabled &&
+        !locked &&
         isUrlActive(
             url,
             item.url,
         );
 
-    const toneStyle = themeNavigationStyle;
+    const toneStyle =
+        themeNavigationStyle;
 
     const baseClass = [
         'group relative h-10 overflow-hidden rounded-xl border border-transparent',
@@ -449,6 +600,51 @@ function DirectItem({
             ? 'size-10 justify-center px-0'
             : 'w-full px-2.5',
     ].join(' ');
+
+    if (locked) {
+        return (
+            <SidebarMenuItem>
+                <SidebarMenuButton
+                    type="button"
+                    tooltip={
+                        item.planLocked
+                            ? `${
+                                  item.requiredPlan
+                                      ?.name ??
+                                  'Premium plan'
+                              } required`
+                            : 'Subscription renewal required'
+                    }
+                    onClick={() =>
+                        onLockedItem(item)
+                    }
+                    className={[
+                        baseClass,
+                        item.planLocked
+                            ? 'text-sidebar-foreground/50 hover:border-violet-500/20 hover:bg-violet-500/[0.055] hover:text-violet-200'
+                            : 'text-sidebar-foreground/50 hover:border-amber-500/20 hover:bg-amber-500/[0.055] hover:text-amber-200',
+                    ].join(' ')}
+                >
+                    <div
+                        className={[
+                            'flex h-full w-full items-center',
+                            collapsed
+                                ? 'justify-center'
+                                : 'gap-2.5',
+                        ].join(' ')}
+                    >
+                        <DirectItemContent
+                            item={item}
+                            active={false}
+                            collapsed={
+                                collapsed
+                            }
+                        />
+                    </div>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        );
+    }
 
     if (
         item.disabled ||
@@ -536,19 +732,28 @@ function DirectItem({
 function DropdownItem({
     item,
     activeItemId,
+    onLockedItem,
 }: {
     item: DynamicSidebarItem;
     activeItemId: number | null;
+    onLockedItem: (
+        item: DynamicSidebarItem,
+    ) => void;
 }) {
     const Icon = resolveIcon(
         item.iconKey,
     );
 
+    const locked =
+        isItemLocked(item);
+
     const active =
         !item.disabled &&
+        !locked &&
         item.id === activeItemId;
 
-    const toneStyle = themeNavigationStyle;
+    const toneStyle =
+        themeNavigationStyle;
 
     const itemClass = [
         'group relative flex h-9 w-full items-center gap-2',
@@ -571,25 +776,72 @@ function DropdownItem({
 
             <span
                 className={[
-                    'inline-flex size-6 shrink-0 items-center justify-center rounded-md',
+                    'relative inline-flex size-6 shrink-0 items-center justify-center rounded-md',
                     'transition-colors duration-200',
                     active
                         ? toneStyle.iconActive
-                        : 'text-sidebar-foreground/35 group-hover:bg-background/50 group-hover:text-sidebar-foreground/65',
+                        : locked
+                          ? 'text-sidebar-foreground/40 group-hover:bg-background/50 group-hover:text-amber-300'
+                          : 'text-sidebar-foreground/35 group-hover:bg-background/50 group-hover:text-sidebar-foreground/65',
                 ].join(' ')}
             >
                 <Icon className="size-[13px]" />
+
+                {locked && (
+                    <LockKeyhole
+                        className={[
+                            'absolute -right-1 -top-1 size-2.5',
+                            item.planLocked
+                                ? 'text-violet-300'
+                                : 'text-amber-300',
+                        ].join(' ')}
+                    />
+                )}
             </span>
 
             <span className="min-w-0 flex-1 truncate">
                 {item.title}
             </span>
 
-            <MenuBadge
-                badge={item.badge}
-            />
+            {locked ? (
+                <PlanLockBadge
+                    item={item}
+                />
+            ) : (
+                <MenuBadge
+                    badge={item.badge}
+                />
+            )}
         </>
     );
+
+    if (locked) {
+        return (
+            <button
+                type="button"
+                onClick={() =>
+                    onLockedItem(item)
+                }
+                title={
+                    item.planLocked
+                        ? `${
+                              item.requiredPlan
+                                  ?.name ??
+                              'Premium plan'
+                          } required`
+                        : 'Subscription renewal required'
+                }
+                className={[
+                    itemClass,
+                    item.planLocked
+                        ? 'text-sidebar-foreground/48 hover:border-violet-500/15 hover:bg-violet-500/[0.05] hover:text-violet-200'
+                        : 'text-sidebar-foreground/48 hover:border-amber-500/15 hover:bg-amber-500/[0.05] hover:text-amber-200',
+                ].join(' ')}
+            >
+                {content}
+            </button>
+        );
+    }
 
     if (
         item.disabled ||
@@ -641,11 +893,15 @@ function SidebarDropdown({
     group,
     open,
     onOpenChange,
+    onLockedItem,
 }: {
     group: DynamicSidebarItem;
     open: boolean;
     onOpenChange: (
         groupId: number | null,
+    ) => void;
+    onLockedItem: (
+        item: DynamicSidebarItem,
     ) => void;
 }) {
     const { url } = usePage();
@@ -671,7 +927,11 @@ function SidebarDropdown({
     const hasActiveItem =
         activeItemId !== null;
 
-    const toneStyle = themeNavigationStyle;
+    const groupLocked =
+        isItemLocked(group);
+
+    const toneStyle =
+        themeNavigationStyle;
 
     const toggleGroup = () => {
         onOpenChange(
@@ -686,7 +946,11 @@ function SidebarDropdown({
             <SidebarMenuItem>
                 <SidebarMenuButton
                     type="button"
-                    tooltip={group.title}
+                    tooltip={
+                        groupLocked
+                            ? `${group.title} — locked modules`
+                            : group.title
+                    }
                     onClick={() => {
                         onOpenChange(
                             group.id,
@@ -700,7 +964,9 @@ function SidebarDropdown({
                         'transition-all duration-200',
                         hasActiveItem
                             ? toneStyle.itemActive
-                            : 'border-transparent text-sidebar-foreground/42 hover:border-primary/15 hover:bg-primary/[0.05] hover:text-sidebar-foreground',
+                            : groupLocked
+                              ? 'border-amber-500/15 text-sidebar-foreground/45 hover:bg-amber-500/[0.05] hover:text-amber-200'
+                              : 'border-transparent text-sidebar-foreground/42 hover:border-primary/15 hover:bg-primary/[0.05] hover:text-sidebar-foreground',
                     ].join(' ')}
                 >
                     {hasActiveItem && (
@@ -723,6 +989,10 @@ function SidebarDropdown({
                         ].join(' ')}
                     >
                         <GroupIcon className="size-[15px]" />
+
+                        {groupLocked && (
+                            <LockKeyhole className="absolute -right-1 -top-1 size-2.5 text-amber-300" />
+                        )}
 
                         {hasActiveItem && (
                             <span
@@ -752,7 +1022,9 @@ function SidebarDropdown({
                     'text-[13px] transition-all duration-200',
                     hasActiveItem
                         ? toneStyle.itemActive
-                        : 'border-transparent text-sidebar-foreground/58 hover:border-primary/15 hover:bg-primary/[0.05] hover:text-sidebar-foreground',
+                        : groupLocked
+                          ? 'border-amber-500/10 text-sidebar-foreground/55 hover:border-amber-500/20 hover:bg-amber-500/[0.04] hover:text-amber-100'
+                          : 'border-transparent text-sidebar-foreground/58 hover:border-primary/15 hover:bg-primary/[0.05] hover:text-sidebar-foreground',
                 ].join(' ')}
             >
                 {hasActiveItem && (
@@ -767,7 +1039,7 @@ function SidebarDropdown({
 
                 <span
                     className={[
-                        'flex size-7 shrink-0 items-center justify-center',
+                        'relative flex size-7 shrink-0 items-center justify-center',
                         'rounded-lg border transition-all duration-200',
                         hasActiveItem
                             ? toneStyle.iconActive
@@ -775,6 +1047,10 @@ function SidebarDropdown({
                     ].join(' ')}
                 >
                     <GroupIcon className="size-[15px]" />
+
+                    {groupLocked && (
+                        <LockKeyhole className="absolute -right-1 -top-1 size-2.5 text-amber-300" />
+                    )}
                 </span>
 
                 <span
@@ -788,9 +1064,15 @@ function SidebarDropdown({
                     {group.title}
                 </span>
 
-                <MenuBadge
-                    badge={group.badge}
-                />
+                {groupLocked ? (
+                    <PlanLockBadge
+                        item={group}
+                    />
+                ) : (
+                    <MenuBadge
+                        badge={group.badge}
+                    />
+                )}
 
                 <span className="hidden text-[8px] tabular-nums text-sidebar-foreground/30 2xl:inline">
                     {group.children.length}
@@ -814,20 +1096,21 @@ function SidebarDropdown({
                         'ml-[18px] space-y-0.5 border-l pl-3',
                         hasActiveItem
                             ? toneStyle.guideBorder
-                            : 'border-border/45',
+                            : groupLocked
+                              ? 'border-amber-500/20'
+                              : 'border-border/45',
                     ].join(' ')}
                 >
                     {group.children.map(
                         (item) => (
                             <DropdownItem
-                                key={
-                                    item.id
-                                }
-                                item={
-                                    item
-                                }
+                                key={item.id}
+                                item={item}
                                 activeItemId={
                                     activeItemId
+                                }
+                                onLockedItem={
+                                    onLockedItem
                                 }
                             />
                         ),
@@ -849,12 +1132,16 @@ function SectionItems({
     collapsed,
     openGroupId,
     onOpenGroupChange,
+    onLockedItem,
 }: {
     items: DynamicSidebarItem[];
     collapsed: boolean;
     openGroupId: number | null;
     onOpenGroupChange: (
         groupId: number | null,
+    ) => void;
+    onLockedItem: (
+        item: DynamicSidebarItem,
     ) => void;
 }) {
     if (collapsed) {
@@ -865,12 +1152,8 @@ function SectionItems({
                         item.type ===
                         'group' ? (
                             <SidebarDropdown
-                                key={
-                                    item.id
-                                }
-                                group={
-                                    item
-                                }
+                                key={item.id}
+                                group={item}
                                 open={
                                     openGroupId ===
                                     item.id
@@ -878,14 +1161,16 @@ function SectionItems({
                                 onOpenChange={
                                     onOpenGroupChange
                                 }
+                                onLockedItem={
+                                    onLockedItem
+                                }
                             />
                         ) : (
                             <DirectItem
-                                key={
-                                    item.id
-                                }
-                                item={
-                                    item
+                                key={item.id}
+                                item={item}
+                                onLockedItem={
+                                    onLockedItem
                                 }
                             />
                         ),
@@ -901,18 +1186,17 @@ function SectionItems({
                     item.type ===
                     'group' ? (
                         <SidebarDropdown
-                            key={
-                                item.id
-                            }
-                            group={
-                                item
-                            }
+                            key={item.id}
+                            group={item}
                             open={
                                 openGroupId ===
                                 item.id
                             }
                             onOpenChange={
                                 onOpenGroupChange
+                            }
+                            onLockedItem={
+                                onLockedItem
                             }
                         />
                     ) : (
@@ -922,6 +1206,9 @@ function SectionItems({
                         >
                             <DirectItem
                                 item={item}
+                                onLockedItem={
+                                    onLockedItem
+                                }
                             />
                         </SidebarMenu>
                     ),
@@ -975,6 +1262,13 @@ export function AppSidebar() {
         number | null
     >(activeGroupId);
 
+    const [
+        lockedItem,
+        setLockedItem,
+    ] = React.useState<
+        DynamicSidebarItem | null
+    >(null);
+
     React.useEffect(() => {
         setOpenGroupId(
             activeGroupId,
@@ -994,6 +1288,43 @@ export function AppSidebar() {
             },
             [],
         );
+
+    const lockedPlanPrice =
+        formatPlanPrice(
+            lockedItem?.requiredPlan
+                ?? null,
+        );
+
+    const lockedModalTitle =
+        lockedItem?.lockReason === 'plan'
+            ? `${
+                  lockedItem.requiredPlan
+                      ?.name ??
+                  'Premium Inventory'
+              } feature`
+            : 'Subscription renewal required';
+
+    const lockedModalDescription =
+        lockedItem?.lockReason === 'plan'
+            ? `${
+                  lockedItem.title
+              } is not included in ${
+                  sidebar?.subscription
+                      ?.planName ??
+                  'your current plan'
+              }. Upgrade to ${
+                  lockedItem.requiredPlan
+                      ?.name ??
+                  'Premium Inventory'
+              }${
+                  lockedPlanPrice
+                      ? ` starting at ${lockedPlanPrice} per month`
+                      : ''
+              } to unlock this module.`
+            : `${
+                  lockedItem?.title ??
+                  'This module'
+              } is unavailable while the subscription is read-only. Renew the owner subscription to restore access.`;
 
     const productName =
         sidebar?.product?.name ??
@@ -1136,6 +1467,9 @@ export function AppSidebar() {
                                     onOpenGroupChange={
                                         handleOpenGroupChange
                                     }
+                                    onLockedItem={
+                                        setLockedItem
+                                    }
                                 />
                             </div>
                         ),
@@ -1200,6 +1534,33 @@ export function AppSidebar() {
                 </SidebarContent>
 
             </Sidebar>
+
+            <ConfirmDialog
+                open={lockedItem !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setLockedItem(null);
+                    }
+                }}
+                title={lockedModalTitle}
+                description={
+                    lockedModalDescription
+                }
+                confirmText={
+                    lockedItem?.lockReason
+                        === 'plan'
+                        ? 'View Premium Plan'
+                        : 'View Subscription'
+                }
+                processing={false}
+                onConfirm={() => {
+                    setLockedItem(null);
+
+                    router.visit(
+                        '/settings/subscription',
+                    );
+                }}
+            />
         </>
     );
 }

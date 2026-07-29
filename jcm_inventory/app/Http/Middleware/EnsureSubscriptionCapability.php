@@ -1,3 +1,5 @@
+<?php
+
 namespace App\Http\Middleware;
 
 use App\Services\Subscriptions\SubscriptionAccessService;
@@ -23,13 +25,19 @@ final class EnsureSubscriptionCapability
             return to_route('login');
         }
 
-        $context = $this->subscriptions->summary($user);
+        $context =
+            $this->subscriptions->summary(
+                $user
+            );
 
         if (
             $context === null
-            || $context['access_mode'] === 'blocked'
+            || $context['access_mode']
+                === 'blocked'
         ) {
-            return to_route('subscription.index')->with(
+            return to_route(
+                'subscription.index'
+            )->with(
                 'error',
                 'Choose or renew a plan to continue using JCM Inventory.'
             );
@@ -38,25 +46,42 @@ final class EnsureSubscriptionCapability
         $allowed = match ($capability) {
             'read' => in_array(
                 $context['access_mode'],
-                ['full', 'read_only'],
+                [
+                    'full',
+                    'read_only',
+                ],
                 true
             ),
-            'write', 'export' =>
-                $context['access_mode'] === 'full',
+
+            'active',
+            'write',
+            'export' =>
+                $context['access_mode']
+                    === 'full',
+
             default => false,
         };
 
         if (! $allowed) {
-            $message = match ($capability) {
+            $message = match (
+                $capability
+            ) {
+                'active' =>
+                    'This module is unavailable while the subscription is read-only. Renew the owner subscription to unlock it.',
+
                 'export' =>
                     'PDF and Excel exports are unavailable while the subscription is read-only.',
+
                 'write' =>
                     'Your subscription is read-only. Renew the owner subscription to make changes.',
+
                 default =>
                     'Your subscription does not allow this action.',
             };
 
-            return to_route('subscription.index')->with(
+            return to_route(
+                'subscription.index'
+            )->with(
                 'error',
                 $message
             );

@@ -1,4 +1,5 @@
 import { AppDrawer } from '@/components/shared/app-drawer';
+import { ReportExportButtons } from '@/components/reports/report-export-buttons';
 import { AppPagination } from '@/components/shared/app-pagination';
 import { BooleanField } from '@/components/shared/boolean-field';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
@@ -519,6 +520,35 @@ export default function CategoryIndex({
               ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
               : 'border-amber-500/20 bg-amber-500/10 text-amber-300';
 
+    const categoryReportQuery = (() => {
+        const query = new URLSearchParams();
+
+        if (filters.search?.trim()) {
+            query.set(
+                'search',
+                filters.search.trim(),
+            );
+        }
+
+        if (filters.status) {
+            query.set(
+                'status',
+                filters.status,
+            );
+        }
+
+        if (filters.parent_id) {
+            query.set(
+                'parent_id',
+                filters.parent_id,
+            );
+        }
+
+        const value = query.toString();
+
+        return value ? `?${value}` : '';
+    })();
+
     /*
     |--------------------------------------------------------------------------
     | Render
@@ -857,6 +887,14 @@ export default function CategoryIndex({
                                     ? 'y'
                                     : 'ies'}
                             </Badge>
+
+                            <ReportExportButtons
+                                pdfUrl={`/reports/inventory/categories/pdf${categoryReportQuery}`}
+                                excelPreviewUrl={`/reports/inventory/categories/excel-preview${categoryReportQuery}`}
+                                recordCount={categories.total}
+                                resourceLabel="the Category Directory"
+                                className="flex flex-wrap items-center gap-2"
+                            />
 
                             <Button
                                 type="button"

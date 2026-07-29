@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Services\Inventory\InventoryAccessContext;
+use App\Services\Subscriptions\SubscriptionAccessService;
 use App\Models\Category;
 use App\Models\Product;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -16,8 +18,16 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ProductReportController extends Controller
 {
+    public function __construct(
+        private readonly InventoryAccessContext $access,
+        private readonly SubscriptionAccessService $subscriptions
+    ) {
+    }
+
     public function pdf(Request $request): Response
     {
+        $this->ensureExportAccess($request);
+
         $report = $this->buildReportData($request);
 
         $pdf = Pdf::loadView(
@@ -32,6 +42,8 @@ class ProductReportController extends Controller
 
     public function excelPreview(Request $request): View
     {
+        $this->ensureExportAccess($request);
+
         $report = $this->buildReportData($request);
 
         return view(
@@ -52,6 +64,8 @@ class ProductReportController extends Controller
 
     public function excel(Request $request): Response
     {
+        $this->ensureExportAccess($request);
+
         $report = $this->buildReportData($request);
 
         $html = view(
@@ -407,20 +421,24 @@ class ProductReportController extends Controller
         );
     }
 
-    private function getTenantId(Request $request): int
-    {
-        $tenantId = (int) ($request->user()?->client_id ?? 0);
+    private function getTenantId(
+        Request $request
+    ): int {
+        return $this->access->tenantId($request);
+    }
 
-        if ($tenantId <= 0 && app()->environment('local')) {
-            return 1;
-        }
+    private function ensureExportAccess(
+        Request $request
+    ): void {
+        $user = $request->user();
+        $context = $user
+            ? $this->subscriptions->summary($user)
+            : null;
 
-        abort_if(
-            $tenantId <= 0,
+        abort_unless(
+            ($context['access_mode'] ?? 'blocked') === 'full',
             403,
-            'Your account is not assigned to a client.'
+            'PDF and Excel exports are unavailable while the subscription is read-only.'
         );
-
-        return $tenantId;
     }
 }

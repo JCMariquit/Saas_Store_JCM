@@ -125,6 +125,9 @@ Route::middleware(['auth'])->group(function () {
                         ->name('index');
 
                     Route::post('/', 'store')
+                        ->middleware(
+                            'subscription.capability:write'
+                        )
                         ->name('store');
 
                     Route::put('/{branch}', 'update')
@@ -213,17 +216,29 @@ Route::middleware(['auth'])->group(function () {
                     Route::put(
                         '/{product}',
                         'update'
-                    )->name('update');
+                    )
+                        ->middleware(
+                            'subscription.capability:write'
+                        )
+                        ->name('update');
 
                     Route::patch(
                         '/{product}/status',
                         'updateStatus'
-                    )->name('status');
+                    )
+                        ->middleware(
+                            'subscription.capability:write'
+                        )
+                        ->name('status');
 
                     Route::delete(
                         '/{product}',
                         'destroy'
-                    )->name('destroy');
+                    )
+                        ->middleware(
+                            'subscription.capability:write'
+                        )
+                        ->name('destroy');
                 });
 
             /*
@@ -386,12 +401,21 @@ Route::middleware(['auth'])->group(function () {
         ->controller(ProductReportController::class)
         ->group(function () {
             Route::get('/pdf', 'pdf')
+                ->middleware(
+                    'subscription.capability:export'
+                )
                 ->name('pdf');
 
             Route::get('/excel-preview', 'excelPreview')
+                ->middleware(
+                    'subscription.capability:export'
+                )
                 ->name('excel-preview');
 
             Route::get('/excel', 'excel')
+                ->middleware(
+                    'subscription.capability:export'
+                )
                 ->name('excel');
         });
 

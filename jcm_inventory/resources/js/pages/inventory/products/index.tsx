@@ -31,10 +31,12 @@ import {
     Barcode,
     Boxes,
     CheckCircle2,
+    CreditCard,
     ChevronRight,
     FileSpreadsheet,
     FileText,
     Layers3,
+    LockKeyhole,
     Package2,
     Pencil,
     Plus,
@@ -153,11 +155,20 @@ type ProductFormData = {
     is_active: boolean;
 };
 
+type ProductCapabilities = {
+    access_mode: 'full' | 'read_only' | 'blocked';
+    is_read_only: boolean;
+    can_write: boolean;
+    can_export: boolean;
+    message: string | null;
+};
+
 type ProductPageProps = {
     products: PaginatedProducts;
     categories: CategoryOption[];
     summary: ProductSummary;
     filters: ProductFilters;
+    capabilities: ProductCapabilities;
 };
 
 type ProductCatalogDrawerView =
@@ -169,6 +180,11 @@ type ProductCatalogDrawerView =
     | 'batch'
     | 'expiry'
     | 'categories';
+
+type SubscriptionPrompt = {
+    title: string;
+    description: string;
+};
 
 /*
 |--------------------------------------------------------------------------
@@ -238,6 +254,7 @@ export default function ProductIndex({
     categories,
     summary,
     filters,
+    capabilities,
 }: ProductPageProps) {
     const [isDialogOpen, setIsDialogOpen] =
         useState(false);
@@ -253,6 +270,11 @@ export default function ProductIndex({
 
     const [deleteTarget, setDeleteTarget] =
         useState<Product | null>(null);
+
+    const [
+        subscriptionPrompt,
+        setSubscriptionPrompt,
+    ] = useState<SubscriptionPrompt | null>(null);
 
     const [deleteProcessing, setDeleteProcessing] =
         useState(false);
@@ -359,6 +381,18 @@ export default function ProductIndex({
     |--------------------------------------------------------------------------
     */
 
+    function requestSubscriptionRenewal(
+        action: string,
+    ): void {
+        setSubscriptionPrompt({
+            title: 'Subscription renewal required',
+            description:
+                `Your JCM Inventory subscription is currently read-only. ` +
+                `Renew the owner plan to ${action}. Existing product records ` +
+                `will remain available while the subscription is expired.`,
+        });
+    }
+
     function resetProductForm(): void {
         form.clearErrors();
 
@@ -393,6 +427,13 @@ export default function ProductIndex({
     }
 
     function openCreateDialog(): void {
+        if (!capabilities.can_write) {
+            requestSubscriptionRenewal(
+                'add new product records',
+            );
+            return;
+        }
+
         setEditingProduct(null);
         resetProductForm();
         setIsDialogOpen(true);
@@ -421,6 +462,13 @@ export default function ProductIndex({
     function openEditDialog(
         product: Product,
     ): void {
+        if (!capabilities.can_write) {
+            requestSubscriptionRenewal(
+                `edit "${product.name}"`,
+            );
+            return;
+        }
+
         setEditingProduct(product);
         form.clearErrors();
 
@@ -461,6 +509,10 @@ export default function ProductIndex({
         event: FormEvent<HTMLFormElement>,
     ): void {
         event.preventDefault();
+
+        if (!capabilities.can_write) {
+            return;
+        }
 
         if (editingProduct) {
             form.put(
@@ -536,6 +588,15 @@ export default function ProductIndex({
             return;
         }
 
+        if (!capabilities.can_export) {
+            requestSubscriptionRenewal(
+                format === 'pdf'
+                    ? 'export the Product Directory as PDF'
+                    : 'export the Product Directory to Excel',
+            );
+            return;
+        }
+
         const reportWindow = window.open(
             buildProductReportUrl(format),
             '_blank',
@@ -556,6 +617,17 @@ export default function ProductIndex({
     function toggleStatus(
         product: Product,
     ): void {
+        if (!capabilities.can_write) {
+            requestSubscriptionRenewal(
+                `${
+                    product.is_active
+                        ? 'deactivate'
+                        : 'activate'
+                } "${product.name}"`,
+            );
+            return;
+        }
+
         if (
             statusProcessingId === product.id
         ) {
@@ -583,11 +655,19 @@ export default function ProductIndex({
     function requestDelete(
         product: Product,
     ): void {
+        if (!capabilities.can_write) {
+            requestSubscriptionRenewal(
+                `delete "${product.name}"`,
+            );
+            return;
+        }
+
         setDeleteTarget(product);
     }
 
     function deleteProduct(): void {
         if (
+            !capabilities.can_write ||
             !deleteTarget ||
             deleteProcessing
         ) {
@@ -686,6 +766,40 @@ export default function ProductIndex({
             <Head title="Products" />
 
             <PageContainer className="gap-4 md:gap-5">
+                {capabilities.is_read_only && (
+                    <section className="flex flex-col gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.07] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 items-start gap-3">
+                            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-300">
+                                <LockKeyhole className="size-4" />
+                            </span>
+
+                            <div className="min-w-0">
+                                <p className="text-xs font-semibold text-amber-100">
+                                    Product catalog is read-only
+                                </p>
+                                <p className="mt-1 text-[10px] leading-4 text-amber-100/65">
+                                    {capabilities.message ??
+                                        'Renew the owner subscription to add, edit, delete, change status, or export product records.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                                router.visit(
+                                    route('subscription.index'),
+                                )
+                            }
+                            className="h-9 shrink-0 rounded-lg border-amber-400/25 bg-amber-400/[0.06] px-3 text-xs text-amber-100 hover:bg-amber-400/10 hover:text-amber-50"
+                        >
+                            <CreditCard className="size-3.5" />
+                            Renew Plan
+                        </Button>
+                    </section>
+                )}
+
                 {/* Product catalog control board */}
 
                 <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.055] via-primary/[0.018] to-transparent shadow-sm">
@@ -928,35 +1042,66 @@ export default function ProductIndex({
                             <Button
                                 type="button"
                                 variant="outline"
-                                disabled={products.total === 0}
+                                disabled={
+                                    products.total === 0
+                                }
+                                title={
+                                    !capabilities.can_export
+                                        ? 'Select to review subscription renewal options.'
+                                        : undefined
+                                }
                                 onClick={() =>
                                     openProductReport('pdf')
                                 }
-                                className="h-9 rounded-lg px-3 text-xs"
+                                className="h-9 rounded-lg px-3 text-xs disabled:cursor-not-allowed"
                             >
-                                <FileText className="size-3.5" />
+                                {capabilities.can_export ? (
+                                    <FileText className="size-3.5" />
+                                ) : (
+                                    <LockKeyhole className="size-3.5" />
+                                )}
                                 PDF
                             </Button>
 
                             <Button
                                 type="button"
                                 variant="outline"
-                                disabled={products.total === 0}
+                                disabled={
+                                    products.total === 0
+                                }
+                                title={
+                                    !capabilities.can_export
+                                        ? 'Select to review subscription renewal options.'
+                                        : undefined
+                                }
                                 onClick={() =>
                                     openProductReport('excel-preview')
                                 }
-                                className="h-9 rounded-lg px-3 text-xs"
+                                className="h-9 rounded-lg px-3 text-xs disabled:cursor-not-allowed"
                             >
-                                <FileSpreadsheet className="size-3.5" />
+                                {capabilities.can_export ? (
+                                    <FileSpreadsheet className="size-3.5" />
+                                ) : (
+                                    <LockKeyhole className="size-3.5" />
+                                )}
                                 Excel
                             </Button>
 
                             <Button
                                 type="button"
+                                title={
+                                    !capabilities.can_write
+                                        ? 'Select to review subscription renewal options.'
+                                        : undefined
+                                }
                                 onClick={openCreateDialog}
                                 className="h-9 rounded-lg px-3.5 text-xs"
                             >
-                                <Plus className="size-3.5" />
+                                {capabilities.can_write ? (
+                                    <Plus className="size-3.5" />
+                                ) : (
+                                    <LockKeyhole className="size-3.5" />
+                                )}
                                 Add Product
                             </Button>
                         </div>
@@ -1101,6 +1246,8 @@ export default function ProductIndex({
 
                     <ProductDirectoryTable
                         products={products.data}
+                        canCreate={capabilities.can_write}
+                        lockedReason={capabilities.message}
                         onSelect={openDetailsDrawer}
                         onCreate={openCreateDialog}
                     />
@@ -1127,6 +1274,8 @@ export default function ProductIndex({
 
             <ProductDetailsDrawer
                 product={detailsProduct}
+                canWrite={capabilities.can_write}
+                lockedReason={capabilities.message}
                 statusProcessingId={statusProcessingId}
                 onClose={closeDetailsDrawer}
                 onEdit={(product) => {
@@ -1762,6 +1911,32 @@ export default function ProductIndex({
             </FormDialog>
 
             <ConfirmDialog
+                open={subscriptionPrompt !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSubscriptionPrompt(null);
+                    }
+                }}
+                title={
+                    subscriptionPrompt?.title ??
+                    'Subscription renewal required'
+                }
+                description={
+                    subscriptionPrompt?.description ??
+                    'Renew the owner subscription to continue.'
+                }
+                confirmText="View Subscription"
+                processing={false}
+                onConfirm={() => {
+                    setSubscriptionPrompt(null);
+
+                    router.visit(
+                        route('subscription.index'),
+                    );
+                }}
+            />
+
+            <ConfirmDialog
                 open={deleteTarget !== null}
                 onOpenChange={(open) => {
                     if (!open) {
@@ -1791,10 +1966,14 @@ export default function ProductIndex({
 
 function ProductDirectoryTable({
     products,
+    canCreate,
+    lockedReason,
     onSelect,
     onCreate,
 }: {
     products: Product[];
+    canCreate: boolean;
+    lockedReason: string | null;
     onSelect: (product: Product) => void;
     onCreate: () => void;
 }) {
@@ -1838,10 +2017,20 @@ function ProductDirectoryTable({
                                         </p>
                                         <Button
                                             type="button"
+                                            title={
+                                                !canCreate
+                                                    ? lockedReason ??
+                                                      'Select to review subscription renewal options.'
+                                                    : undefined
+                                            }
                                             onClick={onCreate}
                                             className="mt-4 h-9 rounded-lg px-4 text-xs"
                                         >
-                                            <Plus className="size-4" />
+                                            {canCreate ? (
+                                                <Plus className="size-4" />
+                                            ) : (
+                                                <LockKeyhole className="size-4" />
+                                            )}
                                             Add Product
                                         </Button>
                                     </div>
@@ -2447,6 +2636,8 @@ function ProductOverviewSnapshot({
 
 function ProductDetailsDrawer({
     product,
+    canWrite,
+    lockedReason,
     statusProcessingId,
     onClose,
     onEdit,
@@ -2454,6 +2645,8 @@ function ProductDetailsDrawer({
     onDelete,
 }: {
     product: Product | null;
+    canWrite: boolean;
+    lockedReason: string | null;
     statusProcessingId: number | null;
     onClose: () => void;
     onEdit: (product: Product) => void;
@@ -2700,7 +2893,15 @@ function ProductDetailsDrawer({
                             <Button
                                 type="button"
                                 variant="outline"
-                                disabled={statusProcessingId === product.id}
+                                disabled={
+                                    statusProcessingId === product.id
+                                }
+                                title={
+                                    !canWrite
+                                        ? lockedReason ??
+                                          'Select to review subscription renewal options.'
+                                        : undefined
+                                }
                                 onClick={() => onToggleStatus(product)}
                                 className={cn(
                                     'h-9 rounded-lg text-xs',
@@ -2709,25 +2910,48 @@ function ProductDetailsDrawer({
                                         : 'border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/[0.07] hover:text-emerald-300',
                                 )}
                             >
+                                {!canWrite && (
+                                    <LockKeyhole className="size-3.5" />
+                                )}
                                 {product.is_active ? 'Deactivate' : 'Activate'}
                             </Button>
 
                             <Button
                                 type="button"
                                 variant="outline"
+                                title={
+                                    !canWrite
+                                        ? lockedReason ??
+                                          'Select to review subscription renewal options.'
+                                        : undefined
+                                }
                                 onClick={() => onDelete(product)}
                                 className="h-9 rounded-lg border-rose-500/20 text-xs text-rose-400 hover:bg-rose-500/[0.07] hover:text-rose-300"
                             >
-                                <Trash2 className="size-3.5" />
+                                {canWrite ? (
+                                    <Trash2 className="size-3.5" />
+                                ) : (
+                                    <LockKeyhole className="size-3.5" />
+                                )}
                                 Delete
                             </Button>
 
                             <Button
                                 type="button"
+                                title={
+                                    !canWrite
+                                        ? lockedReason ??
+                                          'Select to review subscription renewal options.'
+                                        : undefined
+                                }
                                 onClick={() => onEdit(product)}
                                 className="h-9 rounded-lg bg-primary px-4 text-xs text-primary-foreground hover:bg-primary/90"
                             >
-                                <Pencil className="size-3.5" />
+                                {canWrite ? (
+                                    <Pencil className="size-3.5" />
+                                ) : (
+                                    <LockKeyhole className="size-3.5" />
+                                )}
                                 Edit Product
                             </Button>
                         </div>

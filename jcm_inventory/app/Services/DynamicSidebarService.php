@@ -19,6 +19,26 @@ final class DynamicSidebarService
         ],
     ];
 
+    /**
+     * Subscription states that retain their plan identity and sidebar.
+     *
+     * Active and trial accounts have full access.
+     * Past due, grace period, and expired accounts keep read-only access.
+     */
+    private const SIDEBAR_SUBSCRIPTION_STATUSES = [
+        'active',
+        'trial',
+        'past_due',
+        'grace_period',
+        'expired',
+    ];
+
+    private const READ_ONLY_SUBSCRIPTION_STATUSES = [
+        'past_due',
+        'grace_period',
+        'expired',
+    ];
+
     public function forUser(
         User $user,
         string $productCode
@@ -392,33 +412,28 @@ final class DynamicSidebarService
                 $productId
             )
             ->where(
-                'subscription.user_id',
+                'subscription.account_owner_id',
                 $access->account_owner_id
             )
             ->whereIn(
                 'subscription.status',
-                [
-                    'active',
-                    'trial',
-                ]
+                self::SIDEBAR_SUBSCRIPTION_STATUSES
             )
             ->where(
                 'plan.status',
                 'active'
-            )
-            ->where(
-                function ($query): void {
-                    $query
-                        ->whereNull(
-                            'subscription.end_date'
-                        )
-                        ->orWhereDate(
-                            'subscription.end_date',
-                            '>=',
-                            now()->toDateString()
-                        );
-                }
             );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Prefer the subscription explicitly assigned to product access
+        |--------------------------------------------------------------------------
+        |
+        | Owner, Manager, and Staff rows should point to the same owner
+        | subscription. Expired subscriptions remain resolvable so their plan
+        | features and sidebar can still be displayed in read-only mode.
+        |
+        */
 
         if (
             $access->resolved_subscription_id
@@ -430,28 +445,64 @@ final class DynamicSidebarService
                         $access
                             ->resolved_subscription_id
                     )
-                    ->first([
-                        'subscription.id',
-                        'subscription.plan_id',
-                        'subscription.status',
-                        'subscription.end_date',
-                    ]);
+                    ->first(
+                        $this->subscriptionColumns()
+                    );
 
             if ($subscription) {
                 return $subscription;
             }
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Fallback to the best owner subscription for this product
+        |--------------------------------------------------------------------------
+        |
+        | Status is the lifecycle authority. We intentionally do not reject a
+        | row because its end_date is in the past; that is exactly how an
+        | expired subscription keeps its plan identity for read-only access.
+        |
+        */
+
         return $query
+            ->orderByRaw(
+                "CASE subscription.status
+                    WHEN 'active' THEN 10
+                    WHEN 'trial' THEN 20
+                    WHEN 'grace_period' THEN 30
+                    WHEN 'past_due' THEN 40
+                    WHEN 'expired' THEN 50
+                    ELSE 100
+                END"
+            )
             ->orderByDesc(
                 'subscription.id'
             )
-            ->first([
-                'subscription.id',
-                'subscription.plan_id',
-                'subscription.status',
-                'subscription.end_date',
-            ]);
+            ->first(
+                $this->subscriptionColumns()
+            );
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function subscriptionColumns(): array
+    {
+        return [
+            'subscription.id',
+            'subscription.plan_id',
+            'subscription.plan_price_id',
+            'subscription.subscription_type',
+            'subscription.status',
+            'subscription.start_date',
+            'subscription.end_date',
+            'subscription.trial_ends_at',
+            'subscription.current_period_start',
+            'subscription.current_period_end',
+            'subscription.grace_ends_at',
+            'subscription.cancel_at_period_end',
+        ];
     }
 
     private function resolveSidebarItemIds(
@@ -802,10 +853,43 @@ final class DynamicSidebarService
                     (int) $subscription->id,
                 'planId' =>
                     (int) $subscription->plan_id,
+                'planPriceId' =>
+                    $subscription->plan_price_id
+                        ? (int) $subscription
+                            ->plan_price_id
+                        : null,
+                'type' =>
+                    $subscription
+                        ->subscription_type,
                 'status' =>
                     $subscription->status,
+                'accessMode' =>
+                    $this->subscriptionAccessMode(
+                        $subscription->status
+                    ),
+                'isReadOnly' =>
+                    in_array(
+                        $subscription->status,
+                        self::READ_ONLY_SUBSCRIPTION_STATUSES,
+                        true
+                    ),
+                'startDate' =>
+                    $subscription->start_date,
                 'endDate' =>
                     $subscription->end_date,
+                'trialEndsAt' =>
+                    $subscription->trial_ends_at,
+                'currentPeriodStart' =>
+                    $subscription
+                        ->current_period_start,
+                'currentPeriodEnd' =>
+                    $subscription
+                        ->current_period_end,
+                'graceEndsAt' =>
+                    $subscription->grace_ends_at,
+                'cancelAtPeriodEnd' =>
+                    (bool) $subscription
+                        ->cancel_at_period_end,
             ],
             'sections' =>
                 $this->buildSections(
@@ -1011,6 +1095,35 @@ final class DynamicSidebarService
         }
 
         return '#';
+    }
+
+    private function subscriptionAccessMode(
+        string $status
+    ): string {
+        if (
+            in_array(
+                $status,
+                [
+                    'active',
+                    'trial',
+                ],
+                true
+            )
+        ) {
+            return 'full';
+        }
+
+        if (
+            in_array(
+                $status,
+                self::READ_ONLY_SUBSCRIPTION_STATUSES,
+                true
+            )
+        ) {
+            return 'read_only';
+        }
+
+        return 'blocked';
     }
 
     private function emptyPayload(

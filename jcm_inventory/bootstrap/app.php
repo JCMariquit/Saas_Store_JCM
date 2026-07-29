@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureFeatureAccess;
 use App\Http\Middleware\EnsureProductSubscription;
+use App\Http\Middleware\EnsureSubscriptionCapability;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ShareSubscriptionContext;
 use Illuminate\Foundation\Application;
@@ -54,6 +55,8 @@ return Application::configure(
                 'feature' => EnsureFeatureAccess::class,
                 'subscription.access' =>
                     EnsureProductSubscription::class,
+                'subscription.capability' =>
+                    EnsureSubscriptionCapability::class,
             ]);
         }
     )

@@ -56,18 +56,23 @@ export function UserMenuContent({
     };
 
     return (
-        <>
+        <div className="min-w-[19rem] max-w-[calc(100vw-1.5rem)]">
             <DropdownMenuLabel className="p-0 font-normal">
                 <div className="m-1 rounded-xl border border-sidebar-border/70 bg-sidebar-accent/30 p-3">
                     <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/45">
-                        <ShieldCheck className="size-3.5 text-primary" />
-                        JCM Inventory
+                        <ShieldCheck className="size-3.5 shrink-0 text-primary" />
+
+                        <span className="truncate">
+                            JCM Inventory
+                        </span>
                     </div>
 
-                    <UserInfo
-                        user={user}
-                        showEmail={true}
-                    />
+                    <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+                        <UserInfo
+                            user={user}
+                            showEmail={true}
+                        />
+                    </div>
                 </div>
             </DropdownMenuLabel>
 
@@ -79,18 +84,18 @@ export function UserMenuContent({
                         href={route('subscription.index')}
                         prefetch
                         onClick={cleanup}
-                        className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2"
+                        className="flex w-full min-w-0 items-center gap-2.5 rounded-lg px-2.5 py-2"
                     >
-                        <div className="flex size-7 items-center justify-center rounded-md border border-primary/15 bg-primary/10 text-primary">
+                        <div className="flex size-7 shrink-0 items-center justify-center rounded-md border border-primary/15 bg-primary/10 text-primary">
                             <CreditCard className="size-3.5" />
                         </div>
 
-                        <span className="flex-1 font-medium">
+                        <span className="min-w-0 flex-1 truncate font-medium">
                             Subscription
                         </span>
 
                         <span
-                            className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${planBadgeClasses(
+                            className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${planBadgeClasses(
                                 subscription,
                             )}`}
                         >
@@ -104,13 +109,13 @@ export function UserMenuContent({
                         href={route('profile.edit')}
                         prefetch
                         onClick={cleanup}
-                        className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2"
+                        className="flex w-full min-w-0 items-center gap-2.5 rounded-lg px-2.5 py-2"
                     >
-                        <div className="flex size-7 items-center justify-center rounded-md border border-sidebar-border bg-sidebar-accent/50 text-sidebar-foreground/70">
+                        <div className="flex size-7 shrink-0 items-center justify-center rounded-md border border-sidebar-border bg-sidebar-accent/50 text-sidebar-foreground/70">
                             <Settings className="size-3.5" />
                         </div>
 
-                        <span className="font-medium">
+                        <span className="min-w-0 flex-1 truncate font-medium">
                             Settings
                         </span>
                     </Link>
@@ -125,17 +130,17 @@ export function UserMenuContent({
                     href={route('logout')}
                     as="button"
                     onClick={cleanup}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-rose-400 focus:text-rose-300"
+                    className="flex w-full min-w-0 items-center gap-2.5 rounded-lg px-2.5 py-2 text-rose-400 focus:text-rose-300"
                 >
-                    <div className="flex size-7 items-center justify-center rounded-md border border-rose-500/15 bg-rose-500/10">
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-md border border-rose-500/15 bg-rose-500/10">
                         <LogOut className="size-3.5" />
                     </div>
 
-                    <span className="font-medium">
+                    <span className="min-w-0 flex-1 truncate font-medium">
                         Log out
                     </span>
                 </Link>
             </DropdownMenuItem>
-        </>
+        </div>
     );
 }

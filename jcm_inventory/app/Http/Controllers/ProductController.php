@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Inventory\InventoryAccessContext;
+use App\Services\Subscriptions\SubscriptionAccessService;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,7 +19,8 @@ use Inertia\Response;
 class ProductController extends Controller
 {
     public function __construct(
-        private readonly InventoryAccessContext $access
+        private readonly InventoryAccessContext $access,
+        private readonly SubscriptionAccessService $subscriptions
     ) {
     }
 
@@ -165,12 +167,16 @@ class ProductController extends Controller
                     'stock_tracking' => $stockTracking,
                     'batch_tracking' => $batchTracking,
                 ],
+                'capabilities' =>
+                    $this->subscriptionCapabilities($request),
             ]
         );
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $this->ensureWriteAccess($request);
+
         $tenantId = $this->getTenantId($request);
         $validated = $request->validate($this->validationRules($tenantId));
         $payload = $this->normalisePayload($validated);
@@ -208,6 +214,8 @@ class ProductController extends Controller
         Request $request,
         Product $product
     ): RedirectResponse {
+        $this->ensureWriteAccess($request);
+
         $tenantId = $this->getTenantId($request);
         $this->ensureProductBelongsToTenant($product, $tenantId);
 
@@ -277,6 +285,8 @@ class ProductController extends Controller
         Request $request,
         Product $product
     ): RedirectResponse {
+        $this->ensureWriteAccess($request);
+
         $tenantId = $this->getTenantId($request);
         $this->ensureProductBelongsToTenant($product, $tenantId);
 
@@ -302,6 +312,8 @@ class ProductController extends Controller
         Request $request,
         Product $product
     ): RedirectResponse {
+        $this->ensureWriteAccess($request);
+
         $tenantId = $this->getTenantId($request);
         $this->ensureProductBelongsToTenant($product, $tenantId);
 
@@ -329,6 +341,58 @@ class ProductController extends Controller
         $product->delete();
 
         return back()->with('success', 'Product deleted successfully.');
+    }
+
+    /**
+     * @return array{
+     *     access_mode: string,
+     *     is_read_only: bool,
+     *     can_write: bool,
+     *     can_export: bool,
+     *     message: string|null
+     * }
+     */
+    private function subscriptionCapabilities(
+        Request $request
+    ): array {
+        $user = $request->user();
+        $context = $user
+            ? $this->subscriptions->summary($user)
+            : null;
+
+        $accessMode = (string) (
+            $context['access_mode'] ?? 'blocked'
+        );
+
+        $canOperate = $accessMode === 'full';
+        $isReadOnly = $accessMode === 'read_only';
+
+        return [
+            'access_mode' => $accessMode,
+            'is_read_only' => $isReadOnly,
+            'can_write' => $canOperate,
+            'can_export' => $canOperate,
+            'message' => $isReadOnly
+                ? 'Subscription expired or past due. Existing product records remain available in read-only mode.'
+                : (
+                    $accessMode === 'blocked'
+                        ? 'Renew the owner subscription to continue using JCM Inventory.'
+                        : null
+                ),
+        ];
+    }
+
+    private function ensureWriteAccess(
+        Request $request
+    ): void {
+        $capabilities =
+            $this->subscriptionCapabilities($request);
+
+        abort_unless(
+            $capabilities['can_write'],
+            403,
+            'Your subscription is read-only. Renew the owner subscription to make product changes.'
+        );
     }
 
     private function validationRules(

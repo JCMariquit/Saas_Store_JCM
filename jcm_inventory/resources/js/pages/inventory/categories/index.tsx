@@ -31,11 +31,13 @@ import { Head, router, useForm } from '@inertiajs/react';
 import {
     CalendarDays,
     CheckCircle2,
+    CreditCard,
     ChevronRight,
     CircleGauge,
     Folder,
     FolderTree,
     Layers3,
+    LockKeyhole,
     Package2,
     Pencil,
     Plus,
@@ -122,6 +124,14 @@ type CategoryFilters = {
     parent_id: string;
 };
 
+type CategoryCapabilities = {
+    access_mode: 'full' | 'read_only' | 'blocked';
+    is_read_only: boolean;
+    can_write: boolean;
+    can_export: boolean;
+    message: string | null;
+};
+
 type CategoryFormData = {
     parent_id: string;
     name: string;
@@ -135,6 +145,12 @@ type CategoryPageProps = {
     parentCategories: ParentCategory[];
     summary: CategorySummary;
     filters: CategoryFilters;
+    capabilities: CategoryCapabilities;
+};
+
+type SubscriptionPrompt = {
+    title: string;
+    description: string;
 };
 
 type CategoryMetricTone =
@@ -192,6 +208,7 @@ export default function CategoryIndex({
     parentCategories,
     summary,
     filters,
+    capabilities,
 }: CategoryPageProps) {
     const [isDialogOpen, setIsDialogOpen] =
         useState(false);
@@ -207,6 +224,11 @@ export default function CategoryIndex({
 
     const [deleteTarget, setDeleteTarget] =
         useState<Category | null>(null);
+
+    const [
+        subscriptionPrompt,
+        setSubscriptionPrompt,
+    ] = useState<SubscriptionPrompt | null>(null);
 
     const [deleteProcessing, setDeleteProcessing] =
         useState(false);
@@ -282,6 +304,18 @@ export default function CategoryIndex({
     |--------------------------------------------------------------------------
     */
 
+    function requestSubscriptionRenewal(
+        action: string,
+    ): void {
+        setSubscriptionPrompt({
+            title: 'Subscription renewal required',
+            description:
+                `Your JCM Inventory subscription is currently read-only. ` +
+                `Renew the owner plan to ${action}. Existing category records ` +
+                `will remain available while the subscription is expired.`,
+        });
+    }
+
     function resetCategoryForm(): void {
         form.clearErrors();
         form.setData({
@@ -311,6 +345,13 @@ export default function CategoryIndex({
     }
 
     function openCreateDialog(): void {
+        if (!capabilities.can_write) {
+            requestSubscriptionRenewal(
+                'add new category records',
+            );
+            return;
+        }
+
         setEditingCategory(null);
         resetCategoryForm();
         setIsDialogOpen(true);
@@ -319,6 +360,13 @@ export default function CategoryIndex({
     function openEditDialog(
         category: Category,
     ): void {
+        if (!capabilities.can_write) {
+            requestSubscriptionRenewal(
+                `edit "${category.name}"`,
+            );
+            return;
+        }
+
         setEditingCategory(category);
         form.clearErrors();
 
@@ -363,6 +411,10 @@ export default function CategoryIndex({
     ): void {
         event.preventDefault();
 
+        if (!capabilities.can_write) {
+            return;
+        }
+
         if (editingCategory) {
             form.put(
                 `/inventory/categories/${editingCategory.id}`,
@@ -392,6 +444,17 @@ export default function CategoryIndex({
     function toggleStatus(
         category: Category,
     ): void {
+        if (!capabilities.can_write) {
+            requestSubscriptionRenewal(
+                `${
+                    category.is_active
+                        ? 'deactivate'
+                        : 'activate'
+                } "${category.name}"`,
+            );
+            return;
+        }
+
         if (
             statusProcessingId === category.id
         ) {
@@ -419,11 +482,19 @@ export default function CategoryIndex({
     function requestDelete(
         category: Category,
     ): void {
+        if (!capabilities.can_write) {
+            requestSubscriptionRenewal(
+                `delete "${category.name}"`,
+            );
+            return;
+        }
+
         setDeleteTarget(category);
     }
 
     function deleteCategory(): void {
         if (
+            !capabilities.can_write ||
             !deleteTarget ||
             deleteProcessing
         ) {
@@ -560,6 +631,40 @@ export default function CategoryIndex({
             <Head title="Categories" />
 
             <PageContainer className="gap-4 md:gap-5">
+                {capabilities.is_read_only && (
+                    <section className="flex flex-col gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.07] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 items-start gap-3">
+                            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border border-amber-500/20 bg-amber-500/10 text-amber-300">
+                                <LockKeyhole className="size-4" />
+                            </span>
+
+                            <div className="min-w-0">
+                                <p className="text-xs font-semibold text-amber-100">
+                                    Category catalog is read-only
+                                </p>
+                                <p className="mt-1 text-[10px] leading-4 text-amber-100/65">
+                                    {capabilities.message ??
+                                        'Renew the owner subscription to add, edit, delete, or change category records.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                                router.visit(
+                                    route('subscription.index'),
+                                )
+                            }
+                            className="h-9 shrink-0 rounded-lg border-amber-400/25 bg-amber-400/[0.06] px-3 text-xs text-amber-100 hover:bg-amber-400/10 hover:text-amber-50"
+                        >
+                            <CreditCard className="size-3.5" />
+                            Renew Plan
+                        </Button>
+                    </section>
+                )}
+
                 {/* Catalog structure board */}
 
                 <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.075] via-card/70 to-card/40">
@@ -898,10 +1003,19 @@ export default function CategoryIndex({
 
                             <Button
                                 type="button"
+                                title={
+                                    !capabilities.can_write
+                                        ? 'Select to review subscription renewal options.'
+                                        : undefined
+                                }
                                 onClick={openCreateDialog}
                                 className="h-9 rounded-lg px-3.5 text-xs"
                             >
-                                <Plus className="size-3.5" />
+                                {capabilities.can_write ? (
+                                    <Plus className="size-3.5" />
+                                ) : (
+                                    <LockKeyhole className="size-3.5" />
+                                )}
                                 Add Category
                             </Button>
                         </div>
@@ -1011,6 +1125,7 @@ export default function CategoryIndex({
                         categories={categories.data}
                         onSelect={openDetailsDrawer}
                         onCreate={openCreateDialog}
+                        canCreate={capabilities.can_write}
                     />
 
                     <AppPagination
@@ -1272,6 +1387,31 @@ export default function CategoryIndex({
                 </FormSection>
             </FormDialog>
 
+            <ConfirmDialog
+                open={subscriptionPrompt !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSubscriptionPrompt(null);
+                    }
+                }}
+                title={
+                    subscriptionPrompt?.title ??
+                    'Subscription renewal required'
+                }
+                description={
+                    subscriptionPrompt?.description ??
+                    'Renew the owner subscription to continue.'
+                }
+                confirmText="View Subscription"
+                processing={false}
+                onConfirm={() => {
+                    setSubscriptionPrompt(null);
+                    router.visit(
+                        route('subscription.index'),
+                    );
+                }}
+            />
+
             {/* Delete confirmation */}
 
             <ConfirmDialog
@@ -1310,10 +1450,12 @@ function CategoryDirectoryTable({
     categories,
     onSelect,
     onCreate,
+    canCreate,
 }: {
     categories: Category[];
     onSelect: (category: Category) => void;
     onCreate: () => void;
+    canCreate: boolean;
 }) {
     return (
         <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20 shadow-sm">
@@ -1355,10 +1497,19 @@ function CategoryDirectoryTable({
                                         </p>
                                         <Button
                                             type="button"
+                                            title={
+                                                !canCreate
+                                                    ? 'Select to review subscription renewal options.'
+                                                    : undefined
+                                            }
                                             onClick={onCreate}
                                             className="mt-4 h-9 rounded-lg px-4 text-xs"
                                         >
-                                            <Plus className="size-4" />
+                                            {canCreate ? (
+                                                <Plus className="size-4" />
+                                            ) : (
+                                                <LockKeyhole className="size-4" />
+                                            )}
                                             Add Category
                                         </Button>
                                     </div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Inventory\InventoryAccessContext;
+use App\Services\Subscriptions\SubscriptionAccessService;
 use App\Models\Category;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +18,8 @@ use Inertia\Response;
 class CategoryController extends Controller
 {
     public function __construct(
-        private readonly InventoryAccessContext $access
+        private readonly InventoryAccessContext $access,
+        private readonly SubscriptionAccessService $subscriptions
     ) {
     }
 
@@ -141,12 +143,17 @@ class CategoryController extends Controller
                     'status' => $status,
                     'parent_id' => $parentId,
                 ],
+
+                'capabilities' =>
+                    $this->subscriptionCapabilities($request),
             ]
         );
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $this->ensureWriteAccess($request);
+
         $tenantId = $this->getTenantId($request);
 
         $validated = $request->validate([
@@ -232,6 +239,8 @@ class CategoryController extends Controller
         Request $request,
         Category $category
     ): RedirectResponse {
+        $this->ensureWriteAccess($request);
+
         $tenantId = $this->getTenantId($request);
 
         $this->ensureCategoryBelongsToTenant(
@@ -338,6 +347,8 @@ class CategoryController extends Controller
         Request $request,
         Category $category
     ): RedirectResponse {
+        $this->ensureWriteAccess($request);
+
         $tenantId = $this->getTenantId($request);
 
         $this->ensureCategoryBelongsToTenant(
@@ -370,6 +381,8 @@ class CategoryController extends Controller
         Request $request,
         Category $category
     ): RedirectResponse {
+        $this->ensureWriteAccess($request);
+
         $tenantId = $this->getTenantId($request);
 
         $this->ensureCategoryBelongsToTenant(
@@ -396,6 +409,58 @@ class CategoryController extends Controller
         return back()->with(
             'success',
             'Category deleted successfully.'
+        );
+    }
+
+    /**
+     * @return array{
+     *     access_mode: string,
+     *     is_read_only: bool,
+     *     can_write: bool,
+     *     can_export: bool,
+     *     message: string|null
+     * }
+     */
+    private function subscriptionCapabilities(
+        Request $request
+    ): array {
+        $user = $request->user();
+        $context = $user
+            ? $this->subscriptions->summary($user)
+            : null;
+
+        $accessMode = (string) (
+            $context['access_mode'] ?? 'blocked'
+        );
+
+        $canOperate = $accessMode === 'full';
+        $isReadOnly = $accessMode === 'read_only';
+
+        return [
+            'access_mode' => $accessMode,
+            'is_read_only' => $isReadOnly,
+            'can_write' => $canOperate,
+            'can_export' => $canOperate,
+            'message' => $isReadOnly
+                ? 'Subscription expired or past due. Existing category records remain available in read-only mode.'
+                : (
+                    $accessMode === 'blocked'
+                        ? 'Renew the owner subscription to continue using JCM Inventory.'
+                        : null
+                ),
+        ];
+    }
+
+    private function ensureWriteAccess(
+        Request $request
+    ): void {
+        $capabilities =
+            $this->subscriptionCapabilities($request);
+
+        abort_unless(
+            $capabilities['can_write'],
+            403,
+            'Your subscription is read-only. Renew the owner subscription to make category changes.'
         );
     }
 

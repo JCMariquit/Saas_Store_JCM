@@ -9,6 +9,7 @@ use App\Models\Warehouse;
 use App\Models\WarehouseStock;
 use App\Services\Inventory\InventoryAccessContext;
 use App\Services\Inventory\InventoryLedgerService;
+use App\Services\Subscriptions\SubscriptionAccessService;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -39,7 +40,8 @@ class StockController extends Controller
 
     public function __construct(
         private readonly InventoryAccessContext $access,
-        private readonly InventoryLedgerService $ledger
+        private readonly InventoryLedgerService $ledger,
+        private readonly SubscriptionAccessService $subscriptions
     ) {
     }
 
@@ -626,11 +628,15 @@ class StockController extends Controller
                 ['value' => 'damage', 'label' => 'Damaged Stock', 'direction' => 'out'],
                 ['value' => 'expired', 'label' => 'Expired Stock', 'direction' => 'out'],
             ],
+            'capabilities' =>
+                $this->subscriptionCapabilities($request),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $this->ensureWriteAccess($request);
+
         $context = $this->access->resolve($request);
         $tenantId = $context['account_owner_id'];
         $validated = $request->validate($this->openingStockRules($tenantId));
@@ -828,6 +834,8 @@ class StockController extends Controller
         Request $request,
         WarehouseStock $stock
     ): RedirectResponse {
+        $this->ensureWriteAccess($request);
+
         $context = $this->access->resolve($request);
         $tenantId = $context['account_owner_id'];
         $this->ensureStockBelongsToTenant($stock, $tenantId);
@@ -869,6 +877,8 @@ class StockController extends Controller
         Request $request,
         WarehouseStock $stock
     ): RedirectResponse {
+        $this->ensureWriteAccess($request);
+
         $context = $this->access->resolve($request);
         $tenantId = $context['account_owner_id'];
         $this->ensureStockBelongsToTenant($stock, $tenantId);
@@ -1089,6 +1099,8 @@ class StockController extends Controller
         Request $request,
         WarehouseStock $stock
     ): RedirectResponse {
+        $this->ensureWriteAccess($request);
+
         $context = $this->access->resolve($request);
         $tenantId = $context['account_owner_id'];
         $this->ensureStockBelongsToTenant($stock, $tenantId);
@@ -1301,6 +1313,8 @@ class StockController extends Controller
         Request $request,
         WarehouseStock $stock
     ): RedirectResponse {
+        $this->ensureWriteAccess($request);
+
         $context = $this->access->resolve($request);
         $tenantId = $context['account_owner_id'];
         $this->ensureStockBelongsToTenant($stock, $tenantId);
@@ -1583,6 +1597,58 @@ class StockController extends Controller
         };
     }
 
+
+    /**
+     * @return array{
+     *     access_mode: string,
+     *     is_read_only: bool,
+     *     can_write: bool,
+     *     can_export: bool,
+     *     message: string|null
+     * }
+     */
+    private function subscriptionCapabilities(
+        Request $request
+    ): array {
+        $user = $request->user();
+        $context = $user
+            ? $this->subscriptions->summary($user)
+            : null;
+
+        $accessMode = (string) (
+            $context['access_mode'] ?? 'blocked'
+        );
+
+        $canOperate = $accessMode === 'full';
+        $isReadOnly = $accessMode === 'read_only';
+
+        return [
+            'access_mode' => $accessMode,
+            'is_read_only' => $isReadOnly,
+            'can_write' => $canOperate,
+            'can_export' => $canOperate,
+            'message' => $isReadOnly
+                ? 'Subscription expired or past due. Existing stock records remain available in read-only mode.'
+                : (
+                    $accessMode === 'blocked'
+                        ? 'Renew the owner subscription to continue using JCM Inventory.'
+                        : null
+                ),
+        ];
+    }
+
+    private function ensureWriteAccess(
+        Request $request
+    ): void {
+        $capabilities =
+            $this->subscriptionCapabilities($request);
+
+        abort_unless(
+            $capabilities['can_write'],
+            403,
+            'Your subscription is read-only. Renew the owner subscription to change stock records.'
+        );
+    }
 
     private function ensureStockBelongsToTenant(
         WarehouseStock $stock,

@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Reports;
 
 use App\Http\Controllers\Controller;
 use App\Services\Inventory\InventoryAccessContext;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +21,7 @@ class StockReportController extends Controller
         $this->ensureExportAccess($request);
         $data = $this->reportData($request);
 
-        return Pdf::loadView(
+        return app('dompdf.wrapper')->loadView(
             'reports.inventory.stocks.stock-list',
             $data
         )

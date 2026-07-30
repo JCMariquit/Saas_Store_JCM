@@ -7,7 +7,6 @@ use App\Services\Inventory\InventoryAccessContext;
 use App\Services\Subscriptions\SubscriptionAccessService;
 use App\Models\Category;
 use App\Models\Product;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Request;
@@ -30,7 +29,7 @@ class ProductReportController extends Controller
 
         $report = $this->buildReportData($request);
 
-        $pdf = Pdf::loadView(
+        $pdf = app('dompdf.wrapper')->loadView(
             'reports.inventory.products.product-list',
             $report
         )->setPaper('a4', 'landscape');

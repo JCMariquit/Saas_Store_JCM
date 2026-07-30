@@ -1,5 +1,6 @@
 import { AppDrawer } from "@/components/shared/app-drawer";
 import { AppPagination } from "@/components/shared/app-pagination";
+import { ProcurementReportExportButtons } from "@/components/reports/procurement-report-export-buttons";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { PageContainer } from "@/components/shared/page-container";
@@ -544,14 +545,24 @@ export default function ReceivedOrderIndex({
           title="Received Order Register"
           description="Review fully received purchase orders, supplier details, warehouse destinations, products, financial totals, workflow history, and every receipt record."
           actions={
-            <Badge
-              variant="outline"
-              className="h-7 rounded-full border-emerald-500/15 bg-emerald-500/[0.06] px-2.5 text-[10px] font-medium text-emerald-300"
-            >
-              <History className="mr-1 size-3" />
-              {formatNumber(received_orders.total)} order
-              {received_orders.total === 1 ? "" : "s"}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                variant="outline"
+                className="h-7 rounded-full border-emerald-500/15 bg-emerald-500/[0.06] px-2.5 text-[10px] font-medium text-emerald-300"
+              >
+                <History className="mr-1 size-3" />
+                {formatNumber(received_orders.total)} order
+                {received_orders.total === 1 ? "" : "s"}
+              </Badge>
+
+              <ProcurementReportExportButtons
+                basePath="/reports/procurement/received-orders"
+                filters={filters}
+                recordCount={received_orders.total}
+                resourceLabel="the Received Order Register"
+                className="flex flex-wrap items-center gap-2"
+              />
+            </div>
           }
         >
           <FilterBar

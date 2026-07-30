@@ -1,5 +1,6 @@
 import { AppDrawer } from "@/components/shared/app-drawer";
 import { AppPagination } from "@/components/shared/app-pagination";
+import { ProcurementReportExportButtons } from "@/components/reports/procurement-report-export-buttons";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { FilterBar } from "@/components/shared/filter-bar";
@@ -969,6 +970,14 @@ export default function PurchaseOrderIndex({
                 {formatNumber(purchase_orders.total)} order
                 {purchase_orders.total === 1 ? "" : "s"}
               </Badge>
+
+              <ProcurementReportExportButtons
+                basePath="/reports/procurement/purchase-orders"
+                filters={filters}
+                recordCount={purchase_orders.total}
+                resourceLabel="the Purchase Order Register"
+                className="flex flex-wrap items-center gap-2"
+              />
 
               <Button
                 type="button"

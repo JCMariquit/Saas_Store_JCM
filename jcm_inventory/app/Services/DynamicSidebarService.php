@@ -23,13 +23,62 @@ final class DynamicSidebarService
      * These modules require a fully paid/trial subscription even though
      * their page request may use GET.
      *
-     * Core record directories such as Products, Categories, and Stock
-     * Management remain visible in read-only mode.
+     * Core record and audit pages remain readable:
+     *
+     * - Dashboard
+     * - Stock Overview
+     * - Categories
+     * - Products
+     * - Stock Management
+     * - Received Orders
+     *
+     * Operational and configuration pages listed below display a RENEW lock
+     * when the owner subscription is past due, in grace period, or expired.
      */
     private const ACTIVE_ONLY_ITEM_KEYS = [
+        /*
+        |--------------------------------------------------------------------------
+        | Inventory operations
+        |--------------------------------------------------------------------------
+        */
         'stock-issuance-terminal',
         'stock-issuance-history',
         'stock-movements',
+
+        /*
+        |--------------------------------------------------------------------------
+        | Location administration
+        |--------------------------------------------------------------------------
+        */
+        'branches',
+        'warehouses',
+
+        /*
+        |--------------------------------------------------------------------------
+        | Procurement operations
+        |--------------------------------------------------------------------------
+        */
+        'suppliers',
+        'purchase-orders',
+        'purchase-approvals',
+        'receiving',
+
+        /*
+        |--------------------------------------------------------------------------
+        | Team overview and administration
+        |--------------------------------------------------------------------------
+        */
+        'team-overview',
+        'staff-accounts',
+        'roles-access',
+
+        /*
+        |--------------------------------------------------------------------------
+        | Business configuration
+        |--------------------------------------------------------------------------
+        */
+        'business-profile-general',
+        'business-profile-branding',
     ];
 
     /**

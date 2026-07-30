@@ -1,5 +1,6 @@
 import { AppDrawer } from "@/components/shared/app-drawer";
 import { AppPagination } from "@/components/shared/app-pagination";
+import { ProcurementReportExportButtons } from "@/components/reports/procurement-report-export-buttons";
 import { CalloutCard } from "@/components/shared/callout-card";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
 import { FormDialog } from "@/components/shared/form-dialog";
@@ -1124,6 +1125,14 @@ export default function ReceivingIndex({
                 <RotateCcw className="mr-1 size-3" />
                 {formatNumber(reversedReceipts.length)} reversed
               </Badge>
+
+              <ProcurementReportExportButtons
+                basePath="/reports/procurement/receiving"
+                filters={filters}
+                recordCount={receipts.total}
+                resourceLabel="the Receiving and Receipt Register"
+                className="flex flex-wrap items-center gap-2"
+              />
             </div>
           }
         >

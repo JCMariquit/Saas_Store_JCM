@@ -551,7 +551,7 @@ CREATE TABLE `orders` (
   CONSTRAINT `orders_account_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `orders_plan_price_plan_foreign` FOREIGN KEY (`plan_price_id`, `plan_id`) REFERENCES `plan_prices` (`id`, `plan_id`) ON UPDATE CASCADE,
   CONSTRAINT `orders_subscription_scope_foreign` FOREIGN KEY (`subscription_id`, `product_id`, `account_owner_id`) REFERENCES `subscriptions` (`id`, `product_id`, `account_owner_id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -560,7 +560,7 @@ CREATE TABLE `orders` (
 
 LOCK TABLES `orders` WRITE;
 /*!40000 ALTER TABLE `orders` DISABLE KEYS */;
-INSERT INTO `orders` VALUES (18,'ORD-SUB-1-20260729145952-0LEMHD',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'payment_submitted','2026-07-29 08:32:41',NULL,NULL,NULL,'2026-07-29 06:59:52','2026-07-29 08:32:54');
+INSERT INTO `orders` VALUES (18,'ORD-SUB-1-20260729145952-0LEMHD',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'cancelled','2026-07-29 08:32:41',NULL,NULL,'[TEST RESET 2026-07-30 11:05:07] Open subscription order cancelled to allow a new plan selection.','2026-07-29 06:59:52','2026-07-30 03:05:07'),(19,'ORD-SUB-1-20260730110529-SNIK8E',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'cancelled','2026-07-30 03:05:29',NULL,NULL,'[TEST RESET 2026-07-30 11:29:36] Open subscription order cancelled to allow a new plan selection.','2026-07-30 03:05:29','2026-07-30 03:29:36'),(20,'ORD-SUB-1-20260730112940-2NMVUC',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'cancelled','2026-07-30 03:29:40',NULL,NULL,'[2026-07-30 11:42:04] Checkout cancelled by the account owner.','2026-07-30 03:29:40','2026-07-30 03:42:04'),(21,'ORD-SUB-1-20260730114207-TVET8L',1,1,11,NULL,13,4,'monthly',19,'renewal',1299.00,'PHP',30,'cancelled','2026-07-30 03:42:07',NULL,NULL,'[2026-07-30 11:42:24] Checkout cancelled by the account owner.','2026-07-30 03:42:07','2026-07-30 03:42:24'),(22,'ORD-SUB-1-20260730132718-9XJIXK',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'cancelled','2026-07-30 05:27:18',NULL,NULL,'[2026-07-30 13:27:23] Checkout cancelled by the account owner.','2026-07-30 05:27:18','2026-07-30 05:27:23');
 /*!40000 ALTER TABLE `orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1366,7 +1366,7 @@ CREATE TABLE `subscription_cycles` (
   CONSTRAINT `subscription_cycles_plan_price_plan_foreign` FOREIGN KEY (`plan_price_id`, `plan_id`) REFERENCES `plan_prices` (`id`, `plan_id`) ON UPDATE CASCADE,
   CONSTRAINT `subscription_cycles_subscription_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `subscription_cycles_transaction_foreign` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1375,7 +1375,7 @@ CREATE TABLE `subscription_cycles` (
 
 LOCK TABLES `subscription_cycles` WRITE;
 /*!40000 ALTER TABLE `subscription_cycles` DISABLE KEYS */;
-INSERT INTO `subscription_cycles` VALUES (1,18,9,NULL,NULL,NULL,1,'monthly','expired','2026-06-09','2026-07-09',499.00,'PHP','2026-06-09 00:00:00','2026-07-09 23:59:59','2026-06-09 07:47:30','2026-07-13 01:47:56'),(2,19,13,6,NULL,NULL,1,'yearly','expired','2026-07-28','2026-07-28',0.00,'PHP','2026-07-13 02:33:41','2026-07-29 00:55:13','2026-07-13 02:33:41','2026-07-29 00:55:13'),(3,19,13,4,NULL,NULL,2,'monthly','expired','2026-07-29','2026-07-28',1299.00,'PHP','2026-07-29 00:56:30','2026-07-29 01:01:30','2026-07-29 00:56:30','2026-07-29 01:01:30'),(4,19,13,4,NULL,NULL,3,'monthly','expired','2026-07-29','2026-07-28',1299.00,'PHP','2026-07-29 01:25:28','2026-07-29 01:47:36','2026-07-29 01:25:28','2026-07-29 01:47:36'),(5,19,13,4,NULL,NULL,4,'monthly','active','2026-07-29','2026-08-28',1299.00,'PHP','2026-07-29 07:15:29',NULL,'2026-07-29 06:25:33','2026-07-29 07:15:29');
+INSERT INTO `subscription_cycles` VALUES (1,18,9,NULL,NULL,NULL,1,'monthly','expired','2026-06-09','2026-07-09',499.00,'PHP','2026-06-09 00:00:00','2026-07-09 23:59:59','2026-06-09 07:47:30','2026-07-13 01:47:56'),(2,19,13,6,NULL,NULL,1,'yearly','expired','2026-07-28','2026-07-28',0.00,'PHP','2026-07-13 02:33:41','2026-07-29 00:55:13','2026-07-13 02:33:41','2026-07-29 00:55:13'),(3,19,13,4,NULL,NULL,2,'monthly','expired','2026-07-29','2026-07-28',1299.00,'PHP','2026-07-29 00:56:30','2026-07-29 01:01:30','2026-07-29 00:56:30','2026-07-29 01:01:30'),(4,19,13,4,NULL,NULL,3,'monthly','expired','2026-07-29','2026-07-28',1299.00,'PHP','2026-07-29 01:25:28','2026-07-29 01:47:36','2026-07-29 01:25:28','2026-07-29 01:47:36'),(5,19,13,4,NULL,NULL,4,'monthly','expired','2026-07-29','2026-07-29',1299.00,'PHP','2026-07-29 07:15:29','2026-07-30 03:42:50','2026-07-29 06:25:33','2026-07-30 03:42:50'),(6,19,13,4,NULL,NULL,5,'monthly','expired','2026-07-30','2026-07-29',1299.00,'PHP','2026-07-30 05:26:46','2026-07-30 05:29:43','2026-07-30 05:26:46','2026-07-30 05:29:43'),(7,19,13,4,NULL,NULL,6,'monthly','expired','2026-07-30','2026-07-29',1299.00,'PHP','2026-07-30 05:42:26','2026-07-30 05:42:54','2026-07-30 05:37:59','2026-07-30 05:42:54'),(8,19,13,4,NULL,NULL,7,'monthly','expired','2026-07-30','2026-07-29',1299.00,'PHP','2026-07-30 06:31:28','2026-07-30 08:36:39','2026-07-30 06:31:28','2026-07-30 08:36:39');
 /*!40000 ALTER TABLE `subscription_cycles` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1413,7 +1413,7 @@ CREATE TABLE `subscription_events` (
   CONSTRAINT `subscription_events_order_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `subscription_events_subscription_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `subscription_events_transaction_foreign` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1422,7 +1422,7 @@ CREATE TABLE `subscription_events` (
 
 LOCK TABLES `subscription_events` WRITE;
 /*!40000 ALTER TABLE `subscription_events` DISABLE KEYS */;
-INSERT INTO `subscription_events` VALUES (1,18,1,NULL,NULL,'created',NULL,9,NULL,'active','Migrated from the original JCM SaaS subscription.',NULL,'2026-06-09 07:47:30'),(2,18,NULL,NULL,NULL,'expired',9,9,'active','expired','Automatically expired because its end date passed.',NULL,'2026-07-09 23:59:59'),(3,19,1,NULL,NULL,'activated',NULL,13,'pending','active','JCM Inventory development access activated.',NULL,'2026-07-13 02:33:41'),(4,19,1,NULL,NULL,'activated',NULL,13,NULL,'active','Comped Inventory development subscription activated.','{\"source\": \"manual-development-injection\", \"comped\": true}','2026-07-28 13:41:53'),(5,19,1,NULL,NULL,'expired',13,13,'active','expired','Inventory subscription expired manually for middleware testing.','{\"source\": \"manual-test\", \"test_case\": \"expired-subscription\"}','2026-07-29 00:55:13'),(6,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-29 00:56:30'),(7,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-29 01:25:28'),(8,19,1,NULL,NULL,'downgraded',13,12,'expired','active','User 1 switched to Basic Inventory monthly for development testing.','{\"source\": \"manual-test\", \"test_case\": \"basic-inventory-plan\", \"billing_interval\": \"monthly\", \"catalog_price\": 499.00, \"non_owner_memberships\": \"set-inactive\"}','2026-07-29 06:25:33'),(9,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-29 07:15:29');
+INSERT INTO `subscription_events` VALUES (1,18,1,NULL,NULL,'created',NULL,9,NULL,'active','Migrated from the original JCM SaaS subscription.',NULL,'2026-06-09 07:47:30'),(2,18,NULL,NULL,NULL,'expired',9,9,'active','expired','Automatically expired because its end date passed.',NULL,'2026-07-09 23:59:59'),(3,19,1,NULL,NULL,'activated',NULL,13,'pending','active','JCM Inventory development access activated.',NULL,'2026-07-13 02:33:41'),(4,19,1,NULL,NULL,'activated',NULL,13,NULL,'active','Comped Inventory development subscription activated.','{\"source\": \"manual-development-injection\", \"comped\": true}','2026-07-28 13:41:53'),(5,19,1,NULL,NULL,'expired',13,13,'active','expired','Inventory subscription expired manually for middleware testing.','{\"source\": \"manual-test\", \"test_case\": \"expired-subscription\"}','2026-07-29 00:55:13'),(6,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-29 00:56:30'),(7,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-29 01:25:28'),(8,19,1,NULL,NULL,'downgraded',13,12,'expired','active','User 1 switched to Basic Inventory monthly for development testing.','{\"source\": \"manual-test\", \"test_case\": \"basic-inventory-plan\", \"billing_interval\": \"monthly\", \"catalog_price\": 499.00, \"non_owner_memberships\": \"set-inactive\"}','2026-07-29 06:25:33'),(9,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-29 07:15:29'),(10,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-30 05:26:46'),(11,19,1,NULL,NULL,'downgraded',13,12,'expired','active','User 1 switched to Basic Inventory monthly for development testing.','{\"source\": \"manual-test\", \"test_case\": \"basic-inventory-plan\", \"billing_interval\": \"monthly\", \"catalog_price\": 499.00, \"non_owner_memberships\": \"set-inactive\"}','2026-07-30 05:37:59'),(12,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-30 05:42:27'),(13,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-30 06:31:28');
 /*!40000 ALTER TABLE `subscription_events` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1491,7 +1491,7 @@ CREATE TABLE `subscriptions` (
 
 LOCK TABLES `subscriptions` WRITE;
 /*!40000 ALTER TABLE `subscriptions` DISABLE KEYS */;
-INSERT INTO `subscriptions` VALUES (18,1,1,10,9,NULL,'SUB-1780991250','monthly','expired','2026-06-09','2026-07-09',NULL,'2026-06-08 16:00:00','2026-07-09 15:59:59',NULL,NULL,30,499.00,'PHP',0,0,'2026-06-09 00:00:00',NULL,NULL,'2026-07-09 23:59:59',NULL,'Basic POS subscription for testing','2026-06-09 07:47:30','2026-07-28 11:37:28',NULL),(19,1,1,11,13,4,'SUB-INV-DEV-1-1783910021','monthly','active','2026-07-29','2026-08-28',NULL,'2026-07-29 07:15:29','2026-08-28 07:15:29',NULL,'2026-08-28 07:15:29',30,1299.00,'PHP',0,0,'2026-07-29 07:15:29',NULL,NULL,NULL,NULL,'Team monthly subscription activated manually for development testing.','2026-07-13 02:33:41','2026-07-29 07:15:29','1:11');
+INSERT INTO `subscriptions` VALUES (18,1,1,10,9,NULL,'SUB-1780991250','monthly','expired','2026-06-09','2026-07-09',NULL,'2026-06-08 16:00:00','2026-07-09 15:59:59',NULL,NULL,30,499.00,'PHP',0,0,'2026-06-09 00:00:00',NULL,NULL,'2026-07-09 23:59:59',NULL,'Basic POS subscription for testing','2026-06-09 07:47:30','2026-07-28 11:37:28',NULL),(19,1,1,11,13,4,'SUB-INV-DEV-1-1783910021','monthly','expired','2026-07-30','2026-07-29',NULL,'2026-07-30 06:31:28','2026-07-29 08:36:39',NULL,NULL,30,1299.00,'PHP',0,0,'2026-07-30 06:31:28',NULL,NULL,'2026-07-30 08:36:39',NULL,'Expired manually for JCM Inventory subscription testing.','2026-07-13 02:33:41','2026-07-30 08:36:39',NULL);
 /*!40000 ALTER TABLE `subscriptions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1534,7 +1534,7 @@ CREATE TABLE `transactions` (
   CONSTRAINT `fk_transactions_payment_method` FOREIGN KEY (`payment_method_id`) REFERENCES `payment_methods` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_transactions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_transactions_verified_by` FOREIGN KEY (`verified_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1543,7 +1543,7 @@ CREATE TABLE `transactions` (
 
 LOCK TABLES `transactions` WRITE;
 /*!40000 ALTER TABLE `transactions` DISABLE KEYS */;
-INSERT INTO `transactions` VALUES (6,'TXN-SUB-20260729163254-X9USV2HL',18,1,4,NULL,NULL,NULL,499.00,'subscription-payments/1/rPIvrPlEFujqpFZNboE6AHjFKCfHGRBwxltk4l1r.jpg','submitted','2026-07-29 08:32:54',NULL,NULL,NULL,NULL,NULL,'2026-07-29 08:32:54','2026-07-29 08:32:54');
+INSERT INTO `transactions` VALUES (6,'TXN-SUB-20260729163254-X9USV2HL',18,1,4,NULL,NULL,NULL,499.00,'subscription-payments/1/rPIvrPlEFujqpFZNboE6AHjFKCfHGRBwxltk4l1r.jpg','rejected','2026-07-29 08:32:54',NULL,NULL,NULL,'[TEST RESET 2026-07-30 11:05:07] Payment attempt closed to allow a new subscription checkout.',NULL,'2026-07-29 08:32:54','2026-07-30 03:05:07'),(7,'TXN-SUB-20260730110651-HBQYUTUL',19,1,4,NULL,NULL,NULL,499.00,'subscription-payments/1/ChEzyeGtSgRewilJ3ymxo6mWMO2UjyqfTnWHYCS4.jpg','rejected','2026-07-30 03:06:51',NULL,NULL,NULL,'[TEST RESET 2026-07-30 11:29:36] Payment attempt closed to allow a new subscription checkout.',NULL,'2026-07-30 03:06:51','2026-07-30 03:29:36');
 /*!40000 ALTER TABLE `transactions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1660,7 +1660,7 @@ CREATE TABLE `user_product_access` (
 
 LOCK TABLES `user_product_access` WRITE;
 /*!40000 ALTER TABLE `user_product_access` DISABLE KEYS */;
-INSERT INTO `user_product_access` VALUES (1,1,10,4,1,18,'inactive',1,NULL,NULL,'2026-07-13 02:00:57','2026-07-28 13:17:39'),(2,1,11,3,1,19,'active',1,'2026-07-13 02:33:41','2026-07-29 08:46:46','2026-07-13 02:33:41','2026-07-29 08:46:46'),(3,19,11,5,1,19,'active',1,'2026-07-14 03:59:29',NULL,'2026-07-14 03:59:29','2026-07-29 07:15:29'),(4,12,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(5,13,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(6,14,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(7,15,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(8,16,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(9,17,10,9,1,18,'inactive',1,'2026-06-05 01:43:20',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(10,18,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(11,19,10,6,1,18,'inactive',1,'2026-07-14 03:59:29',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39');
+INSERT INTO `user_product_access` VALUES (1,1,10,4,1,18,'inactive',1,NULL,NULL,'2026-07-13 02:00:57','2026-07-28 13:17:39'),(2,1,11,3,1,19,'active',1,'2026-07-13 02:33:41','2026-07-30 08:36:44','2026-07-13 02:33:41','2026-07-30 08:36:44'),(3,19,11,5,1,19,'active',1,'2026-07-14 03:59:29',NULL,'2026-07-14 03:59:29','2026-07-30 06:31:28'),(4,12,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(5,13,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(6,14,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(7,15,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(8,16,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(9,17,10,9,1,18,'inactive',1,'2026-06-05 01:43:20',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(10,18,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(11,19,10,6,1,18,'inactive',1,'2026-07-14 03:59:29',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39');
 /*!40000 ALTER TABLE `user_product_access` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1730,7 +1730,7 @@ CREATE TABLE `user_product_preferences` (
 
 LOCK TABLES `user_product_preferences` WRITE;
 /*!40000 ALTER TABLE `user_product_preferences` DISABLE KEYS */;
-INSERT INTO `user_product_preferences` VALUES (1,19,3,11,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(2,1,2,2,'last_used','2026-07-29 08:46:46','2026-07-29 08:46:46'),(3,12,NULL,4,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(4,13,NULL,5,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(5,14,NULL,6,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(6,15,NULL,7,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(7,16,NULL,8,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(8,17,NULL,9,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(9,18,NULL,10,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39');
+INSERT INTO `user_product_preferences` VALUES (1,19,3,11,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(2,1,2,2,'last_used','2026-07-30 08:36:44','2026-07-30 08:36:44'),(3,12,NULL,4,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(4,13,NULL,5,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(5,14,NULL,6,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(6,15,NULL,7,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(7,16,NULL,8,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(8,17,NULL,9,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(9,18,NULL,10,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39');
 /*!40000 ALTER TABLE `user_product_preferences` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2059,4 +2059,4 @@ USE `jcm_saas_db`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-29 16:47:08
+-- Dump completed on 2026-07-30 16:41:55

@@ -1,3 +1,4 @@
+import { SubscriptionWorkspaceNav } from '@/components/subscription/subscription-workspace-nav';
 import AppLayout from '@/layouts/app-layout';
 import type {
     BillingInterval,
@@ -11,27 +12,23 @@ import type { BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import {
     AlertCircle,
-    ArrowLeft,
     Building2,
-    CalendarDays,
     Check,
     CheckCircle2,
-    ChevronRight,
     Clock3,
     CreditCard,
     Crown,
-    FileCheck2,
     FileUp,
     Landmark,
     LockKeyhole,
     PackageCheck,
-    ReceiptText,
     RefreshCcw,
     ShieldCheck,
     Sparkles,
     UploadCloud,
     Users,
     Warehouse,
+    X,
 } from 'lucide-react';
 import {
     useEffect,
@@ -57,8 +54,8 @@ type PaymentForm = {
     payment_proof: File | null;
 };
 
-type CheckoutStage = 'plans' | 'review' | 'payment' | 'verification';
-type SubscriptionPlanFeature = SubscriptionPlan['features'][number];
+type SubscriptionPlanFeature =
+    SubscriptionPlan['features'][number];
 
 type PlanFeatureGroup = {
     key: string;
@@ -85,17 +82,6 @@ const intervals: Array<{
     { value: 'monthly', label: 'Monthly' },
     { value: 'quarterly', label: 'Quarterly' },
     { value: 'yearly', label: 'Yearly' },
-];
-
-const wizardSteps: Array<{
-    key: CheckoutStage;
-    number: number;
-    label: string;
-}> = [
-    { key: 'plans', number: 1, label: 'Plan' },
-    { key: 'review', number: 2, label: 'Review' },
-    { key: 'payment', number: 3, label: 'Payment' },
-    { key: 'verification', number: 4, label: 'Verification' },
 ];
 
 const featureGroups: Array<{
@@ -137,7 +123,7 @@ const featureGroups: Array<{
         ],
     },
     {
-        key: 'team',
+        key: 'locations-team',
         title: 'Locations and team',
         codes: [
             'branch_management',
@@ -157,7 +143,10 @@ const featureGroups: Array<{
     },
 ];
 
-function formatMoney(value: number, currency = 'PHP'): string {
+function formatMoney(
+    value: number,
+    currency = 'PHP',
+): string {
     return new Intl.NumberFormat('en-PH', {
         style: 'currency',
         currency,
@@ -165,12 +154,111 @@ function formatMoney(value: number, currency = 'PHP'): string {
     }).format(value);
 }
 
-function humanize(value: string | null | undefined): string {
-    if (!value) return 'Not subscribed';
+function formatDate(
+    value: string | null | undefined,
+): string {
+    if (!value) {
+        return 'Not available';
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+
+    return new Intl.DateTimeFormat('en-PH', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    }).format(date);
+}
+
+function humanize(
+    value: string | null | undefined,
+): string {
+    if (!value) {
+        return 'Not available';
+    }
 
     return value
         .replaceAll('_', ' ')
-        .replace(/\b\w/g, (character) => character.toUpperCase());
+        .replace(
+            /\b\w/g,
+            (character) =>
+                character.toUpperCase(),
+        );
+}
+
+function activeSubscriptionPeriodEnd(
+    current: SubscriptionSummary | null,
+): string | null {
+    return (
+        current?.current_period_end ??
+        current?.end_date ??
+        null
+    );
+}
+
+function hasActiveUnexpiredSubscription(
+    current: SubscriptionSummary | null,
+): boolean {
+    if (!current) {
+        return false;
+    }
+
+    const status =
+        current.subscription_status;
+
+    const isLive =
+        current.access_mode === 'full' &&
+        (
+            status === 'active' ||
+            status === 'trial'
+        );
+
+    if (!isLive) {
+        return false;
+    }
+
+    const periodEnd =
+        activeSubscriptionPeriodEnd(
+            current,
+        );
+
+    /*
+     * An active subscription without a readable period end is
+     * treated as active for safety. The backend applies the same rule.
+     */
+    if (!periodEnd) {
+        return true;
+    }
+
+    const periodEndTime =
+        new Date(periodEnd).getTime();
+
+    if (Number.isNaN(periodEndTime)) {
+        return true;
+    }
+
+    return periodEndTime > Date.now();
+}
+
+function activePlanButtonLabel(
+    current: SubscriptionSummary | null,
+): string {
+    const periodEnd =
+        activeSubscriptionPeriodEnd(
+            current,
+        );
+
+    if (!periodEnd) {
+        return 'Current plan active';
+    }
+
+    return `Active until ${formatDate(
+        periodEnd,
+    )}`;
 }
 
 function priceFor(
@@ -179,9 +267,13 @@ function priceFor(
 ): PlanPrice | undefined {
     return (
         plan.prices.find(
-            (price) => price.billing_interval === interval,
+            (price) =>
+                price.billing_interval ===
+                interval,
         ) ??
-        plan.prices.find((price) => price.is_default) ??
+        plan.prices.find(
+            (price) => price.is_default,
+        ) ??
         plan.prices[0]
     );
 }
@@ -193,55 +285,79 @@ function limitText(
 ): string {
     const limit = plan.limits[code];
 
-    if (!limit) return fallback;
-    if (limit.is_unlimited) return 'Unlimited';
+    if (!limit) {
+        return fallback;
+    }
+
+    if (limit.is_unlimited) {
+        return 'Unlimited';
+    }
 
     return String(limit.value ?? 0);
 }
 
-function groupedFeatures(plan: SubscriptionPlan): PlanFeatureGroup[] {
+function groupedFeatures(
+    plan: SubscriptionPlan,
+): PlanFeatureGroup[] {
     const assigned = new Set<string>();
 
     const groups = featureGroups
-        .map((definition): PlanFeatureGroup => {
-            const features = plan.features.filter((feature) =>
-                definition.codes.includes(feature.code),
-            );
+        .map(
+            (
+                definition,
+            ): PlanFeatureGroup => {
+                const features =
+                    plan.features.filter(
+                        (feature) =>
+                            definition.codes.includes(
+                                feature.code,
+                            ),
+                    );
 
-            features.forEach((feature) => assigned.add(feature.code));
+                features.forEach((feature) =>
+                    assigned.add(feature.code),
+                );
 
-            return {
-                key: definition.key,
-                title: definition.title,
-                features,
-            };
-        })
-        .filter((group) => group.features.length > 0);
+                return {
+                    key: definition.key,
+                    title: definition.title,
+                    features,
+                };
+            },
+        )
+        .filter(
+            (group) =>
+                group.features.length > 0,
+        );
 
-    const other = plan.features.filter(
-        (feature) => !assigned.has(feature.code),
+    const additional = plan.features.filter(
+        (feature) =>
+            !assigned.has(feature.code),
     );
 
-    if (other.length > 0) {
+    if (additional.length > 0) {
         groups.push({
-            key: 'other',
+            key: 'additional',
             title: 'Additional tools',
-            features: other,
+            features: additional,
         });
     }
 
     return groups;
 }
 
-function stageNumber(stage: CheckoutStage): number {
-    return wizardSteps.find((step) => step.key === stage)?.number ?? 1;
-}
-
-function fileLabel(file: File | null): string {
-    if (!file) return 'PNG, JPG, or WEBP up to 5 MB';
+function fileLabel(
+    file: File | null,
+): string {
+    if (!file) {
+        return 'PNG, JPG, or WEBP up to 5 MB';
+    }
 
     const size = file.size / 1024 / 1024;
-    return `${file.name} · ${size.toFixed(size >= 1 ? 1 : 2)} MB`;
+
+    return `${file.name} · ${size.toFixed(
+        size >= 1 ? 1 : 2,
+    )} MB`;
 }
 
 export default function SubscriptionIndex({
@@ -250,164 +366,380 @@ export default function SubscriptionIndex({
     pendingOrder,
     paymentMethods,
 }: SubscriptionPageProps) {
-    const [interval, setInterval] = useState<BillingInterval>(
-        current?.billing_interval &&
-            ['monthly', 'quarterly', 'yearly'].includes(
-                current.billing_interval,
-            )
-            ? current.billing_interval
-            : 'monthly',
-    );
+    const [interval, setInterval] =
+        useState<BillingInterval>(
+            current?.billing_interval &&
+                [
+                    'monthly',
+                    'quarterly',
+                    'yearly',
+                ].includes(
+                    current.billing_interval,
+                )
+                ? current.billing_interval
+                : 'monthly',
+        );
 
-    const [stage, setStage] = useState<CheckoutStage>(
-        pendingOrder?.status === 'payment_submitted'
-            ? 'verification'
-            : pendingOrder
-              ? 'review'
-              : 'plans',
-    );
+    const [paymentOpen, setPaymentOpen] =
+        useState(
+            pendingOrder?.status ===
+                'pending',
+        );
 
-    const paymentForm = useForm<PaymentForm>({
-        order_id: pendingOrder?.id ?? '',
-        payment_method_id: '',
-        reference_number: '',
-        account_name: '',
-        account_number: '',
-        payment_proof: null,
-    });
+    const [
+        checkoutProcessingId,
+        setCheckoutProcessingId,
+    ] = useState<number | null>(null);
+
+    const [
+        cancelCheckoutOpen,
+        setCancelCheckoutOpen,
+    ] = useState(false);
+
+    const [
+        cancelCheckoutProcessing,
+        setCancelCheckoutProcessing,
+    ] = useState(false);
+
+    const paymentForm =
+        useForm<PaymentForm>({
+            order_id:
+                pendingOrder?.id ?? '',
+            payment_method_id: '',
+            reference_number: '',
+            account_name: '',
+            account_number: '',
+            payment_proof: null,
+        });
+
+    const {
+        setData: setPaymentData,
+    } = paymentForm;
+
+    const pendingOrderId =
+        pendingOrder?.id ?? '';
+
+    const pendingOrderStatus =
+        pendingOrder?.status;
 
     useEffect(() => {
-        if (!pendingOrder) {
-            setStage('plans');
+        setPaymentData(
+            'order_id',
+            pendingOrderId,
+        );
+
+        if (pendingOrderId === '') {
+            setPaymentOpen(false);
             return;
         }
 
-        paymentForm.setData('order_id', pendingOrder.id);
-
-        if (pendingOrder.status === 'payment_submitted') {
-            setStage('verification');
+        if (
+            pendingOrderStatus ===
+            'pending'
+        ) {
+            setPaymentOpen(true);
             return;
         }
 
-        setStage((value) => (value === 'payment' ? 'payment' : 'review'));
-    }, [pendingOrder?.id, pendingOrder?.status]);
+        setPaymentOpen(false);
+    }, [
+        pendingOrderId,
+        pendingOrderStatus,
+        setPaymentData,
+    ]);
 
     const selectedPlan = useMemo(
         () =>
             pendingOrder
-                ? plans.find((plan) => plan.id === pendingOrder.plan_id) ?? null
+                ? plans.find(
+                      (plan) =>
+                          plan.id ===
+                          pendingOrder.plan_id,
+                  ) ?? null
                 : null,
         [pendingOrder, plans],
     );
 
     const selectedPrice = useMemo(
         () =>
-            selectedPlan && pendingOrder
+            selectedPlan &&
+            pendingOrder
                 ? selectedPlan.prices.find(
-                      (price) => price.id === pendingOrder.plan_price_id,
-                  ) ?? priceFor(selectedPlan, pendingOrder.billing_type)
+                      (price) =>
+                          price.id ===
+                          pendingOrder.plan_price_id,
+                  ) ??
+                  priceFor(
+                      selectedPlan,
+                      pendingOrder.billing_type,
+                  )
                 : undefined,
-        [pendingOrder, selectedPlan],
+        [
+            pendingOrder,
+            selectedPlan,
+        ],
     );
 
     const selectedMethod = useMemo(
         () =>
             paymentMethods.find(
                 (method) =>
-                    method.id === paymentForm.data.payment_method_id,
+                    method.id ===
+                    paymentForm.data
+                        .payment_method_id,
             ) ?? null,
-        [paymentMethods, paymentForm.data.payment_method_id],
+        [
+            paymentMethods,
+            paymentForm.data
+                .payment_method_id,
+        ],
     );
 
-    const isOwner = current?.is_owner ?? true;
-    const accessMode = current?.access_mode ?? 'blocked';
+    const isOwner =
+        current?.is_owner ?? true;
 
-    const startCheckout = (planPriceId: number) => {
+    const currentPlanRenewalLocked =
+        hasActiveUnexpiredSubscription(
+            current,
+        );
+
+    const currentPlanActiveLabel =
+        activePlanButtonLabel(current);
+
+    const startCheckout = (
+        planPriceId: number,
+    ): void => {
+        if (!isOwner) {
+            return;
+        }
+
+        setCheckoutProcessingId(
+            planPriceId,
+        );
+
         router.post(
-            route('subscription.checkout.store'),
-            { plan_price_id: planPriceId },
-            { preserveScroll: true },
+            route(
+                'subscription.checkout.store',
+            ),
+            {
+                plan_price_id:
+                    planPriceId,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () =>
+                    setPaymentOpen(true),
+                onFinish: () =>
+                    setCheckoutProcessingId(
+                        null,
+                    ),
+            },
         );
     };
 
-    const submitPayment = (event: FormEvent<HTMLFormElement>) => {
+    const submitPayment = (
+        event: FormEvent<HTMLFormElement>,
+    ): void => {
         event.preventDefault();
 
-        paymentForm.post(route('subscription.payment.store'), {
-            forceFormData: true,
-            preserveScroll: true,
-        });
-    };
-
-    const cancelAtPeriodEnd = () => {
-        router.patch(
-            route('subscription.cancel-at-period-end'),
-            {},
-            { preserveScroll: true },
+        paymentForm.post(
+            route(
+                'subscription.payment.store',
+            ),
+            {
+                forceFormData: true,
+                preserveScroll: true,
+            },
         );
     };
 
-    const resumeSubscription = () => {
-        router.patch(
-            route('subscription.resume'),
-            {},
-            { preserveScroll: true },
-        );
-    };
+    const cancelPendingCheckout =
+        (): void => {
+            if (
+                !pendingOrder ||
+                pendingOrder.status !==
+                    'pending'
+            ) {
+                return;
+            }
+
+            setCancelCheckoutProcessing(
+                true,
+            );
+
+            router.patch(
+                route(
+                    'subscription.checkout.cancel',
+                    {
+                        order:
+                            pendingOrder.id,
+                    },
+                ),
+                {},
+                {
+                    preserveScroll: true,
+
+                    onSuccess: () => {
+                        setCancelCheckoutOpen(
+                            false,
+                        );
+
+                        setPaymentOpen(false);
+
+                        paymentForm.clearErrors();
+                    },
+
+                    onFinish: () =>
+                        setCancelCheckoutProcessing(
+                            false,
+                        ),
+                },
+            );
+        };
+
+    const cancelAtPeriodEnd =
+        (): void => {
+            router.patch(
+                route(
+                    'subscription.cancel-at-period-end',
+                ),
+                {},
+                {
+                    preserveScroll: true,
+                },
+            );
+        };
+
+    const resumeSubscription =
+        (): void => {
+            router.patch(
+                route(
+                    'subscription.resume',
+                ),
+                {},
+                {
+                    preserveScroll: true,
+                },
+            );
+        };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout
+            breadcrumbs={breadcrumbs}
+        >
             <Head title="Subscription & Billing" />
 
-            <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-5 p-4 md:p-5 lg:p-6">
-                <Header current={current} accessMode={accessMode} />
-                <CurrentStrip current={current} />
+            <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 md:p-5">
+                <SubscriptionWorkspaceNav
+                    active="overview"
+                    isOwner={isOwner}
+                />
 
-                {current?.cancel_at_period_end && (
-                    <Notice
+                <OverviewHeader
+                    current={current}
+                />
+
+                {current
+                    ?.cancel_at_period_end && (
+                    <StatusNotice
+                        tone="amber"
+                        icon={
+                            <Clock3 className="size-4" />
+                        }
                         title="Cancellation is scheduled"
-                        detail="Access remains available until the current billing period ends."
+                        description="The current plan remains available until the billing period ends."
                         action={
                             isOwner
                                 ? {
                                       label: 'Continue subscription',
-                                      onClick: resumeSubscription,
+                                      onClick:
+                                          resumeSubscription,
                                   }
                                 : undefined
                         }
                     />
                 )}
 
-                <Stepper stage={stage} />
-
-                {stage === 'plans' ? (
-                    <PlanSelection
-                        plans={plans}
-                        interval={interval}
-                        current={current}
-                        isOwner={isOwner}
-                        onInterval={setInterval}
-                        onChoose={startCheckout}
-                    />
-                ) : (
-                    <CheckoutWorkspace
-                        stage={stage}
-                        pendingOrder={pendingOrder}
-                        selectedPlan={selectedPlan}
-                        selectedPrice={selectedPrice}
-                        selectedMethod={selectedMethod}
-                        paymentMethods={paymentMethods}
-                        paymentForm={paymentForm}
-                        onReview={() => setStage('review')}
-                        onPayment={() => setStage('payment')}
-                        onSubmit={submitPayment}
+                {pendingOrder?.status ===
+                    'pending' && (
+                    <StatusNotice
+                        tone="blue"
+                        icon={
+                            <CreditCard className="size-4" />
+                        }
+                        title={`Order ${pendingOrder.order_code} is awaiting payment`}
+                        description={`${selectedPlan?.name ?? 'Your selected plan'} · ${humanize(
+                            pendingOrder.billing_type,
+                        )} · ${formatMoney(
+                            pendingOrder.amount,
+                            pendingOrder.currency,
+                        )}`}
+                        action={{
+                            label: 'Review & pay',
+                            onClick: () =>
+                                setPaymentOpen(
+                                    true,
+                                ),
+                        }}
+                        secondaryAction={{
+                            label: 'Cancel checkout',
+                            onClick: () =>
+                                setCancelCheckoutOpen(
+                                    true,
+                                ),
+                            disabled:
+                                cancelCheckoutProcessing,
+                        }}
                     />
                 )}
 
-                {current?.subscription_id &&
+                {pendingOrder?.status ===
+                    'payment_submitted' && (
+                    <StatusNotice
+                        tone="emerald"
+                        icon={
+                            <CheckCircle2 className="size-4" />
+                        }
+                        title="Payment is under verification"
+                        description={`Order ${pendingOrder.order_code} was submitted. JCM will activate the plan after approval.`}
+                    />
+                )}
+
+                <PlansSection
+                    plans={plans}
+                    interval={interval}
+                    current={current}
+                    pendingOrder={
+                        pendingOrder
+                    }
+                    isOwner={isOwner}
+                    currentPlanRenewalLocked={
+                        currentPlanRenewalLocked
+                    }
+                    currentPlanActiveLabel={
+                        currentPlanActiveLabel
+                    }
+                    checkoutProcessingId={
+                        checkoutProcessingId
+                    }
+                    onInterval={
+                        setInterval
+                    }
+                    onChoose={
+                        startCheckout
+                    }
+                    onOpenPayment={() =>
+                        setPaymentOpen(
+                            true,
+                        )
+                    }
+                />
+
+                {current
+                    ?.subscription_id &&
                     isOwner &&
                     !current.cancel_at_period_end && (
-                        <section className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
+                        <section className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-card p-4 sm:flex-row sm:items-center sm:justify-between md:p-5">
                             <div className="flex items-start gap-3">
                                 <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-muted/20 text-muted-foreground">
                                     <ShieldCheck className="size-4" />
@@ -417,271 +749,301 @@ export default function SubscriptionIndex({
                                     <h2 className="text-sm font-semibold">
                                         Subscription management
                                     </h2>
+
                                     <p className="mt-1 max-w-2xl text-[10px] leading-4 text-muted-foreground">
-                                        Scheduling cancellation keeps access
-                                        available until the period ends.
+                                        Cancellation takes effect after the current billing period.
                                     </p>
                                 </div>
                             </div>
 
                             <button
                                 type="button"
-                                onClick={cancelAtPeriodEnd}
-                                className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/[0.065] px-4 text-[10px] font-semibold text-rose-300 transition hover:bg-rose-500/[0.11]"
+                                onClick={
+                                    cancelAtPeriodEnd
+                                }
+                                className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-rose-500/20 bg-rose-500/[0.06] px-4 text-[10px] font-semibold text-rose-300 transition hover:bg-rose-500/[0.11]"
                             >
                                 Cancel at period end
                             </button>
                         </section>
                     )}
             </div>
+
+            <PaymentModal
+                open={
+                    paymentOpen &&
+                    pendingOrder
+                        ?.status ===
+                        'pending'
+                }
+                order={pendingOrder}
+                plan={selectedPlan}
+                price={selectedPrice}
+                selectedMethod={
+                    selectedMethod
+                }
+                paymentMethods={
+                    paymentMethods
+                }
+                paymentForm={
+                    paymentForm
+                }
+                onClose={() =>
+                    setPaymentOpen(false)
+                }
+                onCancelCheckout={() =>
+                    setCancelCheckoutOpen(
+                        true,
+                    )
+                }
+                cancelCheckoutProcessing={
+                    cancelCheckoutProcessing
+                }
+                onSubmit={
+                    submitPayment
+                }
+            />
+
+            <CancelCheckoutDialog
+                open={
+                    cancelCheckoutOpen &&
+                    pendingOrder?.status ===
+                        'pending'
+                }
+                order={pendingOrder}
+                processing={
+                    cancelCheckoutProcessing
+                }
+                onClose={() =>
+                    setCancelCheckoutOpen(
+                        false,
+                    )
+                }
+                onConfirm={
+                    cancelPendingCheckout
+                }
+            />
         </AppLayout>
     );
 }
 
-function Header({
-    current,
-    accessMode,
-}: {
-    current: SubscriptionSummary | null;
-    accessMode: string;
-}) {
-    const tone =
-        accessMode === 'full'
-            ? 'border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-300'
-            : accessMode === 'read_only'
-              ? 'border-amber-500/20 bg-amber-500/[0.08] text-amber-300'
-              : 'border-rose-500/20 bg-rose-500/[0.08] text-rose-300';
-
-    return (
-        <section className="relative overflow-hidden rounded-2xl border border-border/70 bg-card">
-            <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[42%] bg-[radial-gradient(circle_at_70%_25%,rgba(99,102,241,0.12),transparent_65%)] lg:block" />
-
-            <div className="relative flex flex-col gap-5 p-5 md:p-6 lg:flex-row lg:items-end lg:justify-between">
-                <div className="max-w-3xl">
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">
-                        <CreditCard className="size-4" />
-                        JCM Inventory Billing
-                    </div>
-
-                    <h1 className="mt-2 text-2xl font-bold tracking-tight md:text-[28px]">
-                        Subscription & Billing
-                    </h1>
-
-                    <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground md:text-sm">
-                        Choose a plan, review the order, submit payment, and
-                        track verification inside one guided workspace.
-                    </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                    <span
-                        className={`rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.08em] ${tone}`}
-                    >
-                        {humanize(current?.subscription_status)}
-                    </span>
-
-                    <span className="rounded-full border border-border/70 bg-background/40 px-3 py-1.5 text-[10px] font-semibold text-muted-foreground">
-                        {current?.role_name ?? 'Account owner'}
-                    </span>
-                </div>
-            </div>
-        </section>
-    );
-}
-
-function CurrentStrip({
+function OverviewHeader({
     current,
 }: {
     current: SubscriptionSummary | null;
 }) {
-    const shared = ['team', 'premium'].includes(current?.plan_code ?? '')
-        ? 'Owner + Team'
-        : 'Owner only';
+    const fullAccess =
+        current?.access_mode === 'full';
+
+    const readOnly =
+        current?.access_mode ===
+        'read_only';
+
+    const tone = fullAccess
+        ? 'border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-300'
+        : readOnly
+          ? 'border-amber-500/20 bg-amber-500/[0.08] text-amber-300'
+          : 'border-rose-500/20 bg-rose-500/[0.08] text-rose-300';
 
     return (
         <section className="overflow-hidden rounded-2xl border border-border/70 bg-card">
-            <div className="grid divide-y divide-border/60 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-                <Metric
-                    icon={<Crown className="size-4" />}
-                    label="Current plan"
-                    value={current?.plan_name ?? 'No active plan'}
-                    detail={
-                        current?.billing_interval
-                            ? humanize(current.billing_interval)
-                            : 'Billing cycle not selected'
-                    }
-                />
-                <Metric
-                    icon={<ShieldCheck className="size-4" />}
-                    label="Access mode"
-                    value={humanize(current?.access_mode)}
-                    detail={
-                        current?.can_write
-                            ? 'Create and update access enabled'
-                            : 'Renewal may be required'
-                    }
-                />
-                <Metric
-                    icon={<CalendarDays className="size-4" />}
-                    label="Period end"
-                    value={current?.end_date ?? 'Not available'}
-                    detail="Owner subscription end date"
-                />
-                <Metric
-                    icon={<Users className="size-4" />}
-                    label="Shared access"
-                    value={shared}
-                    detail="Team follows the owner status"
-                />
+            <div className="grid lg:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="relative p-5 md:p-6">
+                    <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.1),transparent_68%)] lg:block" />
+
+                    <div className="relative">
+                        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-primary">
+                            <CreditCard className="size-4" />
+                            JCM Inventory Billing
+                        </div>
+
+                        <h1 className="mt-2 text-2xl font-bold tracking-tight">
+                            Plans & Subscription
+                        </h1>
+
+                        <p className="mt-2 max-w-2xl text-xs leading-5 text-muted-foreground">
+                            Compare available plans, renew the current subscription, and complete payment without leaving this page.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="border-t border-border/60 bg-muted/[0.08] p-5 lg:border-l lg:border-t-0">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                                Current subscription
+                            </p>
+
+                            <p className="mt-1.5 truncate text-base font-bold">
+                                {current?.plan_name ??
+                                    'No active plan'}
+                            </p>
+                        </div>
+
+                        <span
+                            className={`shrink-0 rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.09em] ${tone}`}
+                        >
+                            {humanize(
+                                current?.subscription_status,
+                            )}
+                        </span>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                        <HeaderDetail
+                            label="Billing"
+                            value={humanize(
+                                current?.billing_interval,
+                            )}
+                        />
+
+                        <HeaderDetail
+                            label="Period end"
+                            value={formatDate(
+                                current
+                                    ?.current_period_end ??
+                                    current?.end_date,
+                            )}
+                        />
+                    </div>
+                </div>
             </div>
         </section>
     );
 }
 
-function Metric({
-    icon,
+function HeaderDetail({
     label,
     value,
-    detail,
 }: {
-    icon: ReactNode;
     label: string;
     value: string;
-    detail: string;
 }) {
     return (
-        <div className="min-w-0 p-4 md:p-5">
-            <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">
-                <span className="text-primary">{icon}</span>
+        <div className="min-w-0 rounded-xl border border-border/60 bg-background/25 p-3">
+            <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                 {label}
-            </div>
-            <p className="mt-2 truncate text-sm font-bold">{value}</p>
-            <p className="mt-1 truncate text-[10px] text-muted-foreground">
-                {detail}
+            </p>
+
+            <p className="mt-1 truncate text-[10px] font-semibold">
+                {value}
             </p>
         </div>
     );
 }
 
-function Stepper({ stage }: { stage: CheckoutStage }) {
-    const active = stageNumber(stage);
-
-    return (
-        <section className="rounded-2xl border border-border/70 bg-card px-4 py-4 md:px-5">
-            <div className="grid gap-3 md:grid-cols-4">
-                {wizardSteps.map((step, index) => {
-                    const done = step.number < active;
-                    const current = step.number === active;
-
-                    return (
-                        <div
-                            key={step.key}
-                            className="flex min-w-0 items-center gap-3"
-                        >
-                            <span
-                                className={`flex size-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
-                                    done
-                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
-                                        : current
-                                          ? 'border-primary/40 bg-primary/10 text-primary'
-                                          : 'border-border bg-background/50 text-muted-foreground'
-                                }`}
-                            >
-                                {done ? <Check className="size-4" /> : step.number}
-                            </span>
-
-                            <div className="min-w-0">
-                                <p
-                                    className={`truncate text-[11px] font-semibold ${
-                                        done || current
-                                            ? 'text-foreground'
-                                            : 'text-muted-foreground'
-                                    }`}
-                                >
-                                    {step.label}
-                                </p>
-                                <p className="mt-0.5 text-[9px] text-muted-foreground">
-                                    Step {step.number} of 4
-                                </p>
-                            </div>
-
-                            {index < wizardSteps.length - 1 && (
-                                <ChevronRight className="ml-auto hidden size-4 text-border md:block" />
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-        </section>
-    );
-}
-
-function PlanSelection({
+function PlansSection({
     plans,
     interval,
     current,
+    pendingOrder,
     isOwner,
+    currentPlanRenewalLocked,
+    currentPlanActiveLabel,
+    checkoutProcessingId,
     onInterval,
     onChoose,
+    onOpenPayment,
 }: {
     plans: SubscriptionPlan[];
     interval: BillingInterval;
     current: SubscriptionSummary | null;
+    pendingOrder: SubscriptionOrder | null;
     isOwner: boolean;
-    onInterval: (value: BillingInterval) => void;
-    onChoose: (priceId: number) => void;
+    currentPlanRenewalLocked: boolean;
+    currentPlanActiveLabel: string;
+    checkoutProcessingId: number | null;
+    onInterval: (
+        value: BillingInterval,
+    ) => void;
+    onChoose: (
+        priceId: number,
+    ) => void;
+    onOpenPayment: () => void;
 }) {
     return (
         <section className="overflow-hidden rounded-2xl border border-border/70 bg-card">
-            <div className="flex flex-col gap-4 border-b border-border/60 p-5 md:flex-row md:items-end md:justify-between md:p-6">
+            <div className="flex flex-col gap-4 border-b border-border/60 p-4 md:flex-row md:items-end md:justify-between md:p-5">
                 <div>
                     <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
                         <Sparkles className="size-3.5" />
-                        Step 1 · Choose a plan
+                        Available plans
                     </div>
-                    <h2 className="mt-2 text-xl font-bold tracking-tight">
-                        Select the right operating plan
+
+                    <h2 className="mt-1.5 text-xl font-bold tracking-tight">
+                        Choose the right plan
                     </h2>
+
                     <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
-                        Compare limits and modules. Your selection opens a
-                        separate review workspace inside this same page.
+                        Plans remain visible while checkout and payment are handled in a modal.
                     </p>
                 </div>
 
                 <div className="inline-flex w-fit rounded-xl border border-border/70 bg-muted/20 p-1">
-                    {intervals.map((item) => (
-                        <button
-                            key={item.value}
-                            type="button"
-                            onClick={() => onInterval(item.value)}
-                            className={`rounded-lg px-3.5 py-2 text-[10px] font-semibold transition ${
-                                interval === item.value
-                                    ? 'bg-background text-foreground shadow-sm ring-1 ring-border/60'
-                                    : 'text-muted-foreground hover:text-foreground'
-                            }`}
-                        >
-                            {item.label}
-                        </button>
-                    ))}
+                    {intervals.map(
+                        (item) => (
+                            <button
+                                key={
+                                    item.value
+                                }
+                                type="button"
+                                onClick={() =>
+                                    onInterval(
+                                        item.value,
+                                    )
+                                }
+                                className={`rounded-lg px-3.5 py-2 text-[10px] font-semibold transition ${
+                                    interval ===
+                                    item.value
+                                        ? 'bg-background text-foreground shadow-sm ring-1 ring-border/60'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                {item.label}
+                            </button>
+                        ),
+                    )}
                 </div>
             </div>
 
-            <div className="grid gap-5 p-5 lg:grid-cols-2 md:p-6">
+            <div className="grid items-start gap-4 p-4 lg:grid-cols-2 md:p-5">
                 {plans.map((plan) => (
                     <PlanCard
                         key={plan.id}
                         plan={plan}
-                        interval={interval}
-                        isCurrent={current?.plan_id === plan.id}
+                        interval={
+                            interval
+                        }
+                        isCurrent={
+                            current?.plan_id ===
+                            plan.id
+                        }
+                        pendingOrder={
+                            pendingOrder
+                        }
                         isOwner={isOwner}
-                        onChoose={onChoose}
+                        renewalLocked={
+                            currentPlanRenewalLocked
+                        }
+                        activePlanLabel={
+                            currentPlanActiveLabel
+                        }
+                        checkoutProcessingId={
+                            checkoutProcessingId
+                        }
+                        onChoose={
+                            onChoose
+                        }
+                        onOpenPayment={
+                            onOpenPayment
+                        }
                     />
                 ))}
             </div>
 
             {!isOwner && (
-                <div className="border-t border-border/60 bg-muted/[0.12] px-5 py-3 text-center text-[11px] text-muted-foreground">
-                    Only the account owner can change the subscription.
+                <div className="border-t border-border/60 bg-muted/[0.1] px-5 py-3 text-center text-[10px] text-muted-foreground">
+                    Only the account owner can purchase or renew a subscription.
                 </div>
             )}
         </section>
@@ -692,25 +1054,117 @@ function PlanCard({
     plan,
     interval,
     isCurrent,
+    pendingOrder,
     isOwner,
+    renewalLocked,
+    activePlanLabel,
+    checkoutProcessingId,
     onChoose,
+    onOpenPayment,
 }: {
     plan: SubscriptionPlan;
     interval: BillingInterval;
     isCurrent: boolean;
+    pendingOrder: SubscriptionOrder | null;
     isOwner: boolean;
-    onChoose: (priceId: number) => void;
+    renewalLocked: boolean;
+    activePlanLabel: string;
+    checkoutProcessingId: number | null;
+    onChoose: (
+        priceId: number,
+    ) => void;
+    onOpenPayment: () => void;
 }) {
-    const price = priceFor(plan, interval);
-    const premium = ['team', 'premium'].includes(plan.code);
-    const groups = groupedFeatures(plan);
+    const price = priceFor(
+        plan,
+        interval,
+    );
+
+    const premium = [
+        'team',
+        'premium',
+    ].includes(plan.code);
+
+    const groups =
+        groupedFeatures(plan);
+
+    const isPendingPlan =
+        pendingOrder?.plan_id ===
+        plan.id;
+
+    const paymentPending =
+        pendingOrder?.status ===
+        'pending';
+
+    const verificationPending =
+        pendingOrder?.status ===
+        'payment_submitted';
+
+    const blockedByOtherOrder =
+        Boolean(
+            pendingOrder &&
+                !isPendingPlan,
+        );
+
+    /*
+     * Do not allow a new renewal for the same plan while the current
+     * subscription is active and unexpired. Existing pending checkout
+     * remains reviewable/cancellable.
+     */
+    const activeCurrentPlanLocked =
+        isCurrent &&
+        renewalLocked &&
+        !isPendingPlan;
+
+    const processing =
+        price !== undefined &&
+        checkoutProcessingId ===
+            price.id;
+
+    const disabled =
+        !price ||
+        !isOwner ||
+        processing ||
+        verificationPending ||
+        blockedByOtherOrder ||
+        activeCurrentPlanLocked;
+
+    const handleAction = (): void => {
+        if (
+            paymentPending &&
+            isPendingPlan
+        ) {
+            onOpenPayment();
+            return;
+        }
+
+        if (price) {
+            onChoose(price.id);
+        }
+    };
+
+    const buttonLabel = processing
+        ? 'Creating order...'
+        : verificationPending &&
+            isPendingPlan
+          ? 'Verification pending'
+          : paymentPending &&
+              isPendingPlan
+            ? 'Review & pay'
+            : blockedByOtherOrder
+              ? 'Finish current checkout first'
+              : activeCurrentPlanLocked
+                ? activePlanLabel
+                : isCurrent
+                  ? 'Renew this plan'
+                  : `Choose ${plan.name}`;
 
     return (
         <article
             className={`flex min-w-0 flex-col overflow-hidden rounded-2xl border ${
                 isCurrent
                     ? 'border-primary/35 bg-primary/[0.025]'
-                    : 'border-border/70 bg-background/30'
+                    : 'border-border/70 bg-background/25'
             }`}
         >
             <div className="border-b border-border/60 p-5">
@@ -718,7 +1172,7 @@ function PlanCard({
                     <span
                         className={`flex size-10 shrink-0 items-center justify-center rounded-xl border ${
                             premium
-                                ? 'border-primary/20 bg-primary/10 text-primary'
+                                ? 'border-violet-500/20 bg-violet-500/[0.08] text-violet-300'
                                 : 'border-border/70 bg-muted/30 text-muted-foreground'
                         }`}
                     >
@@ -731,12 +1185,16 @@ function PlanCard({
 
                     <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base font-bold">{plan.name}</h3>
+                            <h3 className="text-base font-bold">
+                                {plan.name}
+                            </h3>
+
                             {isCurrent && (
                                 <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-primary">
                                     Current
                                 </span>
                             )}
+
                             {premium && (
                                 <span className="rounded-full border border-violet-500/20 bg-violet-500/[0.08] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-violet-300">
                                     Recommended
@@ -750,25 +1208,34 @@ function PlanCard({
                     </div>
                 </div>
 
-                <div className="mt-5 flex items-end justify-between gap-3">
+                <div className="mt-5 flex items-end justify-between gap-4">
                     <div>
                         <p className="text-2xl font-bold tracking-tight">
                             {price
-                                ? formatMoney(price.price, price.currency)
+                                ? formatMoney(
+                                      price.price,
+                                      price.currency,
+                                  )
                                 : 'Unavailable'}
                         </p>
+
                         {price && (
                             <p className="mt-0.5 text-[10px] text-muted-foreground">
-                                per {humanize(price.billing_interval)}
+                                per{' '}
+                                {humanize(
+                                    price.billing_interval,
+                                )}
                             </p>
                         )}
                     </div>
 
-                    {price?.compare_at_price && (
+                    {price
+                        ?.compare_at_price && (
                         <div className="text-right">
-                            <p className="text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
+                            <p className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                                 Regular
                             </p>
+
                             <p className="mt-1 text-xs text-muted-foreground line-through">
                                 {formatMoney(
                                     price.compare_at_price,
@@ -781,93 +1248,148 @@ function PlanCard({
             </div>
 
             <div className="grid grid-cols-3 divide-x divide-border/60 border-b border-border/60">
-                <Limit
-                    icon={<Building2 className="size-3.5" />}
+                <PlanLimit
+                    icon={
+                        <Building2 className="size-3.5" />
+                    }
                     label="Branches"
-                    value={limitText(plan, 'max_branches')}
+                    value={limitText(
+                        plan,
+                        'max_branches',
+                    )}
                 />
-                <Limit
-                    icon={<Warehouse className="size-3.5" />}
+
+                <PlanLimit
+                    icon={
+                        <Warehouse className="size-3.5" />
+                    }
                     label="Warehouses"
-                    value={limitText(plan, 'max_warehouses')}
+                    value={limitText(
+                        plan,
+                        'max_warehouses',
+                    )}
                 />
-                <Limit
-                    icon={<Users className="size-3.5" />}
+
+                <PlanLimit
+                    icon={
+                        <Users className="size-3.5" />
+                    }
                     label="Team"
-                    value={limitText(plan, 'max_team_members')}
+                    value={limitText(
+                        plan,
+                        'max_team_members',
+                    )}
                 />
             </div>
 
             <div className="flex-1 p-5">
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-xs font-semibold">Included modules</p>
+                        <p className="text-xs font-semibold">
+                            Included modules
+                        </p>
+
                         <p className="mt-0.5 text-[10px] text-muted-foreground">
-                            {plan.features.length} enabled capabilities
+                            {
+                                plan.features
+                                    .length
+                            }{' '}
+                            enabled capabilities
                         </p>
                     </div>
+
                     <ShieldCheck className="size-4 text-emerald-400" />
                 </div>
 
                 <div className="mt-4 space-y-4">
-                    {groups.map((group) => (
-                        <div key={group.key}>
-                            <div className="flex items-center justify-between">
-                                <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-foreground/70">
-                                    {group.title}
-                                </p>
-                                <span className="text-[9px] text-muted-foreground">
-                                    {group.features.length}
-                                </span>
-                            </div>
+                    {groups.map(
+                        (group) => (
+                            <div
+                                key={
+                                    group.key
+                                }
+                            >
+                                <div className="flex items-center justify-between gap-3">
+                                    <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-foreground/70">
+                                        {
+                                            group.title
+                                        }
+                                    </p>
 
-                            <div className="mt-2 grid gap-x-5 gap-y-1.5 sm:grid-cols-2">
-                                {group.features.map((feature) => (
-                                    <div
-                                        key={feature.code}
-                                        className="flex min-w-0 items-center gap-2"
-                                    >
-                                        <Check className="size-3.5 shrink-0 text-emerald-400" />
-                                        <span className="truncate text-[10px] font-medium text-foreground/80">
-                                            {feature.name}
-                                        </span>
-                                    </div>
-                                ))}
+                                    <span className="text-[9px] text-muted-foreground">
+                                        {
+                                            group
+                                                .features
+                                                .length
+                                        }
+                                    </span>
+                                </div>
+
+                                <div className="mt-2 grid gap-x-5 gap-y-1.5 sm:grid-cols-2">
+                                    {group.features.map(
+                                        (
+                                            feature,
+                                        ) => (
+                                            <div
+                                                key={
+                                                    feature.code
+                                                }
+                                                className="flex min-w-0 items-center gap-2"
+                                            >
+                                                <Check className="size-3.5 shrink-0 text-emerald-400" />
+
+                                                <span className="truncate text-[10px] font-medium text-foreground/80">
+                                                    {
+                                                        feature.name
+                                                    }
+                                                </span>
+                                            </div>
+                                        ),
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ),
+                    )}
                 </div>
             </div>
 
             <div className="border-t border-border/60 p-4">
                 <button
                     type="button"
-                    disabled={!price || !isOwner}
-                    onClick={() => price && onChoose(price.id)}
+                    disabled={disabled}
+                    onClick={
+                        handleAction
+                    }
                     className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl px-4 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                        isCurrent
-                            ? 'border border-border/70 bg-muted/30 hover:bg-muted/50'
-                            : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                        paymentPending &&
+                        isPendingPlan
+                            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                            : activeCurrentPlanLocked
+                              ? 'border border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-300'
+                              : isCurrent
+                                ? 'border border-border/70 bg-muted/30 hover:bg-muted/50'
+                                : 'bg-primary text-primary-foreground hover:bg-primary/90'
                     }`}
                 >
-                    {isCurrent ? (
-                        <>
-                            <RefreshCcw className="size-3.5" />
-                            Renew this plan
-                        </>
+                    {paymentPending &&
+                    isPendingPlan ? (
+                        <CreditCard className="size-3.5" />
+                    ) : activeCurrentPlanLocked ? (
+                        <LockKeyhole className="size-3.5" />
+                    ) : isCurrent ? (
+                        <RefreshCcw className="size-3.5" />
                     ) : (
-                        <>
-                            <CreditCard className="size-3.5" />
-                            Choose {plan.name}
-                        </>
+                        <CreditCard className="size-3.5" />
                     )}
+
+                    {buttonLabel}
                 </button>
             </div>
         </article>
     );
 }
 
-function Limit({
+function PlanLimit({
     icon,
     label,
     value,
@@ -880,167 +1402,836 @@ function Limit({
         <div className="min-w-0 p-3.5 text-center">
             <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
                 {icon}
+
                 <span className="truncate text-[8px] font-semibold uppercase tracking-[0.1em]">
                     {label}
                 </span>
             </div>
-            <p className="mt-1.5 text-xs font-bold">{value}</p>
+
+            <p className="mt-1.5 text-xs font-bold">
+                {value}
+            </p>
         </div>
     );
 }
 
-function CheckoutWorkspace({
-    stage,
-    pendingOrder,
-    selectedPlan,
-    selectedPrice,
-    selectedMethod,
-    paymentMethods,
-    paymentForm,
-    onReview,
-    onPayment,
-    onSubmit,
+function StatusNotice({
+    icon,
+    title,
+    description,
+    tone,
+    action,
+    secondaryAction,
 }: {
-    stage: CheckoutStage;
-    pendingOrder: SubscriptionOrder | null;
-    selectedPlan: SubscriptionPlan | null;
-    selectedPrice: PlanPrice | undefined;
-    selectedMethod: PaymentMethod | null;
-    paymentMethods: PaymentMethod[];
-    paymentForm: ReturnType<typeof useForm<PaymentForm>>;
-    onReview: () => void;
-    onPayment: () => void;
-    onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+    icon: ReactNode;
+    title: string;
+    description: string;
+    tone:
+        | 'blue'
+        | 'amber'
+        | 'emerald';
+    action?: {
+        label: string;
+        onClick: () => void;
+        disabled?: boolean;
+    };
+    secondaryAction?: {
+        label: string;
+        onClick: () => void;
+        disabled?: boolean;
+    };
 }) {
-    if (!pendingOrder) return null;
+    const classes = {
+        blue: {
+            section:
+                'border-blue-500/20 bg-blue-500/[0.055]',
+            icon: 'border-blue-500/20 bg-blue-500/10 text-blue-300',
+            button:
+                'border-blue-500/25 bg-blue-500/10 text-blue-200 hover:bg-blue-500/15',
+        },
+        amber: {
+            section:
+                'border-amber-500/20 bg-amber-500/[0.055]',
+            icon: 'border-amber-500/20 bg-amber-500/10 text-amber-300',
+            button:
+                'border-amber-500/25 bg-amber-500/10 text-amber-200 hover:bg-amber-500/15',
+        },
+        emerald: {
+            section:
+                'border-emerald-500/20 bg-emerald-500/[0.055]',
+            icon: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
+            button:
+                'border-emerald-500/25 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/15',
+        },
+    }[tone];
 
     return (
-        <section className="grid items-start gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-            <OrderSummary
-                order={pendingOrder}
-                plan={selectedPlan}
-                price={selectedPrice}
-                stage={stage}
-            />
+        <section
+            className={`flex flex-col gap-4 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${classes.section}`}
+        >
+            <div className="flex items-start gap-3">
+                <span
+                    className={`flex size-9 shrink-0 items-center justify-center rounded-xl border ${classes.icon}`}
+                >
+                    {icon}
+                </span>
 
-            <div className="min-w-0">
-                {stage === 'review' && (
-                    <ReviewPanel
-                        order={pendingOrder}
-                        plan={selectedPlan}
-                        price={selectedPrice}
-                        onContinue={onPayment}
-                    />
-                )}
+                <div>
+                    <p className="text-xs font-semibold">
+                        {title}
+                    </p>
 
-                {stage === 'payment' && (
-                    <PaymentPanel
-                        order={pendingOrder}
-                        selectedMethod={selectedMethod}
-                        paymentMethods={paymentMethods}
-                        paymentForm={paymentForm}
-                        onBack={onReview}
-                        onSubmit={onSubmit}
-                    />
-                )}
-
-                {stage === 'verification' && (
-                    <VerificationPanel
-                        order={pendingOrder}
-                        plan={selectedPlan}
-                    />
-                )}
+                    <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                        {description}
+                    </p>
+                </div>
             </div>
+
+            {(action ||
+                secondaryAction) && (
+                <div className="flex flex-col gap-2 sm:flex-row">
+                    {secondaryAction && (
+                        <button
+                            type="button"
+                            disabled={
+                                secondaryAction.disabled
+                            }
+                            onClick={
+                                secondaryAction.onClick
+                            }
+                            className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-rose-500/25 bg-rose-500/[0.07] px-4 text-[10px] font-semibold text-rose-300 transition hover:bg-rose-500/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {
+                                secondaryAction.label
+                            }
+                        </button>
+                    )}
+
+                    {action && (
+                        <button
+                            type="button"
+                            disabled={
+                                action.disabled
+                            }
+                            onClick={
+                                action.onClick
+                            }
+                            className={`inline-flex h-9 shrink-0 items-center justify-center rounded-lg border px-4 text-[10px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${classes.button}`}
+                        >
+                            {action.label}
+                        </button>
+                    )}
+                </div>
+            )}
         </section>
     );
 }
 
-function OrderSummary({
+function PaymentModal({
+    open,
     order,
     plan,
     price,
-    stage,
+    selectedMethod,
+    paymentMethods,
+    paymentForm,
+    onClose,
+    onCancelCheckout,
+    cancelCheckoutProcessing,
+    onSubmit,
 }: {
-    order: SubscriptionOrder;
+    open: boolean;
+    order: SubscriptionOrder | null;
     plan: SubscriptionPlan | null;
     price: PlanPrice | undefined;
-    stage: CheckoutStage;
+    selectedMethod: PaymentMethod | null;
+    paymentMethods: PaymentMethod[];
+    paymentForm: ReturnType<
+        typeof useForm<PaymentForm>
+    >;
+    onClose: () => void;
+    onCancelCheckout: () => void;
+    cancelCheckoutProcessing: boolean;
+    onSubmit: (
+        event: FormEvent<HTMLFormElement>,
+    ) => void;
 }) {
-    return (
-        <aside className="overflow-hidden rounded-2xl border border-border/70 bg-card xl:sticky xl:top-5">
-            <div className="border-b border-border/60 p-5">
-                <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
-                    <ReceiptText className="size-3.5" />
-                    Order summary
-                </div>
-                <p className="mt-2 font-mono text-xs font-semibold">
-                    {order.order_code}
-                </p>
-            </div>
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
 
-            <div className="p-5">
-                <div className="flex items-start gap-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
-                        <Crown className="size-4" />
-                    </span>
-                    <div className="min-w-0">
-                        <p className="truncate text-sm font-bold">
-                            {plan?.name ?? 'Subscription plan'}
+        const previousOverflow =
+            document.body.style.overflow;
+
+        const handleKeyDown = (
+            event: KeyboardEvent,
+        ): void => {
+            if (
+                event.key === 'Escape' &&
+                !paymentForm.processing
+            ) {
+                onClose();
+            }
+        };
+
+        document.body.style.overflow =
+            'hidden';
+
+        document.addEventListener(
+            'keydown',
+            handleKeyDown,
+        );
+
+        return () => {
+            document.body.style.overflow =
+                previousOverflow;
+
+            document.removeEventListener(
+                'keydown',
+                handleKeyDown,
+            );
+        };
+    }, [
+        open,
+        onClose,
+        paymentForm.processing,
+    ]);
+
+    if (!open || !order) {
+        return null;
+    }
+
+    const canSubmit =
+        paymentForm.data
+            .payment_method_id !== '' &&
+        paymentForm.data
+            .payment_proof !== null;
+
+    return (
+        <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm md:p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="subscription-payment-title"
+            onMouseDown={(event) => {
+                if (
+                    event.target ===
+                        event.currentTarget &&
+                    !paymentForm.processing
+                ) {
+                    onClose();
+                }
+            }}
+        >
+            <div className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-2xl">
+                <div className="flex items-start justify-between gap-4 border-b border-border/60 px-5 py-4 md:px-6">
+                    <div>
+                        <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
+                            <CreditCard className="size-3.5" />
+                            Secure manual checkout
+                        </div>
+
+                        <h2
+                            id="subscription-payment-title"
+                            className="mt-1.5 text-xl font-bold tracking-tight"
+                        >
+                            Complete subscription payment
+                        </h2>
+
+                        <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                            Review the order, select a payment channel, and upload proof.
                         </p>
-                        <p className="mt-1 text-[10px] text-muted-foreground">
-                            {humanize(order.billing_type)} billing
+                    </div>
+
+                    <button
+                        type="button"
+                        disabled={
+                            paymentForm.processing
+                        }
+                        onClick={onClose}
+                        aria-label="Close payment modal"
+                        className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background/30 text-muted-foreground transition hover:bg-muted/50 hover:text-foreground disabled:opacity-50"
+                    >
+                        <X className="size-4" />
+                    </button>
+                </div>
+
+                <form
+                    onSubmit={onSubmit}
+                    className="min-h-0 flex-1 overflow-y-auto"
+                >
+                    <div className="grid min-h-full lg:grid-cols-[320px_minmax(0,1fr)]">
+                        <aside className="border-b border-border/60 bg-muted/[0.08] p-5 lg:border-b-0 lg:border-r md:p-6">
+                            <div className="flex items-start gap-3">
+                                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                                    <Crown className="size-4" />
+                                </span>
+
+                                <div className="min-w-0">
+                                    <p className="truncate text-sm font-bold">
+                                        {plan?.name ??
+                                            'Subscription plan'}
+                                    </p>
+
+                                    <p className="mt-1 text-[10px] text-muted-foreground">
+                                        {humanize(
+                                            price?.billing_interval ??
+                                                order.billing_type,
+                                        )}{' '}
+                                        billing
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mt-5 space-y-3">
+                                <ModalSummaryRow
+                                    label="Order"
+                                    value={
+                                        order.order_code
+                                    }
+                                />
+
+                                <ModalSummaryRow
+                                    label="Order type"
+                                    value={humanize(
+                                        order.order_type,
+                                    )}
+                                />
+
+                                <ModalSummaryRow
+                                    label="Status"
+                                    value={humanize(
+                                        order.status,
+                                    )}
+                                />
+                            </div>
+
+                            <div className="mt-5 rounded-xl border border-primary/15 bg-primary/[0.045] p-4">
+                                <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                    Amount due
+                                </p>
+
+                                <p className="mt-1.5 text-2xl font-bold tracking-tight text-primary">
+                                    {formatMoney(
+                                        order.amount,
+                                        order.currency,
+                                    )}
+                                </p>
+                            </div>
+
+                            <div className="mt-5 flex items-start gap-2.5 border-t border-border/60 pt-4">
+                                <LockKeyhole className="mt-0.5 size-3.5 shrink-0 text-emerald-400" />
+
+                                <p className="text-[10px] leading-4 text-muted-foreground">
+                                    Activation occurs only after administrator verification.
+                                </p>
+                            </div>
+                        </aside>
+
+                        <div className="space-y-6 p-5 md:p-6">
+                            <ModalSection
+                                number="01"
+                                title="Payment method"
+                                description="Choose the account where payment was sent."
+                            >
+                                {paymentMethods.length >
+                                0 ? (
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        {paymentMethods.map(
+                                            (
+                                                method,
+                                            ) => {
+                                                const selected =
+                                                    paymentForm
+                                                        .data
+                                                        .payment_method_id ===
+                                                    method.id;
+
+                                                return (
+                                                    <button
+                                                        key={
+                                                            method.id
+                                                        }
+                                                        type="button"
+                                                        onClick={() =>
+                                                            paymentForm.setData(
+                                                                'payment_method_id',
+                                                                method.id,
+                                                            )
+                                                        }
+                                                        className={`flex items-start gap-3 rounded-xl border p-3.5 text-left transition ${
+                                                            selected
+                                                                ? 'border-primary/40 bg-primary/[0.055] ring-1 ring-primary/10'
+                                                                : 'border-border/70 bg-background/25 hover:bg-muted/[0.12]'
+                                                        }`}
+                                                    >
+                                                        <span
+                                                            className={`flex size-9 shrink-0 items-center justify-center rounded-lg border ${
+                                                                selected
+                                                                    ? 'border-primary/25 bg-primary/10 text-primary'
+                                                                    : 'border-border/70 bg-muted/25 text-muted-foreground'
+                                                            }`}
+                                                        >
+                                                            <Landmark className="size-4" />
+                                                        </span>
+
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <p className="truncate text-xs font-semibold">
+                                                                    {
+                                                                        method.name
+                                                                    }
+                                                                </p>
+
+                                                                <span
+                                                                    className={`flex size-4 shrink-0 items-center justify-center rounded-full border ${
+                                                                        selected
+                                                                            ? 'border-primary bg-primary text-primary-foreground'
+                                                                            : 'border-border'
+                                                                    }`}
+                                                                >
+                                                                    {selected && (
+                                                                        <Check className="size-2.5" />
+                                                                    )}
+                                                                </span>
+                                                            </div>
+
+                                                            <p className="mt-1 truncate text-[10px] text-muted-foreground">
+                                                                {method.account_name ||
+                                                                    'Payment account'}
+                                                            </p>
+
+                                                            <p className="mt-0.5 truncate font-mono text-[10px] text-foreground/75">
+                                                                {method.account_number ||
+                                                                    'No account number'}
+                                                            </p>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            },
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-4">
+                                        <AlertCircle className="mt-0.5 size-4 shrink-0 text-amber-300" />
+
+                                        <div>
+                                            <p className="text-xs font-semibold text-amber-200">
+                                                No payment method available
+                                            </p>
+
+                                            <p className="mt-1 text-[10px] leading-4 text-amber-100/60">
+                                                Contact JCM support before continuing.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <FormError
+                                    message={
+                                        paymentForm
+                                            .errors
+                                            .payment_method_id
+                                    }
+                                />
+
+                                {selectedMethod && (
+                                    <div className="mt-3 rounded-xl border border-primary/15 bg-primary/[0.035] p-4">
+                                        <div className="flex items-start gap-3">
+                                            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-xs font-semibold">
+                                                    Send to{' '}
+                                                    {
+                                                        selectedMethod.name
+                                                    }
+                                                </p>
+
+                                                <div className="mt-2 grid gap-3 text-[10px] sm:grid-cols-2">
+                                                    <div>
+                                                        <p className="text-muted-foreground">
+                                                            Account name
+                                                        </p>
+
+                                                        <p className="mt-0.5 font-semibold">
+                                                            {selectedMethod.account_name ||
+                                                                'Not provided'}
+                                                        </p>
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="text-muted-foreground">
+                                                            Account number
+                                                        </p>
+
+                                                        <p className="mt-0.5 font-mono font-semibold">
+                                                            {selectedMethod.account_number ||
+                                                                'Not provided'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {selectedMethod.instructions && (
+                                                    <p className="mt-3 border-t border-primary/10 pt-3 text-[10px] leading-4 text-muted-foreground">
+                                                        {
+                                                            selectedMethod.instructions
+                                                        }
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </ModalSection>
+
+                            <ModalSection
+                                number="02"
+                                title="Sender information"
+                                description="Enter the transaction details shown on the receipt."
+                            >
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <Field
+                                        label="Reference number"
+                                        value={
+                                            paymentForm
+                                                .data
+                                                .reference_number
+                                        }
+                                        placeholder="Transaction reference"
+                                        error={
+                                            paymentForm
+                                                .errors
+                                                .reference_number
+                                        }
+                                        onChange={(
+                                            value,
+                                        ) =>
+                                            paymentForm.setData(
+                                                'reference_number',
+                                                value,
+                                            )
+                                        }
+                                    />
+
+                                    <Field
+                                        label="Sender account name"
+                                        value={
+                                            paymentForm
+                                                .data
+                                                .account_name
+                                        }
+                                        placeholder="Name used for payment"
+                                        error={
+                                            paymentForm
+                                                .errors
+                                                .account_name
+                                        }
+                                        onChange={(
+                                            value,
+                                        ) =>
+                                            paymentForm.setData(
+                                                'account_name',
+                                                value,
+                                            )
+                                        }
+                                    />
+
+                                    <Field
+                                        label="Sender account number"
+                                        value={
+                                            paymentForm
+                                                .data
+                                                .account_number
+                                        }
+                                        placeholder="Mobile or account number"
+                                        error={
+                                            paymentForm
+                                                .errors
+                                                .account_number
+                                        }
+                                        className="sm:col-span-2"
+                                        onChange={(
+                                            value,
+                                        ) =>
+                                            paymentForm.setData(
+                                                'account_number',
+                                                value,
+                                            )
+                                        }
+                                    />
+                                </div>
+                            </ModalSection>
+
+                            <ModalSection
+                                number="03"
+                                title="Payment proof"
+                                description="Upload a clear screenshot or photo of the completed transaction."
+                            >
+                                <label className="group flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-background/20 px-5 py-7 text-center transition hover:border-primary/35 hover:bg-primary/[0.025]">
+                                    <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.06] text-primary">
+                                        <UploadCloud className="size-5" />
+                                    </span>
+
+                                    <p className="mt-3 text-xs font-semibold">
+                                        {paymentForm.data
+                                            .payment_proof
+                                            ? 'Payment proof selected'
+                                            : 'Choose payment proof'}
+                                    </p>
+
+                                    <p className="mt-1 max-w-sm text-[10px] leading-4 text-muted-foreground">
+                                        {fileLabel(
+                                            paymentForm
+                                                .data
+                                                .payment_proof,
+                                        )}
+                                    </p>
+
+                                    <input
+                                        type="file"
+                                        accept="image/png,image/jpeg,image/webp"
+                                        onChange={(
+                                            event,
+                                        ) =>
+                                            paymentForm.setData(
+                                                'payment_proof',
+                                                event
+                                                    .target
+                                                    .files?.[0] ??
+                                                    null,
+                                            )
+                                        }
+                                        className="sr-only"
+                                        required
+                                    />
+                                </label>
+
+                                <FormError
+                                    message={
+                                        paymentForm
+                                            .errors
+                                            .payment_proof
+                                    }
+                                />
+                            </ModalSection>
+
+                            {paymentForm.hasErrors && (
+                                <div className="flex items-start gap-3 rounded-xl border border-rose-500/20 bg-rose-500/[0.07] p-4 text-rose-300">
+                                    <AlertCircle className="mt-0.5 size-4 shrink-0" />
+
+                                    <div>
+                                        <p className="text-xs font-semibold">
+                                            Payment details need attention
+                                        </p>
+
+                                        <p className="mt-1 text-[10px] leading-4 text-rose-200/70">
+                                            Review the marked fields before submitting.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-4 border-t border-border/60 bg-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between md:px-6">
+                        <div>
+                            <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                                Total payment
+                            </p>
+
+                            <p className="mt-1 text-xl font-bold text-primary">
+                                {formatMoney(
+                                    order.amount,
+                                    order.currency,
+                                )}
+                            </p>
+                        </div>
+
+                        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                            <button
+                                type="button"
+                                disabled={
+                                    paymentForm.processing ||
+                                    cancelCheckoutProcessing
+                                }
+                                onClick={
+                                    onCancelCheckout
+                                }
+                                className="inline-flex h-10 min-w-36 items-center justify-center rounded-xl border border-rose-500/25 bg-rose-500/[0.06] px-4 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/[0.11] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                Cancel checkout
+                            </button>
+
+                            <button
+                                type="button"
+                                disabled={
+                                    paymentForm.processing ||
+                                    cancelCheckoutProcessing
+                                }
+                                onClick={
+                                    onClose
+                                }
+                                className="inline-flex h-10 min-w-28 items-center justify-center rounded-xl border border-border/70 bg-background/30 px-4 text-xs font-semibold text-muted-foreground transition hover:bg-muted/40 hover:text-foreground disabled:opacity-50"
+                            >
+                                Close
+                            </button>
+
+                            <button
+                                type="submit"
+                                disabled={
+                                    paymentForm.processing ||
+                                    cancelCheckoutProcessing ||
+                                    !canSubmit
+                                }
+                                className="inline-flex h-10 min-w-52 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-45"
+                            >
+                                <FileUp className="size-4" />
+
+                                {paymentForm.processing
+                                    ? 'Submitting payment...'
+                                    : 'Submit for verification'}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+function CancelCheckoutDialog({
+    open,
+    order,
+    processing,
+    onClose,
+    onConfirm,
+}: {
+    open: boolean;
+    order: SubscriptionOrder | null;
+    processing: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+}) {
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        const handleKeyDown = (
+            event: KeyboardEvent,
+        ): void => {
+            if (
+                event.key === 'Escape' &&
+                !processing
+            ) {
+                onClose();
+            }
+        };
+
+        document.addEventListener(
+            'keydown',
+            handleKeyDown,
+        );
+
+        return () =>
+            document.removeEventListener(
+                'keydown',
+                handleKeyDown,
+            );
+    }, [
+        open,
+        onClose,
+        processing,
+    ]);
+
+    if (!open || !order) {
+        return null;
+    }
+
+    return (
+        <div
+            className="fixed inset-0 z-[130] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="cancel-checkout-title"
+            onMouseDown={(event) => {
+                if (
+                    event.target ===
+                        event.currentTarget &&
+                    !processing
+                ) {
+                    onClose();
+                }
+            }}
+        >
+            <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border/80 bg-card shadow-2xl">
+                <div className="p-5 md:p-6">
+                    <div className="flex items-start gap-3">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/[0.08] text-rose-300">
+                            <X className="size-4" />
+                        </span>
+
+                        <div>
+                            <h2
+                                id="cancel-checkout-title"
+                                className="text-base font-bold"
+                            >
+                                Cancel this checkout?
+                            </h2>
+
+                            <p className="mt-1.5 text-[11px] leading-5 text-muted-foreground">
+                                Order{' '}
+                                <span className="font-semibold text-foreground">
+                                    {
+                                        order.order_code
+                                    }
+                                </span>{' '}
+                                will be marked as cancelled.
+                                You can select another plan
+                                immediately afterward.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="mt-5 rounded-xl border border-amber-500/20 bg-amber-500/[0.055] p-3.5">
+                        <p className="text-[10px] leading-4 text-amber-100/70">
+                            This option is available only
+                            before payment proof is submitted.
+                            Your current active subscription
+                            will not be changed.
                         </p>
                     </div>
                 </div>
 
-                <div className="mt-5 space-y-3">
-                    <SummaryRow
-                        label="Order type"
-                        value={humanize(order.order_type)}
-                    />
-                    <SummaryRow
-                        label="Billing cycle"
-                        value={humanize(
-                            price?.billing_interval ?? order.billing_type,
-                        )}
-                    />
-                    <SummaryRow
-                        label="Status"
-                        value={humanize(order.status)}
-                    />
-                </div>
+                <div className="flex flex-col-reverse gap-2 border-t border-border/60 bg-muted/[0.08] p-4 sm:flex-row sm:justify-end">
+                    <button
+                        type="button"
+                        disabled={processing}
+                        onClick={onClose}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-border/70 bg-background/30 px-4 text-xs font-semibold text-muted-foreground transition hover:bg-muted/40 hover:text-foreground disabled:opacity-50"
+                    >
+                        Keep checkout
+                    </button>
 
-                <div className="mt-5 rounded-xl border border-primary/15 bg-primary/[0.045] p-4">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                        Amount due
-                    </p>
-                    <p className="mt-1.5 text-2xl font-bold tracking-tight text-primary">
-                        {formatMoney(order.amount, order.currency)}
-                    </p>
-                </div>
-
-                <div className="mt-5 flex items-start gap-2.5 border-t border-border/60 pt-4">
-                    <LockKeyhole className="mt-0.5 size-3.5 shrink-0 text-emerald-400" />
-                    <p className="text-[10px] leading-4 text-muted-foreground">
-                        Plan activation happens only after administrator
-                        verification.
-                    </p>
+                    <button
+                        type="button"
+                        disabled={processing}
+                        onClick={onConfirm}
+                        className="inline-flex h-10 items-center justify-center rounded-xl bg-rose-600 px-4 text-xs font-semibold text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {processing
+                            ? 'Cancelling...'
+                            : 'Yes, cancel order'}
+                    </button>
                 </div>
             </div>
-
-            <div className="border-t border-border/60 bg-muted/[0.1] px-5 py-3">
-                <p className="text-[9px] text-muted-foreground">
-                    Current step:{' '}
-                    <span className="font-semibold text-foreground">
-                        {wizardSteps.find((item) => item.key === stage)?.label}
-                    </span>
-                </p>
-            </div>
-        </aside>
+        </div>
     );
 }
 
-function SummaryRow({
+function ModalSummaryRow({
     label,
     value,
 }: {
@@ -1049,460 +2240,18 @@ function SummaryRow({
 }) {
     return (
         <div className="flex items-center justify-between gap-4 border-b border-border/50 pb-3 last:border-0 last:pb-0">
-            <span className="text-[10px] text-muted-foreground">{label}</span>
-            <span className="text-right text-[10px] font-semibold">
+            <span className="text-[10px] text-muted-foreground">
+                {label}
+            </span>
+
+            <span className="max-w-[170px] truncate text-right text-[10px] font-semibold">
                 {value}
             </span>
         </div>
     );
 }
 
-function ReviewPanel({
-    order,
-    plan,
-    price,
-    onContinue,
-}: {
-    order: SubscriptionOrder;
-    plan: SubscriptionPlan | null;
-    price: PlanPrice | undefined;
-    onContinue: () => void;
-}) {
-    const groups = plan ? groupedFeatures(plan) : [];
-
-    return (
-        <div className="overflow-hidden rounded-2xl border border-border/70 bg-card">
-            <PanelHeader
-                icon={<FileCheck2 className="size-3.5" />}
-                eyebrow="Step 2 · Review order"
-                title="Confirm your subscription order"
-                description="Review the plan, billing interval, limits, and enabled modules before payment."
-            />
-
-            <div className="p-5 md:p-6">
-                <div className="grid gap-4 md:grid-cols-3">
-                    <ReviewMetric
-                        icon={<Crown className="size-4" />}
-                        label="Selected plan"
-                        value={plan?.name ?? 'Plan unavailable'}
-                    />
-                    <ReviewMetric
-                        icon={<CalendarDays className="size-4" />}
-                        label="Billing"
-                        value={humanize(
-                            price?.billing_interval ?? order.billing_type,
-                        )}
-                    />
-                    <ReviewMetric
-                        icon={<CreditCard className="size-4" />}
-                        label="Amount due"
-                        value={formatMoney(order.amount, order.currency)}
-                    />
-                </div>
-
-                {plan && (
-                    <>
-                        <div className="mt-5 grid grid-cols-3 divide-x divide-border/60 overflow-hidden rounded-xl border border-border/70 bg-background/25">
-                            <Limit
-                                icon={<Building2 className="size-3.5" />}
-                                label="Branches"
-                                value={limitText(plan, 'max_branches')}
-                            />
-                            <Limit
-                                icon={<Warehouse className="size-3.5" />}
-                                label="Warehouses"
-                                value={limitText(plan, 'max_warehouses')}
-                            />
-                            <Limit
-                                icon={<Users className="size-3.5" />}
-                                label="Team"
-                                value={limitText(plan, 'max_team_members')}
-                            />
-                        </div>
-
-                        <div className="mt-5 overflow-hidden rounded-xl border border-border/70">
-                            <div className="flex items-center justify-between border-b border-border/60 bg-muted/[0.1] px-4 py-3">
-                                <div>
-                                    <p className="text-xs font-semibold">
-                                        Plan inclusions
-                                    </p>
-                                    <p className="mt-0.5 text-[10px] text-muted-foreground">
-                                        Modules activated after verification
-                                    </p>
-                                </div>
-
-                                <span className="rounded-full border border-emerald-500/20 bg-emerald-500/[0.08] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-emerald-300">
-                                    {plan.features.length} modules
-                                </span>
-                            </div>
-
-                            <div className="grid divide-y divide-border/50 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
-                                {groups.map((group) => (
-                                    <div key={group.key} className="p-4">
-                                        <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-foreground/70">
-                                            {group.title}
-                                        </p>
-
-                                        <div className="mt-2.5 space-y-1.5">
-                                            {group.features.map((feature) => (
-                                                <div
-                                                    key={feature.code}
-                                                    className="flex items-center gap-2"
-                                                >
-                                                    <Check className="size-3.5 shrink-0 text-emerald-400" />
-                                                    <span className="text-[10px] font-medium text-foreground/80">
-                                                        {feature.name}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </>
-                )}
-
-                <div className="mt-6 flex flex-col gap-3 border-t border-border/60 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-start gap-2.5">
-                        <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-400" />
-                        <p className="max-w-xl text-[10px] leading-4 text-muted-foreground">
-                            Continuing does not activate the plan. Activation
-                            occurs only after payment verification.
-                        </p>
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={onContinue}
-                        className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90"
-                    >
-                        Continue to payment
-                        <ChevronRight className="size-3.5" />
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function ReviewMetric({
-    icon,
-    label,
-    value,
-}: {
-    icon: ReactNode;
-    label: string;
-    value: string;
-}) {
-    return (
-        <div className="rounded-xl border border-border/70 bg-background/25 p-4">
-            <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                <span className="text-primary">{icon}</span>
-                {label}
-            </div>
-            <p className="mt-2 text-sm font-bold">{value}</p>
-        </div>
-    );
-}
-
-function PaymentPanel({
-    order,
-    selectedMethod,
-    paymentMethods,
-    paymentForm,
-    onBack,
-    onSubmit,
-}: {
-    order: SubscriptionOrder;
-    selectedMethod: PaymentMethod | null;
-    paymentMethods: PaymentMethod[];
-    paymentForm: ReturnType<typeof useForm<PaymentForm>>;
-    onBack: () => void;
-    onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}) {
-    const canSubmit =
-        paymentForm.data.payment_method_id !== '' &&
-        paymentForm.data.payment_proof !== null;
-
-    return (
-        <form
-            onSubmit={onSubmit}
-            className="overflow-hidden rounded-2xl border border-border/70 bg-card"
-        >
-            <div className="flex flex-col gap-4 border-b border-border/60 p-5 sm:flex-row sm:items-start sm:justify-between md:p-6">
-                <div>
-                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
-                        <CreditCard className="size-3.5" />
-                        Step 3 · Payment
-                    </div>
-                    <h2 className="mt-2 text-xl font-bold tracking-tight">
-                        Submit payment details
-                    </h2>
-                    <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
-                        Select a channel, enter sender information, and upload a
-                        clear proof of payment.
-                    </p>
-                </div>
-
-                <button
-                    type="button"
-                    onClick={onBack}
-                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-border/70 bg-background/30 px-3 text-[10px] font-semibold text-muted-foreground transition hover:bg-muted/40 hover:text-foreground"
-                >
-                    <ArrowLeft className="size-3.5" />
-                    Review order
-                </button>
-            </div>
-
-            <div className="space-y-6 p-5 md:p-6">
-                <PaymentSection
-                    number="01"
-                    title="Payment method"
-                    description="Choose where the subscription payment was sent."
-                >
-                    {paymentMethods.length > 0 ? (
-                        <div className="grid gap-3 md:grid-cols-2">
-                            {paymentMethods.map((method) => {
-                                const selected =
-                                    paymentForm.data.payment_method_id ===
-                                    method.id;
-
-                                return (
-                                    <button
-                                        key={method.id}
-                                        type="button"
-                                        onClick={() =>
-                                            paymentForm.setData(
-                                                'payment_method_id',
-                                                method.id,
-                                            )
-                                        }
-                                        className={`flex items-start gap-3 rounded-xl border p-4 text-left transition ${
-                                            selected
-                                                ? 'border-primary/40 bg-primary/[0.055] ring-1 ring-primary/10'
-                                                : 'border-border/70 bg-background/25 hover:bg-muted/[0.12]'
-                                        }`}
-                                    >
-                                        <span
-                                            className={`flex size-9 shrink-0 items-center justify-center rounded-lg border ${
-                                                selected
-                                                    ? 'border-primary/25 bg-primary/10 text-primary'
-                                                    : 'border-border/70 bg-muted/25 text-muted-foreground'
-                                            }`}
-                                        >
-                                            <Landmark className="size-4" />
-                                        </span>
-
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <p className="truncate text-xs font-semibold">
-                                                    {method.name}
-                                                </p>
-
-                                                <span
-                                                    className={`flex size-4 shrink-0 items-center justify-center rounded-full border ${
-                                                        selected
-                                                            ? 'border-primary bg-primary text-primary-foreground'
-                                                            : 'border-border'
-                                                    }`}
-                                                >
-                                                    {selected && (
-                                                        <Check className="size-2.5" />
-                                                    )}
-                                                </span>
-                                            </div>
-
-                                            <p className="mt-1 truncate text-[10px] text-muted-foreground">
-                                                {method.account_name ||
-                                                    'Payment account'}
-                                            </p>
-                                            <p className="mt-0.5 font-mono text-[10px] text-foreground/75">
-                                                {method.account_number ||
-                                                    'Account number unavailable'}
-                                            </p>
-                                        </div>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-4">
-                            <AlertCircle className="mt-0.5 size-4 shrink-0 text-amber-300" />
-                            <div>
-                                <p className="text-xs font-semibold text-amber-200">
-                                    No payment method available
-                                </p>
-                                <p className="mt-1 text-[10px] leading-4 text-amber-100/60">
-                                    Contact JCM support before continuing.
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    <FormError
-                        message={paymentForm.errors.payment_method_id}
-                    />
-
-                    {selectedMethod && (
-                        <div className="mt-3 rounded-xl border border-primary/15 bg-primary/[0.035] p-4">
-                            <div className="flex items-start gap-3">
-                                <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
-
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-xs font-semibold">
-                                        Send to {selectedMethod.name}
-                                    </p>
-
-                                    <div className="mt-2 grid gap-2 text-[10px] sm:grid-cols-2">
-                                        <div>
-                                            <p className="text-muted-foreground">
-                                                Account name
-                                            </p>
-                                            <p className="mt-0.5 font-semibold">
-                                                {selectedMethod.account_name ||
-                                                    'Not provided'}
-                                            </p>
-                                        </div>
-
-                                        <div>
-                                            <p className="text-muted-foreground">
-                                                Account number
-                                            </p>
-                                            <p className="mt-0.5 font-mono font-semibold">
-                                                {selectedMethod.account_number ||
-                                                    'Not provided'}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {selectedMethod.instructions && (
-                                        <p className="mt-3 border-t border-primary/10 pt-3 text-[10px] leading-4 text-muted-foreground">
-                                            {selectedMethod.instructions}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </PaymentSection>
-
-                <PaymentSection
-                    number="02"
-                    title="Sender information"
-                    description="Use the exact details shown in the transaction receipt."
-                >
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <Field
-                            label="Reference number"
-                            value={paymentForm.data.reference_number}
-                            placeholder="Enter transaction reference"
-                            error={paymentForm.errors.reference_number}
-                            onChange={(value) =>
-                                paymentForm.setData(
-                                    'reference_number',
-                                    value,
-                                )
-                            }
-                        />
-                        <Field
-                            label="Sender account name"
-                            value={paymentForm.data.account_name}
-                            placeholder="Name used for payment"
-                            error={paymentForm.errors.account_name}
-                            onChange={(value) =>
-                                paymentForm.setData('account_name', value)
-                            }
-                        />
-                        <Field
-                            label="Sender account number"
-                            value={paymentForm.data.account_number}
-                            placeholder="Mobile or account number"
-                            error={paymentForm.errors.account_number}
-                            className="sm:col-span-2"
-                            onChange={(value) =>
-                                paymentForm.setData('account_number', value)
-                            }
-                        />
-                    </div>
-                </PaymentSection>
-
-                <PaymentSection
-                    number="03"
-                    title="Payment proof"
-                    description="Upload a clear screenshot or photo of the completed transaction."
-                >
-                    <label className="group flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-background/20 px-5 py-8 text-center transition hover:border-primary/35 hover:bg-primary/[0.025]">
-                        <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.06] text-primary">
-                            <UploadCloud className="size-5" />
-                        </span>
-                        <p className="mt-3 text-xs font-semibold">
-                            {paymentForm.data.payment_proof
-                                ? 'Payment proof selected'
-                                : 'Choose payment proof'}
-                        </p>
-                        <p className="mt-1 max-w-sm text-[10px] leading-4 text-muted-foreground">
-                            {fileLabel(paymentForm.data.payment_proof)}
-                        </p>
-
-                        <input
-                            type="file"
-                            accept="image/png,image/jpeg,image/webp"
-                            onChange={(event) =>
-                                paymentForm.setData(
-                                    'payment_proof',
-                                    event.target.files?.[0] ?? null,
-                                )
-                            }
-                            className="sr-only"
-                            required
-                        />
-                    </label>
-
-                    <FormError message={paymentForm.errors.payment_proof} />
-                </PaymentSection>
-
-                {paymentForm.hasErrors && (
-                    <div className="flex items-start gap-3 rounded-xl border border-rose-500/20 bg-rose-500/[0.07] p-4 text-rose-300">
-                        <AlertCircle className="mt-0.5 size-4 shrink-0" />
-                        <div>
-                            <p className="text-xs font-semibold">
-                                Payment details need attention
-                            </p>
-                            <p className="mt-1 text-[10px] leading-4 text-rose-200/70">
-                                Review the marked fields before submitting.
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                <div className="flex flex-col gap-4 border-t border-border/60 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                            Total payment
-                        </p>
-                        <p className="mt-1 text-xl font-bold text-primary">
-                            {formatMoney(order.amount, order.currency)}
-                        </p>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={paymentForm.processing || !canSubmit}
-                        className="inline-flex h-11 min-w-56 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-45"
-                    >
-                        <FileUp className="size-4" />
-                        {paymentForm.processing
-                            ? 'Submitting payment...'
-                            : 'Submit for verification'}
-                    </button>
-                </div>
-            </div>
-        </form>
-    );
-}
-
-function PaymentSection({
+function ModalSection({
     number,
     title,
     description,
@@ -1519,15 +2268,21 @@ function PaymentSection({
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/[0.07] text-[9px] font-bold text-primary">
                     {number}
                 </span>
+
                 <div>
-                    <h3 className="text-sm font-semibold">{title}</h3>
+                    <h3 className="text-sm font-semibold">
+                        {title}
+                    </h3>
+
                     <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
                         {description}
                     </p>
                 </div>
             </div>
 
-            <div className="mt-4">{children}</div>
+            <div className="mt-4">
+                {children}
+            </div>
         </section>
     );
 }
@@ -1545,182 +2300,54 @@ function Field({
     placeholder: string;
     error?: string;
     className?: string;
-    onChange: (value: string) => void;
+    onChange: (
+        value: string,
+    ) => void;
 }) {
     return (
-        <label className={`block ${className}`}>
-            <span className="text-[10px] font-semibold">{label}</span>
+        <label
+            className={`block ${className}`}
+        >
+            <span className="text-[10px] font-semibold">
+                {label}
+            </span>
+
             <input
                 value={value}
-                onChange={(event) => onChange(event.target.value)}
-                placeholder={placeholder}
+                onChange={(event) =>
+                    onChange(
+                        event.target.value,
+                    )
+                }
+                placeholder={
+                    placeholder
+                }
                 className={`mt-2 h-10 w-full rounded-xl border bg-background/35 px-3 text-xs outline-none transition placeholder:text-muted-foreground/55 focus:ring-2 focus:ring-ring ${
-                    error ? 'border-rose-500/40' : 'border-input'
+                    error
+                        ? 'border-rose-500/40'
+                        : 'border-input'
                 }`}
             />
-            <FormError message={error} />
+
+            <FormError
+                message={error}
+            />
         </label>
     );
 }
 
-function FormError({ message }: { message?: string }) {
-    if (!message) return null;
-
-    return <p className="mt-1.5 text-[10px] text-rose-400">{message}</p>;
-}
-
-function VerificationPanel({
-    order,
-    plan,
+function FormError({
+    message,
 }: {
-    order: SubscriptionOrder;
-    plan: SubscriptionPlan | null;
+    message?: string;
 }) {
+    if (!message) {
+        return null;
+    }
+
     return (
-        <div className="overflow-hidden rounded-2xl border border-border/70 bg-card">
-            <PanelHeader
-                icon={<Clock3 className="size-3.5" />}
-                eyebrow="Step 4 · Verification"
-                title="Payment submitted successfully"
-                description="Your payment details are waiting for administrator review."
-                tone="emerald"
-            />
-
-            <div className="p-5 md:p-6">
-                <div className="flex flex-col items-center rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.045] px-5 py-10 text-center">
-                    <span className="flex size-14 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
-                        <CheckCircle2 className="size-7" />
-                    </span>
-
-                    <h3 className="mt-4 text-base font-bold">
-                        Verification in progress
-                    </h3>
-
-                    <p className="mt-2 max-w-lg text-xs leading-5 text-muted-foreground">
-                        JCM will review the proof. The{' '}
-                        <span className="font-semibold text-foreground">
-                            {plan?.name ?? 'selected plan'}
-                        </span>{' '}
-                        will activate after approval.
-                    </p>
-
-                    <div className="mt-5 grid w-full max-w-xl gap-3 sm:grid-cols-3">
-                        <VerificationItem
-                            label="Order"
-                            value={order.order_code}
-                        />
-                        <VerificationItem
-                            label="Amount"
-                            value={formatMoney(order.amount, order.currency)}
-                        />
-                        <VerificationItem
-                            label="Status"
-                            value={humanize(order.status)}
-                        />
-                    </div>
-                </div>
-
-                <div className="mt-5 flex items-start gap-3 rounded-xl border border-border/70 bg-background/20 p-4">
-                    <Clock3 className="mt-0.5 size-4 shrink-0 text-primary" />
-                    <div>
-                        <p className="text-xs font-semibold">
-                            What happens next?
-                        </p>
-                        <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
-                            After verification, the subscription status and
-                            enabled modules update automatically on this page.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function VerificationItem({
-    label,
-    value,
-}: {
-    label: string;
-    value: string;
-}) {
-    return (
-        <div className="rounded-xl border border-emerald-500/15 bg-background/25 p-3">
-            <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
-                {label}
-            </p>
-            <p className="mt-1 truncate text-[10px] font-semibold">{value}</p>
-        </div>
-    );
-}
-
-function PanelHeader({
-    icon,
-    eyebrow,
-    title,
-    description,
-    tone = 'primary',
-}: {
-    icon: ReactNode;
-    eyebrow: string;
-    title: string;
-    description: string;
-    tone?: 'primary' | 'emerald';
-}) {
-    return (
-        <div className="border-b border-border/60 p-5 md:p-6">
-            <div
-                className={`flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] ${
-                    tone === 'emerald' ? 'text-emerald-400' : 'text-primary'
-                }`}
-            >
-                {icon}
-                {eyebrow}
-            </div>
-            <h2 className="mt-2 text-xl font-bold tracking-tight">{title}</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
-                {description}
-            </p>
-        </div>
-    );
-}
-
-function Notice({
-    title,
-    detail,
-    action,
-}: {
-    title: string;
-    detail: string;
-    action?: {
-        label: string;
-        onClick: () => void;
-    };
-}) {
-    return (
-        <section className="flex flex-col gap-4 rounded-2xl border border-amber-500/20 bg-amber-500/[0.065] p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3">
-                <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-300" />
-                <div>
-                    <p className="text-xs font-semibold text-amber-200">
-                        {title}
-                    </p>
-                    <p className="mt-1 text-[10px] leading-4 text-amber-100/60">
-                        {detail}
-                    </p>
-                </div>
-            </div>
-
-            {action && (
-                <button
-                    type="button"
-                    onClick={action.onClick}
-                    className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-amber-400/25 bg-amber-400/[0.08] px-4 text-[10px] font-semibold text-amber-100 transition hover:bg-amber-400/[0.14]"
-                >
-                    <RefreshCcw className="size-3.5" />
-                    {action.label}
-                </button>
-            )}
-        </section>
+        <p className="mt-1.5 text-[10px] text-rose-400">
+            {message}
+        </p>
     );
 }

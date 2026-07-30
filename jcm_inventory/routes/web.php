@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Reports\CategoryReportController;
 use App\Http\Controllers\Reports\ProductReportController;
+use App\Http\Controllers\Reports\ProcurementReportController;
 use App\Http\Controllers\Reports\StockIssuanceReportController;
 use App\Http\Controllers\Reports\StockMovementReportController;
 use App\Http\Controllers\Reports\StockReportController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\Subscriptions\SubscriptionActionController;
 use App\Http\Controllers\Subscriptions\SubscriptionCheckoutController;
 use App\Http\Controllers\Subscriptions\SubscriptionController;
 use App\Http\Controllers\Subscriptions\SubscriptionPaymentController;
+use App\Http\Controllers\Subscriptions\SubscriptionWorkspaceController;
 use App\Http\Controllers\RoleAccessController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\StockMovementController;
@@ -55,10 +57,40 @@ Route::middleware(['auth'])->group(function () {
                 [SubscriptionController::class, 'index']
             )->name('index');
 
+            Route::get(
+                '/history',
+                [SubscriptionWorkspaceController::class, 'history']
+            )->name('history');
+
+            Route::get(
+                '/invoices',
+                [SubscriptionWorkspaceController::class, 'invoices']
+            )->name('invoices');
+
+            Route::get(
+                '/usage',
+                [SubscriptionWorkspaceController::class, 'usage']
+            )->name('usage');
+
+            Route::get(
+                '/activity',
+                [SubscriptionWorkspaceController::class, 'activity']
+            )->name('activity');
+
             Route::post(
                 '/checkout',
                 [SubscriptionCheckoutController::class, 'store']
             )->name('checkout.store');
+
+            Route::patch(
+                '/checkout/{order}/cancel',
+                [
+                    SubscriptionActionController::class,
+                    'cancelCheckout',
+                ]
+            )
+                ->whereNumber('order')
+                ->name('checkout.cancel');
 
             Route::post(
                 '/payment',
@@ -545,6 +577,69 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Procurement Reports
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('reports/procurement')
+        ->name('reports.procurement.')
+        ->middleware('subscription.capability:export')
+        ->controller(ProcurementReportController::class)
+        ->group(function () {
+            Route::prefix('suppliers')
+                ->name('suppliers.')
+                ->middleware('feature:supplier_management')
+                ->group(function () {
+                    Route::get('/pdf', 'suppliersPdf')->name('pdf');
+                    Route::get('/excel-preview', 'suppliersExcelPreview')
+                        ->name('excel-preview');
+                    Route::get('/excel', 'suppliersExcel')->name('excel');
+                });
+
+            Route::prefix('purchase-orders')
+                ->name('purchase-orders.')
+                ->middleware('feature:purchase_orders')
+                ->group(function () {
+                    Route::get('/pdf', 'purchaseOrdersPdf')->name('pdf');
+                    Route::get('/excel-preview', 'purchaseOrdersExcelPreview')
+                        ->name('excel-preview');
+                    Route::get('/excel', 'purchaseOrdersExcel')->name('excel');
+                });
+
+            Route::prefix('purchase-approvals')
+                ->name('purchase-approvals.')
+                ->middleware('feature:purchase_orders')
+                ->group(function () {
+                    Route::get('/pdf', 'purchaseApprovalsPdf')->name('pdf');
+                    Route::get('/excel-preview', 'purchaseApprovalsExcelPreview')
+                        ->name('excel-preview');
+                    Route::get('/excel', 'purchaseApprovalsExcel')->name('excel');
+                });
+
+            Route::prefix('receiving')
+                ->name('receiving.')
+                ->middleware('feature:receiving')
+                ->group(function () {
+                    Route::get('/pdf', 'receivingPdf')->name('pdf');
+                    Route::get('/excel-preview', 'receivingExcelPreview')
+                        ->name('excel-preview');
+                    Route::get('/excel', 'receivingExcel')->name('excel');
+                });
+
+            Route::prefix('received-orders')
+                ->name('received-orders.')
+                ->middleware('feature:received_order_history')
+                ->group(function () {
+                    Route::get('/pdf', 'receivedOrdersPdf')->name('pdf');
+                    Route::get('/excel-preview', 'receivedOrdersExcelPreview')
+                        ->name('excel-preview');
+                    Route::get('/excel', 'receivedOrdersExcel')->name('excel');
+                });
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
     | Received Orders Direct Route
     |--------------------------------------------------------------------------
     */
@@ -654,7 +749,7 @@ Route::middleware(['auth'])->group(function () {
             Route::prefix('purchase-approvals')
                 ->name('purchase-approvals.')
                 ->middleware(
-                    'feature:purchase_approvals'
+                    'feature:purchase_orders'
                 )
                 ->controller(
                     PurchaseApprovalController::class
@@ -738,7 +833,10 @@ Route::middleware(['auth'])->group(function () {
                 '/overview',
                 [TeamOverviewController::class, 'index']
             )
-                ->middleware('feature:team_overview')
+                ->middleware([
+                    'feature:team_overview',
+                    'subscription.capability:active',
+                ])
                 ->name('overview');
 
             /*

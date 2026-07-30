@@ -74,6 +74,136 @@ final class SubscriptionActionController extends Controller
         );
     }
 
+    public function cancelCheckout(
+        Request $request,
+        int $order,
+        SubscriptionAccessService $access
+    ): RedirectResponse {
+        $context = $access->requireOwner(
+            $request->user()
+        );
+
+        $connection = $this->connection();
+
+        $productCode = (string) config(
+            'jcm.product_code',
+            'JCM-INVENTORY-001'
+        );
+
+        $productId = $connection
+            ->table('products')
+            ->where(
+                'product_code',
+                $productCode
+            )
+            ->value('id');
+
+        if ($productId === null) {
+            throw ValidationException::withMessages([
+                'order' =>
+                    'The JCM Inventory product record was not found.',
+            ]);
+        }
+
+        $connection->transaction(
+            function () use (
+                $connection,
+                $context,
+                $productId,
+                $order
+            ): void {
+                $orderRecord = $connection
+                    ->table('orders')
+                    ->where('id', $order)
+                    ->where(
+                        'account_owner_id',
+                        $context[
+                            'account_owner_id'
+                        ]
+                    )
+                    ->where(
+                        'product_id',
+                        $productId
+                    )
+                    ->where(
+                        'status',
+                        'pending'
+                    )
+                    ->lockForUpdate()
+                    ->first([
+                        'id',
+                        'notes',
+                    ]);
+
+                if ($orderRecord === null) {
+                    throw ValidationException::withMessages([
+                        'order' =>
+                            'Only a pending checkout can be cancelled.',
+                    ]);
+                }
+
+                $existingNotes = trim(
+                    (string) (
+                        $orderRecord->notes ?? ''
+                    )
+                );
+
+                $cancelNote = sprintf(
+                    '[%s] Checkout cancelled by the account owner.',
+                    now()->format(
+                        'Y-m-d H:i:s'
+                    )
+                );
+
+                $connection
+                    ->table('transactions')
+                    ->where(
+                        'order_id',
+                        $orderRecord->id
+                    )
+                    ->where(
+                        'status',
+                        'pending'
+                    )
+                    ->update([
+                        'status' =>
+                            'rejected',
+
+                        'notes' =>
+                            'Checkout was cancelled before payment submission.',
+
+                        'updated_at' =>
+                            now(),
+                    ]);
+
+                $connection
+                    ->table('orders')
+                    ->where(
+                        'id',
+                        $orderRecord->id
+                    )
+                    ->update([
+                        'status' =>
+                            'cancelled',
+
+                        'notes' =>
+                            $existingNotes !== ''
+                                ? $existingNotes
+                                    .PHP_EOL
+                                    .$cancelNote
+                                : $cancelNote,
+
+                        'updated_at' =>
+                            now(),
+                    ]);
+            }
+        );
+
+        return to_route(
+            'subscription.index'
+        );
+    }
+
     private function connection(): ConnectionInterface
     {
         return DB::connection(

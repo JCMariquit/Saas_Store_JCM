@@ -1,5 +1,6 @@
 import { AppDrawer } from "@/components/shared/app-drawer";
 import { AppPagination } from "@/components/shared/app-pagination";
+import { ProcurementReportExportButtons } from "@/components/reports/procurement-report-export-buttons";
 import { BooleanField } from "@/components/shared/boolean-field";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EntityAvatar } from "@/components/shared/entity-avatar";
@@ -627,6 +628,14 @@ export default function SupplierIndex({
                   {suppliers.total} registered
                   {suppliers.total === 1 ? " partner" : " partners"}
                 </Badge>
+
+                <ProcurementReportExportButtons
+                  basePath="/reports/procurement/suppliers"
+                  filters={filters}
+                  recordCount={suppliers.total}
+                  resourceLabel="the Supplier Directory"
+                  className="flex flex-wrap items-center gap-2"
+                />
 
                 <Button
                   type="button"

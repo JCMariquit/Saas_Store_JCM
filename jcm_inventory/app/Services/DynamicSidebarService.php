@@ -26,7 +26,6 @@ final class DynamicSidebarService
      * Core record and audit pages remain readable:
      *
      * - Dashboard
-     * - Stock Overview
      * - Categories
      * - Products
      * - Stock Management
@@ -38,9 +37,10 @@ final class DynamicSidebarService
     private const ACTIVE_ONLY_ITEM_KEYS = [
         /*
         |--------------------------------------------------------------------------
-        | Inventory operations
+        | Premium overview and inventory operations
         |--------------------------------------------------------------------------
         */
+        'inventory-overview',
         'stock-issuance-terminal',
         'stock-issuance-history',
         'stock-movements',

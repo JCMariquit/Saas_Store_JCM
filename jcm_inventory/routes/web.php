@@ -226,9 +226,10 @@ Route::middleware(['auth'])->group(function () {
                 '/overview',
                 [StockOverviewController::class, 'index']
             )
-                ->middleware(
-                    'feature:inventory_overview'
-                )
+                ->middleware([
+                    'feature:inventory_overview',
+                    'subscription.capability:active',
+                ])
                 ->name('overview');
 
             /*

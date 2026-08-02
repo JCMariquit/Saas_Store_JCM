@@ -1,4 +1,3 @@
-import DeleteUser from '@/components/delete-user';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,15 +8,7 @@ import SettingsLayout from '@/layouts/settings/layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import {
-    BadgeCheck,
-    CheckCircle2,
-    CircleUserRound,
-    Mail,
-    Save,
-    ShieldCheck,
-    UserRound,
-} from 'lucide-react';
+import { BadgeCheck, CheckCircle2, CircleUserRound, Mail, Save } from 'lucide-react';
 import { type FormEventHandler, useMemo } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -32,20 +23,10 @@ type ProfileProps = {
     status?: string;
 };
 
-export default function Profile({
-    mustVerifyEmail,
-    status,
-}: ProfileProps) {
+export default function Profile({ mustVerifyEmail, status }: ProfileProps) {
     const { auth } = usePage<SharedData>().props;
 
-    const {
-        data,
-        setData,
-        patch,
-        errors,
-        processing,
-        recentlySuccessful,
-    } = useForm({
+    const { data, setData, patch, errors, processing, recentlySuccessful } = useForm({
         name: auth.user.name,
         email: auth.user.email,
     });
@@ -72,22 +53,18 @@ export default function Profile({
 
             <SettingsLayout>
                 <div className="min-w-0 space-y-5">
-                    <section className="overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.08] via-card/70 to-card/40">
-                        <div className="flex flex-col gap-4 border-b border-border/60 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+                    <section className="border-primary/20 from-primary/[0.08] via-card/70 to-card/40 overflow-hidden rounded-2xl border bg-gradient-to-br">
+                        <div className="border-border/60 flex flex-col gap-4 border-b px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex min-w-0 items-center gap-3.5">
-                                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary">
+                                <span className="border-primary/25 bg-primary/10 text-primary flex size-11 shrink-0 items-center justify-center rounded-xl border">
                                     <CircleUserRound className="size-5" />
                                 </span>
 
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-primary">
-                                        Account settings
-                                    </p>
-                                    <h1 className="mt-1 text-lg font-semibold tracking-tight text-foreground">
-                                        Profile information
-                                    </h1>
-                                    <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
-                                        Maintain the account identity used across JCM Inventory operations.
+                                    <p className="text-primary text-[10px] font-semibold tracking-[0.13em] uppercase">Account settings</p>
+                                    <h1 className="text-foreground mt-1 text-lg font-semibold tracking-tight">Profile information</h1>
+                                    <p className="text-muted-foreground mt-1 max-w-2xl text-xs leading-5">
+                                        Update your account name and email address.
                                     </p>
                                 </div>
                             </div>
@@ -100,146 +77,66 @@ export default function Profile({
                                         : 'h-7 w-fit rounded-full border-amber-500/20 bg-amber-500/[0.07] px-2.5 text-[10px] font-semibold text-amber-300'
                                 }
                             >
-                                {emailVerified ? (
-                                    <BadgeCheck className="mr-1.5 size-3.5" />
-                                ) : (
-                                    <Mail className="mr-1.5 size-3.5" />
-                                )}
-                                {emailVerified
-                                    ? 'Email verified'
-                                    : 'Verification required'}
+                                {emailVerified ? <BadgeCheck className="mr-1.5 size-3.5" /> : <Mail className="mr-1.5 size-3.5" />}
+                                {emailVerified ? 'Email verified' : 'Verification required'}
                             </Badge>
                         </div>
 
                         <div className="grid min-w-0 lg:grid-cols-[280px_minmax(0,1fr)]">
-                            <aside className="border-b border-border/60 bg-background/20 p-5 lg:border-b-0 lg:border-r">
+                            <aside className="border-border/60 bg-background/20 border-b p-5 lg:border-r lg:border-b-0">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-sm font-semibold text-primary">
+                                    <div className="border-primary/25 bg-primary/10 text-primary flex size-12 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold">
                                         {initials || 'U'}
                                     </div>
 
                                     <div className="min-w-0">
-                                        <p className="truncate text-sm font-semibold text-foreground">
-                                            {auth.user.name}
-                                        </p>
-                                        <p className="mt-1 truncate text-[10px] text-muted-foreground">
-                                            {auth.user.email}
-                                        </p>
+                                        <p className="text-foreground truncate text-sm font-semibold">{auth.user.name}</p>
+                                        <p className="text-muted-foreground mt-1 truncate text-[10px]">{auth.user.email}</p>
                                     </div>
                                 </div>
-
-                                <div className="mt-5 divide-y divide-border/60 border-y border-border/60">
-                                    <ProfileFact
-                                        icon={UserRound}
-                                        label="Account name"
-                                        value={auth.user.name}
-                                    />
-                                    <ProfileFact
-                                        icon={Mail}
-                                        label="Email status"
-                                        value={
-                                            emailVerified
-                                                ? 'Verified'
-                                                : 'Pending verification'
-                                        }
-                                        valueClassName={
-                                            emailVerified
-                                                ? 'text-emerald-400'
-                                                : 'text-amber-400'
-                                        }
-                                    />
-                                    <ProfileFact
-                                        icon={ShieldCheck}
-                                        label="Access"
-                                        value="Authenticated account"
-                                    />
-                                </div>
-
-                                <p className="mt-4 text-[10px] leading-5 text-muted-foreground">
-                                    Changes to your name and email will be reflected in account activity and operational records.
-                                </p>
                             </aside>
 
                             <div className="min-w-0 p-5 md:p-6">
                                 <div className="mb-5">
-                                    <p className="text-sm font-semibold text-foreground">
-                                        Account identity
-                                    </p>
-                                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                                        Keep your official account name and primary email address accurate.
-                                    </p>
+                                    <p className="text-foreground text-sm font-semibold">Account identity</p>
+                                    <p className="text-muted-foreground mt-1 text-xs leading-5">Edit the details linked to your account.</p>
                                 </div>
 
-                                <form
-                                    onSubmit={submit}
-                                    className="max-w-3xl space-y-5"
-                                >
+                                <form onSubmit={submit} className="max-w-3xl space-y-5">
                                     <div className="grid gap-5 md:grid-cols-2">
                                         <div className="space-y-2">
-                                            <Label
-                                                htmlFor="name"
-                                                className="text-xs font-semibold"
-                                            >
+                                            <Label htmlFor="name" className="text-xs font-semibold">
                                                 Full name
-                                            </Label>
-                                            <p className="min-h-4 text-[10px] text-muted-foreground">
-                                                Used in system records and account activity.
-                                            </p>
-
+                                            </Label>{' '}
                                             <Input
                                                 id="name"
                                                 value={data.name}
-                                                onChange={(event) =>
-                                                    setData(
-                                                        'name',
-                                                        event.target.value,
-                                                    )
-                                                }
+                                                onChange={(event) => setData('name', event.target.value)}
                                                 required
                                                 autoComplete="name"
                                                 placeholder="Full name"
                                                 disabled={processing}
                                                 className="h-10"
                                             />
-
-                                            <InputError
-                                                className="mt-1"
-                                                message={errors.name}
-                                            />
+                                            <InputError className="mt-1" message={errors.name} />
                                         </div>
 
                                         <div className="space-y-2">
-                                            <Label
-                                                htmlFor="email"
-                                                className="text-xs font-semibold"
-                                            >
+                                            <Label htmlFor="email" className="text-xs font-semibold">
                                                 Email address
-                                            </Label>
-                                            <p className="min-h-4 text-[10px] text-muted-foreground">
-                                                Used for login, recovery, and account notices.
-                                            </p>
-
+                                            </Label>{' '}
                                             <Input
                                                 id="email"
                                                 type="email"
                                                 value={data.email}
-                                                onChange={(event) =>
-                                                    setData(
-                                                        'email',
-                                                        event.target.value,
-                                                    )
-                                                }
+                                                onChange={(event) => setData('email', event.target.value)}
                                                 required
                                                 autoComplete="username"
                                                 placeholder="Email address"
                                                 disabled={processing}
                                                 className="h-10"
                                             />
-
-                                            <InputError
-                                                className="mt-1"
-                                                message={errors.email}
-                                            />
+                                            <InputError className="mt-1" message={errors.email} />
                                         </div>
                                     </div>
 
@@ -249,29 +146,23 @@ export default function Profile({
                                                 <Mail className="mt-0.5 size-4 shrink-0 text-amber-400" />
 
                                                 <div className="min-w-0">
-                                                    <p className="text-xs font-semibold text-amber-300">
-                                                        Email verification pending
-                                                    </p>
-                                                    <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                                                    <p className="text-xs font-semibold text-amber-300">Email verification pending</p>
+                                                    <p className="text-muted-foreground mt-1 text-[10px] leading-5">
                                                         Verify your email address to keep account recovery and security notices available.
                                                     </p>
 
                                                     <Link
-                                                        href={route(
-                                                            'verification.send',
-                                                        )}
+                                                        href={route('verification.send')}
                                                         method="post"
                                                         as="button"
-                                                        className="mt-2 inline-flex text-[10px] font-semibold text-amber-300 underline underline-offset-4 transition-colors hover:text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+                                                        className="mt-2 inline-flex text-[10px] font-semibold text-amber-300 underline underline-offset-4 transition-colors hover:text-amber-200 focus:ring-2 focus:ring-amber-500/30 focus:outline-none"
                                                     >
                                                         Re-send verification email
                                                     </Link>
 
-                                                    {status ===
-                                                        'verification-link-sent' && (
+                                                    {status === 'verification-link-sent' && (
                                                         <p className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-emerald-400">
-                                                            <CheckCircle2 className="size-3.5" />
-                                                            A new verification link has been sent.
+                                                            <CheckCircle2 className="size-3.5" />A new verification link has been sent.
                                                         </p>
                                                     )}
                                                 </div>
@@ -279,11 +170,8 @@ export default function Profile({
                                         </div>
                                     )}
 
-                                    <div className="flex flex-col gap-3 border-t border-border/60 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                                        <p className="text-[10px] leading-5 text-muted-foreground">
-                                            Review the information above before saving account changes.
-                                        </p>
-
+                                    <div className="border-border/60 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
+                                        {' '}
                                         <div className="flex items-center gap-3">
                                             <Transition
                                                 show={recentlySuccessful}
@@ -300,15 +188,9 @@ export default function Profile({
                                                 </p>
                                             </Transition>
 
-                                            <Button
-                                                type="submit"
-                                                disabled={processing}
-                                                className="h-10 rounded-lg px-4 text-xs"
-                                            >
+                                            <Button type="submit" disabled={processing} className="h-10 rounded-lg px-4 text-xs">
                                                 <Save className="size-3.5" />
-                                                {processing
-                                                    ? 'Saving...'
-                                                    : 'Save changes'}
+                                                {processing ? 'Saving...' : 'Save changes'}
                                             </Button>
                                         </div>
                                     </div>
@@ -316,51 +198,8 @@ export default function Profile({
                             </div>
                         </div>
                     </section>
-
-                    <section className="overflow-hidden rounded-2xl border border-red-500/15 bg-card/30">
-                        <div className="border-b border-border/60 px-5 py-4">
-                            <p className="text-sm font-semibold text-foreground">
-                                Account removal
-                            </p>
-                            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                                Permanent account actions are isolated from normal profile maintenance.
-                            </p>
-                        </div>
-
-                        <div className="p-5">
-                            <DeleteUser />
-                        </div>
-                    </section>
                 </div>
             </SettingsLayout>
         </AppLayout>
-    );
-}
-
-function ProfileFact({
-    icon: Icon,
-    label,
-    value,
-    valueClassName = 'text-foreground/80',
-}: {
-    icon: typeof UserRound;
-    label: string;
-    value: string;
-    valueClassName?: string;
-}) {
-    return (
-        <div className="flex items-center gap-3 py-3">
-            <Icon className="size-3.5 shrink-0 text-muted-foreground" />
-            <div className="min-w-0 flex-1">
-                <p className="text-[9px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-                    {label}
-                </p>
-                <p
-                    className={`mt-1 truncate text-[10px] font-semibold ${valueClassName}`}
-                >
-                    {value}
-                </p>
-            </div>
-        </div>
     );
 }

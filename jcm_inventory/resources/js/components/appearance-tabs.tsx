@@ -1,19 +1,6 @@
-import {
-    type Appearance,
-    type ThemePreset,
-    THEME_PRESETS,
-    useAppearance,
-} from '@/hooks/use-appearance';
+import { THEME_PRESETS, useAppearance, type Appearance, type ThemePreset } from '@/hooks/use-appearance';
 import { cn } from '@/lib/utils';
-import {
-    Check,
-    Layers3,
-    Monitor,
-    Moon,
-    RotateCcw,
-    Sun,
-    type LucideIcon,
-} from 'lucide-react';
+import { Check, Layers3, Moon, RotateCcw, Sun, type LucideIcon } from 'lucide-react';
 import { type HTMLAttributes } from 'react';
 
 const modeOptions: {
@@ -33,12 +20,6 @@ const modeOptions: {
         icon: Moon,
         label: 'Dark',
         description: 'Reduced glare and focused operations.',
-    },
-    {
-        value: 'system',
-        icon: Monitor,
-        label: 'System',
-        description: 'Follow the current device preference.',
     },
 ];
 
@@ -122,17 +103,8 @@ const presetOptions: {
     },
 ];
 
-export default function AppearanceTabs({
-    className = '',
-    ...props
-}: HTMLAttributes<HTMLDivElement>) {
-    const {
-        appearance,
-        themePreset,
-        updateAppearance,
-        updateThemePreset,
-        resetAppearance,
-    } = useAppearance();
+export default function AppearanceTabs({ className = '', ...props }: HTMLAttributes<HTMLDivElement>) {
+    const { appearance, themePreset, updateAppearance, updateThemePreset, resetAppearance } = useAppearance();
 
     return (
         <div className={cn('space-y-8', className)} {...props}>
@@ -140,24 +112,21 @@ export default function AppearanceTabs({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                         <div className="flex items-center gap-2">
-                            <Layers3 className="size-4 text-primary" />
-                            <h2 className="text-sm font-semibold text-foreground">
-                                Theme preset
-                            </h2>
+                            <Layers3 className="text-primary size-4" />
+                            <h2 className="text-foreground text-sm font-semibold">Theme preset</h2>
                         </div>
-                        <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
-                            Apply a complete visual identity across the workspace, header,
-                            sidebar, cards, controls, and charts.
+                        <p className="text-muted-foreground mt-1 max-w-2xl text-xs leading-5">
+                            Apply a complete visual identity across the workspace, header, sidebar, cards, controls, and charts.
                         </p>
                     </div>
 
                     <button
                         type="button"
                         onClick={resetAppearance}
-                        className="inline-flex h-8 w-fit items-center gap-2 rounded-lg border border-border/70 bg-background/55 px-3 text-[10px] font-semibold text-muted-foreground transition hover:border-primary/30 hover:bg-primary/[0.06] hover:text-foreground"
+                        className="border-border/70 bg-background/55 text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.06] hover:text-foreground inline-flex h-8 w-fit items-center gap-2 rounded-lg border px-3 text-[10px] font-semibold transition"
                     >
                         <RotateCcw className="size-3.5" />
-                        Reset to JCM Dark
+                        Reset
                     </button>
                 </div>
 
@@ -182,12 +151,10 @@ export default function AppearanceTabs({
                                 <div className="p-4">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
-                                            <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                                            <p className="text-muted-foreground text-[8px] font-semibold tracking-[0.12em] uppercase">
                                                 {preset.eyebrow}
                                             </p>
-                                            <h3 className="mt-1 truncate text-sm font-semibold text-foreground">
-                                                {details.label}
-                                            </h3>
+                                            <h3 className="text-foreground mt-1 truncate text-sm font-semibold">{details.label}</h3>
                                         </div>
 
                                         <span
@@ -195,31 +162,18 @@ export default function AppearanceTabs({
                                                 'flex size-6 shrink-0 items-center justify-center rounded-full border transition',
                                                 active
                                                     ? 'border-primary/35 bg-primary/15 text-primary'
-                                                    : 'border-border/70 bg-background/50 text-transparent group-hover:text-muted-foreground/40',
+                                                    : 'border-border/70 bg-background/50 group-hover:text-muted-foreground/40 text-transparent',
                                             )}
                                         >
                                             <Check className="size-3.5" />
                                         </span>
                                     </div>
 
-                                    <p className="mt-2 min-h-10 text-[10px] leading-5 text-muted-foreground">
-                                        {details.description}
-                                    </p>
+                                    <p className="text-muted-foreground mt-2 min-h-10 text-[10px] leading-5">{details.description}</p>
 
-                                    <div
-                                        className={cn(
-                                            'mt-4 overflow-hidden rounded-xl border p-2.5',
-                                            preset.preview.shell,
-                                            preset.preview.border,
-                                        )}
-                                    >
+                                    <div className={cn('mt-4 overflow-hidden rounded-xl border p-2.5', preset.preview.shell, preset.preview.border)}>
                                         <div className="grid grid-cols-[42px_minmax(0,1fr)] gap-2">
-                                            <div
-                                                className={cn(
-                                                    'rounded-lg border border-white/5 p-1.5',
-                                                    preset.preview.sidebar,
-                                                )}
-                                            >
+                                            <div className={cn('rounded-lg border border-white/5 p-1.5', preset.preview.sidebar)}>
                                                 <div className={cn('h-2 rounded-sm', preset.preview.primary)} />
                                                 <div className="mt-2 space-y-1.5">
                                                     <div className="h-1 rounded-full bg-white/18" />
@@ -229,12 +183,7 @@ export default function AppearanceTabs({
                                             </div>
 
                                             <div className="space-y-2">
-                                                <div
-                                                    className={cn(
-                                                        'flex h-5 items-center justify-between rounded-md px-2',
-                                                        preset.preview.header,
-                                                    )}
-                                                >
+                                                <div className={cn('flex h-5 items-center justify-between rounded-md px-2', preset.preview.header)}>
                                                     <div className="h-1 w-10 rounded-full bg-white/16" />
                                                     <div className={cn('size-2 rounded-full', preset.preview.primary)} />
                                                 </div>
@@ -250,19 +199,13 @@ export default function AppearanceTabs({
                                     <div className="mt-3 flex items-center justify-between gap-3">
                                         <div className="flex items-center -space-x-1">
                                             {preset.swatches.map((swatch) => (
-                                                <span
-                                                    key={swatch}
-                                                    className={cn(
-                                                        'size-4 rounded-full border-2 border-card',
-                                                        swatch,
-                                                    )}
-                                                />
+                                                <span key={swatch} className={cn('border-card size-4 rounded-full border-2', swatch)} />
                                             ))}
                                         </div>
 
                                         <span
                                             className={cn(
-                                                'text-[9px] font-semibold uppercase tracking-[0.1em]',
+                                                'text-[9px] font-semibold tracking-[0.1em] uppercase',
                                                 active ? 'text-primary' : 'text-muted-foreground',
                                             )}
                                         >
@@ -276,16 +219,13 @@ export default function AppearanceTabs({
                 </div>
             </section>
 
-            <section className="border-t border-border/60 pt-6">
+            <section className="border-border/60 border-t pt-6">
                 <div>
-                    <h2 className="text-sm font-semibold text-foreground">Display mode</h2>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                        Use the selected theme in light mode, dark mode, or follow the
-                        operating system setting.
-                    </p>
+                    <h2 className="text-foreground text-sm font-semibold">Display mode</h2>
+                    <p className="text-muted-foreground mt-1 text-xs leading-5">Choose whether the selected theme uses light or dark surfaces.</p>
                 </div>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     {modeOptions.map(({ value, icon: Icon, label, description }) => {
                         const active = appearance === value;
 
@@ -305,9 +245,7 @@ export default function AppearanceTabs({
                                 <span
                                     className={cn(
                                         'flex size-9 shrink-0 items-center justify-center rounded-lg border',
-                                        active
-                                            ? 'border-primary/30 bg-primary/15 text-primary'
-                                            : 'border-border/70 bg-card text-muted-foreground',
+                                        active ? 'border-primary/30 bg-primary/15 text-primary' : 'border-border/70 bg-card text-muted-foreground',
                                     )}
                                 >
                                     <Icon className="size-4" />
@@ -315,14 +253,10 @@ export default function AppearanceTabs({
 
                                 <span className="min-w-0 flex-1">
                                     <span className="flex items-center justify-between gap-2">
-                                        <span className="text-xs font-semibold text-foreground">
-                                            {label}
-                                        </span>
-                                        {active && <Check className="size-3.5 text-primary" />}
+                                        <span className="text-foreground text-xs font-semibold">{label}</span>
+                                        {active && <Check className="text-primary size-3.5" />}
                                     </span>
-                                    <span className="mt-1 block text-[9px] leading-4 text-muted-foreground">
-                                        {description}
-                                    </span>
+                                    <span className="text-muted-foreground mt-1 block text-[9px] leading-4">{description}</span>
                                 </span>
                             </button>
                         );

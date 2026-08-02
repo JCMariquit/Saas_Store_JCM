@@ -404,6 +404,46 @@ LOCK TABLES `jobs` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `login_activities`
+--
+
+DROP TABLE IF EXISTS `login_activities`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `login_activities` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(20) unsigned DEFAULT NULL,
+  `email_attempted` varchar(255) DEFAULT NULL,
+  `event_type` varchar(30) NOT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `browser` varchar(100) DEFAULT NULL,
+  `platform` varchar(100) DEFAULT NULL,
+  `device_type` varchar(50) DEFAULT NULL,
+  `session_id` varchar(255) DEFAULT NULL,
+  `occurred_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `login_activities_user_event_date_index` (`user_id`,`event_type`,`occurred_at`),
+  KEY `login_activities_email_date_index` (`email_attempted`,`occurred_at`),
+  KEY `login_activities_session_index` (`session_id`),
+  KEY `login_activities_occurred_at_index` (`occurred_at`),
+  CONSTRAINT `login_activities_user_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `login_activities`
+--
+
+LOCK TABLES `login_activities` WRITE;
+/*!40000 ALTER TABLE `login_activities` DISABLE KEYS */;
+INSERT INTO `login_activities` VALUES (1,1,'junecharlesmariquit553@gmail.com','logout','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0','Microsoft Edge','Windows','Desktop','dai6CykT98L8JdtGj7etfaSZ3B2R81i1ef6L0NZd','2026-08-01 08:46:03','2026-08-01 08:46:03','2026-08-01 08:46:03'),(2,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0','Microsoft Edge','Windows','Desktop','i8BLdBgwo1KN7575397iRIpMbr6w2Y9FecKgGyoV','2026-08-01 08:46:13','2026-08-01 08:46:13','2026-08-01 08:46:13'),(3,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0','Microsoft Edge','Windows','Desktop','upeoUn9Oad68F6IVBvsTwolxYOXjH2mNfoS9nSoa','2026-08-01 11:33:58','2026-08-01 11:33:58','2026-08-01 11:33:58'),(4,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0','Microsoft Edge','Windows','Desktop','RTCVEbgVcWfNtpZ7nkUovLHupOuZya0Vw2po2JBy','2026-08-02 07:00:28','2026-08-02 07:00:28','2026-08-02 07:00:28');
+/*!40000 ALTER TABLE `login_activities` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `messages`
 --
 
@@ -1660,7 +1700,7 @@ CREATE TABLE `user_product_access` (
 
 LOCK TABLES `user_product_access` WRITE;
 /*!40000 ALTER TABLE `user_product_access` DISABLE KEYS */;
-INSERT INTO `user_product_access` VALUES (1,1,10,4,1,18,'inactive',1,NULL,NULL,'2026-07-13 02:00:57','2026-07-28 13:17:39'),(2,1,11,3,1,19,'active',1,'2026-07-13 02:33:41','2026-07-30 08:36:44','2026-07-13 02:33:41','2026-07-30 08:36:44'),(3,19,11,5,1,19,'active',1,'2026-07-14 03:59:29',NULL,'2026-07-14 03:59:29','2026-07-30 06:31:28'),(4,12,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(5,13,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(6,14,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(7,15,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(8,16,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(9,17,10,9,1,18,'inactive',1,'2026-06-05 01:43:20',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(10,18,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(11,19,10,6,1,18,'inactive',1,'2026-07-14 03:59:29',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39');
+INSERT INTO `user_product_access` VALUES (1,1,10,4,1,18,'inactive',1,NULL,NULL,'2026-07-13 02:00:57','2026-07-28 13:17:39'),(2,1,11,3,1,19,'active',1,'2026-07-13 02:33:41','2026-08-02 07:00:42','2026-07-13 02:33:41','2026-08-02 07:00:42'),(3,19,11,5,1,19,'active',1,'2026-07-14 03:59:29',NULL,'2026-07-14 03:59:29','2026-07-30 06:31:28'),(4,12,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(5,13,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(6,14,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(7,15,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(8,16,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(9,17,10,9,1,18,'inactive',1,'2026-06-05 01:43:20',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(10,18,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(11,19,10,6,1,18,'inactive',1,'2026-07-14 03:59:29',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39');
 /*!40000 ALTER TABLE `user_product_access` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1730,7 +1770,7 @@ CREATE TABLE `user_product_preferences` (
 
 LOCK TABLES `user_product_preferences` WRITE;
 /*!40000 ALTER TABLE `user_product_preferences` DISABLE KEYS */;
-INSERT INTO `user_product_preferences` VALUES (1,19,3,11,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(2,1,2,2,'last_used','2026-07-30 08:36:44','2026-07-30 08:36:44'),(3,12,NULL,4,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(4,13,NULL,5,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(5,14,NULL,6,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(6,15,NULL,7,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(7,16,NULL,8,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(8,17,NULL,9,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(9,18,NULL,10,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39');
+INSERT INTO `user_product_preferences` VALUES (1,19,3,11,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(2,1,2,2,'last_used','2026-08-02 07:00:42','2026-08-02 07:00:42'),(3,12,NULL,4,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(4,13,NULL,5,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(5,14,NULL,6,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(6,15,NULL,7,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(7,16,NULL,8,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(8,17,NULL,9,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39'),(9,18,NULL,10,'last_used','2026-07-28 13:17:39','2026-07-28 13:17:39');
 /*!40000 ALTER TABLE `user_product_preferences` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1801,7 +1841,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'June Charles Mariquit','junecharlesmariquit553@gmail.com',NULL,'$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi',NULL,NULL,NULL,'CbOavy3v6zyAxrf801oRZSArlHVDNPpJG8TfN6n4yoq2cpSpPxH8sPz3m9eC','2026-04-13 21:58:39','2026-04-13 21:58:39',NULL,1),(7,'admin','admin@gmail.com',NULL,'$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi',NULL,NULL,NULL,'AKzQuJt0QVa7Gfsmsdgbl7sZzNkzjrD04AxBAX7SjbmjrBx0ZVXnNHNNyqCn','2026-04-13 21:58:39','2026-04-13 21:58:39',NULL,1),(12,'cashier','cashier@pos.com',NULL,'$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-05-29 18:52:57','2026-05-29 18:52:57',1,1),(13,'Store Manager 1','manager1@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(14,'Store Manager 2','manager2@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(15,'Store Staff 1','staff1@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(16,'Store Staff 2','staff2@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-08 19:38:03',1,1),(17,'Cashier 2','cashier2@pos.com','2026-06-05 01:43:20','$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',NULL,NULL,NULL,NULL,'2026-06-05 01:43:20','2026-06-05 01:43:20',1,1),(18,'cashier1','cashier1@pos.com',NULL,'$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-05-29 18:52:57','2026-05-29 18:52:57',1,1),(19,'staff','staff@inventory.com',NULL,'$2y$12$NdDKLmZaROoi/5YdtQeVYOE77wbMgLXLjAhHixLGlPC9VSUn0wfkK',NULL,NULL,NULL,NULL,'2026-07-14 03:59:29','2026-07-23 01:00:53',1,1);
+INSERT INTO `users` VALUES (1,'June Charles Mariquit','junecharlesmariquit553@gmail.com',NULL,'$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi',NULL,NULL,NULL,'RG3cD1N8ddlJPQWwU4cIEWqzVkifHr9htVlpuapQZ8Or9477hNQwKLF2pvBp','2026-04-13 21:58:39','2026-04-13 21:58:39',NULL,1),(7,'admin','admin@gmail.com',NULL,'$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi',NULL,NULL,NULL,'AKzQuJt0QVa7Gfsmsdgbl7sZzNkzjrD04AxBAX7SjbmjrBx0ZVXnNHNNyqCn','2026-04-13 21:58:39','2026-04-13 21:58:39',NULL,1),(12,'cashier','cashier@pos.com',NULL,'$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-05-29 18:52:57','2026-05-29 18:52:57',1,1),(13,'Store Manager 1','manager1@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(14,'Store Manager 2','manager2@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(15,'Store Staff 1','staff1@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(16,'Store Staff 2','staff2@pos.com','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-08 19:38:03',1,1),(17,'Cashier 2','cashier2@pos.com','2026-06-05 01:43:20','$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',NULL,NULL,NULL,NULL,'2026-06-05 01:43:20','2026-06-05 01:43:20',1,1),(18,'cashier1','cashier1@pos.com',NULL,'$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-05-29 18:52:57','2026-05-29 18:52:57',1,1),(19,'staff','staff@inventory.com',NULL,'$2y$12$NdDKLmZaROoi/5YdtQeVYOE77wbMgLXLjAhHixLGlPC9VSUn0wfkK',NULL,NULL,NULL,NULL,'2026-07-14 03:59:29','2026-07-23 01:00:53',1,1);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2059,4 +2099,4 @@ USE `jcm_saas_db`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-30 16:41:55
+-- Dump completed on 2026-08-02 21:45:50

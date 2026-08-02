@@ -8,6 +8,8 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -52,6 +54,14 @@ class ProfileController extends Controller
         $user = $request->user();
 
         Auth::logout();
+
+        if (Schema::connection('saas')->hasTable('login_activities')) {
+            DB::connection('saas')
+                ->table('login_activities')
+                ->where('user_id', $user->getKey())
+                ->orWhere('email_attempted', $user->email)
+                ->delete();
+        }
 
         $user->delete();
 

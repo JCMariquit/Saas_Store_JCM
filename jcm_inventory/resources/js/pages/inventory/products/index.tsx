@@ -15,13 +15,7 @@ import { StatusBadge } from '@/components/shared/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
@@ -31,8 +25,8 @@ import {
     Barcode,
     Boxes,
     CheckCircle2,
-    CreditCard,
     ChevronRight,
+    CreditCard,
     FileSpreadsheet,
     FileText,
     Layers3,
@@ -44,12 +38,7 @@ import {
     Trash2,
     XCircle,
 } from 'lucide-react';
-import {
-    type FormEvent,
-    type ReactNode,
-    useEffect,
-    useState,
-} from 'react';
+import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 
 /*
 |--------------------------------------------------------------------------
@@ -171,15 +160,7 @@ type ProductPageProps = {
     capabilities: ProductCapabilities;
 };
 
-type ProductCatalogDrawerView =
-    | 'all'
-    | 'active'
-    | 'inactive'
-    | 'tracked'
-    | 'not_tracked'
-    | 'batch'
-    | 'expiry'
-    | 'categories';
+type ProductCatalogDrawerView = 'all' | 'active' | 'inactive' | 'tracked' | 'not_tracked' | 'batch' | 'expiry' | 'categories';
 
 type SubscriptionPrompt = {
     title: string;
@@ -223,22 +204,7 @@ const emptyProductForm: ProductFormData = {
     is_active: true,
 };
 
-const commonUnits = [
-    'pcs',
-    'box',
-    'pack',
-    'bottle',
-    'can',
-    'sachet',
-    'bag',
-    'kg',
-    'gram',
-    'liter',
-    'ml',
-    'meter',
-    'set',
-    'pair',
-];
+const commonUnits = ['pcs', 'box', 'pack', 'bottle', 'can', 'sachet', 'bag', 'kg', 'gram', 'liter', 'ml', 'meter', 'set', 'pair'];
 
 const ALL_VALUE = 'all';
 const NO_CATEGORY_VALUE = 'none';
@@ -249,60 +215,32 @@ const NO_CATEGORY_VALUE = 'none';
 |--------------------------------------------------------------------------
 */
 
-export default function ProductIndex({
-    products,
-    categories,
-    summary,
-    filters,
-    capabilities,
-}: ProductPageProps) {
-    const [isDialogOpen, setIsDialogOpen] =
-        useState(false);
+export default function ProductIndex({ products, categories, summary, filters, capabilities }: ProductPageProps) {
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    const [editingProduct, setEditingProduct] =
-        useState<Product | null>(null);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-    const [detailsProduct, setDetailsProduct] =
-        useState<Product | null>(null);
+    const [detailsProduct, setDetailsProduct] = useState<Product | null>(null);
 
-    const [catalogDrawerView, setCatalogDrawerView] =
-        useState<ProductCatalogDrawerView | null>(null);
+    const [catalogDrawerView, setCatalogDrawerView] = useState<ProductCatalogDrawerView | null>(null);
 
-    const [deleteTarget, setDeleteTarget] =
-        useState<Product | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
-    const [
-        subscriptionPrompt,
-        setSubscriptionPrompt,
-    ] = useState<SubscriptionPrompt | null>(null);
+    const [subscriptionPrompt, setSubscriptionPrompt] = useState<SubscriptionPrompt | null>(null);
 
-    const [deleteProcessing, setDeleteProcessing] =
-        useState(false);
+    const [deleteProcessing, setDeleteProcessing] = useState(false);
 
-    const [
-        statusProcessingId,
-        setStatusProcessingId,
-    ] = useState<number | null>(null);
+    const [statusProcessingId, setStatusProcessingId] = useState<number | null>(null);
 
-    const [search, setSearch] = useState(
-        filters.search ?? '',
-    );
+    const [search, setSearch] = useState(filters.search ?? '');
 
-    const [status, setStatus] = useState(
-        filters.status ?? '',
-    );
+    const [status, setStatus] = useState(filters.status ?? '');
 
-    const [categoryId, setCategoryId] = useState(
-        filters.category_id
-            ? String(filters.category_id)
-            : '',
-    );
+    const [categoryId, setCategoryId] = useState(filters.category_id ? String(filters.category_id) : '');
 
-    const [stockTracking, setStockTracking] =
-        useState(filters.stock_tracking ?? '');
+    const [stockTracking, setStockTracking] = useState(filters.stock_tracking ?? '');
 
-    const [batchTracking, setBatchTracking] =
-        useState(filters.batch_tracking ?? '');
+    const [batchTracking, setBatchTracking] = useState(filters.batch_tracking ?? '');
 
     const form = useForm<ProductFormData>({
         ...emptyProductForm,
@@ -312,23 +250,11 @@ export default function ProductIndex({
         setSearch(filters.search ?? '');
         setStatus(filters.status ?? '');
 
-        setCategoryId(
-            filters.category_id
-                ? String(filters.category_id)
-                : '',
-        );
+        setCategoryId(filters.category_id ? String(filters.category_id) : '');
 
-        setStockTracking(
-            filters.stock_tracking ?? '',
-        );
+        setStockTracking(filters.stock_tracking ?? '');
         setBatchTracking(filters.batch_tracking ?? '');
-    }, [
-        filters.search,
-        filters.status,
-        filters.category_id,
-        filters.stock_tracking,
-        filters.batch_tracking,
-    ]);
+    }, [filters.search, filters.status, filters.category_id, filters.stock_tracking, filters.batch_tracking]);
 
     useEffect(() => {
         const normalizedSearch = search.trim();
@@ -347,11 +273,11 @@ export default function ProductIndex({
             router.get(
                 '/inventory/products',
                 {
-                        search: normalizedSearch || undefined,
-                        status: status || undefined,
-                        category_id: categoryId || undefined,
-                        stock_tracking: stockTracking || undefined,
-                        batch_tracking: batchTracking || undefined,
+                    search: normalizedSearch || undefined,
+                    status: status || undefined,
+                    category_id: categoryId || undefined,
+                    stock_tracking: stockTracking || undefined,
+                    batch_tracking: batchTracking || undefined,
                 },
                 {
                     preserveState: true,
@@ -381,9 +307,7 @@ export default function ProductIndex({
     |--------------------------------------------------------------------------
     */
 
-    function requestSubscriptionRenewal(
-        action: string,
-    ): void {
+    function requestSubscriptionRenewal(action: string): void {
         setSubscriptionPrompt({
             title: 'Subscription renewal required',
             description:
@@ -415,9 +339,7 @@ export default function ProductIndex({
         resetAndCloseDialog();
     }
 
-    function handleDialogOpenChange(
-        open: boolean,
-    ): void {
+    function handleDialogOpenChange(open: boolean): void {
         if (open) {
             setIsDialogOpen(true);
             return;
@@ -428,9 +350,7 @@ export default function ProductIndex({
 
     function openCreateDialog(): void {
         if (!capabilities.can_write) {
-            requestSubscriptionRenewal(
-                'add new product records',
-            );
+            requestSubscriptionRenewal('add new product records');
             return;
         }
 
@@ -439,9 +359,7 @@ export default function ProductIndex({
         setIsDialogOpen(true);
     }
 
-    function openDetailsDrawer(
-        product: Product,
-    ): void {
+    function openDetailsDrawer(product: Product): void {
         setDetailsProduct(product);
     }
 
@@ -449,9 +367,7 @@ export default function ProductIndex({
         setDetailsProduct(null);
     }
 
-    function openCatalogDrawer(
-        view: ProductCatalogDrawerView,
-    ): void {
+    function openCatalogDrawer(view: ProductCatalogDrawerView): void {
         setCatalogDrawerView(view);
     }
 
@@ -459,13 +375,9 @@ export default function ProductIndex({
         setCatalogDrawerView(null);
     }
 
-    function openEditDialog(
-        product: Product,
-    ): void {
+    function openEditDialog(product: Product): void {
         if (!capabilities.can_write) {
-            requestSubscriptionRenewal(
-                `edit "${product.name}"`,
-            );
+            requestSubscriptionRenewal(`edit "${product.name}"`);
             return;
         }
 
@@ -473,26 +385,18 @@ export default function ProductIndex({
         form.clearErrors();
 
         form.setData({
-            category_id: product.category_id
-                ? String(product.category_id)
-                : '',
+            category_id: product.category_id ? String(product.category_id) : '',
             name: product.name,
             sku: product.sku ?? '',
             barcode: product.barcode ?? '',
-            description:
-                product.description ?? '',
+            description: product.description ?? '',
             unit: product.unit,
-            cost_price: String(
-                product.cost_price ?? '0.00',
-            ),
+            cost_price: String(product.cost_price ?? '0.00'),
             stock_tracking: product.stock_tracking,
             batch_tracking_enabled: product.batch_tracking_enabled,
             batch_issue_policy: product.batch_issue_policy,
             requires_expiration_date: product.requires_expiration_date,
-            expiry_warning_days:
-                product.expiry_warning_days !== null
-                    ? String(product.expiry_warning_days)
-                    : '',
+            expiry_warning_days: product.expiry_warning_days !== null ? String(product.expiry_warning_days) : '',
             is_active: product.is_active,
         });
 
@@ -505,9 +409,7 @@ export default function ProductIndex({
     |--------------------------------------------------------------------------
     */
 
-    function submitProduct(
-        event: FormEvent<HTMLFormElement>,
-    ): void {
+    function submitProduct(event: FormEvent<HTMLFormElement>): void {
         event.preventDefault();
 
         if (!capabilities.can_write) {
@@ -515,14 +417,10 @@ export default function ProductIndex({
         }
 
         if (editingProduct) {
-            form.put(
-                `/inventory/products/${editingProduct.id}`,
-                {
-                    preserveScroll: true,
-                    onSuccess:
-                        resetAndCloseDialog,
-                },
-            );
+            form.put(`/inventory/products/${editingProduct.id}`, {
+                preserveScroll: true,
+                onSuccess: resetAndCloseDialog,
+            });
 
             return;
         }
@@ -539,11 +437,7 @@ export default function ProductIndex({
     |--------------------------------------------------------------------------
     */
 
-
-
-    function buildProductReportUrl(
-        format: 'pdf' | 'excel-preview',
-    ): string {
+    function buildProductReportUrl(format: 'pdf' | 'excel-preview'): string {
         const params = new URLSearchParams();
 
         if (filters.search?.trim()) {
@@ -555,24 +449,15 @@ export default function ProductIndex({
         }
 
         if (filters.category_id) {
-            params.set(
-                'category_id',
-                String(filters.category_id),
-            );
+            params.set('category_id', String(filters.category_id));
         }
 
         if (filters.stock_tracking) {
-            params.set(
-                'stock_tracking',
-                filters.stock_tracking,
-            );
+            params.set('stock_tracking', filters.stock_tracking);
         }
 
         if (filters.batch_tracking) {
-            params.set(
-                'batch_tracking',
-                filters.batch_tracking,
-            );
+            params.set('batch_tracking', filters.batch_tracking);
         }
 
         const query = params.toString();
@@ -581,27 +466,17 @@ export default function ProductIndex({
         return query ? `${path}?${query}` : path;
     }
 
-    function openProductReport(
-        format: 'pdf' | 'excel-preview',
-    ): void {
+    function openProductReport(format: 'pdf' | 'excel-preview'): void {
         if (products.total === 0) {
             return;
         }
 
         if (!capabilities.can_export) {
-            requestSubscriptionRenewal(
-                format === 'pdf'
-                    ? 'export the Product Directory as PDF'
-                    : 'export the Product Directory to Excel',
-            );
+            requestSubscriptionRenewal(format === 'pdf' ? 'export the Product Directory as PDF' : 'export the Product Directory to Excel');
             return;
         }
 
-        const reportWindow = window.open(
-            buildProductReportUrl(format),
-            '_blank',
-            'noopener,noreferrer',
-        );
+        const reportWindow = window.open(buildProductReportUrl(format), '_blank', 'noopener,noreferrer');
 
         if (reportWindow) {
             reportWindow.opener = null;
@@ -614,51 +489,32 @@ export default function ProductIndex({
     |--------------------------------------------------------------------------
     */
 
-    function toggleStatus(
-        product: Product,
-    ): void {
+    function toggleStatus(product: Product): void {
         if (!capabilities.can_write) {
-            requestSubscriptionRenewal(
-                `${
-                    product.is_active
-                        ? 'deactivate'
-                        : 'activate'
-                } "${product.name}"`,
-            );
+            requestSubscriptionRenewal(`${product.is_active ? 'deactivate' : 'activate'} "${product.name}"`);
             return;
         }
 
-        if (
-            statusProcessingId === product.id
-        ) {
+        if (statusProcessingId === product.id) {
             return;
         }
 
         router.patch(
             `/inventory/products/${product.id}/status`,
             {
-                is_active:
-                    !product.is_active,
+                is_active: !product.is_active,
             },
             {
                 preserveScroll: true,
-                onStart: () =>
-                    setStatusProcessingId(
-                        product.id,
-                    ),
-                onFinish: () =>
-                    setStatusProcessingId(null),
+                onStart: () => setStatusProcessingId(product.id),
+                onFinish: () => setStatusProcessingId(null),
             },
         );
     }
 
-    function requestDelete(
-        product: Product,
-    ): void {
+    function requestDelete(product: Product): void {
         if (!capabilities.can_write) {
-            requestSubscriptionRenewal(
-                `delete "${product.name}"`,
-            );
+            requestSubscriptionRenewal(`delete "${product.name}"`);
             return;
         }
 
@@ -666,26 +522,16 @@ export default function ProductIndex({
     }
 
     function deleteProduct(): void {
-        if (
-            !capabilities.can_write ||
-            !deleteTarget ||
-            deleteProcessing
-        ) {
+        if (!capabilities.can_write || !deleteTarget || deleteProcessing) {
             return;
         }
 
-        router.delete(
-            `/inventory/products/${deleteTarget.id}`,
-            {
-                preserveScroll: true,
-                onStart: () =>
-                    setDeleteProcessing(true),
-                onSuccess: () =>
-                    setDeleteTarget(null),
-                onFinish: () =>
-                    setDeleteProcessing(false),
-            },
-        );
+        router.delete(`/inventory/products/${deleteTarget.id}`, {
+            preserveScroll: true,
+            onStart: () => setDeleteProcessing(true),
+            onSuccess: () => setDeleteTarget(null),
+            onFinish: () => setDeleteProcessing(false),
+        });
     }
 
     /*
@@ -695,37 +541,16 @@ export default function ProductIndex({
     */
 
     const deleteHasRelations = Boolean(
-        deleteTarget &&
-            (deleteTarget.warehouse_stocks_count >
-                0 ||
-                deleteTarget.stock_movements_count > 0 ||
-                deleteTarget.stock_batches_count > 0),
+        deleteTarget && (deleteTarget.warehouse_stocks_count > 0 || deleteTarget.stock_movements_count > 0 || deleteTarget.stock_batches_count > 0),
     );
 
-    const inactiveProducts = Math.max(
-        0,
-        summary.total - summary.active,
-    );
+    const inactiveProducts = Math.max(0, summary.total - summary.active);
 
-    const activePercentage =
-        summary.total > 0
-            ? Math.round(
-                  (summary.active / summary.total) *
-                      100,
-              )
-            : 0;
+    const activePercentage = summary.total > 0 ? Math.round((summary.active / summary.total) * 100) : 0;
 
-    const trackedPercentage =
-        summary.total > 0
-            ? Math.round(
-                  (summary.tracked / summary.total) *
-                      100,
-              )
-            : 0;
+    const trackedPercentage = summary.total > 0 ? Math.round((summary.tracked / summary.total) * 100) : 0;
 
-    const activeCategoryCount = categories.filter(
-        (category) => category.is_active,
-    ).length;
+    const activeCategoryCount = categories.filter((category) => category.is_active).length;
 
     const catalogHealthLabel =
         summary.total === 0
@@ -741,19 +566,12 @@ export default function ProductIndex({
               ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
               : 'border-amber-500/20 bg-amber-500/10 text-amber-300';
 
-    const selectedFormCategory = categories.find(
-        (category) =>
-            String(category.id) === form.data.category_id,
-    );
+    const selectedFormCategory = categories.find((category) => String(category.id) === form.data.category_id);
 
     const rawFormCostPrice = Number(form.data.cost_price || 0);
-    const formCostPrice = Number.isFinite(rawFormCostPrice)
-        ? rawFormCostPrice
-        : 0;
+    const formCostPrice = Number.isFinite(rawFormCostPrice) ? rawFormCostPrice : 0;
 
-    const batchConfigurationEnabled =
-        form.data.stock_tracking === 'tracked' &&
-        form.data.batch_tracking_enabled;
+    const batchConfigurationEnabled = form.data.stock_tracking === 'tracked' && form.data.batch_tracking_enabled;
 
     /*
     |--------------------------------------------------------------------------
@@ -774,9 +592,7 @@ export default function ProductIndex({
                             </span>
 
                             <div className="min-w-0">
-                                <p className="text-xs font-semibold text-amber-100">
-                                    Product catalog is read-only
-                                </p>
+                                <p className="text-xs font-semibold text-amber-100">Product catalog is read-only</p>
                                 <p className="mt-1 text-[10px] leading-4 text-amber-100/65">
                                     {capabilities.message ??
                                         'Renew the owner subscription to add, edit, delete, change status, or export product records.'}
@@ -787,11 +603,7 @@ export default function ProductIndex({
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() =>
-                                router.visit(
-                                    route('subscription.index'),
-                                )
-                            }
+                            onClick={() => router.visit(route('subscription.index', undefined, false))}
                             className="h-9 shrink-0 rounded-lg border-amber-400/25 bg-amber-400/[0.06] px-3 text-xs text-amber-100 hover:bg-amber-400/10 hover:text-amber-50"
                         >
                             <CreditCard className="size-3.5" />
@@ -802,19 +614,17 @@ export default function ProductIndex({
 
                 {/* Product catalog control board */}
 
-                <section className="min-w-0 overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.055] via-primary/[0.018] to-transparent shadow-sm">
-                    <div className="flex flex-col gap-3 border-b border-primary/10 bg-background/25 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <section className="border-primary/15 from-primary/[0.055] via-primary/[0.018] min-w-0 overflow-hidden rounded-2xl border bg-gradient-to-br to-transparent shadow-sm">
+                    <div className="border-primary/10 bg-background/25 flex flex-col gap-3 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/[0.075] text-primary">
+                            <span className="border-primary/20 bg-primary/[0.075] text-primary flex size-9 shrink-0 items-center justify-center rounded-xl border">
                                 <Package2 className="size-4" />
                             </span>
 
                             <div className="min-w-0">
-                                <p className="text-[11px] font-semibold text-foreground">
-                                    Product Catalog Overview
-                                </p>
+                                <p className="text-foreground text-[11px] font-semibold">Product Catalog Overview</p>
 
-                                <p className="mt-0.5 text-[9px] leading-4 text-muted-foreground">
+                                <p className="text-muted-foreground mt-0.5 text-[9px] leading-4">
                                     Select an overview segment to inspect its matching catalog records.
                                 </p>
                             </div>
@@ -822,10 +632,7 @@ export default function ProductIndex({
 
                         <Badge
                             variant="outline"
-                            className={cn(
-                                'h-6 w-fit shrink-0 gap-1.5 rounded-full px-2.5 text-[9px] font-semibold',
-                                catalogHealthClass,
-                            )}
+                            className={cn('h-6 w-fit shrink-0 gap-1.5 rounded-full px-2.5 text-[9px] font-semibold', catalogHealthClass)}
                         >
                             {summary.total === 0 ? (
                                 <Package2 className="size-3" />
@@ -843,29 +650,27 @@ export default function ProductIndex({
                         <button
                             type="button"
                             onClick={() => openCatalogDrawer('active')}
-                            className="relative min-w-0 overflow-hidden border-b border-border/60 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35 xl:border-b-0 xl:border-r md:p-5"
+                            className="border-border/60 hover:bg-primary/[0.025] focus-visible:ring-primary/35 relative min-w-0 overflow-hidden border-b p-4 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset md:p-5 xl:border-r xl:border-b-0"
                         >
-                            <div className="pointer-events-none absolute -left-20 -top-24 size-60 rounded-full bg-primary/[0.08] blur-3xl" />
-                            <Package2 className="pointer-events-none absolute -bottom-10 -right-6 size-36 text-primary opacity-[0.018]" />
+                            <div className="bg-primary/[0.08] pointer-events-none absolute -top-24 -left-20 size-60 rounded-full blur-3xl" />
+                            <Package2 className="text-primary pointer-events-none absolute -right-6 -bottom-10 size-36 opacity-[0.018]" />
 
                             <div className="relative">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
-                                            Catalog readiness
-                                        </p>
+                                        <p className="text-primary text-[9px] font-semibold tracking-[0.14em] uppercase">Catalog readiness</p>
 
                                         <div className="mt-3 flex items-end gap-3">
-                                            <p className="shrink-0 text-[34px] font-semibold leading-none tracking-[-0.045em] tabular-nums text-primary sm:text-[38px]">
+                                            <p className="text-primary shrink-0 text-[34px] leading-none font-semibold tracking-[-0.045em] tabular-nums sm:text-[38px]">
                                                 {activePercentage}%
                                             </p>
 
                                             <div className="min-w-0 pb-0.5">
-                                                <p className="text-[12px] font-semibold text-foreground">
+                                                <p className="text-foreground text-[12px] font-semibold">
                                                     {summary.active} of {summary.total} products active
                                                 </p>
 
-                                                <p className="mt-1 max-w-xl text-[9px] leading-4 text-muted-foreground">
+                                                <p className="text-muted-foreground mt-1 max-w-xl text-[9px] leading-4">
                                                     Active products are available for stock setup, movement recording, and inventory transactions.
                                                 </p>
                                             </div>
@@ -893,7 +698,7 @@ export default function ProductIndex({
                                         </span>
                                     </div>
 
-                                    <div className="mt-2 flex h-2.5 overflow-hidden rounded-full bg-muted">
+                                    <div className="bg-muted mt-2 flex h-2.5 overflow-hidden rounded-full">
                                         <div
                                             className="h-full bg-emerald-400 transition-all duration-500"
                                             style={{ width: `${activePercentage}%` }}
@@ -905,30 +710,22 @@ export default function ProductIndex({
                                     </div>
                                 </div>
 
-                                <div className="mt-4 rounded-xl border border-border/60 bg-background/40 px-3 py-2.5">
+                                <div className="border-border/60 bg-background/40 mt-4 rounded-xl border px-3 py-2.5">
                                     <div className="flex items-center gap-2.5">
                                         <span
                                             className={cn(
                                                 'inline-flex size-7 shrink-0 items-center justify-center rounded-lg',
-                                                inactiveProducts === 0
-                                                    ? 'bg-emerald-500/10 text-emerald-400'
-                                                    : 'bg-amber-500/10 text-amber-400',
+                                                inactiveProducts === 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400',
                                             )}
                                         >
-                                            {inactiveProducts === 0 ? (
-                                                <CheckCircle2 className="size-3.5" />
-                                            ) : (
-                                                <XCircle className="size-3.5" />
-                                            )}
+                                            {inactiveProducts === 0 ? <CheckCircle2 className="size-3.5" /> : <XCircle className="size-3.5" />}
                                         </span>
 
                                         <div className="min-w-0">
-                                            <p className="text-[10px] font-semibold text-foreground/85">
-                                                {inactiveProducts === 0
-                                                    ? 'All products are operational'
-                                                    : 'Catalog availability needs review'}
+                                            <p className="text-foreground/85 text-[10px] font-semibold">
+                                                {inactiveProducts === 0 ? 'All products are operational' : 'Catalog availability needs review'}
                                             </p>
-                                            <p className="mt-0.5 text-[9px] text-muted-foreground">
+                                            <p className="text-muted-foreground mt-0.5 text-[9px]">
                                                 Select this panel to inspect active product records.
                                             </p>
                                         </div>
@@ -946,7 +743,7 @@ export default function ProductIndex({
                                     icon={Boxes}
                                     tone="primary"
                                     onClick={() => openCatalogDrawer('tracked')}
-                                    className="border-b border-border/60 sm:border-r"
+                                    className="border-border/60 border-b sm:border-r"
                                 />
 
                                 <ProductOverviewSnapshot
@@ -956,7 +753,7 @@ export default function ProductIndex({
                                     icon={Tags}
                                     tone="teal"
                                     onClick={() => openCatalogDrawer('categories')}
-                                    className="border-b border-border/60 sm:border-r"
+                                    className="border-border/60 border-b sm:border-r"
                                 />
 
                                 <ProductOverviewSnapshot
@@ -966,17 +763,13 @@ export default function ProductIndex({
                                     icon={XCircle}
                                     tone={inactiveProducts > 0 ? 'amber' : 'emerald'}
                                     onClick={() => openCatalogDrawer('inactive')}
-                                    className="border-b border-border/60"
+                                    className="border-border/60 border-b"
                                 />
                             </div>
 
-                            <div className="border-b border-border/60 bg-background/20 px-4 py-3">
-                                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                    Catalog facts
-                                </p>
-                                <p className="mt-1 text-[9px] text-muted-foreground">
-                                    Each fact opens its own filtered drawer.
-                                </p>
+                            <div className="border-border/60 bg-background/20 border-b px-4 py-3">
+                                <p className="text-muted-foreground text-[9px] font-semibold tracking-[0.12em] uppercase">Catalog facts</p>
+                                <p className="text-muted-foreground mt-1 text-[9px]">Each fact opens its own filtered drawer.</p>
                             </div>
 
                             <div className="grid min-w-0 sm:grid-cols-2">
@@ -987,7 +780,7 @@ export default function ProductIndex({
                                     icon={<Package2 className="size-3.5" />}
                                     tone="emerald"
                                     onClick={() => openCatalogDrawer('all')}
-                                    className="border-b border-border/60 sm:border-r"
+                                    className="border-border/60 border-b sm:border-r"
                                 />
 
                                 <CatalogFactRow
@@ -997,7 +790,7 @@ export default function ProductIndex({
                                     icon={<XCircle className="size-3.5" />}
                                     tone="amber"
                                     onClick={() => openCatalogDrawer('not_tracked')}
-                                    className="border-b border-border/60"
+                                    className="border-border/60 border-b"
                                 />
 
                                 <CatalogFactRow
@@ -1032,7 +825,7 @@ export default function ProductIndex({
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge
                                 variant="outline"
-                                className="h-7 rounded-full border-primary/15 bg-primary/[0.06] px-2.5 text-[10px] font-medium text-primary"
+                                className="border-primary/15 bg-primary/[0.06] text-primary h-7 rounded-full px-2.5 text-[10px] font-medium"
                             >
                                 <Package2 className="mr-1 size-3" />
                                 {products.total} item
@@ -1042,66 +835,34 @@ export default function ProductIndex({
                             <Button
                                 type="button"
                                 variant="outline"
-                                disabled={
-                                    products.total === 0
-                                }
-                                title={
-                                    !capabilities.can_export
-                                        ? 'Select to review subscription renewal options.'
-                                        : undefined
-                                }
-                                onClick={() =>
-                                    openProductReport('pdf')
-                                }
+                                disabled={products.total === 0}
+                                title={!capabilities.can_export ? 'Select to review subscription renewal options.' : undefined}
+                                onClick={() => openProductReport('pdf')}
                                 className="h-9 rounded-lg px-3 text-xs disabled:cursor-not-allowed"
                             >
-                                {capabilities.can_export ? (
-                                    <FileText className="size-3.5" />
-                                ) : (
-                                    <LockKeyhole className="size-3.5" />
-                                )}
+                                {capabilities.can_export ? <FileText className="size-3.5" /> : <LockKeyhole className="size-3.5" />}
                                 PDF
                             </Button>
 
                             <Button
                                 type="button"
                                 variant="outline"
-                                disabled={
-                                    products.total === 0
-                                }
-                                title={
-                                    !capabilities.can_export
-                                        ? 'Select to review subscription renewal options.'
-                                        : undefined
-                                }
-                                onClick={() =>
-                                    openProductReport('excel-preview')
-                                }
+                                disabled={products.total === 0}
+                                title={!capabilities.can_export ? 'Select to review subscription renewal options.' : undefined}
+                                onClick={() => openProductReport('excel-preview')}
                                 className="h-9 rounded-lg px-3 text-xs disabled:cursor-not-allowed"
                             >
-                                {capabilities.can_export ? (
-                                    <FileSpreadsheet className="size-3.5" />
-                                ) : (
-                                    <LockKeyhole className="size-3.5" />
-                                )}
+                                {capabilities.can_export ? <FileSpreadsheet className="size-3.5" /> : <LockKeyhole className="size-3.5" />}
                                 Excel
                             </Button>
 
                             <Button
                                 type="button"
-                                title={
-                                    !capabilities.can_write
-                                        ? 'Select to review subscription renewal options.'
-                                        : undefined
-                                }
+                                title={!capabilities.can_write ? 'Select to review subscription renewal options.' : undefined}
                                 onClick={openCreateDialog}
                                 className="h-9 rounded-lg px-3.5 text-xs"
                             >
-                                {capabilities.can_write ? (
-                                    <Plus className="size-3.5" />
-                                ) : (
-                                    <LockKeyhole className="size-3.5" />
-                                )}
+                                {capabilities.can_write ? <Plus className="size-3.5" /> : <LockKeyhole className="size-3.5" />}
                                 Add Product
                             </Button>
                         </div>
@@ -1113,98 +874,43 @@ export default function ProductIndex({
                     >
                         <SearchInput
                             value={search}
-                            onChange={(event) =>
-                                setSearch(
-                                    event.target.value,
-                                )
-                            }
-                            onClear={() =>
-                                setSearch('')
-                            }
+                            onChange={(event) => setSearch(event.target.value)}
+                            onClear={() => setSearch('')}
                             placeholder="Search product name, SKU, or barcode..."
                             className="sm:col-span-2 xl:col-span-1"
                         />
 
-                        <Select
-                            value={
-                                categoryId || ALL_VALUE
-                            }
-                            onValueChange={(value) =>
-                                setCategoryId(
-                                    value === ALL_VALUE
-                                        ? ''
-                                        : value,
-                                )
-                            }
-                        >
+                        <Select value={categoryId || ALL_VALUE} onValueChange={(value) => setCategoryId(value === ALL_VALUE ? '' : value)}>
                             <SelectTrigger className="h-10 w-full text-sm">
                                 <SelectValue placeholder="All categories" />
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem value={ALL_VALUE}>
-                                    All categories
-                                </SelectItem>
+                                <SelectItem value={ALL_VALUE}>All categories</SelectItem>
 
-                                {categories.map(
-                                    (category) => (
-                                        <SelectItem
-                                            key={category.id}
-                                            value={String(
-                                                category.id,
-                                            )}
-                                        >
-                                            {category.parent_id
-                                                ? '— '
-                                                : ''}
-                                            {category.name}
-                                            {!category.is_active
-                                                ? ' — Inactive'
-                                                : ''}
-                                        </SelectItem>
-                                    ),
-                                )}
+                                {categories.map((category) => (
+                                    <SelectItem key={category.id} value={String(category.id)}>
+                                        {category.parent_id ? '— ' : ''}
+                                        {category.name}
+                                        {!category.is_active ? ' — Inactive' : ''}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
 
-                        <Select
-                            value={
-                                stockTracking ||
-                                ALL_VALUE
-                            }
-                            onValueChange={(value) =>
-                                setStockTracking(
-                                    value === ALL_VALUE
-                                        ? ''
-                                        : value,
-                                )
-                            }
-                        >
+                        <Select value={stockTracking || ALL_VALUE} onValueChange={(value) => setStockTracking(value === ALL_VALUE ? '' : value)}>
                             <SelectTrigger className="h-10 w-full text-sm">
                                 <SelectValue placeholder="All tracking" />
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem value={ALL_VALUE}>
-                                    All tracking types
-                                </SelectItem>
-                                <SelectItem value="tracked">
-                                    Stock tracked
-                                </SelectItem>
-                                <SelectItem value="not_tracked">
-                                    Not tracked
-                                </SelectItem>
+                                <SelectItem value={ALL_VALUE}>All tracking types</SelectItem>
+                                <SelectItem value="tracked">Stock tracked</SelectItem>
+                                <SelectItem value="not_tracked">Not tracked</SelectItem>
                             </SelectContent>
                         </Select>
 
-                        <Select
-                            value={batchTracking || ALL_VALUE}
-                            onValueChange={(value) =>
-                                setBatchTracking(
-                                    value === ALL_VALUE ? '' : value,
-                                )
-                            }
-                        >
+                        <Select value={batchTracking || ALL_VALUE} onValueChange={(value) => setBatchTracking(value === ALL_VALUE ? '' : value)}>
                             <SelectTrigger className="h-10 w-full text-sm">
                                 <SelectValue placeholder="All batch modes" />
                             </SelectTrigger>
@@ -1216,30 +922,15 @@ export default function ProductIndex({
                             </SelectContent>
                         </Select>
 
-                        <Select
-                            value={status || ALL_VALUE}
-                            onValueChange={(value) =>
-                                setStatus(
-                                    value === ALL_VALUE
-                                        ? ''
-                                        : value,
-                                )
-                            }
-                        >
+                        <Select value={status || ALL_VALUE} onValueChange={(value) => setStatus(value === ALL_VALUE ? '' : value)}>
                             <SelectTrigger className="h-10 w-full text-sm">
                                 <SelectValue placeholder="All statuses" />
                             </SelectTrigger>
 
                             <SelectContent>
-                                <SelectItem value={ALL_VALUE}>
-                                    All statuses
-                                </SelectItem>
-                                <SelectItem value="active">
-                                    Active
-                                </SelectItem>
-                                <SelectItem value="inactive">
-                                    Inactive
-                                </SelectItem>
+                                <SelectItem value={ALL_VALUE}>All statuses</SelectItem>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="inactive">Inactive</SelectItem>
                             </SelectContent>
                         </Select>
                     </FilterBar>
@@ -1252,13 +943,9 @@ export default function ProductIndex({
                         onCreate={openCreateDialog}
                     />
 
-                    <AppPagination
-                        pagination={products}
-                        itemLabel="products"
-                    />
+                    <AppPagination pagination={products} itemLabel="products" />
                 </SectionCard>
             </PageContainer>
-
 
             <ProductCatalogDrawer
                 view={catalogDrawerView}
@@ -1295,11 +982,7 @@ export default function ProductIndex({
             <FormDialog
                 open={isDialogOpen}
                 onOpenChange={handleDialogOpenChange}
-                title={
-                    editingProduct
-                        ? 'Edit Product Record'
-                        : 'Register Product'
-                }
+                title={editingProduct ? 'Edit Product Record' : 'Register Product'}
                 description={
                     editingProduct
                         ? `Maintain the catalog, pricing, and inventory settings for ${editingProduct.name}.`
@@ -1307,63 +990,34 @@ export default function ProductIndex({
                 }
                 onSubmit={submitProduct}
                 processing={form.processing}
-                submitText={
-                    editingProduct
-                        ? 'Save Product Record'
-                        : 'Register Product'
-                }
-                processingText={
-                    editingProduct
-                        ? 'Saving Product Record...'
-                        : 'Registering Product...'
-                }
+                submitText={editingProduct ? 'Save Product Record' : 'Register Product'}
+                processingText={editingProduct ? 'Saving Product Record...' : 'Registering Product...'}
                 maxWidth="max-w-5xl"
             >
-                <div className="overflow-hidden rounded-xl border border-border/70 bg-card">
-                    <div className="flex flex-col gap-3 border-b border-primary/10 bg-gradient-to-r from-primary/[0.045] to-transparent px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="border-border/70 bg-card overflow-hidden rounded-xl border">
+                    <div className="border-primary/10 from-primary/[0.045] flex flex-col gap-3 border-b bg-gradient-to-r to-transparent px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex min-w-0 items-center gap-3">
-                            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.06] text-primary">
+                            <span className="border-primary/15 bg-primary/[0.06] text-primary flex size-9 shrink-0 items-center justify-center rounded-lg border">
                                 <Package2 className="size-4" />
                             </span>
 
                             <div className="min-w-0">
-                                <p className="text-[9px] font-semibold uppercase tracking-[0.13em] text-primary">
-                                    {editingProduct
-                                        ? 'Catalog maintenance'
-                                        : 'New catalog record'}
+                                <p className="text-primary text-[9px] font-semibold tracking-[0.13em] uppercase">
+                                    {editingProduct ? 'Catalog maintenance' : 'New catalog record'}
                                 </p>
 
-                                <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
+                                <p className="text-muted-foreground mt-0.5 text-[10px] leading-4">
                                     Complete the product identity first, then confirm pricing and inventory behavior.
                                 </p>
                             </div>
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                            <StatusBadge
-                                label={
-                                    form.data.is_active
-                                        ? 'Active'
-                                        : 'Inactive'
-                                }
-                                variant={
-                                    form.data.is_active
-                                        ? 'success'
-                                        : 'danger'
-                                }
-                            />
+                            <StatusBadge label={form.data.is_active ? 'Active' : 'Inactive'} variant={form.data.is_active ? 'success' : 'danger'} />
 
                             <StatusBadge
-                                label={
-                                    form.data.stock_tracking === 'tracked'
-                                        ? 'Stock tracked'
-                                        : 'Not tracked'
-                                }
-                                variant={
-                                    form.data.stock_tracking === 'tracked'
-                                        ? 'info'
-                                        : 'neutral'
-                                }
+                                label={form.data.stock_tracking === 'tracked' ? 'Stock tracked' : 'Not tracked'}
+                                variant={form.data.stock_tracking === 'tracked' ? 'info' : 'neutral'}
                             />
                         </div>
                     </div>
@@ -1373,43 +1027,29 @@ export default function ProductIndex({
                             <section className="p-5">
                                 <div className="mb-5 flex items-start justify-between gap-4">
                                     <div>
-                                        <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
-                                            01 · Product identity
-                                        </p>
+                                        <p className="text-primary text-[9px] font-semibold tracking-[0.12em] uppercase">01 · Product identity</p>
 
-                                        <h3 className="mt-1 text-sm font-semibold text-foreground">
-                                            Catalog information
-                                        </h3>
+                                        <h3 className="text-foreground mt-1 text-sm font-semibold">Catalog information</h3>
 
-                                        <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                                        <p className="text-muted-foreground mt-1 text-[10px] leading-4">
                                             Define how this product is identified and grouped throughout inventory operations.
                                         </p>
                                     </div>
 
-                                    <span className="hidden text-[9px] font-medium text-muted-foreground sm:block">
+                                    <span className="text-muted-foreground hidden text-[9px] font-medium sm:block">
                                         <span className="text-rose-400">*</span> Required fields
                                     </span>
                                 </div>
 
                                 <div className="grid gap-4 md:grid-cols-12">
                                     <div className="md:col-span-8">
-                                        <FormField
-                                            id="name"
-                                            label="Product Name"
-                                            error={form.errors.name}
-                                            required
-                                        >
+                                        <FormField id="name" label="Product Name" error={form.errors.name} required>
                                             <Input
                                                 id="name"
                                                 type="text"
                                                 value={form.data.name}
                                                 disabled={form.processing}
-                                                onChange={(event) =>
-                                                    form.setData(
-                                                        'name',
-                                                        event.target.value,
-                                                    )
-                                                }
+                                                onChange={(event) => form.setData('name', event.target.value)}
                                                 placeholder="Enter the product name"
                                                 autoComplete="off"
                                                 autoFocus
@@ -1418,45 +1058,24 @@ export default function ProductIndex({
                                     </div>
 
                                     <div className="md:col-span-4">
-                                        <FormField
-                                            id="category_id"
-                                            label="Category"
-                                            error={form.errors.category_id}
-                                        >
+                                        <FormField id="category_id" label="Category" error={form.errors.category_id}>
                                             <Select
-                                                value={
-                                                    form.data.category_id ||
-                                                    NO_CATEGORY_VALUE
-                                                }
+                                                value={form.data.category_id || NO_CATEGORY_VALUE}
                                                 disabled={form.processing}
-                                                onValueChange={(value) =>
-                                                    form.setData(
-                                                        'category_id',
-                                                        value === NO_CATEGORY_VALUE
-                                                            ? ''
-                                                            : value,
-                                                    )
-                                                }
+                                                onValueChange={(value) => form.setData('category_id', value === NO_CATEGORY_VALUE ? '' : value)}
                                             >
                                                 <SelectTrigger id="category_id">
                                                     <SelectValue placeholder="Select category" />
                                                 </SelectTrigger>
 
                                                 <SelectContent>
-                                                    <SelectItem value={NO_CATEGORY_VALUE}>
-                                                        No category
-                                                    </SelectItem>
+                                                    <SelectItem value={NO_CATEGORY_VALUE}>No category</SelectItem>
 
                                                     {categories.map((category) => (
-                                                        <SelectItem
-                                                            key={category.id}
-                                                            value={String(category.id)}
-                                                        >
+                                                        <SelectItem key={category.id} value={String(category.id)}>
                                                             {category.parent_id ? '— ' : ''}
                                                             {category.name}
-                                                            {!category.is_active
-                                                                ? ' — Inactive'
-                                                                : ''}
+                                                            {!category.is_active ? ' — Inactive' : ''}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -1465,23 +1084,13 @@ export default function ProductIndex({
                                     </div>
 
                                     <div className="md:col-span-4">
-                                        <FormField
-                                            id="sku"
-                                            label="SKU"
-                                            description="Optional internal stock code."
-                                            error={form.errors.sku}
-                                        >
+                                        <FormField id="sku" label="SKU" description="Optional internal stock code." error={form.errors.sku}>
                                             <Input
                                                 id="sku"
                                                 type="text"
                                                 value={form.data.sku}
                                                 disabled={form.processing}
-                                                onChange={(event) =>
-                                                    form.setData(
-                                                        'sku',
-                                                        event.target.value.toUpperCase(),
-                                                    )
-                                                }
+                                                onChange={(event) => form.setData('sku', event.target.value.toUpperCase())}
                                                 placeholder="PROD-001"
                                                 className="font-mono uppercase"
                                                 autoComplete="off"
@@ -1497,19 +1106,14 @@ export default function ProductIndex({
                                             error={form.errors.barcode}
                                         >
                                             <div className="group relative">
-                                                <Barcode className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                                                <Barcode className="text-muted-foreground group-focus-within:text-primary pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 transition-colors" />
 
                                                 <Input
                                                     id="barcode"
                                                     type="text"
                                                     value={form.data.barcode}
                                                     disabled={form.processing}
-                                                    onChange={(event) =>
-                                                        form.setData(
-                                                            'barcode',
-                                                            event.target.value,
-                                                        )
-                                                    }
+                                                    onChange={(event) => form.setData('barcode', event.target.value)}
                                                     placeholder="Scan or enter barcode"
                                                     className="pl-9 font-mono"
                                                     autoComplete="off"
@@ -1532,22 +1136,14 @@ export default function ProductIndex({
                                                 list="product-units"
                                                 value={form.data.unit}
                                                 disabled={form.processing}
-                                                onChange={(event) =>
-                                                    form.setData(
-                                                        'unit',
-                                                        event.target.value,
-                                                    )
-                                                }
+                                                onChange={(event) => form.setData('unit', event.target.value)}
                                                 placeholder="pcs"
                                                 autoComplete="off"
                                             />
 
                                             <datalist id="product-units">
                                                 {commonUnits.map((unit) => (
-                                                    <option
-                                                        key={unit}
-                                                        value={unit}
-                                                    />
+                                                    <option key={unit} value={unit} />
                                                 ))}
                                             </datalist>
                                         </FormField>
@@ -1565,12 +1161,7 @@ export default function ProductIndex({
                                                 rows={3}
                                                 value={form.data.description}
                                                 disabled={form.processing}
-                                                onChange={(event) =>
-                                                    form.setData(
-                                                        'description',
-                                                        event.target.value,
-                                                    )
-                                                }
+                                                onChange={(event) => form.setData('description', event.target.value)}
                                                 placeholder="Add a concise product description..."
                                                 className="resize-none"
                                             />
@@ -1579,17 +1170,13 @@ export default function ProductIndex({
                                 </div>
                             </section>
 
-                            <section className="border-t border-border/70 p-5">
+                            <section className="border-border/70 border-t p-5">
                                 <div className="mb-5">
-                                    <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
-                                        02 · Inventory configuration
-                                    </p>
+                                    <p className="text-primary text-[9px] font-semibold tracking-[0.12em] uppercase">02 · Inventory configuration</p>
 
-                                    <h3 className="mt-1 text-sm font-semibold text-foreground">
-                                        Cost and batch controls
-                                    </h3>
+                                    <h3 className="text-foreground mt-1 text-sm font-semibold">Cost and batch controls</h3>
 
-                                    <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                                    <p className="text-muted-foreground mt-1 text-[10px] leading-4">
                                         Configure acquisition cost, stock tracking, issue policy, and expiration requirements.
                                     </p>
                                 </div>
@@ -1606,18 +1193,11 @@ export default function ProductIndex({
                                             id="cost_price"
                                             value={form.data.cost_price}
                                             disabled={form.processing}
-                                            onValueChange={(value) =>
-                                                form.setData('cost_price', value)
-                                            }
+                                            onValueChange={(value) => form.setData('cost_price', value)}
                                         />
                                     </FormField>
 
-                                    <FormField
-                                        id="stock_tracking"
-                                        label="Stock Tracking"
-                                        error={form.errors.stock_tracking}
-                                        required
-                                    >
+                                    <FormField id="stock_tracking" label="Stock Tracking" error={form.errors.stock_tracking} required>
                                         <Select
                                             value={form.data.stock_tracking}
                                             disabled={form.processing}
@@ -1626,14 +1206,8 @@ export default function ProductIndex({
                                                 form.setData({
                                                     ...form.data,
                                                     stock_tracking: tracking,
-                                                    batch_tracking_enabled:
-                                                        tracking === 'tracked'
-                                                            ? form.data.batch_tracking_enabled
-                                                            : false,
-                                                    requires_expiration_date:
-                                                        tracking === 'tracked'
-                                                            ? form.data.requires_expiration_date
-                                                            : false,
+                                                    batch_tracking_enabled: tracking === 'tracked' ? form.data.batch_tracking_enabled : false,
+                                                    requires_expiration_date: tracking === 'tracked' ? form.data.requires_expiration_date : false,
                                                 });
                                             }}
                                         >
@@ -1648,14 +1222,14 @@ export default function ProductIndex({
                                     </FormField>
                                 </div>
 
-                                <div className="mt-5 rounded-xl border border-primary/15 bg-primary/[0.025] p-4">
+                                <div className="border-primary/15 bg-primary/[0.025] mt-5 rounded-xl border p-4">
                                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <Layers3 className="size-4 text-primary" />
+                                                <Layers3 className="text-primary size-4" />
                                                 <p className="text-[11px] font-semibold">Batch tracking</p>
                                             </div>
-                                            <p className="mt-1 max-w-2xl text-[9px] leading-4 text-muted-foreground">
+                                            <p className="text-muted-foreground mt-1 max-w-2xl text-[9px] leading-4">
                                                 Track exact lot identity, expiration, remaining quantity, and actual cost layers per warehouse.
                                             </p>
                                         </div>
@@ -1664,31 +1238,23 @@ export default function ProductIndex({
                                             id="batch_tracking_enabled"
                                             label="Enable batches"
                                             checked={form.data.batch_tracking_enabled}
-                                            disabled={
-                                                form.processing ||
-                                                form.data.stock_tracking !== 'tracked'
-                                            }
+                                            disabled={form.processing || form.data.stock_tracking !== 'tracked'}
                                             onCheckedChange={(checked) =>
                                                 form.setData({
                                                     ...form.data,
                                                     batch_tracking_enabled: checked,
-                                                    requires_expiration_date:
-                                                        checked
-                                                            ? form.data.requires_expiration_date
-                                                            : false,
+                                                    requires_expiration_date: checked ? form.data.requires_expiration_date : false,
                                                 })
                                             }
                                         />
                                     </div>
 
                                     {form.errors.batch_tracking_enabled && (
-                                        <p className="mt-2 text-[10px] text-destructive">
-                                            {form.errors.batch_tracking_enabled}
-                                        </p>
+                                        <p className="text-destructive mt-2 text-[10px]">{form.errors.batch_tracking_enabled}</p>
                                     )}
 
                                     {batchConfigurationEnabled && (
-                                        <div className="mt-4 grid gap-4 border-t border-border/60 pt-4 md:grid-cols-3">
+                                        <div className="border-border/60 mt-4 grid gap-4 border-t pt-4 md:grid-cols-3">
                                             <FormField
                                                 id="batch_issue_policy"
                                                 label="Issue Policy"
@@ -1700,10 +1266,7 @@ export default function ProductIndex({
                                                     value={form.data.batch_issue_policy}
                                                     disabled={form.processing}
                                                     onValueChange={(value) =>
-                                                        form.setData(
-                                                            'batch_issue_policy',
-                                                            value as ProductFormData['batch_issue_policy'],
-                                                        )
+                                                        form.setData('batch_issue_policy', value as ProductFormData['batch_issue_policy'])
                                                     }
                                                 >
                                                     <SelectTrigger id="batch_issue_policy">
@@ -1717,11 +1280,7 @@ export default function ProductIndex({
                                                 </Select>
                                             </FormField>
 
-                                            <FormField
-                                                id="expiry_warning_days"
-                                                label="Expiry Warning Days"
-                                                error={form.errors.expiry_warning_days}
-                                            >
+                                            <FormField id="expiry_warning_days" label="Expiry Warning Days" error={form.errors.expiry_warning_days}>
                                                 <Input
                                                     id="expiry_warning_days"
                                                     type="number"
@@ -1729,110 +1288,79 @@ export default function ProductIndex({
                                                     max="3650"
                                                     value={form.data.expiry_warning_days}
                                                     disabled={form.processing}
-                                                    onChange={(event) =>
-                                                        form.setData(
-                                                            'expiry_warning_days',
-                                                            event.target.value,
-                                                        )
-                                                    }
+                                                    onChange={(event) => form.setData('expiry_warning_days', event.target.value)}
                                                     placeholder="30"
                                                 />
                                             </FormField>
 
-                                            <div className="rounded-lg border border-border/60 bg-background/35 p-3">
+                                            <div className="border-border/60 bg-background/35 rounded-lg border p-3">
                                                 <BooleanField
                                                     id="requires_expiration_date"
                                                     label="Require expiration date"
                                                     checked={form.data.requires_expiration_date}
                                                     disabled={form.processing}
-                                                    onCheckedChange={(checked) =>
-                                                        form.setData(
-                                                            'requires_expiration_date',
-                                                            checked,
-                                                        )
-                                                    }
+                                                    onCheckedChange={(checked) => form.setData('requires_expiration_date', checked)}
                                                 />
                                                 {form.errors.requires_expiration_date && (
-                                                    <p className="mt-2 text-[10px] text-destructive">
-                                                        {form.errors.requires_expiration_date}
-                                                    </p>
+                                                    <p className="text-destructive mt-2 text-[10px]">{form.errors.requires_expiration_date}</p>
                                                 )}
                                             </div>
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="mt-5 grid border-y border-border/60 bg-background/20 sm:grid-cols-3">
+                                <div className="border-border/60 bg-background/20 mt-5 grid border-y sm:grid-cols-3">
                                     <ProductFormSummaryCell
                                         label="Reference cost"
                                         value={formatCurrency(formCostPrice)}
                                         helper={`Per ${form.data.unit || 'unit'}`}
                                         valueClassName="text-primary"
-                                        className="border-b border-border/60 sm:border-b-0 sm:border-r"
+                                        className="border-border/60 border-b sm:border-r sm:border-b-0"
                                     />
 
                                     <ProductFormSummaryCell
                                         label="Inventory mode"
-                                        value={
-                                            form.data.stock_tracking === 'tracked'
-                                                ? 'Quantity tracked'
-                                                : 'Reference only'
-                                        }
+                                        value={form.data.stock_tracking === 'tracked' ? 'Quantity tracked' : 'Reference only'}
                                         helper="Warehouse balance behavior"
-                                        className="border-b border-border/60 sm:border-b-0 sm:border-r"
+                                        className="border-border/60 border-b sm:border-r sm:border-b-0"
                                     />
 
                                     <ProductFormSummaryCell
                                         label="Batch policy"
-                                        value={
-                                            batchConfigurationEnabled
-                                                ? form.data.batch_issue_policy.toUpperCase()
-                                                : 'Disabled'
-                                        }
+                                        value={batchConfigurationEnabled ? form.data.batch_issue_policy.toUpperCase() : 'Disabled'}
                                         helper={
-                                            batchConfigurationEnabled &&
-                                            form.data.requires_expiration_date
+                                            batchConfigurationEnabled && form.data.requires_expiration_date
                                                 ? 'Expiration required'
                                                 : 'Expiration optional'
                                         }
-                                        valueClassName={
-                                            batchConfigurationEnabled
-                                                ? 'text-cyan-300'
-                                                : undefined
-                                        }
+                                        valueClassName={batchConfigurationEnabled ? 'text-cyan-300' : undefined}
                                     />
                                 </div>
                             </section>
                         </div>
 
-                        <aside className="border-t border-border/70 bg-muted/[0.018] p-5 lg:border-l lg:border-t-0">
+                        <aside className="border-border/70 bg-muted/[0.018] border-t p-5 lg:border-t-0 lg:border-l">
                             <div>
-                                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-primary">
-                                    03 · Operations
-                                </p>
+                                <p className="text-primary text-[9px] font-semibold tracking-[0.12em] uppercase">03 · Operations</p>
 
-                                <h3 className="mt-1 text-sm font-semibold text-foreground">
-                                    Inventory behavior
-                                </h3>
+                                <h3 className="text-foreground mt-1 text-sm font-semibold">Inventory behavior</h3>
 
-                                <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
+                                <p className="text-muted-foreground mt-1 text-[10px] leading-4">
                                     Control quantity tracking and whether the product can be used in transactions.
                                 </p>
                             </div>
 
                             <div className="mt-5 space-y-5">
-                                <div className="rounded-xl border border-border/60 bg-background/35 p-4">
+                                <div className="border-border/60 bg-background/35 rounded-xl border p-4">
                                     <div className="flex items-start gap-3">
-                                        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/10 text-primary">
+                                        <span className="border-primary/15 bg-primary/10 text-primary inline-flex size-8 shrink-0 items-center justify-center rounded-lg border">
                                             <Boxes className="size-4" />
                                         </span>
                                         <div>
                                             <p className="text-[10px] font-semibold">
-                                                {form.data.stock_tracking === 'tracked'
-                                                    ? 'Warehouse inventory enabled'
-                                                    : 'Reference product only'}
+                                                {form.data.stock_tracking === 'tracked' ? 'Warehouse inventory enabled' : 'Reference product only'}
                                             </p>
-                                            <p className="mt-1 text-[9px] leading-4 text-muted-foreground">
+                                            <p className="text-muted-foreground mt-1 text-[9px] leading-4">
                                                 {form.data.stock_tracking === 'tracked'
                                                     ? 'This product can hold warehouse balances and movement history.'
                                                     : 'No warehouse quantity will be maintained for this product.'}
@@ -1845,63 +1373,42 @@ export default function ProductIndex({
                                     id="is_active"
                                     checked={form.data.is_active}
                                     disabled={form.processing}
-                                    onCheckedChange={(checked) =>
-                                        form.setData('is_active', checked)
-                                    }
+                                    onCheckedChange={(checked) => form.setData('is_active', checked)}
                                     label="Active Product"
                                     description="Active products can be used in inventory transactions."
                                     error={form.errors.is_active}
                                 />
                             </div>
 
-                            <div className="my-5 h-px bg-border/70" />
+                            <div className="bg-border/70 my-5 h-px" />
 
                             <div>
-                                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                    Record preview
-                                </p>
+                                <p className="text-muted-foreground text-[9px] font-semibold tracking-[0.12em] uppercase">Record preview</p>
 
-                                <dl className="mt-3 divide-y divide-border/60 border-y border-border/60 text-[10px]">
+                                <dl className="divide-border/60 border-border/60 mt-3 divide-y border-y text-[10px]">
                                     <ProductFormPreviewRow
                                         label="Category"
-                                        value={
-                                            selectedFormCategory
-                                                ? selectedFormCategory.name
-                                                : 'Uncategorized'
-                                        }
+                                        value={selectedFormCategory ? selectedFormCategory.name : 'Uncategorized'}
                                     />
 
-                                    <ProductFormPreviewRow
-                                        label="Unit"
-                                        value={form.data.unit || 'Not set'}
-                                    />
+                                    <ProductFormPreviewRow label="Unit" value={form.data.unit || 'Not set'} />
 
                                     <ProductFormPreviewRow
                                         label="Stock mode"
-                                        value={
-                                            form.data.stock_tracking === 'tracked'
-                                                ? 'Warehouse tracked'
-                                                : 'Quantity not tracked'
-                                        }
+                                        value={form.data.stock_tracking === 'tracked' ? 'Warehouse tracked' : 'Quantity not tracked'}
                                     />
 
                                     <ProductFormPreviewRow
                                         label="Availability"
-                                        value={
-                                            form.data.is_active
-                                                ? 'Available for use'
-                                                : 'Inactive record'
-                                        }
+                                        value={form.data.is_active ? 'Available for use' : 'Inactive record'}
                                     />
                                 </dl>
                             </div>
 
-                            <div className="mt-5 border-l-2 border-primary/30 pl-3">
-                                <p className="text-[9px] font-semibold text-foreground/80">
-                                    Inventory note
-                                </p>
+                            <div className="border-primary/30 mt-5 border-l-2 pl-3">
+                                <p className="text-foreground/80 text-[9px] font-semibold">Inventory note</p>
 
-                                <p className="mt-1 text-[9px] leading-4 text-muted-foreground">
+                                <p className="text-muted-foreground mt-1 text-[9px] leading-4">
                                     Opening quantities are maintained separately in Stock Management after a tracked product is registered.
                                 </p>
                             </div>
@@ -1917,22 +1424,14 @@ export default function ProductIndex({
                         setSubscriptionPrompt(null);
                     }
                 }}
-                title={
-                    subscriptionPrompt?.title ??
-                    'Subscription renewal required'
-                }
-                description={
-                    subscriptionPrompt?.description ??
-                    'Renew the owner subscription to continue.'
-                }
+                title={subscriptionPrompt?.title ?? 'Subscription renewal required'}
+                description={subscriptionPrompt?.description ?? 'Renew the owner subscription to continue.'}
                 confirmText="View Subscription"
                 processing={false}
                 onConfirm={() => {
                     setSubscriptionPrompt(null);
 
-                    router.visit(
-                        route('subscription.index'),
-                    );
+                    router.visit(route('subscription.index', undefined, false));
                 }}
             />
 
@@ -1978,59 +1477,48 @@ function ProductDirectoryTable({
     onCreate: () => void;
 }) {
     return (
-        <div className="overflow-hidden rounded-xl border border-border/70 bg-background/20 shadow-sm">
+        <div className="border-border/70 bg-background/20 overflow-hidden rounded-xl border shadow-sm">
             <div className="overflow-x-auto">
-                <table className="w-full min-w-[960px] border-collapse table-fixed">
-                    <thead className="border-b border-primary/10 bg-primary/[0.025]">
+                <table className="w-full min-w-[960px] table-fixed border-collapse">
+                    <thead className="border-primary/10 bg-primary/[0.025] border-b">
                         <tr>
-                            <th className="min-w-[280px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                            <th className="text-muted-foreground min-w-[280px] px-4 py-3 text-left text-[9px] font-semibold tracking-[0.11em] uppercase">
                                 Product
                             </th>
-                            <th className="min-w-[175px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                            <th className="text-muted-foreground min-w-[175px] px-4 py-3 text-left text-[9px] font-semibold tracking-[0.11em] uppercase">
                                 Category
                             </th>
-                            <th className="min-w-[145px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                            <th className="text-muted-foreground min-w-[145px] px-4 py-3 text-left text-[9px] font-semibold tracking-[0.11em] uppercase">
                                 Cost & Batch
                             </th>
-                            <th className="min-w-[185px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                            <th className="text-muted-foreground min-w-[185px] px-4 py-3 text-left text-[9px] font-semibold tracking-[0.11em] uppercase">
                                 Inventory
                             </th>
-                            <th className="w-[220px] px-4 py-3 text-left text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                            <th className="text-muted-foreground w-[220px] px-4 py-3 text-left text-[9px] font-semibold tracking-[0.11em] uppercase">
                                 Status
                             </th>
                         </tr>
                     </thead>
 
-                    <tbody className="divide-y divide-border/60">
+                    <tbody className="divide-border/60 divide-y">
                         {products.length === 0 ? (
                             <tr>
                                 <td colSpan={5} className="px-6 py-14">
                                     <div className="mx-auto flex max-w-sm flex-col items-center text-center">
-                                        <span className="flex size-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/[0.045] text-primary">
+                                        <span className="border-primary/15 bg-primary/[0.045] text-primary flex size-11 items-center justify-center rounded-xl border">
                                             <Package2 className="size-5" />
                                         </span>
-                                        <h3 className="mt-3 text-sm font-semibold text-foreground">
-                                            No products found
-                                        </h3>
-                                        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                        <h3 className="text-foreground mt-3 text-sm font-semibold">No products found</h3>
+                                        <p className="text-muted-foreground mt-1 text-xs leading-5">
                                             Try changing the filters or add your first inventory product.
                                         </p>
                                         <Button
                                             type="button"
-                                            title={
-                                                !canCreate
-                                                    ? lockedReason ??
-                                                      'Select to review subscription renewal options.'
-                                                    : undefined
-                                            }
+                                            title={!canCreate ? (lockedReason ?? 'Select to review subscription renewal options.') : undefined}
                                             onClick={onCreate}
                                             className="mt-4 h-9 rounded-lg px-4 text-xs"
                                         >
-                                            {canCreate ? (
-                                                <Plus className="size-4" />
-                                            ) : (
-                                                <LockKeyhole className="size-4" />
-                                            )}
+                                            {canCreate ? <Plus className="size-4" /> : <LockKeyhole className="size-4" />}
                                             Add Product
                                         </Button>
                                     </div>
@@ -2045,51 +1533,42 @@ function ProductDirectoryTable({
                                     aria-label={`View details for ${product.name}`}
                                     onClick={() => onSelect(product)}
                                     onKeyDown={(event) => {
-                                        if (
-                                            event.key === 'Enter' ||
-                                            event.key === ' '
-                                        ) {
+                                        if (event.key === 'Enter' || event.key === ' ') {
                                             event.preventDefault();
                                             onSelect(product);
                                         }
                                     }}
-                                    className="group cursor-pointer bg-card/55 transition-colors hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35"
+                                    className="group bg-card/55 hover:bg-primary/[0.035] focus-visible:ring-primary/35 cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset"
                                 >
                                     <td className="px-4 py-2.5">
                                         <EntityInfo
                                             avatar={
                                                 <EntityAvatar
                                                     icon={Package2}
-                                                    className="border-primary/15 bg-primary/[0.07] text-primary transition-colors group-hover:border-primary/25 group-hover:bg-primary/10"
+                                                    className="border-primary/15 bg-primary/[0.07] text-primary group-hover:border-primary/25 group-hover:bg-primary/10 transition-colors"
                                                 />
                                             }
                                             title={product.name}
-                                            subtitle={
-                                                <span className="font-mono text-[10px]">
-                                                    {product.sku ?? 'No SKU'}
-                                                </span>
-                                            }
+                                            subtitle={<span className="font-mono text-[10px]">{product.sku ?? 'No SKU'}</span>}
                                         />
                                     </td>
 
                                     <td className="px-4 py-2.5">
                                         <div className="min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <Tags className="size-3.5 shrink-0 text-primary" />
-                                                <p className="max-w-[145px] truncate text-[11px] font-semibold text-foreground/90">
+                                                <Tags className="text-primary size-3.5 shrink-0" />
+                                                <p className="text-foreground/90 max-w-[145px] truncate text-[11px] font-semibold">
                                                     {product.category?.name ?? 'Uncategorized'}
                                                 </p>
                                             </div>
-                                            <p className="mt-1 max-w-[160px] truncate font-mono text-[9px] text-muted-foreground">
+                                            <p className="text-muted-foreground mt-1 max-w-[160px] truncate font-mono text-[9px]">
                                                 {product.category?.slug ?? 'No category assigned'}
                                             </p>
                                         </div>
                                     </td>
 
                                     <td className="px-4 py-2.5">
-                                        <p className="text-[13px] font-semibold tabular-nums text-primary">
-                                            {formatCurrency(product.cost_price)}
-                                        </p>
+                                        <p className="text-primary text-[13px] font-semibold tabular-nums">{formatCurrency(product.cost_price)}</p>
                                         <div className="mt-1 flex flex-wrap items-center gap-1.5">
                                             {product.batch_tracking_enabled ? (
                                                 <>
@@ -2100,13 +1579,13 @@ function ProductDirectoryTable({
                                                         <Layers3 className="mr-1 size-2.5" />
                                                         {product.batch_issue_policy.toUpperCase()}
                                                     </Badge>
-                                                    <span className="text-[8px] text-muted-foreground">
+                                                    <span className="text-muted-foreground text-[8px]">
                                                         {product.available_stock_batches_count} active layer
                                                         {product.available_stock_batches_count === 1 ? '' : 's'}
                                                     </span>
                                                 </>
                                             ) : (
-                                                <span className="text-[9px] text-muted-foreground">Standard stock</span>
+                                                <span className="text-muted-foreground text-[9px]">Standard stock</span>
                                             )}
                                         </div>
                                     </td>
@@ -2114,27 +1593,20 @@ function ProductDirectoryTable({
                                     <td className="px-4 py-2.5">
                                         {product.stock_tracking === 'tracked' ? (
                                             <div>
-                                                <p className="text-[13px] font-semibold tabular-nums text-foreground">
+                                                <p className="text-foreground text-[13px] font-semibold tabular-nums">
                                                     {formatQuantity(product.total_stock)}{' '}
-                                                    <span className="text-[9px] font-medium text-muted-foreground">
-                                                        {product.unit}
-                                                    </span>
+                                                    <span className="text-muted-foreground text-[9px] font-medium">{product.unit}</span>
                                                 </p>
-                                                <p className="mt-1 text-[9px] text-muted-foreground">
+                                                <p className="text-muted-foreground mt-1 text-[9px]">
                                                     {product.warehouse_stocks_count} warehouse record
-                                                    {product.warehouse_stocks_count === 1 ? '' : 's'} ·{' '}
-                                                    {product.stock_movements_count} movement
+                                                    {product.warehouse_stocks_count === 1 ? '' : 's'} · {product.stock_movements_count} movement
                                                     {product.stock_movements_count === 1 ? '' : 's'}
                                                 </p>
                                             </div>
                                         ) : (
                                             <div>
-                                                <p className="text-[10px] font-semibold text-muted-foreground">
-                                                    Quantity not tracked
-                                                </p>
-                                                <p className="mt-1 text-[9px] text-muted-foreground">
-                                                    Excluded from warehouse balances
-                                                </p>
+                                                <p className="text-muted-foreground text-[10px] font-semibold">Quantity not tracked</p>
+                                                <p className="text-muted-foreground mt-1 text-[9px]">Excluded from warehouse balances</p>
                                             </div>
                                         )}
                                     </td>
@@ -2149,7 +1621,7 @@ function ProductDirectoryTable({
                                             <Badge
                                                 variant="outline"
                                                 className={cn(
-                                                    'h-5 min-w-0 max-w-[125px] shrink px-1.5 text-[8px] font-medium',
+                                                    'h-5 max-w-[125px] min-w-0 shrink px-1.5 text-[8px] font-medium',
                                                     product.stock_tracking === 'tracked'
                                                         ? 'border-blue-500/25 bg-blue-500/10 text-blue-300'
                                                         : 'border-slate-500/25 bg-slate-500/10 text-slate-300',
@@ -2192,7 +1664,6 @@ function ProductDirectoryTable({
 |--------------------------------------------------------------------------
 */
 
-
 function ProductFormSummaryCell({
     label,
     value,
@@ -2208,43 +1679,23 @@ function ProductFormSummaryCell({
 }) {
     return (
         <div className={cn('min-w-0 px-3.5 py-3', className)}>
-            <p className="text-[8px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
-                {label}
-            </p>
+            <p className="text-muted-foreground text-[8px] font-semibold tracking-[0.11em] uppercase">{label}</p>
 
-            <p
-                className={cn(
-                    'mt-1.5 truncate text-[12px] font-semibold tabular-nums text-foreground',
-                    valueClassName,
-                )}
-            >
-                {value}
-            </p>
+            <p className={cn('text-foreground mt-1.5 truncate text-[12px] font-semibold tabular-nums', valueClassName)}>{value}</p>
 
-            <p className="mt-1 truncate text-[8px] text-muted-foreground">
-                {helper}
-            </p>
+            <p className="text-muted-foreground mt-1 truncate text-[8px]">{helper}</p>
         </div>
     );
 }
 
-function ProductFormPreviewRow({
-    label,
-    value,
-}: {
-    label: string;
-    value: string;
-}) {
+function ProductFormPreviewRow({ label, value }: { label: string; value: string }) {
     return (
         <div className="flex items-start justify-between gap-4 py-2.5">
             <dt className="text-muted-foreground">{label}</dt>
-            <dd className="max-w-[160px] text-right font-medium text-foreground/85">
-                {value}
-            </dd>
+            <dd className="text-foreground/85 max-w-[160px] text-right font-medium">{value}</dd>
         </div>
     );
 }
-
 
 function ProductCatalogDrawer({
     view,
@@ -2283,64 +1734,56 @@ function ProductCatalogDrawer({
         all: {
             title: 'Registered Products',
             eyebrow: 'Complete catalog',
-            description:
-                'Review product records loaded on the current page and open any item for its complete catalog and inventory details.',
+            description: 'Review product records loaded on the current page and open any item for its complete catalog and inventory details.',
             total: summary.total,
             emptyLabel: 'No products are loaded on this page.',
         },
         active: {
             title: 'Active Products',
             eyebrow: 'Catalog readiness',
-            description:
-                'Active products are available for warehouse setup and inventory transactions.',
+            description: 'Active products are available for warehouse setup and inventory transactions.',
             total: summary.active,
             emptyLabel: 'No active products are loaded on this page.',
         },
         inactive: {
             title: 'Inactive Products',
             eyebrow: 'Needs attention',
-            description:
-                'Inactive products remain in the catalog but are unavailable for normal inventory operations.',
+            description: 'Inactive products remain in the catalog but are unavailable for normal inventory operations.',
             total: inactiveTotal,
             emptyLabel: 'No inactive products are loaded on this page.',
         },
         tracked: {
             title: 'Stock-Tracked Products',
             eyebrow: 'Tracking coverage',
-            description:
-                'These products maintain warehouse balances and stock movement history.',
+            description: 'These products maintain warehouse balances and stock movement history.',
             total: summary.tracked,
             emptyLabel: 'No stock-tracked products are loaded on this page.',
         },
         not_tracked: {
             title: 'Not-Tracked Products',
             eyebrow: 'Reference-only catalog',
-            description:
-                'These products are excluded from warehouse quantity balances.',
+            description: 'These products are excluded from warehouse quantity balances.',
             total: summary.not_tracked,
             emptyLabel: 'No not-tracked products are loaded on this page.',
         },
         batch: {
             title: 'Batch-Enabled Products',
             eyebrow: 'Lot and cost layers',
-            description:
-                'These products maintain exact batch identity, remaining quantity, and issue-policy settings.',
+            description: 'These products maintain exact batch identity, remaining quantity, and issue-policy settings.',
             total: summary.batch_enabled,
             emptyLabel: 'No batch-enabled products are loaded on this page.',
         },
         expiry: {
             title: 'Expiration-Controlled Products',
             eyebrow: 'Expiry requirements',
-            description:
-                'These products require expiration dates when batch inventory is received.',
+            description: 'These products require expiration dates when batch inventory is received.',
             total: summary.expiration_required,
             emptyLabel: 'No expiration-controlled products are loaded on this page.',
         },
         categories: {
             title: 'Catalog Categories',
             eyebrow: 'Product organization',
-            description:
-                'Review the category records currently available for product assignment.',
+            description: 'Review the category records currently available for product assignment.',
             total: categories.length,
             emptyLabel: 'No categories are available.',
         },
@@ -2376,12 +1819,7 @@ function ProductCatalogDrawer({
             ? []
             : normalizedSearch
               ? matchingProducts.filter((product) =>
-                    [
-                        product.name,
-                        product.sku,
-                        product.barcode,
-                        product.category?.name,
-                    ]
+                    [product.name, product.sku, product.barcode, product.category?.name]
                         .filter(Boolean)
                         .join(' ')
                         .toLowerCase()
@@ -2391,22 +1829,14 @@ function ProductCatalogDrawer({
 
     const visibleCategories = normalizedSearch
         ? categories.filter((category) =>
-              [
-                  category.name,
-                  category.slug,
-                  category.parent_id ? 'subcategory' : 'root',
-                  category.is_active ? 'active' : 'inactive',
-              ]
+              [category.name, category.slug, category.parent_id ? 'subcategory' : 'root', category.is_active ? 'active' : 'inactive']
                   .join(' ')
                   .toLowerCase()
                   .includes(normalizedSearch),
           )
         : categories;
 
-    const loadedRange =
-        pagination.from !== null && pagination.to !== null
-            ? `${pagination.from}-${pagination.to}`
-            : '0';
+    const loadedRange = pagination.from !== null && pagination.to !== null ? `${pagination.from}-${pagination.to}` : '0';
 
     return (
         <AppDrawer
@@ -2420,78 +1850,56 @@ function ProductCatalogDrawer({
             description={config.description}
             processing={false}
         >
-            <div className="flex min-h-full flex-col bg-card">
-                <div className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
-                        {config.eyebrow}
-                    </p>
+            <div className="bg-card flex min-h-full flex-col">
+                <div className="border-primary/10 from-primary/[0.055] via-primary/[0.012] border-b bg-gradient-to-br to-transparent px-5 py-5">
+                    <p className="text-primary text-[9px] font-semibold tracking-[0.14em] uppercase">{config.eyebrow}</p>
 
                     <div className="mt-2 flex items-end justify-between gap-4">
                         <div>
-                            <p className="text-3xl font-semibold leading-none tabular-nums text-primary">
-                                {formatNumber(config.total)}
-                            </p>
-                            <p className="mt-1 text-[9px] text-muted-foreground">
-                                Total matching catalog records
-                            </p>
+                            <p className="text-primary text-3xl leading-none font-semibold tabular-nums">{formatNumber(config.total)}</p>
+                            <p className="text-muted-foreground mt-1 text-[9px]">Total matching catalog records</p>
                         </div>
 
-                        <Badge
-                            variant="outline"
-                            className="h-7 rounded-full border-primary/15 bg-primary/[0.055] px-2.5 text-[9px] text-primary"
-                        >
-                            {activeView === 'categories'
-                                ? `${categories.length} available`
-                                : `Loaded ${loadedRange}`}
+                        <Badge variant="outline" className="border-primary/15 bg-primary/[0.055] text-primary h-7 rounded-full px-2.5 text-[9px]">
+                            {activeView === 'categories' ? `${categories.length} available` : `Loaded ${loadedRange}`}
                         </Badge>
                     </div>
                 </div>
 
-                <div className="border-b border-border/60 p-4">
+                <div className="border-border/60 border-b p-4">
                     <SearchInput
                         value={drawerSearch}
-                        onChange={(event) =>
-                            setDrawerSearch(event.target.value)
-                        }
+                        onChange={(event) => setDrawerSearch(event.target.value)}
                         onClear={() => setDrawerSearch('')}
-                        placeholder={
-                            activeView === 'categories'
-                                ? 'Search loaded categories...'
-                                : 'Search loaded products...'
-                        }
+                        placeholder={activeView === 'categories' ? 'Search loaded categories...' : 'Search loaded products...'}
                     />
                 </div>
 
                 <div className="min-h-0 flex-1 overflow-y-auto p-4">
                     {activeView === 'categories' ? (
                         visibleCategories.length === 0 ? (
-                            <ProductCatalogDrawerEmpty
-                                icon={Tags}
-                                description={config.emptyLabel}
-                            />
+                            <ProductCatalogDrawerEmpty icon={Tags} description={config.emptyLabel} />
                         ) : (
                             <div className="space-y-2">
                                 {visibleCategories.map((category) => (
                                     <div
                                         key={category.id}
-                                        className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/25 p-3"
+                                        className="border-border/60 bg-background/25 flex items-center gap-3 rounded-xl border p-3"
                                     >
-                                        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/15 bg-primary/[0.07] text-primary">
+                                        <span className="border-primary/15 bg-primary/[0.07] text-primary flex size-9 shrink-0 items-center justify-center rounded-lg border">
                                             <Tags className="size-4" />
                                         </span>
 
                                         <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-center gap-1.5">
-                                                <p className="truncate text-[11px] font-semibold">
-                                                    {category.name}
-                                                </p>
+                                                <p className="truncate text-[11px] font-semibold">{category.name}</p>
                                                 <StatusBadge
                                                     label={category.is_active ? 'Active' : 'Inactive'}
                                                     variant={category.is_active ? 'success' : 'danger'}
                                                 />
                                             </div>
 
-                                            <p className="mt-1 truncate font-mono text-[9px] text-muted-foreground">
+                                            <p className="text-muted-foreground mt-1 truncate font-mono text-[9px]">
                                                 {category.parent_id ? 'Subcategory' : 'Root category'} · {category.slug}
                                             </p>
                                         </div>
@@ -2500,10 +1908,7 @@ function ProductCatalogDrawer({
                             </div>
                         )
                     ) : visibleProducts.length === 0 ? (
-                        <ProductCatalogDrawerEmpty
-                            icon={Package2}
-                            description={config.emptyLabel}
-                        />
+                        <ProductCatalogDrawerEmpty icon={Package2} description={config.emptyLabel} />
                     ) : (
                         <div className="space-y-2">
                             {visibleProducts.map((product) => (
@@ -2511,36 +1916,31 @@ function ProductCatalogDrawer({
                                     key={product.id}
                                     type="button"
                                     onClick={() => onSelect(product)}
-                                    className="flex w-full items-center gap-3 rounded-xl border border-border/60 bg-background/25 p-3 text-left transition hover:border-primary/20 hover:bg-primary/[0.035] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+                                    className="border-border/60 bg-background/25 hover:border-primary/20 hover:bg-primary/[0.035] focus-visible:ring-primary/35 flex w-full items-center gap-3 rounded-xl border p-3 text-left transition focus:outline-none focus-visible:ring-2"
                                 >
-                                    <EntityAvatar
-                                        icon={Package2}
-                                        className="border-primary/15 bg-primary/[0.07] text-primary"
-                                    />
+                                    <EntityAvatar icon={Package2} className="border-primary/15 bg-primary/[0.07] text-primary" />
 
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-1.5">
-                                            <p className="truncate text-[11px] font-semibold">
-                                                {product.name}
-                                            </p>
+                                            <p className="truncate text-[11px] font-semibold">{product.name}</p>
                                             <StatusBadge
                                                 label={product.is_active ? 'Active' : 'Inactive'}
                                                 variant={product.is_active ? 'success' : 'danger'}
                                             />
                                         </div>
 
-                                        <p className="mt-1 truncate font-mono text-[9px] text-muted-foreground">
+                                        <p className="text-muted-foreground mt-1 truncate font-mono text-[9px]">
                                             {product.sku ?? 'No SKU'} · {product.category?.name ?? 'Uncategorized'}
                                         </p>
 
-                                        <p className="mt-1 text-[8px] text-muted-foreground">
+                                        <p className="text-muted-foreground mt-1 text-[8px]">
                                             {product.stock_tracking === 'tracked'
                                                 ? `${formatQuantity(product.total_stock)} ${product.unit} · ${product.available_stock_batches_count} active batches`
                                                 : 'Quantity not tracked'}
                                         </p>
                                     </div>
 
-                                    <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                                    <ChevronRight className="text-muted-foreground size-4 shrink-0" />
                                 </button>
                             ))}
                         </div>
@@ -2551,22 +1951,12 @@ function ProductCatalogDrawer({
     );
 }
 
-function ProductCatalogDrawerEmpty({
-    icon: Icon,
-    description,
-}: {
-    icon: typeof Package2;
-    description: string;
-}) {
+function ProductCatalogDrawerEmpty({ icon: Icon, description }: { icon: typeof Package2; description: string }) {
     return (
-        <div className="flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-background/20 p-6 text-center">
-            <Icon className="size-6 text-muted-foreground" />
-            <p className="mt-3 text-sm font-semibold">
-                No loaded matches
-            </p>
-            <p className="mt-1 max-w-sm text-[10px] leading-5 text-muted-foreground">
-                {description}
-            </p>
+        <div className="border-border/70 bg-background/20 flex min-h-52 flex-col items-center justify-center rounded-xl border border-dashed p-6 text-center">
+            <Icon className="text-muted-foreground size-6" />
+            <p className="mt-3 text-sm font-semibold">No loaded matches</p>
+            <p className="text-muted-foreground mt-1 max-w-sm text-[10px] leading-5">{description}</p>
         </div>
     );
 }
@@ -2589,14 +1979,10 @@ function ProductOverviewSnapshot({
     className?: string;
 }) {
     const toneStyles = {
-        primary:
-            'border-primary/15 bg-primary/[0.055] text-primary',
-        teal:
-            'border-cyan-500/15 bg-cyan-500/[0.055] text-cyan-300',
-        emerald:
-            'border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-400',
-        amber:
-            'border-amber-500/15 bg-amber-500/[0.055] text-amber-400',
+        primary: 'border-primary/15 bg-primary/[0.055] text-primary',
+        teal: 'border-cyan-500/15 bg-cyan-500/[0.055] text-cyan-300',
+        emerald: 'border-emerald-500/15 bg-emerald-500/[0.055] text-emerald-400',
+        amber: 'border-amber-500/15 bg-amber-500/[0.055] text-amber-400',
     } as const;
 
     return (
@@ -2604,21 +1990,15 @@ function ProductOverviewSnapshot({
             type="button"
             onClick={onClick}
             className={cn(
-                'group min-w-0 p-4 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35',
+                'group hover:bg-primary/[0.025] focus-visible:ring-primary/35 min-w-0 p-4 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset',
                 className,
             )}
         >
             <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
-                        {title}
-                    </p>
-                    <p className="mt-2 text-xl font-semibold leading-none tabular-nums">
-                        {value}
-                    </p>
-                    <p className="mt-1.5 truncate text-[9px] text-muted-foreground">
-                        {description}
-                    </p>
+                    <p className="text-muted-foreground text-[9px] font-semibold tracking-[0.11em] uppercase">{title}</p>
+                    <p className="mt-2 text-xl leading-none font-semibold tabular-nums">{value}</p>
+                    <p className="text-muted-foreground mt-1.5 truncate text-[9px]">{description}</p>
                 </div>
 
                 <span
@@ -2668,100 +2048,63 @@ function ProductDetailsDrawer({
             processing={false}
         >
             {product && (
-                <div className="flex min-h-full flex-col bg-card">
+                <div className="bg-card flex min-h-full flex-col">
                     <div className="min-h-0 flex-1 overflow-y-auto">
-                        <section className="border-b border-primary/10 bg-gradient-to-br from-primary/[0.055] via-primary/[0.012] to-transparent px-5 py-5">
+                        <section className="border-primary/10 from-primary/[0.055] via-primary/[0.012] border-b bg-gradient-to-br to-transparent px-5 py-5">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                 <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-primary">
-                                            Inventory product
-                                        </p>
+                                        <p className="text-primary text-[9px] font-semibold tracking-[0.14em] uppercase">Inventory product</p>
                                         <StatusBadge
                                             label={product.is_active ? 'Active' : 'Inactive'}
                                             variant={product.is_active ? 'success' : 'danger'}
                                         />
-                                        <StatusBadge
-                                            label={tracked ? 'Stock tracked' : 'Not tracked'}
-                                            variant={tracked ? 'info' : 'neutral'}
-                                        />
+                                        <StatusBadge label={tracked ? 'Stock tracked' : 'Not tracked'} variant={tracked ? 'info' : 'neutral'} />
                                         {product.batch_tracking_enabled && (
-                                            <StatusBadge
-                                                label={`${product.batch_issue_policy.toUpperCase()} batches`}
-                                                variant="info"
-                                            />
+                                            <StatusBadge label={`${product.batch_issue_policy.toUpperCase()} batches`} variant="info" />
                                         )}
                                     </div>
 
-                                    <h2 className="mt-2 text-lg font-semibold tracking-[-0.025em] text-foreground">
-                                        {product.name}
-                                    </h2>
+                                    <h2 className="text-foreground mt-2 text-lg font-semibold tracking-[-0.025em]">{product.name}</h2>
 
-                                    <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+                                    <p className="text-muted-foreground mt-1 font-mono text-[10px]">
                                         {product.sku ?? 'No SKU'}
-                                        {product.barcode
-                                            ? ` · ${product.barcode}`
-                                            : ' · No barcode'}
+                                        {product.barcode ? ` · ${product.barcode}` : ' · No barcode'}
                                     </p>
 
-                                    <p className="mt-2 max-w-xl text-[10px] leading-5 text-muted-foreground">
-                                        {product.description ??
-                                            'No internal product description was provided.'}
+                                    <p className="text-muted-foreground mt-2 max-w-xl text-[10px] leading-5">
+                                        {product.description ?? 'No internal product description was provided.'}
                                     </p>
                                 </div>
 
                                 <div className="shrink-0 text-left sm:text-right">
-                                    <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                        Reference cost
-                                    </p>
-                                    <p className="mt-1 text-2xl font-semibold leading-none tabular-nums text-primary">
+                                    <p className="text-muted-foreground text-[9px] font-semibold tracking-[0.12em] uppercase">Reference cost</p>
+                                    <p className="text-primary mt-1 text-2xl leading-none font-semibold tabular-nums">
                                         {formatCurrency(product.cost_price)}
                                     </p>
-                                    <p className="mt-1 text-[9px] text-muted-foreground">
-                                        per {product.unit}
-                                    </p>
+                                    <p className="text-muted-foreground mt-1 text-[9px]">per {product.unit}</p>
                                 </div>
                             </div>
 
-                            <div className="mt-5 grid border-y border-border/60 sm:grid-cols-4">
+                            <div className="border-border/60 mt-5 grid border-y sm:grid-cols-4">
                                 <ProductSummaryCell
                                     label="Available stock"
-                                    value={
-                                        tracked
-                                            ? `${formatQuantity(product.total_stock)} ${product.unit}`
-                                            : 'Not tracked'
-                                    }
-                                    helper={
-                                        tracked
-                                            ? `${product.warehouse_stocks_count} warehouse records`
-                                            : 'No quantity balance'
-                                    }
-                                    className="border-b border-border/60 sm:border-b-0 sm:border-r"
+                                    value={tracked ? `${formatQuantity(product.total_stock)} ${product.unit}` : 'Not tracked'}
+                                    helper={tracked ? `${product.warehouse_stocks_count} warehouse records` : 'No quantity balance'}
+                                    className="border-border/60 border-b sm:border-r sm:border-b-0"
                                 />
                                 <ProductSummaryCell
                                     label="Active batches"
                                     value={formatNumber(product.available_stock_batches_count)}
                                     helper={`${formatNumber(product.stock_batches_count)} total batch records`}
-                                    valueClassName={
-                                        product.batch_tracking_enabled
-                                            ? 'text-cyan-300'
-                                            : undefined
-                                    }
-                                    className="border-b border-border/60 sm:border-b-0 sm:border-r"
+                                    valueClassName={product.batch_tracking_enabled ? 'text-cyan-300' : undefined}
+                                    className="border-border/60 border-b sm:border-r sm:border-b-0"
                                 />
                                 <ProductSummaryCell
                                     label="Issue policy"
-                                    value={
-                                        product.batch_tracking_enabled
-                                            ? product.batch_issue_policy.toUpperCase()
-                                            : 'Standard'
-                                    }
-                                    helper={
-                                        product.requires_expiration_date
-                                            ? 'Expiration required'
-                                            : 'Expiration optional'
-                                    }
-                                    className="border-b border-border/60 sm:border-b-0 sm:border-r"
+                                    value={product.batch_tracking_enabled ? product.batch_issue_policy.toUpperCase() : 'Standard'}
+                                    helper={product.requires_expiration_date ? 'Expiration required' : 'Expiration optional'}
+                                    className="border-border/60 border-b sm:border-r sm:border-b-0"
                                 />
                                 <ProductSummaryCell
                                     label="Movement records"
@@ -2772,18 +2115,19 @@ function ProductDetailsDrawer({
                         </section>
 
                         <div className="grid min-w-0 lg:grid-cols-[minmax(0,1.15fr)_minmax(270px,0.85fr)]">
-                            <div className="min-w-0 divide-y divide-border/60 lg:border-r lg:border-border/60">
-                                <ProductDocumentSection
-                                    title="Product Information"
-                                    description="Core identity and catalog placement."
-                                >
+                            <div className="divide-border/60 lg:border-border/60 min-w-0 divide-y lg:border-r">
+                                <ProductDocumentSection title="Product Information" description="Core identity and catalog placement.">
                                     <ProductDetailRow label="Product ID" value={`#${product.id}`} mono />
                                     <ProductDetailRow label="Product name" value={product.name} />
                                     <ProductDetailRow label="Slug" value={product.slug} mono />
                                     <ProductDetailRow label="SKU" value={product.sku ?? 'Not assigned'} mono />
                                     <ProductDetailRow label="Barcode" value={product.barcode ?? 'Not assigned'} mono />
                                     <ProductDetailRow label="Unit" value={product.unit} />
-                                    <ProductDetailRow label="Reference cost" value={formatCurrency(product.cost_price)} valueClassName="text-primary" />
+                                    <ProductDetailRow
+                                        label="Reference cost"
+                                        value={formatCurrency(product.cost_price)}
+                                        valueClassName="text-primary"
+                                    />
                                 </ProductDocumentSection>
 
                                 <ProductDocumentSection
@@ -2793,52 +2137,27 @@ function ProductDetailsDrawer({
                                     <ProductDetailRow
                                         label="Batch tracking"
                                         value={product.batch_tracking_enabled ? 'Enabled' : 'Disabled'}
-                                        valueClassName={
-                                            product.batch_tracking_enabled
-                                                ? 'text-cyan-300'
-                                                : undefined
-                                        }
+                                        valueClassName={product.batch_tracking_enabled ? 'text-cyan-300' : undefined}
                                     />
                                     <ProductDetailRow
                                         label="Issue policy"
-                                        value={
-                                            product.batch_tracking_enabled
-                                                ? product.batch_issue_policy.toUpperCase()
-                                                : 'Not applicable'
-                                        }
+                                        value={product.batch_tracking_enabled ? product.batch_issue_policy.toUpperCase() : 'Not applicable'}
                                     />
                                     <ProductDetailRow
                                         label="Expiration date"
-                                        value={
-                                            product.requires_expiration_date
-                                                ? 'Required on incoming batches'
-                                                : 'Optional'
-                                        }
+                                        value={product.requires_expiration_date ? 'Required on incoming batches' : 'Optional'}
                                     />
                                     <ProductDetailRow
                                         label="Warning window"
-                                        value={
-                                            product.expiry_warning_days !== null
-                                                ? `${product.expiry_warning_days} days`
-                                                : 'System default'
-                                        }
+                                        value={product.expiry_warning_days !== null ? `${product.expiry_warning_days} days` : 'System default'}
                                     />
-                                    <ProductDetailRow
-                                        label="Batch records"
-                                        value={formatNumber(product.stock_batches_count)}
-                                    />
-                                    <ProductDetailRow
-                                        label="Available layers"
-                                        value={formatNumber(product.available_stock_batches_count)}
-                                    />
+                                    <ProductDetailRow label="Batch records" value={formatNumber(product.stock_batches_count)} />
+                                    <ProductDetailRow label="Available layers" value={formatNumber(product.available_stock_batches_count)} />
                                 </ProductDocumentSection>
                             </div>
 
-                            <aside className="min-w-0 divide-y divide-border/60 bg-muted/[0.018]">
-                                <ProductDocumentSection
-                                    title="Catalog and Inventory"
-                                    description="Category and warehouse configuration."
-                                >
+                            <aside className="divide-border/60 bg-muted/[0.018] min-w-0 divide-y">
+                                <ProductDocumentSection title="Catalog and Inventory" description="Category and warehouse configuration.">
                                     <ProductDetailRow label="Category" value={product.category?.name ?? 'Uncategorized'} />
                                     <ProductDetailRow
                                         label="Category status"
@@ -2853,28 +2172,17 @@ function ProductDetailsDrawer({
                                     <ProductDetailRow label="Stock tracking" value={tracked ? 'Tracked inventory' : 'Not tracked'} />
                                     <ProductDetailRow
                                         label="Total stock"
-                                        value={
-                                            tracked
-                                                ? `${formatQuantity(product.total_stock)} ${product.unit}`
-                                                : 'Not maintained'
-                                        }
+                                        value={tracked ? `${formatQuantity(product.total_stock)} ${product.unit}` : 'Not maintained'}
                                     />
                                     <ProductDetailRow label="Warehouse records" value={formatNumber(product.warehouse_stocks_count)} />
                                     <ProductDetailRow label="Movement records" value={formatNumber(product.stock_movements_count)} />
                                 </ProductDocumentSection>
 
-                                <ProductDocumentSection
-                                    title="Record Audit"
-                                    description="System status and timestamps."
-                                >
+                                <ProductDocumentSection title="Record Audit" description="System status and timestamps.">
                                     <ProductDetailRow
                                         label="Product status"
                                         value={product.is_active ? 'Active' : 'Inactive'}
-                                        valueClassName={
-                                            product.is_active
-                                                ? 'text-emerald-400'
-                                                : 'text-rose-400'
-                                        }
+                                        valueClassName={product.is_active ? 'text-emerald-400' : 'text-rose-400'}
                                     />
                                     <ProductDetailRow label="Tenant ID" value={`#${product.tenant_id}`} mono />
                                     <ProductDetailRow label="Created" value={formatDateTime(product.created_at)} />
@@ -2884,7 +2192,7 @@ function ProductDetailsDrawer({
                         </div>
                     </div>
 
-                    <footer className="flex shrink-0 flex-col gap-2 border-t border-border/60 bg-background/35 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <footer className="border-border/60 bg-background/35 flex shrink-0 flex-col gap-2 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <Button type="button" variant="outline" onClick={onClose} className="h-9 rounded-lg text-xs">
                             Close
                         </Button>
@@ -2893,15 +2201,8 @@ function ProductDetailsDrawer({
                             <Button
                                 type="button"
                                 variant="outline"
-                                disabled={
-                                    statusProcessingId === product.id
-                                }
-                                title={
-                                    !canWrite
-                                        ? lockedReason ??
-                                          'Select to review subscription renewal options.'
-                                        : undefined
-                                }
+                                disabled={statusProcessingId === product.id}
+                                title={!canWrite ? (lockedReason ?? 'Select to review subscription renewal options.') : undefined}
                                 onClick={() => onToggleStatus(product)}
                                 className={cn(
                                     'h-9 rounded-lg text-xs',
@@ -2910,48 +2211,28 @@ function ProductDetailsDrawer({
                                         : 'border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/[0.07] hover:text-emerald-300',
                                 )}
                             >
-                                {!canWrite && (
-                                    <LockKeyhole className="size-3.5" />
-                                )}
+                                {!canWrite && <LockKeyhole className="size-3.5" />}
                                 {product.is_active ? 'Deactivate' : 'Activate'}
                             </Button>
 
                             <Button
                                 type="button"
                                 variant="outline"
-                                title={
-                                    !canWrite
-                                        ? lockedReason ??
-                                          'Select to review subscription renewal options.'
-                                        : undefined
-                                }
+                                title={!canWrite ? (lockedReason ?? 'Select to review subscription renewal options.') : undefined}
                                 onClick={() => onDelete(product)}
                                 className="h-9 rounded-lg border-rose-500/20 text-xs text-rose-400 hover:bg-rose-500/[0.07] hover:text-rose-300"
                             >
-                                {canWrite ? (
-                                    <Trash2 className="size-3.5" />
-                                ) : (
-                                    <LockKeyhole className="size-3.5" />
-                                )}
+                                {canWrite ? <Trash2 className="size-3.5" /> : <LockKeyhole className="size-3.5" />}
                                 Delete
                             </Button>
 
                             <Button
                                 type="button"
-                                title={
-                                    !canWrite
-                                        ? lockedReason ??
-                                          'Select to review subscription renewal options.'
-                                        : undefined
-                                }
+                                title={!canWrite ? (lockedReason ?? 'Select to review subscription renewal options.') : undefined}
                                 onClick={() => onEdit(product)}
-                                className="h-9 rounded-lg bg-primary px-4 text-xs text-primary-foreground hover:bg-primary/90"
+                                className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 rounded-lg px-4 text-xs"
                             >
-                                {canWrite ? (
-                                    <Pencil className="size-3.5" />
-                                ) : (
-                                    <LockKeyhole className="size-3.5" />
-                                )}
+                                {canWrite ? <Pencil className="size-3.5" /> : <LockKeyhole className="size-3.5" />}
                                 Edit Product
                             </Button>
                         </div>
@@ -2977,72 +2258,32 @@ function ProductSummaryCell({
 }) {
     return (
         <div className={cn('min-w-0 px-0 py-3 sm:px-3.5', className)}>
-            <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                {label}
-            </p>
-            <p
-                className={cn(
-                    'mt-1.5 truncate text-[11px] font-semibold tabular-nums text-foreground',
-                    valueClassName,
-                )}
-                title={value}
-            >
+            <p className="text-muted-foreground text-[8px] font-semibold tracking-[0.12em] uppercase">{label}</p>
+            <p className={cn('text-foreground mt-1.5 truncate text-[11px] font-semibold tabular-nums', valueClassName)} title={value}>
                 {value}
             </p>
-            <p className="mt-1 truncate text-[8px] text-muted-foreground">
-                {helper}
-            </p>
+            <p className="text-muted-foreground mt-1 truncate text-[8px]">{helper}</p>
         </div>
     );
 }
 
-function ProductDocumentSection({
-    title,
-    description,
-    children,
-}: {
-    title: string;
-    description: string;
-    children: ReactNode;
-}) {
+function ProductDocumentSection({ title, description, children }: { title: string; description: string; children: ReactNode }) {
     return (
         <section className="px-5 py-5">
             <div className="mb-3">
-                <h3 className="text-[11px] font-semibold text-foreground">
-                    {title}
-                </h3>
-                <p className="mt-1 text-[9px] leading-4 text-muted-foreground">
-                    {description}
-                </p>
+                <h3 className="text-foreground text-[11px] font-semibold">{title}</h3>
+                <p className="text-muted-foreground mt-1 text-[9px] leading-4">{description}</p>
             </div>
-            <dl className="divide-y divide-border/55 border-y border-border/55">
-                {children}
-            </dl>
+            <dl className="divide-border/55 border-border/55 divide-y border-y">{children}</dl>
         </section>
     );
 }
 
-function ProductDetailRow({
-    label,
-    value,
-    mono = false,
-    valueClassName,
-}: {
-    label: string;
-    value: string;
-    mono?: boolean;
-    valueClassName?: string;
-}) {
+function ProductDetailRow({ label, value, mono = false, valueClassName }: { label: string; value: string; mono?: boolean; valueClassName?: string }) {
     return (
         <div className="grid min-w-0 gap-1 py-2.5 sm:grid-cols-[125px_minmax(0,1fr)] sm:items-start sm:gap-4">
-            <dt className="text-[9px] text-muted-foreground">{label}</dt>
-            <dd
-                className={cn(
-                    'min-w-0 break-words text-[10px] font-semibold text-foreground/90 sm:text-right',
-                    mono && 'font-mono',
-                    valueClassName,
-                )}
-            >
+            <dt className="text-muted-foreground text-[9px]">{label}</dt>
+            <dd className={cn('text-foreground/90 min-w-0 text-[10px] font-semibold break-words sm:text-right', mono && 'font-mono', valueClassName)}>
                 {value}
             </dd>
         </div>
@@ -3092,7 +2333,7 @@ function CatalogFactRow({
             type="button"
             onClick={onClick}
             className={cn(
-                'group flex min-w-0 items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-primary/[0.025] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/35',
+                'group hover:bg-primary/[0.025] focus-visible:ring-primary/35 flex min-w-0 items-center gap-3 px-4 py-3.5 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset',
                 className,
             )}
         >
@@ -3106,22 +2347,11 @@ function CatalogFactRow({
             </span>
 
             <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold text-foreground/90">
-                    {label}
-                </p>
-                <p className="mt-0.5 truncate text-[9px] text-muted-foreground">
-                    {description}
-                </p>
+                <p className="text-foreground/90 text-[10px] font-semibold">{label}</p>
+                <p className="text-muted-foreground mt-0.5 truncate text-[9px]">{description}</p>
             </div>
 
-            <span
-                className={cn(
-                    'shrink-0 text-lg font-semibold tabular-nums',
-                    styles.value,
-                )}
-            >
-                {formatNumber(value)}
-            </span>
+            <span className={cn('shrink-0 text-lg font-semibold tabular-nums', styles.value)}>{formatNumber(value)}</span>
         </button>
     );
 }
@@ -3131,7 +2361,6 @@ function CatalogFactRow({
 | Formatting
 |--------------------------------------------------------------------------
 */
-
 
 function formatNumber(value: number): string {
     return new Intl.NumberFormat('en-PH', {
@@ -3159,33 +2388,21 @@ function formatDateTime(value: string | null): string {
     }).format(date);
 }
 
-function formatCurrency(
-    value: string | number | null,
-): string {
+function formatCurrency(value: string | number | null): string {
     const amount = Number(value ?? 0);
 
     return new Intl.NumberFormat('en-PH', {
         style: 'currency',
         currency: 'PHP',
         minimumFractionDigits: 2,
-    }).format(
-        Number.isFinite(amount)
-            ? amount
-            : 0,
-    );
+    }).format(Number.isFinite(amount) ? amount : 0);
 }
 
-function formatQuantity(
-    value: string | number | null,
-): string {
+function formatQuantity(value: string | number | null): string {
     const quantity = Number(value ?? 0);
 
     return new Intl.NumberFormat('en-PH', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 3,
-    }).format(
-        Number.isFinite(quantity)
-            ? quantity
-            : 0,
-    );
+    }).format(Number.isFinite(quantity) ? quantity : 0);
 }

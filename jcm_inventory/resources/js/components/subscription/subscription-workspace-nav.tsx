@@ -1,18 +1,7 @@
 import { Link } from '@inertiajs/react';
-import {
-    Activity,
-    CreditCard,
-    Gauge,
-    ReceiptText,
-    ScrollText,
-} from 'lucide-react';
+import { Activity, CreditCard, Gauge, ReceiptText, ScrollText } from 'lucide-react';
 
-export type SubscriptionWorkspacePage =
-    | 'overview'
-    | 'history'
-    | 'invoices'
-    | 'usage'
-    | 'activity';
+export type SubscriptionWorkspacePage = 'overview' | 'history' | 'invoices' | 'usage' | 'activity';
 
 interface SubscriptionWorkspaceNavProps {
     active: SubscriptionWorkspacePage;
@@ -63,30 +52,20 @@ const items: Array<{
     },
 ];
 
-export function SubscriptionWorkspaceNav({
-    active,
-    isOwner = true,
-}: SubscriptionWorkspaceNavProps) {
-    const visibleItems = items.filter(
-        (item) =>
-            !item.ownerOnly || isOwner,
-    );
+export function SubscriptionWorkspaceNav({ active, isOwner = true }: SubscriptionWorkspaceNavProps) {
+    const visibleItems = items.filter((item) => !item.ownerOnly || isOwner);
 
     return (
-        <nav className="overflow-x-auto rounded-xl border border-border/70 bg-card p-1.5">
+        <nav className="border-border/70 bg-card overflow-x-auto rounded-xl border p-1.5">
             <div className="flex min-w-max items-center gap-1">
                 {visibleItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive =
-                        item.key === active;
+                    const isActive = item.key === active;
 
                     return (
                         <Link
                             key={item.key}
-                            href={route(
-                                item.routeName,
-                            )}
-                            prefetch
+                            href={route(item.routeName, undefined, false)}
                             className={[
                                 'inline-flex h-9 items-center gap-2',
                                 'rounded-lg px-3 text-xs font-semibold',

@@ -1,22 +1,9 @@
-import {
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
-import type { SubscriptionSummary } from '@/types/subscription';
 import type { User } from '@/types';
+import type { SubscriptionSummary } from '@/types/subscription';
 import { Link, usePage } from '@inertiajs/react';
-import {
-    Activity,
-    CreditCard,
-    Gauge,
-    LogOut,
-    ReceiptText,
-    ScrollText,
-    Settings,
-} from 'lucide-react';
+import { Activity, CreditCard, Gauge, LogOut, ReceiptText, ScrollText, Settings } from 'lucide-react';
 import type { ComponentType } from 'react';
 
 interface UserMenuContentProps {
@@ -66,10 +53,7 @@ const subscriptionPages: SubscriptionMenuItem[] = [
 ];
 
 function initials(name: string): string {
-    const parts = name
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean);
+    const parts = name.trim().split(/\s+/).filter(Boolean);
 
     if (parts.length === 0) {
         return 'U';
@@ -79,13 +63,10 @@ function initials(name: string): string {
         return parts[0].slice(0, 2).toUpperCase();
     }
 
-    return `${parts[0][0]}${parts.at(-1)?.[0] ?? ''}`
-        .toUpperCase();
+    return `${parts[0][0]}${parts.at(-1)?.[0] ?? ''}`.toUpperCase();
 }
 
-export function UserMenuContent({
-    user,
-}: UserMenuContentProps) {
+export function UserMenuContent({ user }: UserMenuContentProps) {
     const cleanup = useMobileNavigation();
 
     const { subscription } = usePage().props as {
@@ -94,33 +75,27 @@ export function UserMenuContent({
 
     const isOwner = subscription?.is_owner ?? true;
 
-    const visibleSubscriptionPages = isOwner
-        ? subscriptionPages
-        : subscriptionPages.slice(0, 1);
+    const visibleSubscriptionPages = isOwner ? subscriptionPages : subscriptionPages.slice(0, 1);
 
     return (
-        <div className="min-w-[21rem] max-w-[calc(100vw-1.5rem)]">
+        <div className="max-w-[calc(100vw-1.5rem)] min-w-[21rem]">
             <DropdownMenuLabel className="px-3 py-2.5 font-normal">
                 <div className="flex min-w-0 items-center gap-2.5">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-primary/15 bg-primary/10 text-xs font-semibold text-primary">
+                    <span className="border-primary/15 bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-full border text-xs font-semibold">
                         {initials(user.name)}
                     </span>
 
                     <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-semibold text-foreground">
-                            {user.name}
-                        </p>
+                        <p className="text-foreground truncate text-xs font-semibold">{user.name}</p>
 
-                        <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                            {user.email}
-                        </p>
+                        <p className="text-muted-foreground mt-0.5 truncate text-[10px]">{user.email}</p>
                     </div>
                 </div>
             </DropdownMenuLabel>
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuLabel className="px-3 pb-1 pt-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            <DropdownMenuLabel className="text-muted-foreground px-3 pt-1.5 pb-1 text-[9px] font-semibold tracking-[0.14em] uppercase">
                 Subscription & Billing
             </DropdownMenuLabel>
 
@@ -129,28 +104,20 @@ export function UserMenuContent({
                     const Icon = item.icon;
 
                     return (
-                        <DropdownMenuItem
-                            key={item.routeName}
-                            asChild
-                        >
+                        <DropdownMenuItem key={item.routeName} asChild>
                             <Link
-                                href={route(item.routeName)}
-                                prefetch
+                                href={route(item.routeName, undefined, false)}
                                 onClick={cleanup}
                                 className="flex w-full min-w-0 items-center gap-2.5 rounded-lg px-2.5 py-2"
                             >
-                                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-sidebar-border bg-sidebar-accent/40 text-sidebar-foreground/70">
+                                <div className="border-sidebar-border bg-sidebar-accent/40 text-sidebar-foreground/70 flex size-8 shrink-0 items-center justify-center rounded-lg border">
                                     <Icon className="size-4" />
                                 </div>
 
                                 <div className="min-w-0 flex-1">
-                                    <p className="truncate text-xs font-semibold">
-                                        {item.title}
-                                    </p>
+                                    <p className="truncate text-xs font-semibold">{item.title}</p>
 
-                                    <p className="truncate text-[10px] text-muted-foreground">
-                                        {item.description}
-                                    </p>
+                                    <p className="text-muted-foreground truncate text-[10px]">{item.description}</p>
                                 </div>
                             </Link>
                         </DropdownMenuItem>
@@ -160,7 +127,7 @@ export function UserMenuContent({
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuLabel className="px-3 pb-1 pt-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            <DropdownMenuLabel className="text-muted-foreground px-3 pt-1.5 pb-1 text-[9px] font-semibold tracking-[0.14em] uppercase">
                 Account
             </DropdownMenuLabel>
 
@@ -172,18 +139,14 @@ export function UserMenuContent({
                         onClick={cleanup}
                         className="flex w-full min-w-0 items-center gap-2.5 rounded-lg px-2.5 py-2"
                     >
-                        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-sidebar-border bg-sidebar-accent/40 text-sidebar-foreground/70">
+                        <div className="border-sidebar-border bg-sidebar-accent/40 text-sidebar-foreground/70 flex size-8 shrink-0 items-center justify-center rounded-lg border">
                             <Settings className="size-4" />
                         </div>
 
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-semibold">
-                                Account Settings
-                            </p>
+                            <p className="truncate text-xs font-semibold">Account Settings</p>
 
-                            <p className="truncate text-[10px] text-muted-foreground">
-                                Profile, password, and preferences
-                            </p>
+                            <p className="text-muted-foreground truncate text-[10px]">Profile, password, and preferences</p>
                         </div>
                     </Link>
                 </DropdownMenuItem>
@@ -204,13 +167,9 @@ export function UserMenuContent({
                     </div>
 
                     <div className="min-w-0 flex-1 text-left">
-                        <p className="truncate text-xs font-semibold">
-                            Log out
-                        </p>
+                        <p className="truncate text-xs font-semibold">Log out</p>
 
-                        <p className="truncate text-[10px] text-rose-300/60">
-                            End the current account session
-                        </p>
+                        <p className="truncate text-[10px] text-rose-300/60">End the current account session</p>
                     </div>
                 </Link>
             </DropdownMenuItem>

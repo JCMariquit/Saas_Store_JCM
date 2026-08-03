@@ -1,15 +1,9 @@
 import { SubscriptionWorkspaceNav } from '@/components/subscription/subscription-workspace-nav';
 import AppLayout from '@/layouts/app-layout';
-import type { SubscriptionSummary } from '@/types/subscription';
 import type { BreadcrumbItem } from '@/types';
+import type { SubscriptionSummary } from '@/types/subscription';
 import { Head, Link, router } from '@inertiajs/react';
-import {
-    CheckCircle2,
-    Clock3,
-    CreditCard,
-    ReceiptText,
-    Search,
-} from 'lucide-react';
+import { CheckCircle2, Clock3, CreditCard, ReceiptText, Search } from 'lucide-react';
 import { useState, type FormEvent, type ReactNode } from 'react';
 
 interface BillingOrder {
@@ -94,9 +88,7 @@ function formatDate(value: string | null): string {
 function humanize(value: string | null): string {
     if (!value) return 'Not available';
 
-    return value
-        .replaceAll('_', ' ')
-        .replace(/\b\w/g, (character) => character.toUpperCase());
+    return value.replaceAll('_', ' ').replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 function statusClasses(status: string): string {
@@ -115,12 +107,7 @@ function statusClasses(status: string): string {
     return 'border-rose-500/20 bg-rose-500/10 text-rose-300';
 }
 
-export default function BillingHistoryIndex({
-    current,
-    orders,
-    filters,
-    summary,
-}: HistoryProps) {
+export default function BillingHistoryIndex({ current, orders, filters, summary }: HistoryProps) {
     const [search, setSearch] = useState(filters.search);
     const [status, setStatus] = useState(filters.status);
 
@@ -128,7 +115,7 @@ export default function BillingHistoryIndex({
         event.preventDefault();
 
         router.get(
-            route('subscription.history'),
+            route('subscription.history', undefined, false),
             { search, status },
             {
                 preserveScroll: true,
@@ -145,24 +132,20 @@ export default function BillingHistoryIndex({
             <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 p-4 md:p-5">
                 <SubscriptionWorkspaceNav active="history" />
 
-                <section className="rounded-2xl border border-border/70 bg-card p-4 md:p-5">
+                <section className="border-border/70 bg-card rounded-2xl border p-4 md:p-5">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-primary">
-                                Subscription records
-                            </p>
+                            <p className="text-primary text-[10px] font-semibold tracking-[0.15em] uppercase">Subscription records</p>
 
-                            <h1 className="mt-1 text-xl font-bold tracking-tight md:text-2xl">
-                                Billing History
-                            </h1>
+                            <h1 className="mt-1 text-xl font-bold tracking-tight md:text-2xl">Billing History</h1>
 
-                            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">
-                                Review every subscription order, payment submission,
-                                and verification result for {current.plan_name ?? 'your account'}.
+                            <p className="text-muted-foreground mt-1 max-w-2xl text-xs leading-5">
+                                Review every subscription order, payment submission, and verification result for {current.plan_name ?? 'your account'}
+                                .
                             </p>
                         </div>
 
-                        <span className="w-fit rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                        <span className="border-border bg-muted/40 text-muted-foreground w-fit rounded-full border px-3 py-1.5 text-xs font-semibold">
                             {orders.total} records
                         </span>
                     </div>
@@ -172,28 +155,29 @@ export default function BillingHistoryIndex({
                     <SummaryCard label="All orders" value={String(summary.total)} icon={<ReceiptText className="size-4" />} />
                     <SummaryCard label="Pending" value={String(summary.pending)} icon={<Clock3 className="size-4" />} />
                     <SummaryCard label="Submitted" value={String(summary.submitted)} icon={<CreditCard className="size-4" />} />
-                    <SummaryCard label="Verified value" value={formatMoney(summary.total_paid, current.currency ?? 'PHP')} icon={<CheckCircle2 className="size-4" />} />
+                    <SummaryCard
+                        label="Verified value"
+                        value={formatMoney(summary.total_paid, current.currency ?? 'PHP')}
+                        icon={<CheckCircle2 className="size-4" />}
+                    />
                 </section>
 
-                <section className="overflow-hidden rounded-2xl border border-border/70 bg-card">
-                    <form
-                        onSubmit={applyFilters}
-                        className="flex flex-col gap-3 border-b border-border/60 p-4 sm:flex-row sm:items-center"
-                    >
+                <section className="border-border/70 bg-card overflow-hidden rounded-2xl border">
+                    <form onSubmit={applyFilters} className="border-border/60 flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center">
                         <label className="relative min-w-0 flex-1">
-                            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                             <input
                                 value={search}
                                 onChange={(event) => setSearch(event.target.value)}
                                 placeholder="Search order, transaction, reference, or plan"
-                                className="h-10 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-xs outline-none focus:ring-2 focus:ring-ring"
+                                className="border-input bg-background focus:ring-ring h-10 w-full rounded-lg border pr-3 pl-9 text-xs outline-none focus:ring-2"
                             />
                         </label>
 
                         <select
                             value={status}
                             onChange={(event) => setStatus(event.target.value)}
-                            className="h-10 rounded-lg border border-input bg-background px-3 text-xs outline-none focus:ring-2 focus:ring-ring"
+                            className="border-input bg-background focus:ring-ring h-10 rounded-lg border px-3 text-xs outline-none focus:ring-2"
                         >
                             <option value="">All statuses</option>
                             <option value="pending">Pending</option>
@@ -206,7 +190,7 @@ export default function BillingHistoryIndex({
 
                         <button
                             type="submit"
-                            className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground"
+                            className="bg-primary text-primary-foreground inline-flex h-10 items-center justify-center rounded-lg px-4 text-xs font-semibold"
                         >
                             Apply filters
                         </button>
@@ -214,7 +198,7 @@ export default function BillingHistoryIndex({
 
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[980px] text-left">
-                            <thead className="border-b border-border/60 bg-muted/25 text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
+                            <thead className="border-border/60 bg-muted/25 text-muted-foreground border-b text-[9px] tracking-[0.1em] uppercase">
                                 <tr>
                                     <th className="px-4 py-3 font-semibold">Order</th>
                                     <th className="px-4 py-3 font-semibold">Plan</th>
@@ -225,41 +209,43 @@ export default function BillingHistoryIndex({
                                 </tr>
                             </thead>
 
-                            <tbody className="divide-y divide-border/60">
+                            <tbody className="divide-border/60 divide-y">
                                 {orders.data.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="px-6 py-14 text-center">
-                                            <ReceiptText className="mx-auto size-8 text-muted-foreground/50" />
+                                            <ReceiptText className="text-muted-foreground/50 mx-auto size-8" />
                                             <p className="mt-3 text-sm font-semibold">No billing records found</p>
-                                            <p className="mt-1 text-xs text-muted-foreground">Try changing the search or status filter.</p>
+                                            <p className="text-muted-foreground mt-1 text-xs">Try changing the search or status filter.</p>
                                         </td>
                                     </tr>
                                 ) : (
                                     orders.data.map((order) => (
-                                        <tr key={order.id} className="align-top transition hover:bg-muted/20">
+                                        <tr key={order.id} className="hover:bg-muted/20 align-top transition">
                                             <td className="px-4 py-3">
                                                 <p className="text-xs font-semibold">{order.order_code}</p>
-                                                <p className="mt-1 text-[10px] text-muted-foreground">{humanize(order.order_type)}</p>
+                                                <p className="text-muted-foreground mt-1 text-[10px]">{humanize(order.order_type)}</p>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <p className="text-xs font-semibold">{order.plan_name}</p>
-                                                <p className="mt-1 text-[10px] text-muted-foreground">{humanize(order.billing_type)}</p>
+                                                <p className="text-muted-foreground mt-1 text-[10px]">{humanize(order.billing_type)}</p>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <p className="text-xs font-medium">{order.payment_method_name ?? 'Not submitted'}</p>
-                                                <p className="mt-1 text-[10px] text-muted-foreground">{order.reference_number ?? order.transaction_code ?? 'No reference'}</p>
+                                                <p className="text-muted-foreground mt-1 text-[10px]">
+                                                    {order.reference_number ?? order.transaction_code ?? 'No reference'}
+                                                </p>
                                             </td>
                                             <td className="px-4 py-3 text-xs font-semibold tabular-nums">
                                                 {formatMoney(order.amount, order.currency)}
                                             </td>
                                             <td className="px-4 py-3">
-                                                <span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] ${statusClasses(order.order_status)}`}>
+                                                <span
+                                                    className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-semibold tracking-[0.08em] uppercase ${statusClasses(order.order_status)}`}
+                                                >
                                                     {humanize(order.order_status)}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-[10px] text-muted-foreground">
-                                                {formatDate(order.ordered_at)}
-                                            </td>
+                                            <td className="text-muted-foreground px-4 py-3 text-[10px]">{formatDate(order.ordered_at)}</td>
                                         </tr>
                                     ))
                                 )}
@@ -276,8 +262,8 @@ export default function BillingHistoryIndex({
 
 function SummaryCard({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
     return (
-        <div className="rounded-xl border border-border/70 bg-card p-3.5">
-            <div className="flex items-center gap-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        <div className="border-border/70 bg-card rounded-xl border p-3.5">
+            <div className="text-muted-foreground flex items-center gap-2 text-[9px] font-semibold tracking-[0.12em] uppercase">
                 <span className="text-primary">{icon}</span>
                 {label}
             </div>
@@ -290,28 +276,40 @@ function Pagination({ data }: { data: PaginatedOrders }) {
     if (data.last_page <= 1) return null;
 
     return (
-        <div className="flex items-center justify-between gap-3 border-t border-border/60 px-4 py-3 text-xs">
+        <div className="border-border/60 flex items-center justify-between gap-3 border-t px-4 py-3 text-xs">
             <p className="text-muted-foreground">
                 Showing {data.from ?? 0}–{data.to ?? 0} of {data.total}
             </p>
 
             <div className="flex items-center gap-2">
                 {data.prev_page_url ? (
-                    <Link href={data.prev_page_url} preserveScroll preserveState className="rounded-lg border px-3 py-1.5 font-semibold hover:bg-muted/40">
+                    <Link
+                        href={data.prev_page_url}
+                        preserveScroll
+                        preserveState
+                        className="hover:bg-muted/40 rounded-lg border px-3 py-1.5 font-semibold"
+                    >
                         Previous
                     </Link>
                 ) : (
-                    <span className="rounded-lg border px-3 py-1.5 text-muted-foreground opacity-50">Previous</span>
+                    <span className="text-muted-foreground rounded-lg border px-3 py-1.5 opacity-50">Previous</span>
                 )}
 
-                <span className="text-muted-foreground">Page {data.current_page} of {data.last_page}</span>
+                <span className="text-muted-foreground">
+                    Page {data.current_page} of {data.last_page}
+                </span>
 
                 {data.next_page_url ? (
-                    <Link href={data.next_page_url} preserveScroll preserveState className="rounded-lg border px-3 py-1.5 font-semibold hover:bg-muted/40">
+                    <Link
+                        href={data.next_page_url}
+                        preserveScroll
+                        preserveState
+                        className="hover:bg-muted/40 rounded-lg border px-3 py-1.5 font-semibold"
+                    >
                         Next
                     </Link>
                 ) : (
-                    <span className="rounded-lg border px-3 py-1.5 text-muted-foreground opacity-50">Next</span>
+                    <span className="text-muted-foreground rounded-lg border px-3 py-1.5 opacity-50">Next</span>
                 )}
             </div>
         </div>

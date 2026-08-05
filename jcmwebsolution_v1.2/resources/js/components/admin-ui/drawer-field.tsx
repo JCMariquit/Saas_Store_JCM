@@ -6,10 +6,10 @@ type DrawerFieldProps = {
 export function DrawerField({ label, value }: DrawerFieldProps) {
     return (
         <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {label}
             </p>
-            <p className="mt-1 text-sm text-slate-900">
+            <p className="mt-1 text-sm text-foreground">
                 {value ?? '-'}
             </p>
         </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\LoginActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,9 +14,6 @@ use Inertia\Response;
 
 class AuthenticatedSessionController extends Controller
 {
-    /**
-     * Show the login page.
-     */
     public function create(Request $request): Response
     {
         return Inertia::render('auth/login', [
@@ -24,32 +22,52 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-    /**
-     * Handle an incoming authentication request.
-     */
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-
         $request->session()->regenerate();
 
         $user = $request->user();
 
-        // 🔥 ROLE-BASED REDIRECT
-        if ($user && $user->role === 'admin') {
-            return redirect()->intended(route('admin.dashboard', absolute: false));
+        if (! $user?->is_active) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()->withErrors([
+                'email' => 'This account is inactive. Contact the JCM administrator.',
+            ]);
         }
 
-        return redirect()->intended(route('store.dashboard', absolute: false));
+        LoginActivityLogger::record(
+            $request,
+            LoginActivityLogger::LOGIN_SUCCESS,
+            $user,
+        );
+
+        // Admin accounts must always enter the central control panel.
+        // Do not use redirect()->intended() for admins because Laravel may
+        // have stored /dashboard as the intended URL before authentication.
+        if ($user->isAdmin()) {
+            $request->session()->forget('url.intended');
+
+            return redirect()->route('admin.dashboard');
+        }
+
+        return redirect()->intended(
+            route('store.dashboard', absolute: false),
+        );
     }
 
-    /**
-     * Destroy an authenticated session.
-     */
     public function destroy(Request $request): RedirectResponse
     {
-        Auth::guard('web')->logout();
+        LoginActivityLogger::record(
+            $request,
+            LoginActivityLogger::LOGOUT,
+            $request->user(),
+        );
 
+        Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

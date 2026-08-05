@@ -4,20 +4,19 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class AdminOnly
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check()) {
+        $user = $request->user();
+
+        if (! $user) {
             return redirect()->route('login');
         }
 
-        if (Auth::user()->role !== 'admin') {
-            abort(403, 'Unauthorized admin access.');
-        }
+        abort_unless($user->is_active && $user->isAdmin(), 403, 'Unauthorized admin access.');
 
         return $next($request);
     }

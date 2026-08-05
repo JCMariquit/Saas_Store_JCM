@@ -4,14 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\PaymentMethod;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\PaymentVerificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,110 +24,131 @@ class OrderController extends Controller
     {
         $search = trim((string) $request->query('search', ''));
 
-        $orders = Order::with([
-            'user',
-            'product',
-            'plan',
-            'transaction',
-            'latestTransaction',
-            'subscription',
-        ])
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('order_code', 'like', "%{$search}%")
+        $orders = Order::query()
+            ->with([
+                'user:id,name,email',
+                'accountOwner:id,name,email',
+                'product:id,name,product_code',
+                'plan:id,product_id,plan_name,price,billing_interval,duration_days,currency',
+                'latestTransaction.paymentMethod:id,name,slug',
+                'subscription:id,subscription_code,status',
+            ])
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($nested) use ($search): void {
+                    $nested->where('order_code', 'like', "%{$search}%")
                         ->orWhere('status', 'like', "%{$search}%")
                         ->orWhere('billing_type', 'like', "%{$search}%")
-                        ->orWhereHas('user', function ($subQ) use ($search) {
-                            $subQ->where('name', 'like', "%{$search}%")
+                        ->orWhereHas('accountOwner', function ($userQuery) use ($search): void {
+                            $userQuery->where('name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%");
                         })
-                        ->orWhereHas('product', function ($subQ) use ($search) {
-                            $subQ->where('name', 'like', "%{$search}%");
-                        })
-                        ->orWhereHas('plan', function ($subQ) use ($search) {
-                            $subQ->where('plan_name', 'like', "%{$search}%");
-                        })
-                        ->orWhereHas('transactions', function ($subQ) use ($search) {
-                            $subQ->where('transaction_code', 'like', "%{$search}%")
+                        ->orWhereHas('product', fn ($productQuery) => $productQuery->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('plan', fn ($planQuery) => $planQuery->where('plan_name', 'like', "%{$search}%"))
+                        ->orWhereHas('transactions', function ($transactionQuery) use ($search): void {
+                            $transactionQuery->where('transaction_code', 'like', "%{$search}%")
                                 ->orWhere('reference_number', 'like', "%{$search}%")
-                                ->orWhere('payment_method', 'like', "%{$search}%")
-                                ->orWhere('status', 'like', "%{$search}%");
+                                ->orWhere('status', 'like', "%{$search}%")
+                                ->orWhereHas('paymentMethod', function ($paymentQuery) use ($search): void {
+                                    $paymentQuery->where('name', 'like', "%{$search}%")
+                                        ->orWhere('slug', 'like', "%{$search}%");
+                                });
                         });
                 });
             })
-            ->orderByDesc('id')
+            ->latest('id')
             ->paginate(10)
             ->withQueryString()
-            ->through(function ($order) {
-                $transaction = $order->transaction ?? $order->latestTransaction;
-
-                $statusLabel = match ($order->status) {
-                    'paid' => 'for verification',
-                    'failed' => 'failed',
-                    default => $order->status,
-                };
+            ->through(function (Order $order): array {
+                $transaction = $order->latestTransaction;
 
                 return [
                     'id' => $order->id,
                     'order_code' => $order->order_code,
-                    'user_name' => $order->user?->name,
+                    'user_name' => $order->accountOwner?->name ?? $order->user?->name,
                     'product_name' => $order->product?->name,
                     'plan_name' => $order->plan?->plan_name,
-                    'billing_type' => $order->billing_type ?? 'monthly',
-                    'amount' => $order->amount,
-                    'duration_days' => $order->duration_days,
+                    'billing_type' => $order->billing_type,
+                    'order_type' => $order->order_type,
+                    'amount' => (float) $order->amount,
+                    'duration_days' => (int) ($order->duration_days ?? 0),
                     'status' => $order->status,
-                    'status_label' => $statusLabel,
-                    'ordered_at' => optional($order->ordered_at)?->format('M d, Y h:i A'),
-                    'paid_at' => optional($order->paid_at)?->format('M d, Y h:i A'),
-                    'verified_at' => optional($order->verified_at)?->format('M d, Y h:i A'),
-                    'has_subscription' => $order->subscription ? true : false,
+                    'status_label' => str($order->status)->replace('_', ' ')->title()->toString(),
+                    'ordered_at' => $order->ordered_at?->format('M d, Y h:i A'),
+                    'paid_at' => $order->paid_at?->format('M d, Y h:i A'),
+                    'verified_at' => $order->verified_at?->format('M d, Y h:i A'),
+                    'has_subscription' => $order->subscription !== null,
                     'subscription_code' => $order->subscription?->subscription_code,
-                    'has_transaction' => $transaction ? true : false,
+                    'has_transaction' => $transaction !== null,
                     'transaction' => $transaction ? [
                         'id' => $transaction->id,
                         'transaction_code' => $transaction->transaction_code,
-                        'payment_method' => $transaction->payment_method,
+                        'payment_method' => $transaction->paymentMethod?->name,
                         'reference_number' => $transaction->reference_number,
-                        'amount' => $transaction->amount,
+                        'amount' => (float) $transaction->amount,
                         'status' => $transaction->status,
-                        'paid_at' => optional($transaction->paid_at)?->format('M d, Y h:i A'),
-                        'verified_at' => optional($transaction->verified_at)?->format('M d, Y h:i A'),
+                        'paid_at' => $transaction->paid_at?->format('M d, Y h:i A'),
+                        'verified_at' => $transaction->verified_at?->format('M d, Y h:i A'),
                         'notes' => $transaction->notes,
                     ] : null,
                 ];
             });
 
+        $plans = Plan::query()
+            ->with('product:id,name')
+            ->where('status', 'active')
+            ->orderBy('product_id')
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (Plan $plan): array => [
+                'id' => $plan->id,
+                'product_id' => $plan->product_id,
+                'product_name' => $plan->product?->name,
+                'plan_name' => $plan->plan_name,
+                'price' => (float) $plan->price,
+                'duration_days' => (int) $plan->duration_days,
+                'billing_interval' => $plan->billing_interval,
+                'label' => ($plan->product?->name ?? 'Unknown Product').' - '.$plan->plan_name,
+            ]);
+
+        $users = User::query()
+            ->where('is_active', true)
+            ->whereDoesntHave('platformRoles', function ($query): void {
+                $query->where('user_platform_roles.status', 'active')
+                    ->where('platform_roles.status', 'active')
+                    ->whereIn('platform_roles.role_code', ['super_admin', 'admin']);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'email'])
+            ->map(fn (User $user): array => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'label' => $user->name.' ('.$user->email.')',
+            ]);
+
+        $paymentMethods = PaymentMethod::query()
+            ->where('status', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug', 'account_name', 'account_number'])
+            ->map(fn (PaymentMethod $method): array => [
+                'id' => $method->id,
+                'name' => $method->name,
+                'slug' => $method->slug,
+                'account_name' => $method->account_name,
+                'account_number' => $method->account_number,
+            ]);
+
         return Inertia::render('admin/orders/index', [
-            'filters' => [
-                'search' => $search,
-            ],
+            'filters' => ['search' => $search],
             'orders' => $orders,
-            'plans' => Plan::with('product')
-                ->where('status', 'active')
-                ->orderBy('plan_name')
-                ->get()
-                ->map(fn ($plan) => [
-                    'id' => $plan->id,
-                    'product_id' => $plan->product_id,
-                    'product_name' => $plan->product?->name,
-                    'plan_name' => $plan->plan_name,
-                    'price' => (float) $plan->price,
-                    'duration_days' => (int) $plan->duration_days,
-                    'label' => ($plan->product?->name ?? 'Unknown Product') . ' - ' . $plan->plan_name,
-                ]),
-            'users' => User::orderBy('name')
-                ->get(['id', 'name', 'email'])
-                ->map(fn ($user) => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'label' => $user->name . ' (' . $user->email . ')',
-                ]),
+            'plans' => $plans,
+            'users' => $users,
+            'paymentMethods' => $paymentMethods,
             'stats' => [
                 'total_orders' => Order::count(),
                 'pending_orders' => Order::where('status', 'pending')->count(),
-                'for_verification_orders' => Order::where('status', 'paid')->count(),
+                'for_verification_orders' => Order::whereIn('status', ['payment_submitted', 'paid'])->count(),
                 'verified_orders' => Order::where('status', 'verified')->count(),
             ],
         ]);
@@ -133,206 +157,223 @@ class OrderController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
-            'plan_id' => ['required', 'exists:plans,id'],
-            'billing_type' => ['required', 'in:trial,monthly,yearly,custom'],
-            'duration_days_override' => ['nullable', 'integer', 'min:1'],
-            'notes' => ['nullable', 'string'],
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'plan_id' => ['required', 'integer', 'exists:plans,id'],
+            'billing_type' => ['required', Rule::in(['trial', 'monthly', 'quarterly', 'yearly', 'custom'])],
+            'duration_days_override' => ['nullable', 'integer', 'min:1', 'max:3650'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $plan = Plan::with('product')->findOrFail($validated['plan_id']);
-
-        [$amount, $durationDays] = $this->resolveOrderAmountAndDuration(
-            (float) $plan->price,
+        $plan = Plan::query()->with('product')->where('status', 'active')->findOrFail($validated['plan_id']);
+        [$amount, $durationDays, $planPriceId] = $this->resolveOrderTerms(
+            $plan,
             $validated['billing_type'],
-            isset($validated['duration_days_override']) ? (int) $validated['duration_days_override'] : null
+            isset($validated['duration_days_override']) ? (int) $validated['duration_days_override'] : null,
         );
 
         Order::create([
             'order_code' => $this->generateOrderCode(),
             'user_id' => $validated['user_id'],
+            'account_owner_id' => $validated['user_id'],
             'product_id' => $plan->product_id,
             'plan_id' => $plan->id,
-            'transaction_id' => null,
+            'plan_price_id' => $planPriceId,
             'billing_type' => $validated['billing_type'],
+            'order_type' => 'new_subscription',
             'amount' => $amount,
+            'currency' => $plan->currency ?: 'PHP',
             'duration_days' => $durationDays,
             'status' => 'pending',
             'ordered_at' => now(),
             'notes' => $validated['notes'] ?? null,
         ]);
 
-        return redirect()
-            ->route('admin.orders.index')
-            ->with('success', 'Order created successfully.');
+        return back()->with('success', 'Order created successfully.');
     }
 
     public function submitPayment(Request $request, Order $order): RedirectResponse
     {
-        if ($order->transaction_id || $order->latestTransaction) {
-            return redirect()
-                ->route('admin.orders.index')
-                ->with('success', 'This order already has payment details. Please accept or deny it instead.');
+        if ($order->status === 'verified') {
+            return back()->with('success', 'This order is already verified.');
+        }
+
+        if ($order->latestTransaction()->whereIn('status', ['pending', 'submitted', 'verified'])->exists()) {
+            return back()->with('success', 'This order already has an active payment record.');
         }
 
         $validated = $request->validate([
-            'payment_method' => ['required', 'in:gcash,maya,bank_transfer,cash,other'],
+            'payment_method_id' => [
+                'required',
+                'integer',
+                Rule::exists('payment_methods', 'id')->where('status', 1),
+            ],
             'reference_number' => ['required', 'string', 'max:150'],
             'account_name' => ['nullable', 'string', 'max:255'],
             'account_number' => ['nullable', 'string', 'max:100'],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        DB::transaction(function () use ($validated, $order) {
-            $transaction = Transaction::create([
+        DB::transaction(function () use ($order, $validated): void {
+            Transaction::create([
                 'transaction_code' => $this->generateTransactionCode(),
                 'order_id' => $order->id,
                 'user_id' => $order->user_id,
-                'payment_method' => $validated['payment_method'],
+                'payment_method_id' => $validated['payment_method_id'],
                 'reference_number' => $validated['reference_number'],
                 'account_name' => $validated['account_name'] ?? null,
                 'account_number' => $validated['account_number'] ?? null,
                 'amount' => $order->amount,
                 'status' => 'submitted',
+                'submitted_at' => now(),
                 'paid_at' => now(),
                 'notes' => $validated['notes'] ?? null,
             ]);
 
             $order->update([
-                'transaction_id' => $transaction->id,
-                'status' => 'paid',
+                'status' => 'payment_submitted',
                 'paid_at' => now(),
             ]);
         });
 
-        return redirect()
-            ->route('admin.orders.index')
-            ->with('success', 'Payment details submitted. Order is now for verification.');
+        return back()->with('success', 'Payment details submitted successfully.');
     }
 
-    public function verify(Order $order): RedirectResponse
-    {
-        DB::transaction(function () use ($order) {
-            $transaction = $order->transaction ?? $order->latestTransaction;
-
-            if ($transaction) {
-                $transaction->update([
-                    'status' => 'verified',
-                    'verified_at' => now(),
-                ]);
-
-                if (!$order->transaction_id) {
-                    $order->update([
-                        'transaction_id' => $transaction->id,
-                    ]);
-                }
-            }
-
-            $order->update([
-                'status' => 'verified',
-                'paid_at' => $order->paid_at ?? now(),
-                'verified_at' => now(),
-            ]);
-
-            $existingSubscription = Subscription::where('order_id', $order->id)->first();
-
-            if (!$existingSubscription) {
-                $startDate = now();
-
-                $endDate = match ($order->billing_type) {
-                    'monthly' => $startDate->copy()->addMonth(),
-                    'yearly' => $startDate->copy()->addYear(),
-                    'trial', 'custom' => $startDate->copy()->addDays((int) ($order->duration_days ?? 30)),
-                    default => $startDate->copy()->addDays((int) ($order->duration_days ?? 30)),
-                };
-
-                Subscription::create([
-                    'user_id' => $order->user_id,
-                    'product_id' => $order->product_id,
-                    'order_id' => $order->id,
-                    'plan_id' => $order->plan_id,
-                    'subscription_code' => $this->generateSubscriptionCode(),
-                    'subscription_type' => $order->billing_type ?? 'monthly',
-                    'status' => 'active',
-                    'start_date' => $startDate->toDateString(),
-                    'end_date' => $endDate->toDateString(),
-                    'duration_days' => (int) ($order->duration_days ?? 30),
-                    'amount' => $order->amount,
-                    'notes' => 'Auto-created from verified order: ' . $order->order_code,
-                ]);
-            }
-        });
-
-        return redirect()
-            ->route('admin.orders.index')
-            ->with('success', 'Order accepted successfully and subscription created.');
-    }
-
-    public function reject(Request $request, Order $order): RedirectResponse
-    {
+    public function verify(
+        Request $request,
+        Order $order,
+        PaymentVerificationService $service,
+    ): RedirectResponse {
         $validated = $request->validate([
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        DB::transaction(function () use ($validated, $order) {
-            $transaction = $order->transaction ?? $order->latestTransaction;
+        $service->approveOrder(
+            $request,
+            $order,
+            $order->latestTransaction()->first(),
+            $validated['notes'] ?? null,
+        );
 
-            if ($transaction) {
-                $transaction->update([
-                    'status' => 'rejected',
-                    'notes' => $validated['notes'] ?? $transaction->notes,
-                ]);
+        return back()->with(
+            'success',
+            'Order verified and subscription synchronized successfully.',
+        );
+    }
 
-                if (!$order->transaction_id) {
-                    $order->update([
-                        'transaction_id' => $transaction->id,
-                    ]);
-                }
-            }
+    public function reject(
+        Request $request,
+        Order $order,
+        PaymentVerificationService $service,
+    ): RedirectResponse {
+        $validated = $request->validate([
+            'notes' => ['required', 'string', 'min:5', 'max:2000'],
+        ]);
 
-            $order->update([
-                'status' => 'failed',
-                'notes' => $validated['notes'] ?? $order->notes,
+        $transaction = $order->latestTransaction()->first();
+
+        if ($transaction === null) {
+            return back()->withErrors([
+                'notes' => 'A payment transaction is required before this order can be rejected.',
             ]);
-        });
+        }
 
-        return redirect()
-            ->route('admin.orders.index')
-            ->with('success', 'Order denied successfully.');
+        $service->rejectTransaction(
+            $request,
+            $transaction,
+            $validated['notes'],
+        );
+
+        return back()->with('success', 'Order payment rejected successfully.');
     }
 
     public function destroy(Order $order): RedirectResponse
     {
-        $hasVerifiedSubscription = Subscription::where('order_id', $order->id)->exists();
-
-        if ($hasVerifiedSubscription) {
-            return redirect()
-                ->route('admin.orders.index')
-                ->with('success', 'Order cannot be deleted because it already has a subscription.');
+        if ($order->subscription_id || $order->status === 'verified') {
+            return back()->with('success', 'Verified orders are retained for subscription audit history.');
         }
 
-        $order->delete();
+        DB::transaction(function () use ($order): void {
+            $order->transactions()->delete();
+            $order->delete();
+        });
 
-        return redirect()
-            ->route('admin.orders.index')
-            ->with('success', 'Order deleted successfully.');
+        return back()->with('success', 'Order deleted successfully.');
     }
 
-    private function resolveOrderAmountAndDuration(float $planPrice, string $billingType, ?int $overrideDays = null): array
+    private function resolveOrderTerms(Plan $plan, string $billingType, ?int $overrideDays): array
     {
-        return match ($billingType) {
-            'trial' => [0, max(1, (int) ($overrideDays ?? 7))],
-            'monthly' => [$planPrice, 30],
-            'yearly' => [$planPrice * 12, 365],
-            'custom' => [$planPrice, max(1, (int) ($overrideDays ?? 30))],
-            default => [$planPrice, 30],
+        if ($billingType === 'trial') {
+            return [0.0, max(1, $overrideDays ?? $plan->trial_days ?: 7), null];
+        }
+
+        $priceRow = DB::table('plan_prices')
+            ->where('plan_id', $plan->id)
+            ->where('billing_interval', $billingType)
+            ->where('status', 'active')
+            ->first();
+
+        if ($priceRow) {
+            return [(float) $priceRow->price, max(1, $overrideDays ?? (int) $priceRow->duration_days), (int) $priceRow->id];
+        }
+
+        $duration = $overrideDays ?? match ($billingType) {
+            'quarterly' => 90,
+            'yearly' => 365,
+            default => max(1, (int) $plan->duration_days),
         };
+
+        $amount = match ($billingType) {
+            'quarterly' => (float) $plan->price * 3,
+            'yearly' => (float) $plan->price * 12,
+            default => (float) $plan->price,
+        };
+
+        return [$amount, $duration, null];
+    }
+
+    private function syncOwnerProductAccess(Subscription $subscription, ?int $actorId): void
+    {
+        $ownerProductUserTypeId = DB::table('product_user_types')
+            ->join('user_types', 'user_types.id', '=', 'product_user_types.user_type_id')
+            ->where('product_user_types.product_id', $subscription->product_id)
+            ->where('product_user_types.status', 'active')
+            ->where('user_types.type_code', 'owner')
+            ->value('product_user_types.id');
+
+        if (! $ownerProductUserTypeId) {
+            return;
+        }
+
+        $lookup = [
+            'user_id' => $subscription->account_owner_id,
+            'product_id' => $subscription->product_id,
+            'account_owner_id' => $subscription->account_owner_id,
+        ];
+
+        $values = [
+            'product_user_type_id' => $ownerProductUserTypeId,
+            'subscription_id' => $subscription->id,
+            'status' => 'active',
+            'assigned_by' => $actorId,
+            'joined_at' => now(),
+            'updated_at' => now(),
+        ];
+
+        $existingId = DB::table('user_product_access')->where($lookup)->value('id');
+
+        if ($existingId) {
+            DB::table('user_product_access')->where('id', $existingId)->update($values);
+        } else {
+            DB::table('user_product_access')->insert($lookup + $values + [
+                'created_at' => now(),
+            ]);
+        }
     }
 
     private function generateOrderCode(): string
     {
         do {
-            $code = 'ORD-' . strtoupper(Str::random(6));
+            $code = 'ORD-'.now()->format('Ymd').'-'.strtoupper(Str::random(6));
         } while (Order::where('order_code', $code)->exists());
 
         return $code;
@@ -341,7 +382,7 @@ class OrderController extends Controller
     private function generateTransactionCode(): string
     {
         do {
-            $code = 'TXN-' . strtoupper(Str::random(6));
+            $code = 'TXN-'.strtoupper(Str::random(8));
         } while (Transaction::where('transaction_code', $code)->exists());
 
         return $code;
@@ -350,7 +391,7 @@ class OrderController extends Controller
     private function generateSubscriptionCode(): string
     {
         do {
-            $code = 'SUB-' . strtoupper(Str::random(6));
+            $code = 'SUB-'.strtoupper(Str::random(8));
         } while (Subscription::where('subscription_code', $code)->exists());
 
         return $code;

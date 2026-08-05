@@ -8,6 +8,8 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -53,11 +55,40 @@ class ProfileController extends Controller
 
         Auth::logout();
 
-        $user->delete();
+        if ($this->hasHistoricalRecords($user->getKey())) {
+            $user->update(['is_active' => false]);
+        } else {
+            if (Schema::connection(config('database.default'))->hasTable('login_activities')) {
+                DB::connection()
+                    ->table('login_activities')
+                    ->where('user_id', $user->getKey())
+                    ->orWhere('email_attempted', $user->email)
+                    ->delete();
+            }
+
+            $user->delete();
+        }
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         return redirect('/');
     }
+    private function hasHistoricalRecords(int $userId): bool
+    {
+        return DB::table('orders')
+            ->where('user_id', $userId)
+            ->orWhere('account_owner_id', $userId)
+            ->exists()
+            || DB::table('subscriptions')
+                ->where('user_id', $userId)
+                ->orWhere('account_owner_id', $userId)
+                ->exists()
+            || DB::table('transactions')->where('user_id', $userId)->exists()
+            || DB::table('user_product_access')
+                ->where('user_id', $userId)
+                ->orWhere('account_owner_id', $userId)
+                ->exists();
+    }
+
 }

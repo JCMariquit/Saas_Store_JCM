@@ -17,8 +17,6 @@ use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
-    private string $mediaBaseUrl = 'https://jcmwebsolution.com/storage';
-
     public function index(Request $request): Response
     {
         $search = trim((string) $request->query('search', ''));
@@ -33,6 +31,7 @@ class ProductController extends Controller
                         ->orWhere('pricing_type', 'like', "%{$search}%");
                 });
             }) 
+            ->orderBy('sort_order')
             ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString()
@@ -41,11 +40,14 @@ class ProductController extends Controller
                 'product_code' => $product->product_code,
                 'name' => $product->name,
                 'description' => $product->description,
+                'slug' => $product->slug,
+                'app_url' => $product->app_url,
                 'thumbnail' => $product->thumbnail,
                 'thumbnail_url' => $this->buildMediaUrl($product->thumbnail),
                 'price' => $product->price,
                 'pricing_type' => $product->pricing_type,
                 'status' => $product->status,
+                'sort_order' => (int) $product->sort_order,
                 'created_at' => optional($product->created_at)?->format('M d, Y h:i A'),
             ]);
 
@@ -57,7 +59,7 @@ class ProductController extends Controller
             'stats' => [
                 'total_products' => Product::count(),
                 'active_products' => Product::where('status', 'active')->count(),
-                'inactive_products' => Product::where('status', 'inactive')->count(),
+                'inactive_products' => Product::where('status', '!=', 'active')->count(),
             ],
         ]);
     }
@@ -72,9 +74,11 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'app_url' => ['nullable', 'url', 'max:255'],
             'pricing_type' => ['required', 'in:plan,custom'],
             'price' => ['nullable', 'numeric', 'min:0'],
-            'status' => ['required', 'in:active,inactive'],
+            'status' => ['required', 'in:development,active,maintenance,paused,inactive'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
 
             'features' => ['nullable', 'array'],
             'features.*.title' => ['required_with:features', 'string'],
@@ -96,12 +100,15 @@ class ProductController extends Controller
 
             $product = Product::create([
                 'product_code' => $this->generateProductCode(),
+                'slug' => $this->generateProductSlug($validated['name']),
                 'name' => $validated['name'],
                 'description' => $validated['description'] ?? null,
+                'app_url' => $validated['app_url'] ?? null,
                 'thumbnail' => null,
                 'pricing_type' => $validated['pricing_type'],
                 'price' => $price,
                 'status' => $validated['status'],
+                'sort_order' => $validated['sort_order'] ?? 0,
             ]);
 
             if (!empty($validated['features'])) {
@@ -159,9 +166,11 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'app_url' => ['nullable', 'url', 'max:255'],
             'pricing_type' => ['required', 'in:plan,custom'],
             'price' => ['nullable', 'numeric', 'min:0'],
-            'status' => ['required', 'in:active,inactive'],
+            'status' => ['required', 'in:development,active,maintenance,paused,inactive'],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
         $price = $validated['pricing_type'] === 'custom'
@@ -169,11 +178,14 @@ class ProductController extends Controller
             : null;
 
         $product->update([
+            'slug' => $this->generateProductSlug($validated['name'], $product->id),
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
+            'app_url' => $validated['app_url'] ?? null,
             'pricing_type' => $validated['pricing_type'],
             'price' => $price,
             'status' => $validated['status'],
+            'sort_order' => $validated['sort_order'] ?? $product->sort_order,
         ]);
 
         return redirect()
@@ -231,15 +243,32 @@ class ProductController extends Controller
 
     private function buildMediaUrl(?string $path): ?string
     {
-        if (!$path) {
+        if (! $path) {
             return null;
         }
 
-        if (Str::startsWith($path, ['http://', 'https://'])) {
+        if (Str::startsWith($path, ['http://', 'https://', '/storage/'])) {
             return $path;
         }
 
-        return rtrim($this->mediaBaseUrl, '/') . '/' . ltrim($path, '/');
+        return route('media.show', ['path' => ltrim($path, '/')], false);
+    }
+
+    private function generateProductSlug(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($name) ?: 'jcm-product';
+        $slug = $base;
+        $counter = 2;
+
+        while (Product::query()
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->where('slug', $slug)
+            ->exists()) {
+            $slug = $base.'-'.$counter;
+            $counter++;
+        }
+
+        return $slug;
     }
 
     private function generateProductCode(): string

@@ -1,16 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    ArrowRight,
-    BadgeCheck,
-    Boxes,
-    CheckCircle2,
-    ClipboardList,
-    MonitorSmartphone,
-    ScrollText,
-    Send,
-    Sparkles,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgeCheck, Boxes, CheckCircle2, ClipboardList, MonitorSmartphone, ScrollText, Send, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 import AppLayout from '@/layouts/app-layout';
@@ -61,7 +50,7 @@ type PageProps = {
     service: ServiceDetail;
 };
 
-const cardClass = 'rounded-[10px] border border-slate-200 bg-white p-6 shadow-sm';
+const cardClass = 'rounded-[10px] border border-border bg-card p-6 shadow-sm';
 
 export default function Show({ service }: PageProps) {
     const breadcrumbs: BreadcrumbItem[] = [
@@ -120,9 +109,9 @@ export default function Show({ service }: PageProps) {
         <AppLayout breadcrumbs={breadcrumbs} fullWidth>
             <Head title={service.name} />
 
-            <div className="min-h-screen bg-[#e8edf5] pb-10 text-slate-900">
+            <div className="text-foreground min-h-screen bg-[#e8edf5] pb-10">
                 <section
-                    className="relative left-1/2 right-1/2 mb-8 ml-[-50vw] mr-[-50vw] w-screen overflow-x-hidden border-b border-slate-200 text-white"
+                    className="border-border relative right-1/2 left-1/2 mr-[-50vw] mb-8 ml-[-50vw] w-screen overflow-x-hidden border-b text-white"
                     style={{
                         backgroundImage: "url('/images/item-bg.png')",
                         backgroundSize: 'cover',
@@ -131,33 +120,29 @@ export default function Show({ service }: PageProps) {
                     }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-blue-950/78 to-sky-900/82" />
-                    <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-sky-400/20 blur-3xl" />
-                    <div className="absolute right-0 top-20 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl" />
+                    <div className="absolute top-0 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-sky-400/20 blur-3xl" />
+                    <div className="absolute top-20 right-0 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl" />
 
                     <div className="relative mx-auto max-w-7xl px-5 py-8 md:px-7 md:py-10">
                         <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-center">
                             <div>
-                                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-100 backdrop-blur">
+                                <div className="text-muted-foreground/20 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-semibold tracking-[0.16em] uppercase backdrop-blur">
                                     <Sparkles className="h-3.5 w-3.5 text-sky-300" />
                                     Custom Service
                                 </div>
 
-                                <h1 className="mt-5 max-w-3xl text-3xl font-black leading-tight md:text-4xl xl:text-5xl">
-                                    {service.name}
-                                </h1>
+                                <h1 className="mt-5 max-w-3xl text-3xl leading-tight font-black md:text-4xl xl:text-5xl">{service.name}</h1>
 
                                 {service.description && (
-                                    <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-200 md:text-base">
-                                        {service.description}
-                                    </p>
+                                    <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-200 md:text-base">{service.description}</p>
                                 )}
 
                                 <div className="mt-5 flex flex-wrap gap-3">
-                                    <span className="inline-flex rounded-full border border-sky-200 bg-sky-100 px-3 py-1.5 text-xs font-semibold capitalize text-sky-700">
+                                    <span className="text-primary inline-flex rounded-full border border-sky-200 bg-sky-100 px-3 py-1.5 text-xs font-semibold capitalize">
                                         {service.service_type}
                                     </span>
 
-                                    <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1.5 text-xs font-semibold capitalize text-emerald-700">
+                                    <span className="inline-flex rounded-full border border-emerald-500/20 bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-300 capitalize">
                                         {service.status}
                                     </span>
 
@@ -169,22 +154,14 @@ export default function Show({ service }: PageProps) {
                                 </div>
 
                                 <div className="mt-6">
-                                    <p className="text-xs uppercase tracking-[0.18em] text-slate-300">
-                                        Base Price
-                                    </p>
-                                    <p className="mt-1 text-3xl font-extrabold text-white">
-                                        {service.base_price_label}
-                                    </p>
+                                    <p className="text-xs tracking-[0.18em] text-slate-300 uppercase">Base Price</p>
+                                    <p className="mt-1 text-3xl font-extrabold text-white">{service.base_price_label}</p>
                                 </div>
 
                                 <div className="mt-6 flex flex-wrap gap-3">
                                     <button
                                         type="button"
-                                        onClick={() =>
-                                            document
-                                                .getElementById('service-details')
-                                                ?.scrollIntoView({ behavior: 'smooth' })
-                                        }
+                                        onClick={() => document.getElementById('service-details')?.scrollIntoView({ behavior: 'smooth' })}
                                         className="rounded-[10px] bg-gradient-to-r from-sky-600 to-blue-700 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/30 transition hover:scale-[1.03] hover:from-sky-700 hover:to-blue-800"
                                     >
                                         View Details
@@ -202,7 +179,7 @@ export default function Show({ service }: PageProps) {
                                         />
                                     ) : (
                                         <div className="flex h-[260px] items-center justify-center bg-slate-800 md:h-[330px] lg:h-[360px]">
-                                            <MonitorSmartphone className="h-10 w-10 text-slate-400" />
+                                            <MonitorSmartphone className="text-muted-foreground h-10 w-10" />
                                         </div>
                                     )}
 
@@ -213,7 +190,7 @@ export default function Show({ service }: PageProps) {
                                             <button
                                                 type="button"
                                                 onClick={showPrevImage}
-                                                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-slate-900/70 p-2 text-white transition hover:bg-slate-900"
+                                                className="absolute top-1/2 left-3 -translate-y-1/2 rounded-full bg-slate-900/70 p-2 text-white transition hover:bg-slate-900"
                                             >
                                                 <ArrowLeft className="h-4 w-4" />
                                             </button>
@@ -221,7 +198,7 @@ export default function Show({ service }: PageProps) {
                                             <button
                                                 type="button"
                                                 onClick={showNextImage}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-slate-900/70 p-2 text-white transition hover:bg-slate-900"
+                                                className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full bg-slate-900/70 p-2 text-white transition hover:bg-slate-900"
                                             >
                                                 <ArrowRight className="h-4 w-4" />
                                             </button>
@@ -271,35 +248,25 @@ export default function Show({ service }: PageProps) {
                                         </div>
 
                                         <div>
-                                            <h2 className="text-xl font-bold text-slate-900">
-                                                Why choose this service?
-                                            </h2>
-                                            <p className="text-sm text-slate-500">
-                                                {service.name}
-                                            </p>
+                                            <h2 className="text-foreground text-xl font-bold">Why choose this service?</h2>
+                                            <p className="text-muted-foreground text-sm">{service.name}</p>
                                         </div>
                                     </div>
 
-                                    <p className="mt-5 text-sm leading-7 text-slate-600 md:text-[15px]">
-                                        {service.description}
-                                    </p>
+                                    <p className="text-muted-foreground mt-5 text-sm leading-7 md:text-[15px]">{service.description}</p>
                                 </section>
                             )}
 
                             {service.features.length > 0 && (
                                 <section className={cardClass}>
                                     <div className="flex items-center gap-3">
-                                        <div className="rounded-[10px] bg-blue-600 p-2.5 text-white">
+                                        <div className="bg-primary rounded-[10px] p-2.5 text-white">
                                             <ClipboardList className="h-5 w-5" />
                                         </div>
 
                                         <div>
-                                            <h2 className="text-xl font-bold text-slate-900">
-                                                What this service includes
-                                            </h2>
-                                            <p className="text-sm text-slate-500">
-                                                Service details and included work.
-                                            </p>
+                                            <h2 className="text-foreground text-xl font-bold">What this service includes</h2>
+                                            <p className="text-muted-foreground text-sm">Service details and included work.</p>
                                         </div>
                                     </div>
 
@@ -307,20 +274,16 @@ export default function Show({ service }: PageProps) {
                                         {service.features.map((feature) => (
                                             <div
                                                 key={feature.id}
-                                                className="rounded-[10px] border border-slate-200 bg-slate-50 p-4 transition hover:border-sky-200 hover:bg-sky-50/40"
+                                                className="border-border bg-muted/30 hover:border-primary/25 rounded-[10px] border p-4 transition hover:bg-sky-50/40"
                                             >
                                                 <div className="flex items-start gap-3">
-                                                    <CheckCircle2 className="mt-0.5 h-5 w-5 text-green-600" />
+                                                    <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-400" />
 
                                                     <div>
-                                                        <p className="text-sm font-semibold text-slate-800">
-                                                            {feature.title}
-                                                        </p>
+                                                        <p className="text-foreground text-sm font-semibold">{feature.title}</p>
 
                                                         {feature.description && (
-                                                            <p className="mt-1 text-xs leading-6 text-slate-500">
-                                                                {feature.description}
-                                                            </p>
+                                                            <p className="text-muted-foreground mt-1 text-xs leading-6">{feature.description}</p>
                                                         )}
                                                     </div>
                                                 </div>
@@ -333,33 +296,22 @@ export default function Show({ service }: PageProps) {
                             {service.overviews.length > 0 && (
                                 <section className={cardClass}>
                                     <div className="flex items-center gap-3">
-                                        <div className="rounded-[10px] bg-indigo-600 p-2.5 text-white">
+                                        <div className="bg-primary text-primary-foreground rounded-[10px] p-2.5">
                                             <ScrollText className="h-5 w-5" />
                                         </div>
 
                                         <div>
-                                            <h2 className="text-xl font-bold text-slate-900">
-                                                Service overview
-                                            </h2>
-                                            <p className="text-sm text-slate-500">
-                                                More details about this service.
-                                            </p>
+                                            <h2 className="text-foreground text-xl font-bold">Service overview</h2>
+                                            <p className="text-muted-foreground text-sm">More details about this service.</p>
                                         </div>
                                     </div>
 
                                     <div className="mt-6 space-y-4">
                                         {service.overviews.map((overview) => (
-                                            <div
-                                                key={overview.id}
-                                                className="rounded-[10px] border border-slate-200 bg-slate-50 p-5"
-                                            >
-                                                <h3 className="text-lg font-bold text-slate-900">
-                                                    {overview.title}
-                                                </h3>
+                                            <div key={overview.id} className="border-border bg-muted/30 rounded-[10px] border p-5">
+                                                <h3 className="text-foreground text-lg font-bold">{overview.title}</h3>
 
-                                                <p className="mt-2 whitespace-pre-line text-sm leading-7 text-slate-600">
-                                                    {overview.content}
-                                                </p>
+                                                <p className="text-muted-foreground mt-2 text-sm leading-7 whitespace-pre-line">{overview.content}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -368,29 +320,19 @@ export default function Show({ service }: PageProps) {
                         </div>
 
                         <aside id="order-section" className="lg:sticky lg:top-6 lg:self-start">
-                            <div className="rounded-[14px] border border-slate-200 bg-white p-6 shadow-sm">
-                                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-700">
-                                    Ready to get started?
-                                </p>
+                            <div className="border-border bg-card rounded-[14px] border p-6 shadow-sm">
+                                <p className="text-primary text-sm font-semibold tracking-[0.18em] uppercase">Ready to get started?</p>
 
-                                <h3 className="mt-2 text-2xl font-bold text-slate-900">
-                                    {service.name}
-                                </h3>
+                                <h3 className="text-foreground mt-2 text-2xl font-bold">{service.name}</h3>
 
                                 {service.description && (
-                                    <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-500">
-                                        {service.description}
-                                    </p>
+                                    <p className="text-muted-foreground mt-2 line-clamp-3 text-sm leading-6">{service.description}</p>
                                 )}
 
-                                <div className="mt-5 rounded-[10px] border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-blue-50 p-4">
-                                    <p className="text-xs uppercase tracking-wide text-slate-400">
-                                        Base Price
-                                    </p>
-                                    <p className="mt-1 text-2xl font-extrabold text-blue-700">
-                                        {service.base_price_label}
-                                    </p>
-                                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                                <div className="border-primary/15 from-primary/[0.055] via-card to-card mt-5 rounded-[10px] border bg-gradient-to-br p-4">
+                                    <p className="text-muted-foreground text-xs tracking-wide uppercase">Base Price</p>
+                                    <p className="text-primary mt-1 text-2xl font-extrabold">{service.base_price_label}</p>
+                                    <p className="text-muted-foreground mt-2 text-xs leading-5">
                                         Pricing may change depending on project scope and requirements.
                                     </p>
                                 </div>
@@ -406,25 +348,25 @@ export default function Show({ service }: PageProps) {
                                     </button>
                                 </div>
 
-                                <div className="mt-5 space-y-2 text-sm text-slate-500">
+                                <div className="text-muted-foreground mt-5 space-y-2 text-sm">
                                     <div className="flex items-start gap-2">
-                                        <BadgeCheck className="mt-0.5 h-4 w-4 text-green-600" />
+                                        <BadgeCheck className="mt-0.5 h-4 w-4 text-emerald-400" />
                                         <span className="capitalize">{service.status}</span>
                                     </div>
 
                                     <div className="flex items-start gap-2">
-                                        <BadgeCheck className="mt-0.5 h-4 w-4 text-green-600" />
+                                        <BadgeCheck className="mt-0.5 h-4 w-4 text-emerald-400" />
                                         <span className="capitalize">{service.service_type}</span>
                                     </div>
 
                                     <div className="flex items-start gap-2">
-                                        <BadgeCheck className="mt-0.5 h-4 w-4 text-green-600" />
+                                        <BadgeCheck className="mt-0.5 h-4 w-4 text-emerald-400" />
                                         <span className="capitalize">{service.pricing_type}</span>
                                     </div>
 
                                     {service.code && (
                                         <div className="flex items-start gap-2">
-                                            <BadgeCheck className="mt-0.5 h-4 w-4 text-green-600" />
+                                            <BadgeCheck className="mt-0.5 h-4 w-4 text-emerald-400" />
                                             <span>{service.code}</span>
                                         </div>
                                     )}
@@ -435,18 +377,14 @@ export default function Show({ service }: PageProps) {
 
                     <section className={cardClass}>
                         <div className="max-w-3xl">
-                            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-700">
-                                Need a custom service?
-                            </p>
+                            <p className="text-primary text-sm font-semibold tracking-[0.18em] uppercase">Need a custom service?</p>
 
-                            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+                            <h2 className="text-foreground mt-2 text-2xl font-bold tracking-tight md:text-3xl">
                                 Let’s prepare the right service for your business
                             </h2>
 
                             {service.description && (
-                                <p className="mt-3 text-sm leading-7 text-slate-500 md:text-base">
-                                    {service.description}
-                                </p>
+                                <p className="text-muted-foreground mt-3 text-sm leading-7 md:text-base">{service.description}</p>
                             )}
                         </div>
                     </section>

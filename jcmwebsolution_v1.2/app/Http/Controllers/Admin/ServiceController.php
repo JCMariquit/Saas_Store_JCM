@@ -60,7 +60,7 @@ class ServiceController extends Controller
             'stats' => [
                 'total' => Service::count(),
                 'active' => Service::where('status', 'active')->count(),
-                'inactive' => Service::where('status', 'inactive')->count(),
+                'inactive' => Service::whereIn('status', ['inactive', 'archived'])->count(),
             ],
         ]);
     }
@@ -82,7 +82,7 @@ class ServiceController extends Controller
             ],
             'pricing_type' => ['required', Rule::in(['fixed', 'quote'])],
             'base_price' => ['nullable', 'numeric', 'min:0'],
-            'status' => ['required', Rule::in(['active', 'inactive'])],
+            'status' => ['required', Rule::in(['active', 'inactive', 'archived'])],
             'sort_order' => ['nullable', 'integer', 'min:0'],
 
             'features' => ['nullable', 'array'],
@@ -179,7 +179,7 @@ class ServiceController extends Controller
             ],
             'pricing_type' => ['required', Rule::in(['fixed', 'quote'])],
             'base_price' => ['nullable', 'numeric', 'min:0'],
-            'status' => ['required', Rule::in(['active', 'inactive'])],
+            'status' => ['required', Rule::in(['active', 'inactive', 'archived'])],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
@@ -198,17 +198,30 @@ class ServiceController extends Controller
 
     public function destroy(Service $service): RedirectResponse
     {
-        if ($service->thumbnail && Storage::disk('public')->exists($service->thumbnail)) {
-            Storage::disk('public')->delete($service->thumbnail);
+        if ($service->orders()->exists()) {
+            $service->update(['status' => 'archived']);
+
+            return redirect()
+                ->route('admin.services.index')
+                ->with('success', 'Service has existing orders and was archived instead of deleted.');
         }
 
-        foreach ($service->images as $image) {
-            if ($image->image_path && Storage::disk('public')->exists($image->image_path)) {
-                Storage::disk('public')->delete($image->image_path);
+        DB::transaction(function () use ($service): void {
+            if ($service->thumbnail && Storage::disk('public')->exists($service->thumbnail)) {
+                Storage::disk('public')->delete($service->thumbnail);
             }
-        }
 
-        $service->delete();
+            foreach ($service->images as $image) {
+                if ($image->image_path && Storage::disk('public')->exists($image->image_path)) {
+                    Storage::disk('public')->delete($image->image_path);
+                }
+            }
+
+            $service->images()->delete();
+            $service->features()->delete();
+            $service->overviews()->delete();
+            $service->delete();
+        });
 
         return redirect()
             ->route('admin.services.index')

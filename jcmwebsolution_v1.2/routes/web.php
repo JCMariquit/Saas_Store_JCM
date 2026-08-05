@@ -1,10 +1,19 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AuditTrailController;
+use App\Http\Controllers\Admin\ModuleCapabilityController;
+use App\Http\Controllers\Admin\ProvisioningController;
+use App\Http\Controllers\Admin\SidebarControlController;
+use App\Http\Controllers\Admin\SubscriptionPolicyController;
+use App\Http\Controllers\Admin\SystemAccessController;
+use App\Http\Controllers\Admin\SystemsController;
 use App\Http\Controllers\Admin\MessageController as AdminMessageController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Admin\OverviewController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\PaymentMethodController;
+use App\Http\Controllers\Admin\PaymentVerificationController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
@@ -74,6 +83,48 @@ Route::middleware(['auth', 'verified', 'admin.only'])
     ->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
+        Route::prefix('overviews')->name('overviews.')->group(function () {
+            Route::get('/sales', [OverviewController::class, 'sales'])->name('sales');
+            Route::get('/users', [OverviewController::class, 'users'])->name('users');
+            Route::get('/subscriptions', [OverviewController::class, 'subscriptions'])->name('subscriptions');
+        });
+
+
+        Route::prefix('systems')->name('systems.')->group(function () {
+            Route::get('/', [SystemsController::class, 'index'])->name('index');
+            Route::get('/provision', [ProvisioningController::class, 'index'])->name('provision');
+            Route::post('/provision', [ProvisioningController::class, 'store'])->name('provision.store');
+            Route::get('/access', [SystemAccessController::class, 'index'])->name('access');
+            Route::put('/access/{access}', [SystemAccessController::class, 'update'])->name('access.update');
+        });
+
+        Route::prefix('modules')->name('modules.')->group(function () {
+            Route::get('/', [ModuleCapabilityController::class, 'index'])->name('index');
+            Route::post('/features', [ModuleCapabilityController::class, 'storeFeature'])->name('features.store');
+            Route::put('/features/{feature}', [ModuleCapabilityController::class, 'updateFeature'])->name('features.update');
+            Route::delete('/features/{feature}', [ModuleCapabilityController::class, 'destroyFeature'])->name('features.destroy');
+            Route::post('/roles', [ModuleCapabilityController::class, 'storeRole'])->name('roles.store');
+            Route::put('/roles/{role}', [ModuleCapabilityController::class, 'updateRole'])->name('roles.update');
+            Route::delete('/roles/{role}', [ModuleCapabilityController::class, 'destroyRole'])->name('roles.destroy');
+            Route::post('/plan-feature', [ModuleCapabilityController::class, 'togglePlanFeature'])->name('plan-feature');
+            Route::post('/plan-role', [ModuleCapabilityController::class, 'togglePlanRole'])->name('plan-role');
+        });
+
+        Route::prefix('sidebar-controls')->name('sidebar-controls.')->group(function () {
+            Route::get('/', [SidebarControlController::class, 'index'])->name('index');
+            Route::post('/platform', [SidebarControlController::class, 'storePlatform'])->name('platform.store');
+            Route::put('/platform/{item}', [SidebarControlController::class, 'updatePlatform'])->name('platform.update');
+            Route::delete('/platform/{item}', [SidebarControlController::class, 'destroyPlatform'])->name('platform.destroy');
+            Route::post('/product', [SidebarControlController::class, 'storeProduct'])->name('product.store');
+            Route::put('/product/{item}', [SidebarControlController::class, 'updateProduct'])->name('product.update');
+            Route::delete('/product/{item}', [SidebarControlController::class, 'destroyProduct'])->name('product.destroy');
+        });
+
+        Route::get('/subscription-policies', [SubscriptionPolicyController::class, 'index'])->name('subscription-policies.index');
+        Route::put('/subscription-policies/{product}', [SubscriptionPolicyController::class, 'update'])->name('subscription-policies.update');
+        Route::get('/audit-trail', [AuditTrailController::class, 'index'])->name('audit-trail.index');
+
+
         Route::prefix('users')->name('users.')->group(function () {
             Route::get('/', [UsersController::class, 'index'])->name('index');
             Route::get('/list', [UsersController::class, 'list'])->name('list');
@@ -114,6 +165,13 @@ Route::middleware(['auth', 'verified', 'admin.only'])
             Route::delete('/{paymentMethod}', [PaymentMethodController::class, 'destroy'])->name('destroy');
         });
 
+        Route::prefix('payment-verifications')->name('payment-verifications.')->group(function () {
+            Route::get('/', [PaymentVerificationController::class, 'index'])->name('index');
+            Route::get('/{transaction}/proof', [PaymentVerificationController::class, 'proof'])->name('proof');
+            Route::post('/{transaction}/approve', [PaymentVerificationController::class, 'approve'])->name('approve');
+            Route::post('/{transaction}/reject', [PaymentVerificationController::class, 'reject'])->name('reject');
+        });
+
         Route::prefix('orders')->name('orders.')->group(function () {
             Route::get('/', [AdminOrderController::class, 'index'])->name('index');
             Route::post('/', [AdminOrderController::class, 'store'])->name('store');
@@ -125,8 +183,7 @@ Route::middleware(['auth', 'verified', 'admin.only'])
 
         Route::prefix('subscriptions')->name('subscriptions.')->group(function () {
             Route::get('/', [SubscriptionController::class, 'index'])->name('index');
-            Route::post('/', [SubscriptionController::class, 'store'])->name('store');
-            Route::post('/{subscription}/verify', [SubscriptionController::class, 'verify'])->name('verify');
+            Route::post('/{subscription}/control', [SubscriptionController::class, 'control'])->name('control');
             Route::delete('/{subscription}', [SubscriptionController::class, 'destroy'])->name('destroy');
         });
 

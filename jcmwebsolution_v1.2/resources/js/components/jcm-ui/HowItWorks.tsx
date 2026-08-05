@@ -21,13 +21,13 @@ const steps = [
 export default function HowItWorks() {
     return (
         <section className="mx-auto max-w-7xl px-4 md:px-6">
-            <div className="rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
+            <div className="rounded-2xl border border-border bg-card px-6 py-5 shadow-sm">
                 <div className="flex flex-col gap-1">
                     <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-sky-600">
                         Simple Process
                     </p>
 
-                    <h2 className="text-2xl font-black text-slate-950">
+                    <h2 className="text-2xl font-black text-foreground">
                         How it works
                     </h2>
                 </div>
@@ -39,7 +39,7 @@ export default function HowItWorks() {
                         return (
                             <div
                                 key={step.title}
-                                className="group relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-200 hover:shadow-md"
+                                className="group relative rounded-xl border border-border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-sky-200 hover:shadow-md"
                             >
                                 <div className="absolute right-3 top-3 text-3xl font-black text-slate-100">
                                     0{index + 1}
@@ -49,11 +49,11 @@ export default function HowItWorks() {
                                     <Icon className="h-4 w-4" />
                                 </div>
 
-                                <h3 className="mt-3 text-sm font-bold text-slate-950">
+                                <h3 className="mt-3 text-sm font-bold text-foreground">
                                     {step.title}
                                 </h3>
 
-                                <p className="mt-1 text-[12px] leading-5 text-slate-500">
+                                <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
                                     {step.desc}
                                 </p>
 

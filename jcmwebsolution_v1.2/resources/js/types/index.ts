@@ -2,6 +2,8 @@ import { LucideIcon } from 'lucide-react';
 
 export interface Auth {
     user: User;
+    isAdmin: boolean;
+    platformRole: string | null;
 }
 
 export interface BreadcrumbItem {
@@ -21,10 +23,27 @@ export interface NavItem {
     isActive?: boolean;
 }
 
+export interface AdminSidebarItem {
+    key: string;
+    title: string;
+    url: string;
+    icon: string;
+    badge?: string | null;
+}
+
+export interface AdminSidebarGroup {
+    key: string;
+    title: string;
+    icon: string;
+    collapsible: boolean;
+    items: AdminSidebarItem[];
+}
+
 export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    adminSidebar?: AdminSidebarGroup[];
     [key: string]: unknown;
 }
 
@@ -36,5 +55,5 @@ export interface User {
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
-    [key: string]: unknown; // This allows for additional properties...
+    [key: string]: unknown;
 }

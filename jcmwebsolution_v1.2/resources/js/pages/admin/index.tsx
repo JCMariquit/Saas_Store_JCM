@@ -1,13 +1,13 @@
-import React from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/layouts/admin-layout';
 import { type BreadcrumbItem } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     AlertCircle,
     BarChart3,
     Bell,
     Boxes,
     CheckCircle2,
+    ChevronDown,
     Clock3,
     CreditCard,
     Layers3,
@@ -20,12 +20,12 @@ import {
     Users,
     Wallet,
     X,
-    ChevronDown,
 } from 'lucide-react';
+import React from 'react';
 
 import { PageHero } from '@/components/admin-ui/page-hero';
-import { StatsCard } from '@/components/admin-ui/stats-card';
 import { SectionCard } from '@/components/admin-ui/section-card';
+import { StatsCard } from '@/components/admin-ui/stats-card';
 
 type StatProps = {
     total_users: number;
@@ -122,7 +122,7 @@ type PageProps = {
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Admin Dashboard',
+        title: 'Main Overview',
         href: '/admin/dashboard',
     },
 ];
@@ -151,29 +151,23 @@ function getStatusBadgeClass(status: string) {
         case 'verified':
         case 'active':
         case 'paid':
-            return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+            return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300';
         case 'pending':
         case 'submitted':
-            return 'border-amber-200 bg-amber-50 text-amber-700';
+            return 'border-amber-500/20 bg-amber-500/10 text-amber-300';
         case 'rejected':
         case 'failed':
         case 'expired':
-            return 'border-red-200 bg-red-50 text-red-700';
+            return 'border-red-500/20 bg-red-500/10 text-red-300';
         case 'cancelled':
         case 'locked':
-            return 'border-slate-200 bg-slate-100 text-slate-700';
+            return 'border-border bg-muted text-foreground';
         default:
-            return 'border-blue-200 bg-blue-50 text-blue-700';
+            return 'border-primary/20 bg-primary/[0.06] text-primary';
     }
 }
 
-function AnalyticsTrendChart({
-    rows,
-    onOpen,
-}: {
-    rows: TrendRow[];
-    onOpen: () => void;
-}) {
+function AnalyticsTrendChart({ rows, onOpen }: { rows: TrendRow[]; onOpen: () => void }) {
     const maxRevenue = Math.max(...rows.map((row) => Number(row.revenue)), 1);
     const maxOrders = Math.max(...rows.map((row) => Number(row.total_orders)), 1);
 
@@ -198,17 +192,14 @@ function AnalyticsTrendChart({
               ` L ${points[points.length - 1].x} ${chartBottom} Z`
             : '';
 
-    const linePath =
-        points.length > 0
-            ? points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
-            : '';
+    const linePath = points.length > 0 ? points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ') : '';
 
     return (
-        <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="border-border bg-card rounded-3xl border p-5 shadow-sm">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h2 className="text-lg font-bold text-slate-900">Revenue Mountain + Nested Orders</h2>
-                    <p className="text-sm text-slate-500">
+                    <h2 className="text-foreground text-lg font-bold">Revenue Mountain + Nested Orders</h2>
+                    <p className="text-muted-foreground text-sm">
                         Mountain area shows verified revenue. Stacked bars show pending, verified, and rejected orders.
                     </p>
                 </div>
@@ -216,7 +207,7 @@ function AnalyticsTrendChart({
                 <button
                     type="button"
                     onClick={onOpen}
-                    className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                    className="border-primary/20 bg-primary/[0.06] text-primary hover:bg-primary/10 rounded-xl border px-4 py-2 text-sm font-semibold"
                 >
                     View Data Table
                 </button>
@@ -234,17 +225,7 @@ function AnalyticsTrendChart({
                     {[0, 1, 2, 3].map((line) => {
                         const y = chartTop + (chartHeight / 3) * line;
 
-                        return (
-                            <line
-                                key={line}
-                                x1="20"
-                                x2={width - 20}
-                                y1={y}
-                                y2={y}
-                                stroke="#e2e8f0"
-                                strokeDasharray="6 6"
-                            />
-                        );
+                        return <line key={line} x1="20" x2={width - 20} y1={y} y2={y} stroke="#e2e8f0" strokeDasharray="6 6" />;
                     })}
 
                     {areaPath && <path d={areaPath} fill="url(#revenueMountain)" />}
@@ -267,14 +248,7 @@ function AnalyticsTrendChart({
 
                         return (
                             <g key={row.label}>
-                                <rect
-                                    x={x}
-                                    y={baseY - pendingHeight}
-                                    width={barWidth}
-                                    height={pendingHeight}
-                                    rx="5"
-                                    fill="#f59e0b"
-                                />
+                                <rect x={x} y={baseY - pendingHeight} width={barWidth} height={pendingHeight} rx="5" fill="#f59e0b" />
                                 <rect
                                     x={x}
                                     y={baseY - pendingHeight - verifiedHeight}
@@ -302,16 +276,16 @@ function AnalyticsTrendChart({
             </div>
 
             <div className="mt-4 flex flex-wrap gap-3 text-xs font-medium">
-                <span className="inline-flex items-center gap-2 text-blue-700">
-                    <span className="h-3 w-3 rounded-full bg-blue-600" /> Revenue Mountain
+                <span className="text-primary inline-flex items-center gap-2">
+                    <span className="bg-primary h-3 w-3 rounded-full" /> Revenue Mountain
                 </span>
-                <span className="inline-flex items-center gap-2 text-amber-700">
+                <span className="inline-flex items-center gap-2 text-amber-300">
                     <span className="h-3 w-3 rounded-full bg-amber-500" /> Pending Orders
                 </span>
-                <span className="inline-flex items-center gap-2 text-emerald-700">
+                <span className="inline-flex items-center gap-2 text-emerald-300">
                     <span className="h-3 w-3 rounded-full bg-emerald-500" /> Verified Orders
                 </span>
-                <span className="inline-flex items-center gap-2 text-red-700">
+                <span className="inline-flex items-center gap-2 text-red-300">
                     <span className="h-3 w-3 rounded-full bg-red-500" /> Rejected Orders
                 </span>
             </div>
@@ -319,17 +293,7 @@ function AnalyticsTrendChart({
     );
 }
 
-function NestedPieChart({
-    title,
-    description,
-    rows,
-    onOpen,
-}: {
-    title: string;
-    description: string;
-    rows: BasicChartRow[];
-    onOpen: () => void;
-}) {
+function NestedPieChart({ title, description, rows, onOpen }: { title: string; description: string; rows: BasicChartRow[]; onOpen: () => void }) {
     const total = rows.reduce((sum, row) => sum + Number(row.value), 0);
     const colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
     let cumulative = 0;
@@ -338,11 +302,11 @@ function NestedPieChart({
         <button
             type="button"
             onClick={onOpen}
-            className="rounded-3xl border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            className="border-border bg-card rounded-3xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
         >
             <div>
-                <h3 className="text-base font-bold text-slate-900">{title}</h3>
-                <p className="mt-1 text-sm text-slate-500">{description}</p>
+                <h3 className="text-foreground text-base font-bold">{title}</h3>
+                <p className="text-muted-foreground mt-1 text-sm">{description}</p>
             </div>
 
             <div className="mt-5 flex items-center gap-5">
@@ -377,47 +341,32 @@ function NestedPieChart({
                     </svg>
 
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-xl font-bold text-slate-900">{total}</span>
-                        <span className="text-[10px] uppercase tracking-wide text-slate-400">Total</span>
+                        <span className="text-foreground text-xl font-bold">{total}</span>
+                        <span className="text-muted-foreground text-[10px] tracking-wide uppercase">Total</span>
                     </div>
                 </div>
 
                 <div className="min-w-0 flex-1 space-y-2">
-                    {rows.length === 0 && (
-                        <p className="text-sm text-slate-500">No data available.</p>
-                    )}
+                    {rows.length === 0 && <p className="text-muted-foreground text-sm">No data available.</p>}
 
                     {rows.map((row, index) => (
                         <div key={row.label} className="flex items-center justify-between gap-3">
                             <div className="flex min-w-0 items-center gap-2">
-                                <span
-                                    className="h-3 w-3 shrink-0 rounded-full"
-                                    style={{ backgroundColor: colors[index % colors.length] }}
-                                />
-                                <span className="truncate text-sm font-medium text-slate-700">{row.label}</span>
+                                <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: colors[index % colors.length] }} />
+                                <span className="text-foreground truncate text-sm font-medium">{row.label}</span>
                             </div>
-                            <span className="text-sm font-bold text-slate-900">{row.value}</span>
+                            <span className="text-foreground text-sm font-bold">{row.value}</span>
                         </div>
                     ))}
                 </div>
             </div>
 
-            <p className="mt-4 text-xs font-semibold text-blue-600">Click to view modal table</p>
+            <p className="text-primary mt-4 text-xs font-semibold">Click to view modal table</p>
         </button>
     );
 }
 
-function AnalyticsModal({
-    open,
-    title,
-    rows,
-    onClose,
-}: {
-    open: boolean;
-    title: string;
-    rows: AnalyticsTableRow[];
-    onClose: () => void;
-}) {
+function AnalyticsModal({ open, title, rows, onClose }: { open: boolean; title: string; rows: AnalyticsTableRow[]; onClose: () => void }) {
     const [openRows, setOpenRows] = React.useState<Record<string, boolean>>({});
 
     if (!open) return null;
@@ -431,28 +380,28 @@ function AnalyticsModal({
 
     return (
         <div className="fixed inset-0 z-[999]">
-            <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={onClose} />
 
-            <div className="absolute inset-x-3 top-6 mx-auto max-h-[90vh] max-w-6xl overflow-hidden rounded-3xl bg-white shadow-2xl">
-                <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 px-5 py-4">
+            <div className="bg-card absolute inset-x-3 top-6 mx-auto max-h-[90vh] max-w-6xl overflow-hidden rounded-3xl shadow-2xl">
+                <div className="border-border from-primary/[0.06] to-card flex items-center justify-between border-b bg-gradient-to-r px-5 py-4">
                     <div>
-                        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-                        <p className="text-sm text-slate-500">Accordion table view for dashboard analytics.</p>
+                        <h2 className="text-foreground text-lg font-bold">{title}</h2>
+                        <p className="text-muted-foreground text-sm">Accordion table view for dashboard analytics.</p>
                     </div>
 
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-xl border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-100"
+                        className="border-border bg-card text-muted-foreground hover:bg-muted rounded-xl border p-2"
                     >
                         <X className="h-5 w-5" />
                     </button>
                 </div>
 
                 <div className="max-h-[75vh] overflow-y-auto p-4">
-                    <div className="overflow-hidden rounded-2xl border border-slate-200">
+                    <div className="border-border overflow-hidden rounded-2xl border">
                         <table className="w-full min-w-[900px] text-left text-sm">
-                            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                            <thead className="bg-muted/30 text-muted-foreground text-xs tracking-wide uppercase">
                                 <tr>
                                     <th className="px-4 py-3">Order</th>
                                     <th className="px-4 py-3">Client</th>
@@ -467,7 +416,7 @@ function AnalyticsModal({
                             <tbody className="divide-y divide-slate-100">
                                 {rows.length === 0 && (
                                     <tr>
-                                        <td colSpan={7} className="px-4 py-10 text-center text-slate-500">
+                                        <td colSpan={7} className="text-muted-foreground px-4 py-10 text-center">
                                             No analytics records available.
                                         </td>
                                     </tr>
@@ -479,26 +428,30 @@ function AnalyticsModal({
 
                                     return (
                                         <React.Fragment key={key}>
-                                            <tr className="bg-white hover:bg-slate-50">
-                                                <td className="px-4 py-3 font-semibold text-slate-900">{row.order_code}</td>
-                                                <td className="px-4 py-3 text-slate-700">{row.user_name ?? '-'}</td>
-                                                <td className="px-4 py-3 text-slate-700">{row.item_name ?? '-'}</td>
+                                            <tr className="bg-card hover:bg-muted/30">
+                                                <td className="text-foreground px-4 py-3 font-semibold">{row.order_code}</td>
+                                                <td className="text-foreground px-4 py-3">{row.user_name ?? '-'}</td>
+                                                <td className="text-foreground px-4 py-3">{row.item_name ?? '-'}</td>
                                                 <td className="px-4 py-3">
-                                                    <span className={`rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(row.order_status)}`}>
+                                                    <span
+                                                        className={`rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(row.order_status)}`}
+                                                    >
                                                         {row.order_status}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <span className={`rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(row.payment_status)}`}>
+                                                    <span
+                                                        className={`rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(row.payment_status)}`}
+                                                    >
                                                         {row.payment_status}
                                                     </span>
                                                 </td>
-                                                <td className="px-4 py-3 text-right font-bold text-slate-900">{formatMoney(row.amount)}</td>
+                                                <td className="text-foreground px-4 py-3 text-right font-bold">{formatMoney(row.amount)}</td>
                                                 <td className="px-4 py-3 text-center">
                                                     <button
                                                         type="button"
                                                         onClick={() => toggleRow(key)}
-                                                        className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                                        className="border-border text-foreground hover:bg-muted inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-semibold"
                                                     >
                                                         View
                                                         <ChevronDown className={`h-4 w-4 transition ${isOpen ? 'rotate-180' : ''}`} />
@@ -507,27 +460,31 @@ function AnalyticsModal({
                                             </tr>
 
                                             {isOpen && (
-                                                <tr className="bg-slate-50/80">
+                                                <tr className="bg-muted/30">
                                                     <td colSpan={7} className="px-4 py-4">
-                                                        <div className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-4">
+                                                        <div className="border-border bg-card grid gap-4 rounded-2xl border p-4 md:grid-cols-4">
                                                             <div>
-                                                                <p className="text-xs uppercase tracking-wide text-slate-400">Transaction Code</p>
-                                                                <p className="mt-1 font-semibold text-slate-900">{row.transaction_code}</p>
+                                                                <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                                                                    Transaction Code
+                                                                </p>
+                                                                <p className="text-foreground mt-1 font-semibold">{row.transaction_code}</p>
                                                             </div>
 
                                                             <div>
-                                                                <p className="text-xs uppercase tracking-wide text-slate-400">Created Date</p>
-                                                                <p className="mt-1 font-semibold text-slate-900">{formatDate(row.created_at)}</p>
+                                                                <p className="text-muted-foreground text-xs tracking-wide uppercase">Created Date</p>
+                                                                <p className="text-foreground mt-1 font-semibold">{formatDate(row.created_at)}</p>
                                                             </div>
 
                                                             <div>
-                                                                <p className="text-xs uppercase tracking-wide text-slate-400">Order Status</p>
-                                                                <p className="mt-1 font-semibold capitalize text-slate-900">{row.order_status}</p>
+                                                                <p className="text-muted-foreground text-xs tracking-wide uppercase">Order Status</p>
+                                                                <p className="text-foreground mt-1 font-semibold capitalize">{row.order_status}</p>
                                                             </div>
 
                                                             <div>
-                                                                <p className="text-xs uppercase tracking-wide text-slate-400">Payment Status</p>
-                                                                <p className="mt-1 font-semibold capitalize text-slate-900">{row.payment_status}</p>
+                                                                <p className="text-muted-foreground text-xs tracking-wide uppercase">
+                                                                    Payment Status
+                                                                </p>
+                                                                <p className="text-foreground mt-1 font-semibold capitalize">{row.payment_status}</p>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -558,70 +515,135 @@ export default function AdminIndex() {
 
     return (
         <AdminLayout breadcrumbs={breadcrumbs}>
-            <Head title="Admin Dashboard" />
+            <Head title="Main Overview" />
 
-            <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/40 to-indigo-100/50 p-4 md:p-6">
+            <div className="bg-background min-h-screen p-4 md:p-6">
                 <div className="space-y-6">
                     <PageHero
-                        title="Admin Dashboard"
-                        description="Enterprise-style analytics overview for orders, revenue, payments, subscriptions, and customer activity."
+                        eyebrow="Platform-wide Summary"
+                        title="Main Overview"
+                        description="A platform-wide summary of systems, accounts, commerce, payments, subscriptions, and operational activity."
                         actionLabel="View Orders"
                         onAction={() => router.visit(route('admin.orders.index'))}
                         actionIcon={<ShoppingCart className="h-4 w-4" />}
                     />
 
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <StatsCard title="Total Revenue" value={formatMoney(stats.total_revenue)} description="Verified transaction revenue." icon={<Wallet className="h-5 w-5" />} tone="emerald" />
-                        <StatsCard title="Monthly Revenue" value={formatMoney(stats.monthly_revenue)} description="Verified revenue this month." icon={<TrendingUp className="h-5 w-5" />} tone="blue" />
-                        <StatsCard title="Total Orders" value={stats.total_orders} description={`${stats.orders_today} order(s) created today.`} icon={<ReceiptText className="h-5 w-5" />} tone="indigo" />
-                        <StatsCard title="Active Subscriptions" value={stats.active_subscriptions} description={`${stats.pending_subscriptions} pending subscription(s).`} icon={<ShieldCheck className="h-5 w-5" />} tone="emerald" />
+                        <StatsCard
+                            title="Total Revenue"
+                            value={formatMoney(stats.total_revenue)}
+                            description="Verified transaction revenue."
+                            icon={<Wallet className="h-5 w-5" />}
+                            tone="emerald"
+                        />
+                        <StatsCard
+                            title="Monthly Revenue"
+                            value={formatMoney(stats.monthly_revenue)}
+                            description="Verified revenue this month."
+                            icon={<TrendingUp className="h-5 w-5" />}
+                            tone="blue"
+                        />
+                        <StatsCard
+                            title="Total Orders"
+                            value={stats.total_orders}
+                            description={`${stats.orders_today} order(s) created today.`}
+                            icon={<ReceiptText className="h-5 w-5" />}
+                            tone="indigo"
+                        />
+                        <StatsCard
+                            title="Active Subscriptions"
+                            value={stats.active_subscriptions}
+                            description={`${stats.pending_subscriptions} pending subscription(s).`}
+                            icon={<ShieldCheck className="h-5 w-5" />}
+                            tone="emerald"
+                        />
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <StatsCard title="Users" value={stats.total_users} description={`${stats.active_users} active account(s), ${stats.clients} client(s).`} icon={<Users className="h-5 w-5" />} tone="blue" />
-                        <StatsCard title="Products" value={stats.total_products} description={`${stats.active_products} active product(s).`} icon={<Boxes className="h-5 w-5" />} tone="indigo" />
-                        <StatsCard title="Services" value={stats.total_services} description={`${stats.active_services} active service(s).`} icon={<PackageCheck className="h-5 w-5" />} tone="emerald" />
-                        <StatsCard title="Plans" value={stats.total_plans} description={`${stats.active_plans} active plan(s).`} icon={<Layers3 className="h-5 w-5" />} tone="amber" />
+                        <StatsCard
+                            title="Users"
+                            value={stats.total_users}
+                            description={`${stats.active_users} active account(s), ${stats.clients} client(s).`}
+                            icon={<Users className="h-5 w-5" />}
+                            tone="blue"
+                        />
+                        <StatsCard
+                            title="Products"
+                            value={stats.total_products}
+                            description={`${stats.active_products} active product(s).`}
+                            icon={<Boxes className="h-5 w-5" />}
+                            tone="indigo"
+                        />
+                        <StatsCard
+                            title="Services"
+                            value={stats.total_services}
+                            description={`${stats.active_services} active service(s).`}
+                            icon={<PackageCheck className="h-5 w-5" />}
+                            tone="emerald"
+                        />
+                        <StatsCard
+                            title="Plans"
+                            value={stats.total_plans}
+                            description={`${stats.active_plans} active plan(s).`}
+                            icon={<Layers3 className="h-5 w-5" />}
+                            tone="amber"
+                        />
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        <button type="button" onClick={() => router.visit(route('admin.orders.index'))} className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                        <button
+                            type="button"
+                            onClick={() => router.visit(route('admin.orders.index'))}
+                            className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                        >
                             <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <p className="text-sm font-medium text-amber-700">Pending Orders</p>
-                                    <h3 className="mt-2 text-3xl font-bold text-amber-900">{stats.pending_orders}</h3>
+                                    <p className="text-sm font-medium text-amber-300">Pending Orders</p>
+                                    <h3 className="text-foreground mt-2 text-3xl font-bold">{stats.pending_orders}</h3>
                                 </div>
                                 <Clock3 className="h-8 w-8 text-amber-600" />
                             </div>
                         </button>
 
-                        <button type="button" onClick={() => router.visit(route('admin.transactions.index'))} className="rounded-2xl border border-blue-200 bg-blue-50 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                        <button
+                            type="button"
+                            onClick={() => router.visit(route('admin.transactions.index'))}
+                            className="border-primary/20 bg-primary/[0.06] rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                        >
                             <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <p className="text-sm font-medium text-blue-700">Submitted Payments</p>
-                                    <h3 className="mt-2 text-3xl font-bold text-blue-900">{stats.submitted_transactions}</h3>
+                                    <p className="text-primary text-sm font-medium">Submitted Payments</p>
+                                    <h3 className="text-foreground mt-2 text-3xl font-bold">{stats.submitted_transactions}</h3>
                                 </div>
-                                <CreditCard className="h-8 w-8 text-blue-600" />
+                                <CreditCard className="text-primary h-8 w-8" />
                             </div>
                         </button>
 
-                        <button type="button" onClick={() => router.visit(route('admin.messages.index'))} className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                        <button
+                            type="button"
+                            onClick={() => window.dispatchEvent(new CustomEvent('admin-drawer-open', { detail: 'messages' }))}
+                            className="border-primary/20 bg-primary/10 rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                        >
                             <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <p className="text-sm font-medium text-indigo-700">Unread Messages</p>
-                                    <h3 className="mt-2 text-3xl font-bold text-indigo-900">{stats.unread_messages}</h3>
+                                    <p className="text-primary text-sm font-medium">Unread Messages</p>
+                                    <h3 className="text-foreground mt-2 text-3xl font-bold">{stats.unread_messages}</h3>
                                 </div>
-                                <MessageCircle className="h-8 w-8 text-indigo-600" />
+                                <MessageCircle className="text-primary h-8 w-8" />
                             </div>
                         </button>
 
-                        <button type="button" onClick={() => router.visit(route('admin.notifications.index'))} className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                        <button
+                            type="button"
+                            onClick={() => window.dispatchEvent(new CustomEvent('admin-drawer-open', { detail: 'notifications' }))}
+                            className="rounded-2xl border border-red-500/20 bg-red-500/10 p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                        >
                             <div className="flex items-center justify-between gap-3">
                                 <div>
-                                    <p className="text-sm font-medium text-rose-700">Unread Notifications</p>
-                                    <h3 className="mt-2 text-3xl font-bold text-rose-900">{stats.unread_notifications}</h3>
+                                    <p className="text-sm font-medium text-red-300">Unread Notifications</p>
+                                    <h3 className="text-foreground mt-2 text-3xl font-bold">{stats.unread_notifications}</h3>
                                 </div>
-                                <Bell className="h-8 w-8 text-rose-600" />
+                                <Bell className="h-8 w-8 text-red-400" />
                             </div>
                         </button>
                     </div>
@@ -662,19 +684,19 @@ export default function AdminIndex() {
                         <SectionCard title="Top Revenue Items" description="Best-performing products or services based on verified transactions.">
                             <div className="space-y-4">
                                 {charts.top_items.length === 0 && (
-                                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                                    <div className="border-border bg-muted/30 text-muted-foreground rounded-xl border border-dashed px-4 py-8 text-center text-sm">
                                         No verified sales yet.
                                     </div>
                                 )}
 
                                 {charts.top_items.map((item) => (
-                                    <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                                    <div key={item.label} className="border-border bg-muted/30 rounded-2xl border p-4">
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
-                                                <p className="font-semibold text-slate-900">{item.label}</p>
-                                                <p className="mt-1 text-xs text-slate-500">{item.sales} verified transaction(s)</p>
+                                                <p className="text-foreground font-semibold">{item.label}</p>
+                                                <p className="text-muted-foreground mt-1 text-xs">{item.sales} verified transaction(s)</p>
                                             </div>
-                                            <p className="text-sm font-bold text-slate-900">{formatMoney(item.revenue)}</p>
+                                            <p className="text-foreground text-sm font-bold">{formatMoney(item.revenue)}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -684,20 +706,24 @@ export default function AdminIndex() {
                         <SectionCard title="Recent Orders" description="Latest customer order activity.">
                             <div className="space-y-3">
                                 {recentOrders.map((order) => (
-                                    <div key={order.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                                    <div key={order.id} className="border-border bg-card rounded-2xl border p-4 shadow-sm">
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0">
-                                                <p className="truncate font-semibold text-slate-900">{order.order_code}</p>
-                                                <p className="mt-1 truncate text-xs text-slate-500">{order.user_name ?? '-'} • {order.item_name ?? '-'}</p>
+                                                <p className="text-foreground truncate font-semibold">{order.order_code}</p>
+                                                <p className="text-muted-foreground mt-1 truncate text-xs">
+                                                    {order.user_name ?? '-'} • {order.item_name ?? '-'}
+                                                </p>
                                             </div>
-                                            <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(order.status)}`}>
+                                            <span
+                                                className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(order.status)}`}
+                                            >
                                                 {order.status}
                                             </span>
                                         </div>
 
                                         <div className="mt-3 flex items-center justify-between text-sm">
-                                            <span className="text-slate-500">{formatDate(order.created_at)}</span>
-                                            <span className="font-bold text-slate-900">{formatMoney(order.amount)}</span>
+                                            <span className="text-muted-foreground">{formatDate(order.created_at)}</span>
+                                            <span className="text-foreground font-bold">{formatMoney(order.amount)}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -707,22 +733,24 @@ export default function AdminIndex() {
                         <SectionCard title="Recent Transactions" description="Latest payment submissions and verifications.">
                             <div className="space-y-3">
                                 {recentTransactions.map((transaction) => (
-                                    <div key={transaction.id} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                                    <div key={transaction.id} className="border-border bg-card rounded-2xl border p-4 shadow-sm">
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0">
-                                                <p className="truncate font-semibold text-slate-900">{transaction.transaction_code}</p>
-                                                <p className="mt-1 truncate text-xs text-slate-500">
+                                                <p className="text-foreground truncate font-semibold">{transaction.transaction_code}</p>
+                                                <p className="text-muted-foreground mt-1 truncate text-xs">
                                                     {transaction.user_name ?? '-'} • {transaction.payment_method.replace('_', ' ')}
                                                 </p>
                                             </div>
-                                            <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(transaction.status)}`}>
+                                            <span
+                                                className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(transaction.status)}`}
+                                            >
                                                 {transaction.status}
                                             </span>
                                         </div>
 
                                         <div className="mt-3 flex items-center justify-between text-sm">
-                                            <span className="text-slate-500">{formatDate(transaction.created_at)}</span>
-                                            <span className="font-bold text-slate-900">{formatMoney(transaction.amount)}</span>
+                                            <span className="text-muted-foreground">{formatDate(transaction.created_at)}</span>
+                                            <span className="text-foreground font-bold">{formatMoney(transaction.amount)}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -731,38 +759,38 @@ export default function AdminIndex() {
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-3">
-                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="border-border bg-card rounded-2xl border p-5 shadow-sm">
                             <div className="flex items-center gap-3">
-                                <div className="rounded-xl bg-emerald-50 p-3 text-emerald-600">
+                                <div className="rounded-xl bg-emerald-500/10 p-3 text-emerald-600">
                                     <CheckCircle2 className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-500">Verified Orders</p>
-                                    <h3 className="text-2xl font-bold text-slate-900">{stats.verified_orders}</h3>
+                                    <p className="text-muted-foreground text-sm">Verified Orders</p>
+                                    <h3 className="text-foreground text-2xl font-bold">{stats.verified_orders}</h3>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="border-border bg-card rounded-2xl border p-5 shadow-sm">
                             <div className="flex items-center gap-3">
-                                <div className="rounded-xl bg-amber-50 p-3 text-amber-600">
+                                <div className="rounded-xl bg-amber-500/10 p-3 text-amber-600">
                                     <AlertCircle className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-500">Pending Payment Amount</p>
-                                    <h3 className="text-2xl font-bold text-slate-900">{formatMoney(stats.pending_payment_amount)}</h3>
+                                    <p className="text-muted-foreground text-sm">Pending Payment Amount</p>
+                                    <h3 className="text-foreground text-2xl font-bold">{formatMoney(stats.pending_payment_amount)}</h3>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div className="border-border bg-card rounded-2xl border p-5 shadow-sm">
                             <div className="flex items-center gap-3">
-                                <div className="rounded-xl bg-indigo-50 p-3 text-indigo-600">
+                                <div className="bg-primary/10 text-primary rounded-xl p-3">
                                     <BarChart3 className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-500">Total Subscriptions</p>
-                                    <h3 className="text-2xl font-bold text-slate-900">{stats.total_subscriptions}</h3>
+                                    <p className="text-muted-foreground text-sm">Total Subscriptions</p>
+                                    <h3 className="text-foreground text-2xl font-bold">{stats.total_subscriptions}</h3>
                                 </div>
                             </div>
                         </div>
@@ -770,12 +798,7 @@ export default function AdminIndex() {
                 </div>
             </div>
 
-            <AnalyticsModal
-                open={openModal}
-                title={modalTitle}
-                rows={analyticsTable}
-                onClose={() => setOpenModal(false)}
-            />
+            <AnalyticsModal open={openModal} title={modalTitle} rows={analyticsTable} onClose={() => setOpenModal(false)} />
         </AdminLayout>
     );
 }

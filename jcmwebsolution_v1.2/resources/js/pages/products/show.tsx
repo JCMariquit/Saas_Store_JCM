@@ -101,7 +101,7 @@ type AddToCartModalProps = {
     onSubmit: () => void;
 };
 
-const cardClass = 'rounded-[10px] border border-slate-200 bg-white p-6 shadow-sm';
+const cardClass = 'rounded-[10px] border border-border bg-card p-6 shadow-sm';
 
 const fallbackProductDescription =
     'A practical and scalable digital solution designed to help your business work faster, stay organized, and serve customers better.';
@@ -114,34 +114,33 @@ function PlanDetailsModal({ open, plan, productId, onClose }: PlanDetailsModalPr
 
     return (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/70 px-4 py-14 backdrop-blur-md md:items-center md:py-6">
-            <div className="relative w-full max-w-2xl overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-2xl">
-                <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-sky-300/30 blur-3xl" />
-                <div className="absolute left-0 top-24 h-36 w-36 rounded-full bg-blue-500/15 blur-3xl" />
+            <div className="border-border bg-card relative w-full max-w-2xl overflow-hidden rounded-[14px] border shadow-2xl">
+                <div className="absolute top-0 right-0 h-44 w-44 rounded-full bg-sky-300/30 blur-3xl" />
+                <div className="absolute top-24 left-0 h-36 w-36 rounded-full bg-blue-500/15 blur-3xl" />
 
                 <div className="relative bg-gradient-to-br from-slate-950 via-blue-950 to-sky-800 px-7 py-6 text-white">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="absolute right-5 top-5 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20"
+                        className="absolute top-5 right-5 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20"
                     >
                         <X className="h-4 w-4" />
                     </button>
 
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-sky-50 backdrop-blur">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold tracking-[0.14em] text-sky-50 uppercase backdrop-blur">
                         <Crown className="h-4 w-4 text-yellow-300" />
                         Selected Package
                     </div>
 
-                    <h2 className="mt-4 pr-10 text-3xl font-black leading-tight">{plan.name}</h2>
+                    <h2 className="mt-4 pr-10 text-3xl leading-tight font-black">{plan.name}</h2>
 
                     <p className="mt-2 max-w-xl text-sm leading-6 text-sky-100">
-                        {plan.description ||
-                            'A flexible package designed to help you start, improve, or scale your digital business system.'}
+                        {plan.description || 'A flexible package designed to help you start, improve, or scale your digital business system.'}
                     </p>
 
                     <div className="mt-6 grid gap-3 sm:grid-cols-2">
                         <div className="rounded-[10px] border border-white/15 bg-white/10 p-4 backdrop-blur">
-                            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-sky-100">
+                            <p className="flex items-center gap-2 text-xs font-bold tracking-wide text-sky-100 uppercase">
                                 <WalletCards className="h-4 w-4" />
                                 Package Price
                             </p>
@@ -149,26 +148,24 @@ function PlanDetailsModal({ open, plan, productId, onClose }: PlanDetailsModalPr
                         </div>
 
                         <div className="rounded-[10px] border border-white/15 bg-white/10 p-4 backdrop-blur">
-                            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-sky-100">
+                            <p className="flex items-center gap-2 text-xs font-bold tracking-wide text-sky-100 uppercase">
                                 <Zap className="h-4 w-4" />
                                 Payment Type
                             </p>
-                            <p className="mt-2 text-lg font-black capitalize text-white">
-                                {plan.billing_cycle || 'One-time / custom setup'}
-                            </p>
+                            <p className="mt-2 text-lg font-black text-white capitalize">{plan.billing_cycle || 'One-time / custom setup'}</p>
                         </div>
                     </div>
                 </div>
 
                 <div className="relative px-7 py-6">
                     <div className="mb-5 flex items-center gap-3">
-                        <div className="rounded-[10px] bg-emerald-100 p-2.5 text-emerald-700">
+                        <div className="rounded-[10px] bg-emerald-100 p-2.5 text-emerald-300">
                             <PackageCheck className="h-5 w-5" />
                         </div>
 
                         <div>
-                            <h3 className="text-base font-bold text-slate-900">What you’ll get</h3>
-                            <p className="text-sm text-slate-500">Main inclusions prepared for this package.</p>
+                            <h3 className="text-foreground text-base font-bold">What you’ll get</h3>
+                            <p className="text-muted-foreground text-sm">Main inclusions prepared for this package.</p>
                         </div>
                     </div>
 
@@ -177,7 +174,7 @@ function PlanDetailsModal({ open, plan, productId, onClose }: PlanDetailsModalPr
                             {plan.features.map((feature, index) => (
                                 <div
                                     key={`${plan.id}-modal-feature-${index}`}
-                                    className="flex items-start gap-3 rounded-[10px] border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
+                                    className="border-border bg-muted/30 text-foreground flex items-start gap-3 rounded-[10px] border p-3 text-sm"
                                 >
                                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                                     <span>{feature}</span>
@@ -185,7 +182,7 @@ function PlanDetailsModal({ open, plan, productId, onClose }: PlanDetailsModalPr
                             ))}
                         </div>
                     ) : (
-                        <div className="rounded-[10px] border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">
+                        <div className="border-border bg-muted/30 text-muted-foreground rounded-[10px] border border-dashed p-5 text-sm">
                             Package inclusions will be finalized based on your business requirements.
                         </div>
                     )}
@@ -210,52 +207,39 @@ function PlanDetailsModal({ open, plan, productId, onClose }: PlanDetailsModalPr
     );
 }
 
-function AddToCartModal({
-    open,
-    product,
-    selectedPlanId,
-    notes,
-    isSubmitting,
-    onSelectPlan,
-    onChangeNotes,
-    onClose,
-    onSubmit,
-}: AddToCartModalProps) {
+function AddToCartModal({ open, product, selectedPlanId, notes, isSubmitting, onSelectPlan, onChangeNotes, onClose, onSubmit }: AddToCartModalProps) {
     if (!open) return null;
 
     return (
-        <div className="fixed  inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur-md">
-            <div className="relative w-full max-w-2xl overflow-hidden rounded-[14px] border border-slate-200 bg-white shadow-2xl">
-                <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-sky-300/30 blur-3xl" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6 backdrop-blur-md">
+            <div className="border-border bg-card relative w-full max-w-2xl overflow-hidden rounded-[14px] border shadow-2xl">
+                <div className="absolute top-0 right-0 h-40 w-40 rounded-full bg-sky-300/30 blur-3xl" />
                 <div className="absolute -bottom-10 left-0 h-40 w-40 rounded-full bg-blue-400/20 blur-3xl" />
 
                 <div className="relative bg-gradient-to-br from-slate-950 via-blue-950 to-sky-800 px-7 py-6 text-white">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="absolute right-5 top-5 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20"
+                        className="absolute top-5 right-5 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20"
                     >
                         <X className="h-4 w-4" />
                     </button>
 
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-sky-50 backdrop-blur">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold tracking-[0.14em] text-sky-50 uppercase backdrop-blur">
                         <ShoppingCart className="h-4 w-4 text-sky-300" />
                         Add to Cart
                     </div>
 
-                    <h2 className="mt-4 pr-10 text-2xl font-black leading-tight md:text-3xl">
-                        Choose package for {product.name}
-                    </h2>
+                    <h2 className="mt-4 pr-10 text-2xl leading-tight font-black md:text-3xl">Choose package for {product.name}</h2>
 
                     <p className="mt-2 max-w-xl text-sm leading-6 text-sky-100">
-                        Select the package you want to add to your cart. You can also add notes for your preferred setup
-                        or requirements.
+                        Select the package you want to add to your cart. You can also add notes for your preferred setup or requirements.
                     </p>
                 </div>
 
                 <div className="relative max-h-[70vh] overflow-y-auto px-7 py-6">
                     <div>
-                        <label className="text-sm font-bold text-slate-900">Select Plan</label>
+                        <label className="text-foreground text-sm font-bold">Select Plan</label>
 
                         <div className="mt-3 space-y-3">
                             {product.plans.length > 0 ? (
@@ -270,7 +254,7 @@ function AddToCartModal({
                                             className={`w-full rounded-[12px] border p-4 text-left transition ${
                                                 isSelected
                                                     ? 'border-sky-400 bg-sky-50 ring-2 ring-sky-100'
-                                                    : 'border-slate-200 bg-white hover:border-sky-200 hover:bg-slate-50'
+                                                    : 'border-border bg-card hover:border-primary/25 hover:bg-muted/30'
                                             }`}
                                         >
                                             <div className="flex items-start justify-between gap-4">
@@ -278,27 +262,25 @@ function AddToCartModal({
                                                     <div className="flex items-center gap-2">
                                                         <span
                                                             className={`flex h-4 w-4 items-center justify-center rounded-full border ${
-                                                                isSelected
-                                                                    ? 'border-sky-600 bg-sky-600'
-                                                                    : 'border-slate-300 bg-white'
+                                                                isSelected ? 'border-sky-600 bg-sky-600' : 'border-border bg-card'
                                                             }`}
                                                         >
-                                                            {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+                                                            {isSelected && <span className="bg-card h-1.5 w-1.5 rounded-full" />}
                                                         </span>
 
-                                                        <p className="font-black text-slate-900">{plan.name}</p>
+                                                        <p className="text-foreground font-black">{plan.name}</p>
                                                     </div>
 
-                                                    <p className="mt-1 pl-6 text-xs text-slate-500">
+                                                    <p className="text-muted-foreground mt-1 pl-6 text-xs">
                                                         {plan.billing_cycle || 'Flexible project setup'}
                                                     </p>
                                                 </div>
 
-                                                <p className="shrink-0 text-sm font-black text-blue-700">{plan.price_label}</p>
+                                                <p className="text-primary shrink-0 text-sm font-black">{plan.price_label}</p>
                                             </div>
 
                                             {plan.description && (
-                                                <p className="mt-3 pl-6 text-sm leading-6 text-slate-500">{plan.description}</p>
+                                                <p className="text-muted-foreground mt-3 pl-6 text-sm leading-6">{plan.description}</p>
                                             )}
 
                                             {plan.features.length > 0 && (
@@ -306,7 +288,7 @@ function AddToCartModal({
                                                     {plan.features.slice(0, 4).map((feature, index) => (
                                                         <div
                                                             key={`${plan.id}-cart-feature-${index}`}
-                                                            className="flex items-start gap-2 text-xs text-slate-600"
+                                                            className="text-muted-foreground flex items-start gap-2 text-xs"
                                                         >
                                                             <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
                                                             <span>{feature}</span>
@@ -321,10 +303,10 @@ function AddToCartModal({
                                 <button
                                     type="button"
                                     onClick={() => onSelectPlan(null)}
-                                    className="w-full rounded-[12px] border border-slate-200 bg-slate-50 p-4 text-left"
+                                    className="border-border bg-muted/30 w-full rounded-[12px] border p-4 text-left"
                                 >
-                                    <p className="font-bold text-slate-900">Custom Request</p>
-                                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                                    <p className="text-foreground font-bold">Custom Request</p>
+                                    <p className="text-muted-foreground mt-1 text-sm leading-6">
                                         No fixed package available. This product will be added as a custom request.
                                     </p>
                                 </button>
@@ -333,23 +315,22 @@ function AddToCartModal({
                     </div>
 
                     <div className="mt-5">
-                        <label className="text-sm font-bold text-slate-900">Notes / Requirements</label>
+                        <label className="text-foreground text-sm font-bold">Notes / Requirements</label>
 
                         <textarea
                             value={notes}
                             onChange={(event) => onChangeNotes(event.target.value)}
                             rows={4}
                             placeholder="Optional: Add preferred setup, target features, business requirements, or special instructions..."
-                            className="mt-2 w-full rounded-[10px] border border-slate-300 px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+                            className="border-border text-foreground placeholder:text-muted-foreground mt-2 w-full rounded-[10px] border px-4 py-3 text-sm transition outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
                         />
                     </div>
 
-                    <div className="mt-6 rounded-[10px] border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-blue-50 p-4">
-                        <p className="text-xs font-bold uppercase tracking-wide text-sky-700">Cart Summary</p>
-                        <p className="mt-1 text-sm font-semibold text-slate-900">{product.name}</p>
-                        <p className="mt-1 text-xs text-slate-500">
-                            Your selected product and plan will be saved to your cart for review before checkout or project
-                            request.
+                    <div className="border-primary/15 from-primary/[0.055] via-card to-card mt-6 rounded-[10px] border bg-gradient-to-br p-4">
+                        <p className="text-primary text-xs font-bold tracking-wide uppercase">Cart Summary</p>
+                        <p className="text-foreground mt-1 text-sm font-semibold">{product.name}</p>
+                        <p className="text-muted-foreground mt-1 text-xs">
+                            Your selected product and plan will be saved to your cart for review before checkout or project request.
                         </p>
                     </div>
 
@@ -461,11 +442,11 @@ export default function Show({ product }: PageProps) {
     const planStatusBadgeClass = (status: string) => {
         switch (status) {
             case 'active':
-                return 'border-emerald-200 bg-emerald-100 text-emerald-700';
+                return 'border-emerald-500/20 bg-emerald-100 text-emerald-300';
             case 'inactive':
-                return 'border-red-200 bg-red-100 text-red-700';
+                return 'border-red-500/20 bg-red-500/10 text-red-300';
             default:
-                return 'border-slate-200 bg-slate-100 text-slate-700';
+                return 'border-border bg-muted text-foreground';
         }
     };
 
@@ -475,9 +456,9 @@ export default function Show({ product }: PageProps) {
         <AppLayout breadcrumbs={breadcrumbs} fullWidth>
             <Head title={product.name} />
 
-            <div className="min-h-screen bg-[#e8edf5] pb-10 text-slate-900">
+            <div className="text-foreground min-h-screen bg-[#e8edf5] pb-10">
                 <section
-                    className="relative left-1/2 right-1/2 mb-8 ml-[-50vw] mr-[-50vw] w-screen overflow-x-hidden border-b border-slate-200 text-white"
+                    className="border-border relative right-1/2 left-1/2 mr-[-50vw] mb-8 ml-[-50vw] w-screen overflow-x-hidden border-b text-white"
                     style={{
                         backgroundImage: "url('/images/item-bg.png')",
                         backgroundSize: 'cover',
@@ -486,27 +467,25 @@ export default function Show({ product }: PageProps) {
                     }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-blue-950/78 to-sky-900/82" />
-                    <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-sky-400/20 blur-3xl" />
-                    <div className="absolute right-0 top-20 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl" />
+                    <div className="absolute top-0 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-sky-400/20 blur-3xl" />
+                    <div className="absolute top-20 right-0 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl" />
 
                     <div className="relative mx-auto max-w-7xl px-5 py-8 md:px-7 md:py-10">
                         <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-center">
                             <div>
-                                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-100 backdrop-blur">
+                                <div className="text-muted-foreground/20 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-semibold tracking-[0.16em] uppercase backdrop-blur">
                                     <Sparkles className="h-3.5 w-3.5 text-sky-300" />
                                     Featured Solution
                                 </div>
 
-                                <h1 className="mt-5 max-w-3xl text-3xl font-black leading-tight md:text-4xl xl:text-5xl">
-                                    {product.name}
-                                </h1>
+                                <h1 className="mt-5 max-w-3xl text-3xl leading-tight font-black md:text-4xl xl:text-5xl">{product.name}</h1>
 
                                 <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-200 md:text-base">
                                     {product.description || fallbackProductDescription}
                                 </p>
 
                                 <div className="mt-5 flex flex-wrap gap-3">
-                                    <span className="inline-flex rounded-full border border-sky-200 bg-sky-100 px-3 py-1.5 text-xs font-semibold text-sky-700">
+                                    <span className="text-primary inline-flex rounded-full border border-sky-200 bg-sky-100 px-3 py-1.5 text-xs font-semibold">
                                         {product.pricing_type === 'plan'
                                             ? 'Package-Based Solution'
                                             : product.pricing_type === 'custom'
@@ -514,16 +493,14 @@ export default function Show({ product }: PageProps) {
                                               : 'Fixed Project Pricing'}
                                     </span>
 
-                                    <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                                    <span className="inline-flex rounded-full border border-emerald-500/20 bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-300">
                                         {product.plans.length > 0 ? 'Flexible Service Packages' : 'Custom Project Request'}
                                     </span>
                                 </div>
 
                                 <div className="mt-6">
-                                    <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Starts at</p>
-                                    <p className="mt-1 text-3xl font-extrabold text-white">
-                                        {product.starting_price_label}
-                                    </p>
+                                    <p className="text-xs tracking-[0.18em] text-slate-300 uppercase">Starts at</p>
+                                    <p className="mt-1 text-3xl font-extrabold text-white">{product.starting_price_label}</p>
                                     <p className="mt-2 max-w-md text-sm text-slate-300">
                                         Final pricing may depend on features, scope, setup, and support needs.
                                     </p>
@@ -534,9 +511,7 @@ export default function Show({ product }: PageProps) {
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                document
-                                                    .getElementById('plans-section')
-                                                    ?.scrollIntoView({ behavior: 'smooth' });
+                                                document.getElementById('plans-section')?.scrollIntoView({ behavior: 'smooth' });
                                             }}
                                             className="rounded-[10px] bg-gradient-to-r from-sky-600 to-blue-700 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-900/30 transition hover:scale-[1.03] hover:from-sky-700 hover:to-blue-800"
                                         >
@@ -564,7 +539,7 @@ export default function Show({ product }: PageProps) {
                                         />
                                     ) : (
                                         <div className="flex h-[260px] items-center justify-center bg-slate-800 md:h-[330px] lg:h-[360px]">
-                                            <ImageIcon className="h-10 w-10 text-slate-400" />
+                                            <ImageIcon className="text-muted-foreground h-10 w-10" />
                                         </div>
                                     )}
 
@@ -575,7 +550,7 @@ export default function Show({ product }: PageProps) {
                                             <button
                                                 type="button"
                                                 onClick={showPrevImage}
-                                                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-slate-900/70 p-2 text-white transition hover:bg-slate-900"
+                                                className="absolute top-1/2 left-3 -translate-y-1/2 rounded-full bg-slate-900/70 p-2 text-white transition hover:bg-slate-900"
                                             >
                                                 <ArrowLeft className="h-4 w-4" />
                                             </button>
@@ -583,7 +558,7 @@ export default function Show({ product }: PageProps) {
                                             <button
                                                 type="button"
                                                 onClick={showNextImage}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-slate-900/70 p-2 text-white transition hover:bg-slate-900"
+                                                className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full bg-slate-900/70 p-2 text-white transition hover:bg-slate-900"
                                             >
                                                 <ArrowRight className="h-4 w-4" />
                                             </button>
@@ -628,22 +603,20 @@ export default function Show({ product }: PageProps) {
                             {product.plans.length > 0 && (
                                 <section
                                     id="plans-section"
-                                    className="overflow-hidden rounded-[10px] border border-slate-200 bg-white/70 shadow-sm backdrop-blur-md"
+                                    className="border-border bg-card/70 overflow-hidden rounded-[10px] border shadow-sm backdrop-blur-md"
                                 >
                                     <div className="flex flex-col gap-4 rounded-t-[10px] bg-gradient-to-br from-slate-950 via-blue-950 to-sky-800 p-6 text-white md:flex-row md:items-center md:justify-between">
                                         <div>
-                                            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-sky-100">
+                                            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold tracking-[0.18em] text-sky-100 uppercase">
                                                 <Star className="h-4 w-4 text-yellow-300" />
                                                 Service Packages
                                             </p>
 
-                                            <h2 className="mt-3 text-2xl font-black">
-                                                Choose the right package for your business
-                                            </h2>
+                                            <h2 className="mt-3 text-2xl font-black">Choose the right package for your business</h2>
 
                                             <p className="mt-2 max-w-2xl text-sm leading-6 text-sky-100">
-                                                Select a package that matches your goals, budget, and business requirements.
-                                                Each package can be adjusted depending on the features you need.
+                                                Select a package that matches your goals, budget, and business requirements. Each package can be
+                                                adjusted depending on the features you need.
                                             </p>
                                         </div>
 
@@ -654,7 +627,7 @@ export default function Show({ product }: PageProps) {
                                         </div>
                                     </div>
 
-                                    <div className="grid gap-5 bg-white/35 p-5 md:grid-cols-2 xl:grid-cols-3">
+                                    <div className="bg-background/35 grid gap-5 p-5 md:grid-cols-2 xl:grid-cols-3">
                                         {product.plans.map((plan) => {
                                             const isBestPlan = plan.id === bestPlanId;
 
@@ -662,16 +635,16 @@ export default function Show({ product }: PageProps) {
                                                 <div
                                                     key={plan.id}
                                                     onClick={() => setSelectedPlan(plan)}
-                                                    className={`group relative cursor-pointer overflow-hidden rounded-[14px] border bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-sky-300 hover:shadow-xl hover:shadow-sky-100 ${
-                                                        isBestPlan ? 'border-sky-300 ring-2 ring-sky-100' : 'border-slate-200'
+                                                    className={`group bg-card relative cursor-pointer overflow-hidden rounded-[14px] border p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-sky-300 hover:shadow-xl hover:shadow-sky-100 ${
+                                                        isBestPlan ? 'border-sky-300 ring-2 ring-sky-100' : 'border-border'
                                                     }`}
                                                 >
-                                                    <div className="absolute inset-0 bg-gradient-to-br from-sky-100/60 via-white to-transparent opacity-0 transition group-hover:opacity-100" />
-                                                    <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-sky-200/50 blur-2xl transition group-hover:bg-sky-300/60" />
+                                                    <div className="from-primary/10 via-card absolute inset-0 bg-gradient-to-br to-transparent opacity-0 transition group-hover:opacity-100" />
+                                                    <div className="absolute top-0 right-0 h-28 w-28 rounded-full bg-sky-200/50 blur-2xl transition group-hover:bg-sky-300/60" />
                                                     <div className="absolute -bottom-10 -left-10 h-28 w-28 rounded-full bg-blue-200/30 blur-2xl" />
 
                                                     {isBestPlan && (
-                                                        <div className="absolute right-4 top-4 rounded-full bg-gradient-to-r from-sky-600 to-blue-700 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow-lg shadow-blue-500/20">
+                                                        <div className="absolute top-4 right-4 rounded-full bg-gradient-to-r from-sky-600 to-blue-700 px-3 py-1 text-[10px] font-black tracking-wide text-white uppercase shadow-lg shadow-blue-500/20">
                                                             Recommended
                                                         </div>
                                                     )}
@@ -684,10 +657,8 @@ export default function Show({ product }: PageProps) {
                                                                 </div>
 
                                                                 <div>
-                                                                    <h3 className="text-lg font-black text-slate-900">
-                                                                        {plan.name}
-                                                                    </h3>
-                                                                    <p className="mt-1 text-xs text-slate-500">
+                                                                    <h3 className="text-foreground text-lg font-black">{plan.name}</h3>
+                                                                    <p className="text-muted-foreground mt-1 text-xs">
                                                                         {plan.billing_cycle || 'Flexible project setup'}
                                                                     </p>
                                                                 </div>
@@ -702,22 +673,20 @@ export default function Show({ product }: PageProps) {
                                                             {plan.status}
                                                         </span>
 
-                                                        <p className="mt-4 min-h-[42px] text-sm leading-6 text-slate-500">
+                                                        <p className="text-muted-foreground mt-4 min-h-[42px] text-sm leading-6">
                                                             {plan.description ||
                                                                 'A flexible package for businesses that need a professional digital system with practical features.'}
                                                         </p>
 
-                                                        <div className="mt-5 rounded-[10px] border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-blue-50 p-4">
-                                                            <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-sky-700">
+                                                        <div className="border-primary/15 from-primary/[0.055] via-card to-card mt-5 rounded-[10px] border bg-gradient-to-br p-4">
+                                                            <p className="text-primary flex items-center gap-2 text-[11px] font-bold tracking-wide uppercase">
                                                                 <WalletCards className="h-4 w-4" />
                                                                 Package Price
                                                             </p>
 
-                                                            <p className="mt-2 text-3xl font-black text-slate-950">
-                                                                {plan.price_label}
-                                                            </p>
+                                                            <p className="text-foreground mt-2 text-3xl font-black">{plan.price_label}</p>
 
-                                                            <p className="mt-1 text-xs font-medium text-slate-500">
+                                                            <p className="text-muted-foreground mt-1 text-xs font-medium">
                                                                 {plan.billing_cycle || 'One-time / custom setup'}
                                                             </p>
                                                         </div>
@@ -727,9 +696,9 @@ export default function Show({ product }: PageProps) {
                                                                 {plan.features.slice(0, 4).map((feature, index) => (
                                                                     <div
                                                                         key={`${plan.id}-feature-${index}`}
-                                                                        className="flex items-start gap-2.5 text-sm text-slate-600"
+                                                                        className="text-muted-foreground flex items-start gap-2.5 text-sm"
                                                                     >
-                                                                        <div className="mt-0.5 rounded-full bg-emerald-100 p-1 text-emerald-700">
+                                                                        <div className="mt-0.5 rounded-full bg-emerald-100 p-1 text-emerald-300">
                                                                             <CheckCircle2 className="h-3.5 w-3.5" />
                                                                         </div>
                                                                         <span>{feature}</span>
@@ -764,25 +733,25 @@ export default function Show({ product }: PageProps) {
                                     </div>
 
                                     <div>
-                                        <h2 className="text-xl font-bold text-slate-900">Why choose this solution?</h2>
-                                        <p className="text-sm text-slate-500">Designed to support your daily business operations.</p>
+                                        <h2 className="text-foreground text-xl font-bold">Why choose this solution?</h2>
+                                        <p className="text-muted-foreground text-sm">Designed to support your daily business operations.</p>
                                     </div>
                                 </div>
 
-                                <p className="mt-5 text-sm leading-7 text-slate-600 md:text-[15px]">
+                                <p className="text-muted-foreground mt-5 text-sm leading-7 md:text-[15px]">
                                     {product.description || fallbackAboutDescription}
                                 </p>
                             </section>
 
                             <section className={cardClass}>
                                 <div className="flex items-center gap-3">
-                                    <div className="rounded-[10px] bg-blue-600 p-2.5 text-white">
+                                    <div className="bg-primary rounded-[10px] p-2.5 text-white">
                                         <ClipboardList className="h-5 w-5" />
                                     </div>
 
                                     <div>
-                                        <h2 className="text-xl font-bold text-slate-900">What this system can do</h2>
-                                        <p className="text-sm text-slate-500">Key features that help improve your business workflow.</p>
+                                        <h2 className="text-foreground text-xl font-bold">What this system can do</h2>
+                                        <p className="text-muted-foreground text-sm">Key features that help improve your business workflow.</p>
                                     </div>
                                 </div>
 
@@ -791,18 +760,14 @@ export default function Show({ product }: PageProps) {
                                         {product.features.map((feature) => (
                                             <div
                                                 key={feature.id}
-                                                className="rounded-[10px] border border-slate-200 bg-slate-50 p-4 transition hover:border-sky-200 hover:bg-sky-50/40"
+                                                className="border-border bg-muted/30 hover:border-primary/25 rounded-[10px] border p-4 transition hover:bg-sky-50/40"
                                             >
                                                 <div className="flex items-start gap-3">
-                                                    <CheckCircle2 className="mt-0.5 h-5 w-5 text-green-600" />
+                                                    <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-400" />
                                                     <div>
-                                                        <p className="text-sm font-semibold text-slate-800">
-                                                            {feature.title}
-                                                        </p>
+                                                        <p className="text-foreground text-sm font-semibold">{feature.title}</p>
                                                         {feature.description && (
-                                                            <p className="mt-1 text-xs leading-6 text-slate-500">
-                                                                {feature.description}
-                                                            </p>
+                                                            <p className="text-muted-foreground mt-1 text-xs leading-6">{feature.description}</p>
                                                         )}
                                                     </div>
                                                 </div>
@@ -810,7 +775,7 @@ export default function Show({ product }: PageProps) {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="mt-5 rounded-[10px] border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">
+                                    <div className="border-border bg-muted/30 text-muted-foreground mt-5 rounded-[10px] border border-dashed p-5 text-sm">
                                         Features can be customized based on your business process and required workflow.
                                     </div>
                                 )}
@@ -819,13 +784,13 @@ export default function Show({ product }: PageProps) {
                             {product.overviews.length > 0 && (
                                 <section className={cardClass}>
                                     <div className="flex items-center gap-3">
-                                        <div className="rounded-[10px] bg-indigo-600 p-2.5 text-white">
+                                        <div className="bg-primary text-primary-foreground rounded-[10px] p-2.5">
                                             <ScrollText className="h-5 w-5" />
                                         </div>
 
                                         <div>
-                                            <h2 className="text-xl font-bold text-slate-900">Solution overview</h2>
-                                            <p className="text-sm text-slate-500">
+                                            <h2 className="text-foreground text-xl font-bold">Solution overview</h2>
+                                            <p className="text-muted-foreground text-sm">
                                                 More details about how this system can support your business.
                                             </p>
                                         </div>
@@ -833,11 +798,9 @@ export default function Show({ product }: PageProps) {
 
                                     <div className="mt-6 space-y-4">
                                         {product.overviews.map((overview) => (
-                                            <div key={overview.id} className="rounded-[10px] border border-slate-200 bg-slate-50 p-5">
-                                                <h3 className="text-lg font-bold text-slate-900">{overview.title}</h3>
-                                                <p className="mt-2 whitespace-pre-line text-sm leading-7 text-slate-600">
-                                                    {overview.content}
-                                                </p>
+                                            <div key={overview.id} className="border-border bg-muted/30 rounded-[10px] border p-5">
+                                                <h3 className="text-foreground text-lg font-bold">{overview.title}</h3>
+                                                <p className="text-muted-foreground mt-2 text-sm leading-7 whitespace-pre-line">{overview.content}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -846,23 +809,19 @@ export default function Show({ product }: PageProps) {
                         </div>
 
                         <aside id="order-section" className="lg:sticky lg:top-6 lg:self-start">
-                            <div className="rounded-[14px] border border-slate-200 bg-white p-6 shadow-sm">
-                                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-700">
-                                    Ready to get started?
-                                </p>
+                            <div className="border-border bg-card rounded-[14px] border p-6 shadow-sm">
+                                <p className="text-primary text-sm font-semibold tracking-[0.18em] uppercase">Ready to get started?</p>
 
-                                <h3 className="mt-2 text-2xl font-bold text-slate-900">{product.name}</h3>
+                                <h3 className="text-foreground mt-2 text-2xl font-bold">{product.name}</h3>
 
-                                <p className="mt-2 text-sm leading-6 text-slate-500">
+                                <p className="text-muted-foreground mt-2 text-sm leading-6">
                                     Start your project request and let us prepare the right solution for your business.
                                 </p>
 
-                                <div className="mt-5 rounded-[10px] border border-sky-100 bg-gradient-to-br from-sky-50 via-white to-blue-50 p-4">
-                                    <p className="text-xs uppercase tracking-wide text-slate-400">Starts at</p>
-                                    <p className="mt-1 text-2xl font-extrabold text-blue-700">
-                                        {product.starting_price_label}
-                                    </p>
-                                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                                <div className="border-primary/15 from-primary/[0.055] via-card to-card mt-5 rounded-[10px] border bg-gradient-to-br p-4">
+                                    <p className="text-muted-foreground text-xs tracking-wide uppercase">Starts at</p>
+                                    <p className="text-primary mt-1 text-2xl font-extrabold">{product.starting_price_label}</p>
+                                    <p className="text-muted-foreground mt-2 text-xs leading-5">
                                         Pricing may change depending on features and project scope.
                                     </p>
                                 </div>
@@ -880,24 +839,24 @@ export default function Show({ product }: PageProps) {
                                     <button
                                         type="button"
                                         onClick={openCartModal}
-                                        className="inline-flex w-full items-center justify-center rounded-[10px] border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-bold text-sky-700 transition hover:bg-sky-100"
+                                        className="border-primary/20 bg-primary/[0.07] text-primary inline-flex w-full items-center justify-center rounded-[10px] border px-5 py-3 text-sm font-bold transition hover:bg-sky-100"
                                     >
                                         <ShoppingCart className="mr-2 h-4 w-4" />
                                         Add to Cart
                                     </button>
                                 </div>
 
-                                <div className="mt-5 space-y-2 text-sm text-slate-500">
+                                <div className="text-muted-foreground mt-5 space-y-2 text-sm">
                                     <div className="flex items-start gap-2">
-                                        <BadgeCheck className="mt-0.5 h-4 w-4 text-green-600" />
+                                        <BadgeCheck className="mt-0.5 h-4 w-4 text-emerald-400" />
                                         <span>Flexible payment process available.</span>
                                     </div>
                                     <div className="flex items-start gap-2">
-                                        <BadgeCheck className="mt-0.5 h-4 w-4 text-green-600" />
+                                        <BadgeCheck className="mt-0.5 h-4 w-4 text-emerald-400" />
                                         <span>Project requirements can be reviewed before final pricing.</span>
                                     </div>
                                     <div className="flex items-start gap-2">
-                                        <BadgeCheck className="mt-0.5 h-4 w-4 text-green-600" />
+                                        <BadgeCheck className="mt-0.5 h-4 w-4 text-emerald-400" />
                                         <span>Recommended for businesses ready to go digital.</span>
                                     </div>
                                 </div>
@@ -907,17 +866,15 @@ export default function Show({ product }: PageProps) {
 
                     <section className={cardClass}>
                         <div className="max-w-3xl">
-                            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-700">
-                                Need a custom system?
-                            </p>
+                            <p className="text-primary text-sm font-semibold tracking-[0.18em] uppercase">Need a custom system?</p>
 
-                            <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+                            <h2 className="text-foreground mt-2 text-2xl font-bold tracking-tight md:text-3xl">
                                 Let’s build the right digital solution for your business
                             </h2>
 
-                            <p className="mt-3 text-sm leading-7 text-slate-500 md:text-base">
-                                Every business has different needs. Send your project request and we’ll review your
-                                requirements, features, and preferred setup before finalizing the package.
+                            <p className="text-muted-foreground mt-3 text-sm leading-7 md:text-base">
+                                Every business has different needs. Send your project request and we’ll review your requirements, features, and
+                                preferred setup before finalizing the package.
                             </p>
 
                             <div className="mt-5">
@@ -934,12 +891,7 @@ export default function Show({ product }: PageProps) {
                 </div>
             </div>
 
-            <PlanDetailsModal
-                open={!!selectedPlan}
-                plan={selectedPlan}
-                productId={product.id}
-                onClose={() => setSelectedPlan(null)}
-            />
+            <PlanDetailsModal open={!!selectedPlan} plan={selectedPlan} productId={product.id} onClose={() => setSelectedPlan(null)} />
 
             <AddToCartModal
                 open={cartModalOpen}
@@ -955,16 +907,14 @@ export default function Show({ product }: PageProps) {
 
             {cartSuccessOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-sm">
-                    <div className="w-full max-w-sm rounded-[14px] border border-emerald-200 bg-white p-6 text-center shadow-2xl">
-                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                    <div className="bg-card w-full max-w-sm rounded-[14px] border border-emerald-500/20 p-6 text-center shadow-2xl">
+                        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-300">
                             <CheckCircle2 className="h-8 w-8" />
                         </div>
 
-                        <h2 className="mt-4 text-xl font-black text-slate-900">Added to Cart</h2>
+                        <h2 className="text-foreground mt-4 text-xl font-black">Added to Cart</h2>
 
-                        <p className="mt-2 text-sm leading-6 text-slate-500">
-                            Product has been added to your cart successfully.
-                        </p>
+                        <p className="text-muted-foreground mt-2 text-sm leading-6">Product has been added to your cart successfully.</p>
                     </div>
                 </div>
             )}

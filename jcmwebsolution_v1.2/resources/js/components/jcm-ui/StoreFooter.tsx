@@ -28,7 +28,7 @@ export default function StoreFooter() {
                         JCM Web Solution
                     </h3>
 
-                    <p className="mt-3 text-sm leading-6 text-slate-400">
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
                         Modern web systems designed to help businesses go digital, automate
                         processes, and scale efficiently.
                     </p>
@@ -39,7 +39,7 @@ export default function StoreFooter() {
                         Payment Methods
                     </h3>
 
-                    <ul className="mt-3 space-y-2 text-sm text-slate-400">
+                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                         <li>GCash</li>
                         <li>Maya</li>
                         <li>Bank Transfer</li>
@@ -51,7 +51,7 @@ export default function StoreFooter() {
                         Customer Support
                     </h3>
 
-                    <ul className="mt-3 space-y-2 text-sm text-slate-400">
+                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                         <li>System Setup Assistance</li>
                         <li>Technical Support</li>
                         <li>After-Sales Support</li>
@@ -63,7 +63,7 @@ export default function StoreFooter() {
                         Contact & Social
                     </h3>
 
-                    <ul className="mt-3 space-y-2 text-sm text-slate-400">
+                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                         <li>Facebook Page</li>
                         <li>Instagram</li>
                         <li>Email: jcmwebsolution@gmail.com</li>
@@ -72,7 +72,7 @@ export default function StoreFooter() {
             </div>
 
             <div className="border-t border-white/10">
-                <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-6 text-sm text-slate-400 md:flex-row md:items-center md:justify-between md:px-8">
+                <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-6 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between md:px-8">
                     <p>© {new Date().getFullYear()} JCM Web Solution. All rights reserved.</p>
                 </div>
             </div>

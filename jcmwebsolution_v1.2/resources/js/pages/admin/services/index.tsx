@@ -180,11 +180,13 @@ export default function ServicesIndex() {
     const statusBadgeClass = (status: string) => {
         switch (status) {
             case 'active':
-                return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+                return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300';
             case 'inactive':
-                return 'border-red-200 bg-red-50 text-red-700';
+                return 'border-red-500/20 bg-red-500/10 text-red-300';
+            case 'archived':
+                return 'border-border bg-muted text-muted-foreground';
             default:
-                return 'border-slate-200 bg-slate-100 text-slate-700';
+                return 'border-border bg-muted text-foreground';
         }
     };
 
@@ -196,7 +198,7 @@ export default function ServicesIndex() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Services" />
 
-            <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/40 to-indigo-100/50 p-4 md:p-6">
+            <div className="min-h-screen bg-background p-4 md:p-6">
                 <div className="space-y-6">
                     <PageHero
                         eyebrow="JCM Admin"
@@ -234,7 +236,7 @@ export default function ServicesIndex() {
                     </div>
 
                     {flash?.success && (
-                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm">
+                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-300 shadow-sm">
                             {flash.success}
                         </div>
                     )}
@@ -255,7 +257,7 @@ export default function ServicesIndex() {
                                     type="button"
                                     variant="outline"
                                     onClick={() => setSearch('')}
-                                    className="h-11 rounded-xl border-slate-200 bg-white px-4 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                    className="h-11 rounded-xl border-border bg-card px-4 text-foreground hover:border-primary/20 hover:bg-primary/[0.06] hover:text-primary"
                                 >
                                     Reset Search
                                 </Button>
@@ -276,13 +278,13 @@ export default function ServicesIndex() {
                                     className="cursor-pointer"
                                     onClick={() => openViewDrawer(service)}
                                 >
-                                    <td className="px-5 py-4 font-medium text-slate-900">
+                                    <td className="px-5 py-4 font-medium text-foreground">
                                         {service.code}
                                     </td>
 
                                     <td className="px-5 py-4">
-                                        <div className="font-medium text-slate-900">{service.name}</div>
-                                        <div className="mt-1 max-w-[320px] truncate text-xs text-slate-500">
+                                        <div className="font-medium text-foreground">{service.name}</div>
+                                        <div className="mt-1 max-w-[320px] truncate text-xs text-muted-foreground">
                                             {service.description || 'No description'}
                                         </div>
                                     </td>
@@ -355,7 +357,7 @@ export default function ServicesIndex() {
                                 id="service_type"
                                 value={data.service_type}
                                 onChange={(e) => setData('service_type', e.target.value)}
-                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                                className="h-11 rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary"
                             >
                                 <option value="custom">Custom</option>
                                 <option value="maintenance">Maintenance</option>
@@ -373,7 +375,7 @@ export default function ServicesIndex() {
                                 id="pricing_type"
                                 value={data.pricing_type}
                                 onChange={(e) => setData('pricing_type', e.target.value)}
-                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                                className="h-11 rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary"
                             >
                                 <option value="quote">Quote</option>
                                 <option value="fixed">Fixed</option>
@@ -390,7 +392,7 @@ export default function ServicesIndex() {
                                 value={data.base_price}
                                 onChange={(e) => setData('base_price', e.target.value)}
                                 disabled={data.pricing_type === 'quote'}
-                                className="rounded-xl disabled:bg-slate-100"
+                                className="rounded-xl disabled:bg-muted"
                                 placeholder="0.00"
                             />
                             <InputError message={errors.base_price} />
@@ -402,10 +404,11 @@ export default function ServicesIndex() {
                                 id="status"
                                 value={data.status}
                                 onChange={(e) => setData('status', e.target.value)}
-                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                                className="h-11 rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none transition focus:border-primary"
                             >
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
+                                <option value="archived">Archived</option>
                             </select>
                             <InputError message={errors.status} />
                         </div>
@@ -417,7 +420,7 @@ export default function ServicesIndex() {
                                 value={data.description}
                                 onChange={(e) => setData('description', e.target.value)}
                                 rows={4}
-                                className="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-blue-500"
+                                className="w-full rounded-xl border border-border px-4 py-3 text-sm outline-none transition focus:border-primary"
                                 placeholder="Describe the service..."
                             />
                             <InputError message={errors.description} />
@@ -437,7 +440,7 @@ export default function ServicesIndex() {
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-5">
+                    <div className="flex justify-end gap-3 border-t border-border pt-5">
                         <Button
                             type="button"
                             variant="outline"
@@ -450,7 +453,7 @@ export default function ServicesIndex() {
                         <Button
                             type="submit"
                             disabled={processing}
-                            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 disabled:opacity-70"
+                            className="rounded-xl bg-gradient-to-r from-primary to-primary/80 text-white hover:from-primary/90 hover:to-primary/70 disabled:opacity-70"
                         >
                             {processing ? 'Saving...' : 'Update Service'}
                         </Button>
@@ -471,21 +474,21 @@ export default function ServicesIndex() {
             {viewingService && (
                 <div className="fixed inset-0 z-50">
                     <div
-                        className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1px]"
+                        className="absolute inset-0 bg-black/50 backdrop-blur-[1px]"
                         onClick={closeViewDrawer}
                     />
 
-                    <div className="absolute top-0 right-0 h-full w-full max-w-md border-l border-slate-200 bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4">
+                    <div className="absolute top-0 right-0 h-full w-full max-w-md border-l border-border bg-card shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-primary/[0.06] to-card px-6 py-4">
                             <div>
-                                <h2 className="text-lg font-bold text-slate-900">Service Details</h2>
-                                <p className="text-sm text-slate-500">View full service information</p>
+                                <h2 className="text-lg font-bold text-foreground">Service Details</h2>
+                                <p className="text-sm text-muted-foreground">View full service information</p>
                             </div>
 
                             <button
                                 type="button"
                                 onClick={closeViewDrawer}
-                                className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                                className="rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
                             >
                                 Close
                             </button>
@@ -493,55 +496,55 @@ export default function ServicesIndex() {
 
                         <div className="space-y-5 overflow-y-auto p-6">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Code</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingService.code}</p>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Code</p>
+                                <p className="mt-1 text-sm font-medium text-foreground">{viewingService.code}</p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Name</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingService.name}</p>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Name</p>
+                                <p className="mt-1 text-sm font-medium text-foreground">{viewingService.name}</p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Description</p>
-                                <p className="mt-1 text-sm leading-6 text-slate-600">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Description</p>
+                                <p className="mt-1 text-sm leading-6 text-muted-foreground">
                                     {viewingService.description || 'No description'}
                                 </p>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Service Type</p>
-                                    <p className="mt-1 text-sm capitalize text-slate-900">{viewingService.service_type}</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Service Type</p>
+                                    <p className="mt-1 text-sm capitalize text-foreground">{viewingService.service_type}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Pricing Type</p>
-                                    <p className="mt-1 text-sm capitalize text-slate-900">{viewingService.pricing_type}</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pricing Type</p>
+                                    <p className="mt-1 text-sm capitalize text-foreground">{viewingService.pricing_type}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Base Price</p>
-                                    <p className="mt-1 text-sm text-slate-900">{viewingService.base_price_label}</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Base Price</p>
+                                    <p className="mt-1 text-sm text-foreground">{viewingService.base_price_label}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Status</p>
-                                    <p className="mt-1 text-sm capitalize text-slate-900">{viewingService.status}</p>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</p>
+                                    <p className="mt-1 text-sm capitalize text-foreground">{viewingService.status}</p>
                                 </div>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Sort Order</p>
-                                <p className="mt-1 text-sm text-slate-900">{viewingService.sort_order}</p>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sort Order</p>
+                                <p className="mt-1 text-sm text-foreground">{viewingService.sort_order}</p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Created At</p>
-                                <p className="mt-1 text-sm text-slate-900">{viewingService.created_at || '-'}</p>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Created At</p>
+                                <p className="mt-1 text-sm text-foreground">{viewingService.created_at || '-'}</p>
                             </div>
 
-                            <div className="flex gap-3 border-t border-slate-200 pt-5">
+                            <div className="flex gap-3 border-t border-border pt-5">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -558,7 +561,7 @@ export default function ServicesIndex() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="inline-flex items-center justify-center gap-2 rounded-xl border-red-200 text-red-600 hover:bg-red-50"
+                                    className="inline-flex items-center justify-center gap-2 rounded-xl border-red-500/20 text-red-600 hover:bg-red-500/10"
                                     onClick={() => {
                                         closeViewDrawer();
                                         openDelete(viewingService);

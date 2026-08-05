@@ -186,23 +186,23 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
 
     return (
         <Sheet open={open} onOpenChange={closeDrawer}>
-            <SheetContent side="right" className="w-full overflow-y-auto border-l border-slate-200 bg-slate-50 p-0 sm:max-w-lg">
-                <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-6 py-5 backdrop-blur">
+            <SheetContent side="right" className="w-full overflow-y-auto border-l border-border bg-muted/30 p-0 sm:max-w-lg">
+                <div className="sticky top-0 z-10 border-b border-border bg-card/95 px-6 py-5 backdrop-blur">
                     <SheetHeader className="space-y-1 text-left">
                         <div className="flex items-start justify-between gap-3">
                             <div>
-                                <SheetTitle className="flex items-center gap-2 text-xl font-semibold text-slate-950">
+                                <SheetTitle className="flex items-center gap-2 text-xl font-semibold text-foreground">
                                     {selectedNotification && (
                                         <button
                                             type="button"
                                             onClick={() => setSelectedNotification(null)}
-                                            className="mr-1 rounded-full p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                                            className="mr-1 rounded-full p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
                                         >
                                             <ArrowLeft className="h-5 w-5" />
                                         </button>
                                     )}
 
-                                    <Bell className="h-5 w-5 text-blue-700" />
+                                    <Bell className="h-5 w-5 text-primary" />
                                     {selectedNotification ? 'Notification Details' : 'Notifications'}
                                 </SheetTitle>
 
@@ -217,7 +217,7 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                                 <Button
                                     type="button"
                                     onClick={() => setAddOpen(true)}
-                                    className="h-9 rounded-xl bg-blue-700 px-3 text-white hover:bg-blue-800"
+                                    className="h-9 rounded-xl bg-primary px-3 text-white hover:bg-primary/90"
                                 >
                                     <Plus className="mr-1 h-4 w-4" />
                                 </Button>
@@ -230,18 +230,18 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                     {!selectedNotification && (
                         <div className="space-y-3">
                             {loading && (
-                                <p className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-400 shadow-sm">
+                                <p className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-muted-foreground shadow-sm">
                                     Loading notifications...
                                 </p>
                             )}
 
                             {!loading && notifications.length === 0 && (
-                                <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                                <div className="rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/[0.06] text-primary">
                                         <Bell className="h-6 w-6" />
                                     </div>
-                                    <h3 className="mt-3 font-semibold text-slate-950">No notifications yet</h3>
-                                    <p className="mt-1 text-sm text-slate-500">
+                                    <h3 className="mt-3 font-semibold text-foreground">No notifications yet</h3>
+                                    <p className="mt-1 text-sm text-muted-foreground">
                                         Orders, alerts, and announcements will appear here.
                                     </p>
                                 </div>
@@ -253,29 +253,29 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                                         key={item.id}
                                         type="button"
                                         onClick={() => openNotification(item)}
-                                        className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-200 hover:bg-blue-50/40"
+                                        className="w-full rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition hover:border-primary/20 hover:bg-primary/[0.035]"
                                     >
                                         <div className="flex gap-3">
-                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/[0.06] text-primary">
                                                 {iconByType(item.type)}
                                             </div>
 
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-start justify-between gap-2">
-                                                    <h4 className="line-clamp-1 font-semibold text-slate-950">
+                                                    <h4 className="line-clamp-1 font-semibold text-foreground">
                                                         {item.title}
                                                     </h4>
 
-                                                    <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium uppercase text-slate-500">
+                                                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium uppercase text-muted-foreground">
                                                         {item.type ?? 'system'}
                                                     </span>
                                                 </div>
 
-                                                <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-500">
+                                                <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted-foreground">
                                                     {item.message}
                                                 </p>
 
-                                                <div className="mt-3 flex items-center gap-1 text-xs text-slate-400">
+                                                <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
                                                     <Clock className="h-3.5 w-3.5" />
                                                     {formatTime(item.created_at)}
                                                 </div>
@@ -290,7 +290,7 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                                     variant="outline"
                                     onClick={() => fetchNotifications(page + 1, true)}
                                     disabled={loadingMore}
-                                    className="h-11 w-full rounded-xl border-slate-200 bg-white font-semibold"
+                                    className="h-11 w-full rounded-xl border-border bg-card font-semibold"
                                 >
                                     {loadingMore ? 'Loading...' : 'Load More'}
                                 </Button>
@@ -301,45 +301,45 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                     {selectedNotification && (
                         <div className="space-y-4">
                             {loadingDetail && (
-                                <p className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-400 shadow-sm">
+                                <p className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-muted-foreground shadow-sm">
                                     Loading details...
                                 </p>
                             )}
 
                             {!loadingDetail && (
-                                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                                <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                                         {iconByType(selectedNotification.type)}
                                     </div>
 
                                     <div className="mt-4 flex items-center gap-2">
-                                        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold uppercase text-blue-700">
+                                        <span className="rounded-full bg-primary/[0.06] px-2.5 py-1 text-xs font-semibold uppercase text-primary">
                                             {selectedNotification.type ?? 'system'}
                                         </span>
 
-                                        <span className="text-xs text-slate-400">
+                                        <span className="text-xs text-muted-foreground">
                                             {formatTime(selectedNotification.created_at)}
                                         </span>
                                     </div>
 
-                                    <h3 className="mt-4 text-xl font-semibold leading-7 text-slate-950">
+                                    <h3 className="mt-4 text-xl font-semibold leading-7 text-foreground">
                                         {selectedNotification.title}
                                     </h3>
 
-                                    <div className="mt-5 rounded-xl bg-slate-50 p-4">
-                                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                                    <div className="mt-5 rounded-xl bg-muted/30 p-4">
+                                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                             Full message
                                         </p>
-                                        <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">
+                                        <p className="mt-2 whitespace-pre-line text-sm leading-6 text-foreground">
                                             {selectedNotification.message}
                                         </p>
                                     </div>
 
-                                    <div className="mt-5 rounded-xl border border-slate-100 bg-white p-4">
-                                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                                    <div className="mt-5 rounded-xl border border-border bg-card p-4">
+                                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                             Receiver
                                         </p>
-                                        <p className="mt-2 text-sm font-medium text-slate-700">
+                                        <p className="mt-2 text-sm font-medium text-foreground">
                                             {selectedNotification.user
                                                 ? `${selectedNotification.user.name} — ${selectedNotification.user.email}`
                                                 : 'All users / system generated'}
@@ -353,11 +353,11 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
 
                 {addOpen && (
                     <div className="fixed inset-0 z-[60] flex justify-end bg-black/50 backdrop-blur-sm">
-                        <div className="h-full w-full max-w-md overflow-y-auto border-l border-slate-200 bg-white shadow-2xl">
-                            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-5">
+                        <div className="h-full w-full max-w-md overflow-y-auto border-l border-border bg-card shadow-2xl">
+                            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-5">
                                 <div>
-                                    <h2 className="text-xl font-semibold text-slate-950">Add Notification</h2>
-                                    <p className="mt-1 text-sm text-slate-500">
+                                    <h2 className="text-xl font-semibold text-foreground">Add Notification</h2>
+                                    <p className="mt-1 text-sm text-muted-foreground">
                                         Create announcement or alert for users.
                                     </p>
                                 </div>
@@ -365,32 +365,32 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                                 <button
                                     type="button"
                                     onClick={() => setAddOpen(false)}
-                                    className="rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                                    className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
                                 >
                                     <X className="h-5 w-5" />
                                 </button>
                             </div>
 
                             <div className="space-y-5 px-6 py-5">
-                                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                                <div className="rounded-2xl border border-primary/20 bg-primary/[0.06] p-4">
                                     <div className="flex items-start gap-3">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-700 text-white">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white">
                                             <Megaphone className="h-5 w-5" />
                                         </div>
 
                                         <div>
-                                            <h3 className="font-semibold text-slate-950">
+                                            <h3 className="font-semibold text-foreground">
                                                 Notification Announcement
                                             </h3>
-                                            <p className="mt-1 text-sm text-slate-600">
+                                            <p className="mt-1 text-sm text-muted-foreground">
                                                 This will appear in the user notification drawer.
                                             </p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                                    <label className="text-sm font-medium text-slate-700">Send to</label>
+                                <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                                    <label className="text-sm font-medium text-foreground">Send to</label>
 
                                     <div className="mt-2 grid grid-cols-2 gap-2">
                                         <button
@@ -398,8 +398,8 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                                             onClick={() => setMode('all')}
                                             className={`rounded-xl border px-3 py-2 text-sm font-medium ${
                                                 mode === 'all'
-                                                    ? 'border-blue-600 bg-blue-50 text-blue-700'
-                                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                                    ? 'border-primary bg-primary/[0.06] text-primary'
+                                                    : 'border-border text-muted-foreground hover:bg-muted/30'
                                             }`}
                                         >
                                             All Users
@@ -410,8 +410,8 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                                             onClick={() => setMode('single')}
                                             className={`rounded-xl border px-3 py-2 text-sm font-medium ${
                                                 mode === 'single'
-                                                    ? 'border-blue-600 bg-blue-50 text-blue-700'
-                                                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                                                    ? 'border-primary bg-primary/[0.06] text-primary'
+                                                    : 'border-border text-muted-foreground hover:bg-muted/30'
                                             }`}
                                         >
                                             One User
@@ -422,7 +422,7 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                                         <select
                                             value={userId}
                                             onChange={(e) => setUserId(e.target.value)}
-                                            className="mt-3 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                            className="mt-3 h-11 w-full rounded-xl border border-border bg-muted/30 px-3 text-sm text-foreground outline-none focus:border-primary/25 focus:bg-card focus:ring-4 focus:ring-blue-100"
                                         >
                                             <option value="">Select user</option>
                                             {users.map((user) => (
@@ -434,13 +434,13 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                                     )}
                                 </div>
 
-                                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                                    <label className="text-sm font-medium text-slate-700">Type</label>
+                                <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                                    <label className="text-sm font-medium text-foreground">Type</label>
 
                                     <select
                                         value={type}
                                         onChange={(e) => setType(e.target.value)}
-                                        className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                        className="mt-2 h-11 w-full rounded-xl border border-border bg-muted/30 px-3 text-sm text-foreground outline-none focus:border-primary/25 focus:bg-card focus:ring-4 focus:ring-blue-100"
                                     >
                                         <option value="announcement">Announcement</option>
                                         <option value="alert">Alert</option>
@@ -448,7 +448,7 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                                         <option value="system">System</option>
                                     </select>
 
-                                    <label className="mt-4 block text-sm font-medium text-slate-700">
+                                    <label className="mt-4 block text-sm font-medium text-foreground">
                                         Title
                                     </label>
 
@@ -456,10 +456,10 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                                         value={title}
                                         onChange={(e) => setTitle(e.target.value)}
                                         placeholder="Notification title"
-                                        className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                        className="mt-2 h-11 w-full rounded-xl border border-border bg-muted/30 px-4 text-sm text-foreground outline-none focus:border-primary/25 focus:bg-card focus:ring-4 focus:ring-blue-100"
                                     />
 
-                                    <label className="mt-4 block text-sm font-medium text-slate-700">
+                                    <label className="mt-4 block text-sm font-medium text-foreground">
                                         Message
                                     </label>
 
@@ -468,7 +468,7 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                                         onChange={(e) => setMessage(e.target.value)}
                                         rows={6}
                                         placeholder="Notification message..."
-                                        className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+                                        className="mt-2 w-full resize-none rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/25 focus:bg-card focus:ring-4 focus:ring-blue-100"
                                     />
 
                                     <Button
@@ -480,7 +480,7 @@ export function AdminNotificationDrawer({ open, onOpenChange }: Props) {
                                             !message.trim() ||
                                             (mode === 'single' && !userId)
                                         }
-                                        className="mt-4 h-11 w-full rounded-xl bg-blue-700 font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                        className="mt-4 h-11 w-full rounded-xl bg-primary font-semibold text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         <Send className="mr-2 h-4 w-4" />
                                         {sending ? 'Sending...' : 'Publish Notification'}

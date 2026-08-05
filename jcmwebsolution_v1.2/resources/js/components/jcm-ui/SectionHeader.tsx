@@ -11,12 +11,12 @@ export default function SectionHeader({ eyebrow, title, description }: SectionHe
                 {eyebrow}
             </p>
 
-            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950 md:text-3xl">
+            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-foreground md:text-3xl">
                 {title}
             </h2>
 
             {description && (
-                <p className="mt-2 text-sm leading-6 text-slate-500 md:text-base">
+                <p className="mt-2 text-sm leading-6 text-muted-foreground md:text-base">
                     {description}
                 </p>
             )}

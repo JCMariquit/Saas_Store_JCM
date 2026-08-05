@@ -158,26 +158,26 @@ export default function TransactionsIndex() {
     const txStatusClass = (status: TransactionRow['status']) => {
         switch (status) {
             case 'verified':
-                return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+                return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300';
             case 'rejected':
-                return 'border-red-200 bg-red-50 text-red-700';
+                return 'border-red-500/20 bg-red-500/10 text-red-300';
             default:
-                return 'border-amber-200 bg-amber-50 text-amber-700';
+                return 'border-amber-500/20 bg-amber-500/10 text-amber-300';
         }
     };
 
     const orderStatusClass = (status: TransactionRow['order_status']) => {
         switch (status) {
             case 'verified':
-                return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+                return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300';
             case 'paid':
-                return 'border-amber-200 bg-amber-50 text-amber-700';
+                return 'border-amber-500/20 bg-amber-500/10 text-amber-300';
             case 'failed':
-                return 'border-red-200 bg-red-50 text-red-700';
+                return 'border-red-500/20 bg-red-500/10 text-red-300';
             case 'cancelled':
-                return 'border-slate-200 bg-slate-100 text-slate-700';
+                return 'border-border bg-muted text-foreground';
             default:
-                return 'border-blue-200 bg-blue-50 text-blue-700';
+                return 'border-primary/20 bg-primary/[0.06] text-primary';
         }
     };
 
@@ -213,7 +213,7 @@ export default function TransactionsIndex() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Transactions" />
 
-            <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/40 to-indigo-100/50 p-4 md:p-6">
+            <div className="min-h-screen bg-background p-4 md:p-6">
                 <div className="space-y-6">
                     <PageHero
                         title="Transactions"
@@ -255,7 +255,7 @@ export default function TransactionsIndex() {
                     </div>
 
                     {flash?.success && (
-                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm">
+                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-300 shadow-sm">
                             {flash.success}
                         </div>
                     )}
@@ -276,7 +276,7 @@ export default function TransactionsIndex() {
                                     type="button"
                                     variant="outline"
                                     onClick={resetSearch}
-                                    className="h-11 rounded-xl border-slate-200 bg-white px-4 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                    className="h-11 rounded-xl border-border bg-card px-4 text-foreground hover:border-primary/20 hover:bg-primary/[0.06] hover:text-primary"
                                 >
                                     Reset Search
                                 </Button>
@@ -298,41 +298,41 @@ export default function TransactionsIndex() {
                                     onClick={() => openViewDrawer(transaction)}
                                 >
                                     <td className="px-4 py-4">
-                                        <div className="font-medium text-slate-900">
+                                        <div className="font-medium text-foreground">
                                             {transaction.transaction_code}
                                         </div>
-                                        <div className="text-xs text-slate-500">
+                                        <div className="text-xs text-muted-foreground">
                                             {transaction.paid_at ?? '-'}
                                         </div>
                                     </td>
 
-                                    <td className="px-4 py-4 text-slate-700">
+                                    <td className="px-4 py-4 text-foreground">
                                         {transaction.order_code ?? '-'}
                                     </td>
 
-                                    <td className="px-4 py-4 text-slate-700">
+                                    <td className="px-4 py-4 text-foreground">
                                         {transaction.user_name ?? '-'}
                                     </td>
 
                                     <td className="px-4 py-4">
-                                        <div className="font-medium text-slate-900">
+                                        <div className="font-medium text-foreground">
                                             {transaction.product_name ?? '-'}
                                         </div>
-                                        <div className="text-xs text-slate-500">
+                                        <div className="text-xs text-muted-foreground">
                                             {transaction.plan_name ?? '-'}
                                         </div>
                                     </td>
 
                                     <td className="px-4 py-4">
-                                        <div className="text-slate-700">
+                                        <div className="text-foreground">
                                             {transaction.payment_method?.toUpperCase() ?? '-'}
                                         </div>
-                                        <div className="text-xs text-slate-500">
+                                        <div className="text-xs text-muted-foreground">
                                             Ref: {transaction.reference_number ?? '-'}
                                         </div>
                                     </td>
 
-                                    <td className="px-4 py-4 text-slate-700">
+                                    <td className="px-4 py-4 text-foreground">
                                         {formatPrice(transaction.amount)}
                                     </td>
 
@@ -356,7 +356,7 @@ export default function TransactionsIndex() {
                                                 {orderStatusLabel(transaction.order_status)}
                                             </span>
                                         ) : (
-                                            <span className="text-slate-400">-</span>
+                                            <span className="text-muted-foreground">-</span>
                                         )}
                                     </td>
 
@@ -369,7 +369,7 @@ export default function TransactionsIndex() {
                                                 <Button
                                                     type="button"
                                                     variant="outline"
-                                                    className="h-10 rounded-xl border-slate-300 px-3 text-slate-700 hover:bg-slate-50"
+                                                    className="h-10 rounded-xl border-border px-3 text-foreground hover:bg-muted/30"
                                                     title="Manage in Orders"
                                                     aria-label={`Manage order ${transaction.order_code}`}
                                                     onClick={() => goToOrder(transaction)}
@@ -382,7 +382,7 @@ export default function TransactionsIndex() {
                                                 <Button
                                                     type="button"
                                                     variant="outline"
-                                                    className="h-10 rounded-xl border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                    className="h-10 rounded-xl border-red-500/20 px-3 text-red-600 hover:bg-red-500/10 hover:text-red-300"
                                                     title="Delete transaction"
                                                     aria-label={`Delete transaction ${transaction.transaction_code}`}
                                                     onClick={() => deleteTransaction(transaction)}
@@ -415,10 +415,10 @@ export default function TransactionsIndex() {
                                         }}
                                         className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
                                             link.active
-                                                ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                                                ? 'border-primary bg-gradient-to-r from-primary to-primary/80 text-white shadow-md'
                                                 : link.url
-                                                  ? 'border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700'
-                                                  : 'cursor-not-allowed border-slate-100 bg-slate-100 text-slate-400'
+                                                  ? 'border-border bg-card text-foreground hover:border-primary/20 hover:bg-primary/[0.06] hover:text-primary'
+                                                  : 'cursor-not-allowed border-border bg-muted text-muted-foreground'
                                         }`}
                                         dangerouslySetInnerHTML={{ __html: link.label }}
                                     />
@@ -432,21 +432,21 @@ export default function TransactionsIndex() {
             {viewingTransaction && (
                 <div className="fixed inset-0 z-50">
                     <div
-                        className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1px]"
+                        className="absolute inset-0 bg-black/50 backdrop-blur-[1px]"
                         onClick={closeViewDrawer}
                     />
 
-                    <div className="absolute right-0 top-0 flex h-screen w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4">
+                    <div className="absolute right-0 top-0 flex h-screen w-full max-w-md flex-col border-l border-border bg-card shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-primary/[0.06] to-card px-6 py-4">
                             <div>
-                                <h2 className="text-lg font-bold text-slate-900">Transaction Details</h2>
-                                <p className="text-sm text-slate-500">View full transaction information</p>
+                                <h2 className="text-lg font-bold text-foreground">Transaction Details</h2>
+                                <p className="text-sm text-muted-foreground">View full transaction information</p>
                             </div>
 
                             <button
                                 type="button"
                                 onClick={closeViewDrawer}
-                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                                className="rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
                             >
                                 Close
                             </button>
@@ -454,118 +454,118 @@ export default function TransactionsIndex() {
 
                         <div className="flex-1 space-y-5 overflow-y-auto p-6">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Transaction Code</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Transaction Code</p>
+                                <p className="mt-1 text-sm font-medium text-foreground">
                                     {viewingTransaction.transaction_code}
                                 </p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Order Code</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Order Code</p>
+                                <p className="mt-1 text-sm font-medium text-foreground">
                                     {viewingTransaction.order_code ?? '-'}
                                 </p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">User</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">User</p>
+                                <p className="mt-1 text-sm font-medium text-foreground">
                                     {viewingTransaction.user_name ?? '-'}
                                 </p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Product</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Product</p>
+                                <p className="mt-1 text-sm font-medium text-foreground">
                                     {viewingTransaction.product_name ?? '-'}
                                 </p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Plan</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Plan</p>
+                                <p className="mt-1 text-sm font-medium text-foreground">
                                     {viewingTransaction.plan_name ?? '-'}
                                 </p>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Payment Method</p>
-                                    <p className="mt-1 text-sm text-slate-900">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Payment Method</p>
+                                    <p className="mt-1 text-sm text-foreground">
                                         {viewingTransaction.payment_method?.toUpperCase() ?? '-'}
                                     </p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Reference Number</p>
-                                    <p className="mt-1 text-sm text-slate-900">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reference Number</p>
+                                    <p className="mt-1 text-sm text-foreground">
                                         {viewingTransaction.reference_number ?? '-'}
                                     </p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</p>
-                                    <p className="mt-1 text-sm text-slate-900">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Amount</p>
+                                    <p className="mt-1 text-sm text-foreground">
                                         {formatPrice(viewingTransaction.amount)}
                                     </p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Transaction Status</p>
-                                    <p className="mt-1 text-sm capitalize text-slate-900">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Transaction Status</p>
+                                    <p className="mt-1 text-sm capitalize text-foreground">
                                         {viewingTransaction.status}
                                     </p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Order Status</p>
-                                    <p className="mt-1 text-sm capitalize text-slate-900">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Order Status</p>
+                                    <p className="mt-1 text-sm capitalize text-foreground">
                                         {orderStatusLabel(viewingTransaction.order_status)}
                                     </p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Paid At</p>
-                                    <p className="mt-1 text-sm text-slate-900">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Paid At</p>
+                                    <p className="mt-1 text-sm text-foreground">
                                         {viewingTransaction.paid_at ?? '-'}
                                     </p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Verified At</p>
-                                    <p className="mt-1 text-sm text-slate-900">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Verified At</p>
+                                    <p className="mt-1 text-sm text-foreground">
                                         {viewingTransaction.verified_at ?? '-'}
                                     </p>
                                 </div>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Account Name</p>
-                                <p className="mt-1 text-sm text-slate-900">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Account Name</p>
+                                <p className="mt-1 text-sm text-foreground">
                                     {viewingTransaction.account_name ?? '-'}
                                 </p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Account Number</p>
-                                <p className="mt-1 text-sm text-slate-900">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Account Number</p>
+                                <p className="mt-1 text-sm text-foreground">
                                     {viewingTransaction.account_number ?? '-'}
                                 </p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Notes</p>
-                                <p className="mt-1 text-sm leading-6 text-slate-900">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes</p>
+                                <p className="mt-1 text-sm leading-6 text-foreground">
                                     {viewingTransaction.notes || 'No notes'}
                                 </p>
                             </div>
 
-                            <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-5">
+                            <div className="flex flex-wrap gap-3 border-t border-border pt-5">
                                 {viewingTransaction.order_id && (
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        className="inline-flex items-center gap-2 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50"
+                                        className="inline-flex items-center gap-2 rounded-xl border-border text-foreground hover:bg-muted/30"
                                         onClick={() => {
                                             closeViewDrawer();
                                             goToOrder(viewingTransaction);
@@ -580,7 +580,7 @@ export default function TransactionsIndex() {
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        className="inline-flex items-center gap-2 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                        className="inline-flex items-center gap-2 rounded-xl border-red-500/20 text-red-600 hover:bg-red-500/10 hover:text-red-300"
                                         onClick={() => {
                                             closeViewDrawer();
                                             deleteTransaction(viewingTransaction);

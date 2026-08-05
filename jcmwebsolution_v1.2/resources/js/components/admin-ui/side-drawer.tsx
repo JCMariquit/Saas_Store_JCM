@@ -30,16 +30,16 @@ export function SideDrawer({
 
             {/* Drawer */}
             <div
-                className={`absolute right-0 top-0 h-full w-full ${width} bg-white border-l border-slate-200 shadow-xl`}
+                className={`absolute right-0 top-0 h-full w-full ${width} bg-card border-l border-border shadow-xl`}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <div className="flex items-center justify-between border-b border-border px-6 py-4">
                     <div>
-                        <h2 className="text-lg font-semibold text-slate-900">
+                        <h2 className="text-lg font-semibold text-foreground">
                             {title}
                         </h2>
                         {description && (
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-muted-foreground">
                                 {description}
                             </p>
                         )}
@@ -47,7 +47,7 @@ export function SideDrawer({
 
                     <button
                         onClick={onClose}
-                        className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-100 transition"
+                        className="rounded-lg border border-border p-2 text-muted-foreground hover:bg-muted transition"
                     >
                         <X className="h-4 w-4" />
                     </button>

@@ -1,27 +1,29 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { CheckCircle2, Layers3, Pencil, Plus, Trash2, XCircle } from 'lucide-react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
-import { Layers3, Plus, Pencil, Trash2, CheckCircle2, XCircle } from 'lucide-react';
 
-import AppLayout from '@/layouts/admin-layout';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import AppLayout from '@/layouts/admin-layout';
 import { type BreadcrumbItem } from '@/types';
 
-import { PageHero } from '@/components/admin-ui/page-hero';
-import { StatsCard } from '@/components/admin-ui/stats-card';
-import { SectionCard } from '@/components/admin-ui/section-card';
-import { SearchInput } from '@/components/admin-ui/search-input';
-import { DataTable } from '@/components/admin-ui/data-table';
-import { TableActionButtons } from '@/components/admin-ui/table-action-buttons';
-import { FormModal } from '@/components/admin-ui/form-modal';
 import { ConfirmModal } from '@/components/admin-ui/confirm-modal';
+import { DataTable } from '@/components/admin-ui/data-table';
+import { FormModal } from '@/components/admin-ui/form-modal';
+import { PageHero } from '@/components/admin-ui/page-hero';
+import { SearchInput } from '@/components/admin-ui/search-input';
+import { SectionCard } from '@/components/admin-ui/section-card';
+import { StatsCard } from '@/components/admin-ui/stats-card';
+import { TableActionButtons } from '@/components/admin-ui/table-action-buttons';
 
 type ProductOption = {
     id: number;
     name: string;
 };
+
+type PlanStatus = 'active' | 'inactive' | 'archived';
 
 type PlanRow = {
     id: number;
@@ -30,8 +32,20 @@ type PlanRow = {
     plan_name: string;
     price: string | number;
     duration_days: number;
+    billing_interval: 'monthly' | 'quarterly' | 'yearly' | 'custom';
+    quarterly_price: string | number | null;
+    yearly_price: string | number | null;
+    trial_days: number;
+    has_role_based_access: boolean;
+    has_multi_branch: boolean;
+    has_activity_logs: boolean;
+    activity_log_retention_days: number | null;
+    max_branches: number | null;
+    max_warehouses: number | null;
+    max_staff: number | null;
+    sort_order: number;
     description: string | null;
-    status: 'active' | 'inactive';
+    status: PlanStatus;
     created_at: string | null;
 };
 
@@ -73,8 +87,19 @@ type PlanForm = {
     plan_name: string;
     price: number | '';
     duration_days: number | '';
+    quarterly_price: number | '';
+    yearly_price: number | '';
+    trial_days: number | '';
+    has_role_based_access: boolean;
+    has_multi_branch: boolean;
+    has_activity_logs: boolean;
+    activity_log_retention_days: number | '';
+    max_branches: number | '';
+    max_warehouses: number | '';
+    max_staff: number | '';
+    sort_order: number | '';
     description: string;
-    status: 'active' | 'inactive';
+    status: PlanStatus;
 };
 
 const planTableColumns = [
@@ -101,6 +126,17 @@ export default function PlansIndex() {
         plan_name: '',
         price: '',
         duration_days: '',
+        quarterly_price: '',
+        yearly_price: '',
+        trial_days: 0,
+        has_role_based_access: false,
+        has_multi_branch: false,
+        has_activity_logs: false,
+        activity_log_retention_days: '',
+        max_branches: '',
+        max_warehouses: '',
+        max_staff: '',
+        sort_order: 0,
         description: '',
         status: 'active',
     });
@@ -110,6 +146,17 @@ export default function PlansIndex() {
         plan_name: '',
         price: '',
         duration_days: '',
+        quarterly_price: '',
+        yearly_price: '',
+        trial_days: 0,
+        has_role_based_access: false,
+        has_multi_branch: false,
+        has_activity_logs: false,
+        activity_log_retention_days: '',
+        max_branches: '',
+        max_warehouses: '',
+        max_staff: '',
+        sort_order: 0,
         description: '',
         status: 'active',
     });
@@ -138,6 +185,17 @@ export default function PlansIndex() {
             plan_name: '',
             price: '',
             duration_days: '',
+            quarterly_price: '',
+            yearly_price: '',
+            trial_days: 0,
+            has_role_based_access: false,
+            has_multi_branch: false,
+            has_activity_logs: false,
+            activity_log_retention_days: '',
+            max_branches: '',
+            max_warehouses: '',
+            max_staff: '',
+            sort_order: 0,
             description: '',
             status: 'active',
         });
@@ -158,6 +216,17 @@ export default function PlansIndex() {
             plan_name: plan.plan_name,
             price: Number(plan.price),
             duration_days: plan.duration_days,
+            quarterly_price: plan.quarterly_price === null ? '' : Number(plan.quarterly_price),
+            yearly_price: plan.yearly_price === null ? '' : Number(plan.yearly_price),
+            trial_days: plan.trial_days,
+            has_role_based_access: plan.has_role_based_access,
+            has_multi_branch: plan.has_multi_branch,
+            has_activity_logs: plan.has_activity_logs,
+            activity_log_retention_days: plan.activity_log_retention_days ?? '',
+            max_branches: plan.max_branches ?? '',
+            max_warehouses: plan.max_warehouses ?? '',
+            max_staff: plan.max_staff ?? '',
+            sort_order: plan.sort_order,
             description: plan.description ?? '',
             status: plan.status,
         });
@@ -244,10 +313,10 @@ export default function PlansIndex() {
 
     const getStatusBadgeClass = (status: PlanRow['status']) => {
         if (status === 'active') {
-            return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+            return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300';
         }
 
-        return 'border-slate-200 bg-slate-100 text-slate-700';
+        return 'border-border bg-muted text-foreground';
     };
 
     const formatPrice = (value: string | number) => {
@@ -287,7 +356,7 @@ export default function PlansIndex() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Plans" />
 
-            <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/40 to-indigo-100/50 p-4 md:p-6">
+            <div className="bg-background min-h-screen p-4 md:p-6">
                 <div className="space-y-6">
                     <PageHero
                         title="Plans"
@@ -324,7 +393,7 @@ export default function PlansIndex() {
                     </div>
 
                     {flash?.success && (
-                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm">
+                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-300 shadow-sm">
                             {flash.success}
                         </div>
                     )}
@@ -334,18 +403,13 @@ export default function PlansIndex() {
                         description={resultsText}
                         actions={
                             <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-end">
-                                <SearchInput
-                                    id="plan-search"
-                                    value={search}
-                                    onChange={setSearch}
-                                    placeholder="Search plan or product..."
-                                />
+                                <SearchInput id="plan-search" value={search} onChange={setSearch} placeholder="Search plan or product..." />
 
                                 <Button
                                     type="button"
                                     variant="outline"
                                     onClick={resetSearch}
-                                    className="h-11 rounded-xl border-slate-200 bg-white px-4 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                    className="border-border bg-card text-foreground hover:border-primary/20 hover:bg-primary/[0.06] hover:text-primary h-11 rounded-xl px-4"
                                 >
                                     Reset Search
                                 </Button>
@@ -361,20 +425,14 @@ export default function PlansIndex() {
                             hoverable
                         >
                             {plans.data.map((plan) => (
-                                <tr
-                                    key={plan.id}
-                                    className="cursor-pointer"
-                                    onClick={() => openViewDrawer(plan)}
-                                >
-                                    <td className="px-4 py-4 text-sm text-slate-700">{plan.id}</td>
+                                <tr key={plan.id} className="cursor-pointer" onClick={() => openViewDrawer(plan)}>
+                                    <td className="text-foreground px-4 py-4 text-sm">{plan.id}</td>
 
-                                    <td className="px-4 py-4 font-medium text-slate-900">
-                                        {plan.product_name}
-                                    </td>
+                                    <td className="text-foreground px-4 py-4 font-medium">{plan.product_name}</td>
 
                                     <td className="px-4 py-4">
-                                        <div className="font-medium text-slate-900">{plan.plan_name}</div>
-                                        <div className="mt-1 max-w-[320px] truncate text-xs text-slate-500">
+                                        <div className="text-foreground font-medium">{plan.plan_name}</div>
+                                        <div className="text-muted-foreground mt-1 max-w-[320px] truncate text-xs">
                                             {plan.description || 'No description'}
                                         </div>
                                     </td>
@@ -389,15 +447,8 @@ export default function PlansIndex() {
                                         </span>
                                     </td>
 
-                                    <td
-                                        className="px-4 py-4"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <TableActionButtons
-                                            name={plan.plan_name}
-                                            onEdit={() => openEdit(plan)}
-                                            onDelete={() => openDelete(plan)}
-                                        />
+                                    <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                                        <TableActionButtons name={plan.plan_name} onEdit={() => openEdit(plan)} onDelete={() => openDelete(plan)} />
                                     </td>
                                 </tr>
                             ))}
@@ -422,10 +473,10 @@ export default function PlansIndex() {
                                         }}
                                         className={`rounded-xl border px-3 py-2 text-sm font-medium transition ${
                                             link.active
-                                                ? 'border-blue-600 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                                                ? 'border-primary from-primary to-primary/80 bg-gradient-to-r text-white shadow-md'
                                                 : link.url
-                                                  ? 'border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700'
-                                                  : 'cursor-not-allowed border-slate-100 bg-slate-100 text-slate-400'
+                                                  ? 'border-border bg-card text-foreground hover:border-primary/20 hover:bg-primary/[0.06] hover:text-primary'
+                                                  : 'border-border bg-muted text-muted-foreground cursor-not-allowed'
                                         }`}
                                         dangerouslySetInnerHTML={{ __html: link.label }}
                                     />
@@ -452,13 +503,8 @@ export default function PlansIndex() {
                                 name="product_id"
                                 title="Select product"
                                 value={createForm.data.product_id}
-                                onChange={(e) =>
-                                    createForm.setData(
-                                        'product_id',
-                                        e.target.value ? Number(e.target.value) : '',
-                                    )
-                                }
-                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                                onChange={(e) => createForm.setData('product_id', e.target.value ? Number(e.target.value) : '')}
+                                className="border-border bg-card text-foreground focus:border-primary h-11 rounded-xl border px-3 text-sm transition outline-none"
                             >
                                 <option value="">Select product</option>
                                 {products.map((product) => (
@@ -490,12 +536,7 @@ export default function PlansIndex() {
                                 min="0"
                                 step="0.01"
                                 value={createForm.data.price}
-                                onChange={(e) =>
-                                    createForm.setData(
-                                        'price',
-                                        e.target.value === '' ? '' : Number(e.target.value),
-                                    )
-                                }
+                                onChange={(e) => createForm.setData('price', e.target.value === '' ? '' : Number(e.target.value))}
                                 placeholder="0.00"
                                 className="rounded-xl"
                             />
@@ -509,16 +550,51 @@ export default function PlansIndex() {
                                 type="number"
                                 min="1"
                                 value={createForm.data.duration_days}
-                                onChange={(e) =>
-                                    createForm.setData(
-                                        'duration_days',
-                                        e.target.value === '' ? '' : Number(e.target.value),
-                                    )
-                                }
+                                onChange={(e) => createForm.setData('duration_days', e.target.value === '' ? '' : Number(e.target.value))}
                                 placeholder="30"
                                 className="rounded-xl"
                             />
                             <InputError message={createForm.errors.duration_days} />
+                        </div>
+
+                        <div className="border-border/70 bg-muted/20 rounded-2xl border p-4 md:col-span-2">
+                            <div className="mb-4">
+                                <p className="text-foreground text-sm font-semibold">Billing Price Matrix</p>
+                                <p className="text-muted-foreground mt-1 text-xs">
+                                    The base price above is the default interval. Add quarterly and yearly prices used by connected product checkout
+                                    pages.
+                                </p>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="create_quarterly_price">Quarterly price</Label>
+                                    <Input
+                                        id="create_quarterly_price"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={createForm.data.quarterly_price}
+                                        onChange={(e) => createForm.setData('quarterly_price', e.target.value === '' ? '' : Number(e.target.value))}
+                                        placeholder="Optional"
+                                        className="rounded-xl"
+                                    />
+                                    <InputError message={createForm.errors.quarterly_price} />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="create_yearly_price">Yearly price</Label>
+                                    <Input
+                                        id="create_yearly_price"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={createForm.data.yearly_price}
+                                        onChange={(e) => createForm.setData('yearly_price', e.target.value === '' ? '' : Number(e.target.value))}
+                                        placeholder="Optional"
+                                        className="rounded-xl"
+                                    />
+                                    <InputError message={createForm.errors.yearly_price} />
+                                </div>
+                            </div>
                         </div>
 
                         <div className="grid gap-2 md:col-span-2">
@@ -530,11 +606,87 @@ export default function PlansIndex() {
                                 placeholder="Enter plan description"
                                 value={createForm.data.description}
                                 onChange={(e) => createForm.setData('description', e.target.value)}
-                                className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
+                                className="border-border focus:border-primary min-h-[110px] rounded-xl border px-3 py-2 text-sm transition outline-none"
                             />
                             <InputError message={createForm.errors.description} />
                         </div>
 
+                        <div className="border-border/70 bg-muted/20 rounded-2xl border p-4 md:col-span-2">
+                            <div className="mb-4">
+                                <p className="text-foreground text-sm font-semibold">Access & Limits</p>
+                                <p className="text-muted-foreground mt-1 text-xs">Configure the capabilities enforced by connected JCM systems.</p>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                {[
+                                    ['has_role_based_access', 'Role-based access'],
+                                    ['has_multi_branch', 'Multi-branch'],
+                                    ['has_activity_logs', 'Activity logs'],
+                                ].map(([field, label]) => (
+                                    <label
+                                        key={field}
+                                        className="border-border/70 bg-background/40 text-foreground flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={createForm.data[field as 'has_role_based_access' | 'has_multi_branch' | 'has_activity_logs']}
+                                            onChange={(e) =>
+                                                createForm.setData(
+                                                    field as 'has_role_based_access' | 'has_multi_branch' | 'has_activity_logs',
+                                                    e.target.checked,
+                                                )
+                                            }
+                                            className="border-border text-primary focus:ring-primary size-4 rounded"
+                                        />
+                                        {label}
+                                    </label>
+                                ))}
+                            </div>
+
+                            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                {[
+                                    ['max_branches', 'Max branches'],
+                                    ['max_warehouses', 'Max warehouses'],
+                                    ['max_staff', 'Max team members'],
+                                    ['trial_days', 'Trial days'],
+                                    ['activity_log_retention_days', 'Log retention days'],
+                                    ['sort_order', 'Sort order'],
+                                ].map(([field, label]) => (
+                                    <div key={field} className="grid gap-2">
+                                        <Label htmlFor="create_{field}">{label}</Label>
+                                        <Input
+                                            id={`create_${field}`}
+                                            type="number"
+                                            min="0"
+                                            value={
+                                                createForm.data[
+                                                    field as
+                                                        | 'max_branches'
+                                                        | 'max_warehouses'
+                                                        | 'max_staff'
+                                                        | 'trial_days'
+                                                        | 'activity_log_retention_days'
+                                                        | 'sort_order'
+                                                ]
+                                            }
+                                            onChange={(e) =>
+                                                createForm.setData(
+                                                    field as
+                                                        | 'max_branches'
+                                                        | 'max_warehouses'
+                                                        | 'max_staff'
+                                                        | 'trial_days'
+                                                        | 'activity_log_retention_days'
+                                                        | 'sort_order',
+                                                    e.target.value === '' ? '' : Number(e.target.value),
+                                                )
+                                            }
+                                            className="rounded-xl"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                         <div className="grid gap-2 md:col-span-2">
                             <Label htmlFor="create_status">Status</Label>
                             <select
@@ -542,34 +694,25 @@ export default function PlansIndex() {
                                 name="status"
                                 title="Select plan status"
                                 value={createForm.data.status}
-                                onChange={(e) =>
-                                    createForm.setData(
-                                        'status',
-                                        e.target.value as 'active' | 'inactive',
-                                    )
-                                }
-                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                                onChange={(e) => createForm.setData('status', e.target.value as PlanStatus)}
+                                className="border-border bg-card text-foreground focus:border-primary h-11 rounded-xl border px-3 text-sm transition outline-none"
                             >
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
+                                <option value="archived">Archived</option>
                             </select>
                             <InputError message={createForm.errors.status} />
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={closeCreate}
-                            className="rounded-xl"
-                        >
+                    <div className="border-border flex justify-end gap-3 border-t pt-4">
+                        <Button type="button" variant="outline" onClick={closeCreate} className="rounded-xl">
                             Cancel
                         </Button>
                         <Button
                             type="submit"
                             disabled={createForm.processing}
-                            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                            className="from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-xl bg-gradient-to-r text-white"
                         >
                             {createForm.processing ? 'Creating...' : 'Create Plan'}
                         </Button>
@@ -593,13 +736,8 @@ export default function PlansIndex() {
                                 name="product_id"
                                 title="Select product"
                                 value={editForm.data.product_id}
-                                onChange={(e) =>
-                                    editForm.setData(
-                                        'product_id',
-                                        e.target.value ? Number(e.target.value) : '',
-                                    )
-                                }
-                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                                onChange={(e) => editForm.setData('product_id', e.target.value ? Number(e.target.value) : '')}
+                                className="border-border bg-card text-foreground focus:border-primary h-11 rounded-xl border px-3 text-sm transition outline-none"
                             >
                                 <option value="">Select product</option>
                                 {products.map((product) => (
@@ -630,12 +768,7 @@ export default function PlansIndex() {
                                 min="0"
                                 step="0.01"
                                 value={editForm.data.price}
-                                onChange={(e) =>
-                                    editForm.setData(
-                                        'price',
-                                        e.target.value === '' ? '' : Number(e.target.value),
-                                    )
-                                }
+                                onChange={(e) => editForm.setData('price', e.target.value === '' ? '' : Number(e.target.value))}
                                 className="rounded-xl"
                             />
                             <InputError message={editForm.errors.price} />
@@ -648,21 +781,53 @@ export default function PlansIndex() {
                                 type="number"
                                 min="1"
                                 value={editForm.data.duration_days}
-                                onChange={(e) =>
-                                    editForm.setData(
-                                        'duration_days',
-                                        e.target.value === '' ? '' : Number(e.target.value),
-                                    )
-                                }
+                                onChange={(e) => editForm.setData('duration_days', e.target.value === '' ? '' : Number(e.target.value))}
                                 className="rounded-xl"
                             />
                             <InputError message={editForm.errors.duration_days} />
                         </div>
 
+                        <div className="border-border/70 bg-muted/20 rounded-2xl border p-4 md:col-span-2">
+                            <div className="mb-4">
+                                <p className="text-foreground text-sm font-semibold">Billing Price Matrix</p>
+                                <p className="text-muted-foreground mt-1 text-xs">
+                                    Update the quarterly and yearly prices consumed by the storefront and subscription checkout.
+                                </p>
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="edit_quarterly_price">Quarterly price</Label>
+                                    <Input
+                                        id="edit_quarterly_price"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={editForm.data.quarterly_price}
+                                        onChange={(e) => editForm.setData('quarterly_price', e.target.value === '' ? '' : Number(e.target.value))}
+                                        placeholder="Optional"
+                                        className="rounded-xl"
+                                    />
+                                    <InputError message={editForm.errors.quarterly_price} />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="edit_yearly_price">Yearly price</Label>
+                                    <Input
+                                        id="edit_yearly_price"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={editForm.data.yearly_price}
+                                        onChange={(e) => editForm.setData('yearly_price', e.target.value === '' ? '' : Number(e.target.value))}
+                                        placeholder="Optional"
+                                        className="rounded-xl"
+                                    />
+                                    <InputError message={editForm.errors.yearly_price} />
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="grid gap-2 md:col-span-2">
-                            <Label htmlFor={`edit_description_${selectedPlan?.id ?? 'plan'}`}>
-                                Description
-                            </Label>
+                            <Label htmlFor={`edit_description_${selectedPlan?.id ?? 'plan'}`}>Description</Label>
                             <textarea
                                 id={`edit_description_${selectedPlan?.id ?? 'plan'}`}
                                 name="description"
@@ -670,11 +835,87 @@ export default function PlansIndex() {
                                 placeholder="Enter plan description"
                                 value={editForm.data.description}
                                 onChange={(e) => editForm.setData('description', e.target.value)}
-                                className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-blue-500"
+                                className="border-border focus:border-primary min-h-[110px] rounded-xl border px-3 py-2 text-sm transition outline-none"
                             />
                             <InputError message={editForm.errors.description} />
                         </div>
 
+                        <div className="border-border/70 bg-muted/20 rounded-2xl border p-4 md:col-span-2">
+                            <div className="mb-4">
+                                <p className="text-foreground text-sm font-semibold">Access & Limits</p>
+                                <p className="text-muted-foreground mt-1 text-xs">Configure the capabilities enforced by connected JCM systems.</p>
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                {[
+                                    ['has_role_based_access', 'Role-based access'],
+                                    ['has_multi_branch', 'Multi-branch'],
+                                    ['has_activity_logs', 'Activity logs'],
+                                ].map(([field, label]) => (
+                                    <label
+                                        key={field}
+                                        className="border-border/70 bg-background/40 text-foreground flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={editForm.data[field as 'has_role_based_access' | 'has_multi_branch' | 'has_activity_logs']}
+                                            onChange={(e) =>
+                                                editForm.setData(
+                                                    field as 'has_role_based_access' | 'has_multi_branch' | 'has_activity_logs',
+                                                    e.target.checked,
+                                                )
+                                            }
+                                            className="border-border text-primary focus:ring-primary size-4 rounded"
+                                        />
+                                        {label}
+                                    </label>
+                                ))}
+                            </div>
+
+                            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                {[
+                                    ['max_branches', 'Max branches'],
+                                    ['max_warehouses', 'Max warehouses'],
+                                    ['max_staff', 'Max team members'],
+                                    ['trial_days', 'Trial days'],
+                                    ['activity_log_retention_days', 'Log retention days'],
+                                    ['sort_order', 'Sort order'],
+                                ].map(([field, label]) => (
+                                    <div key={field} className="grid gap-2">
+                                        <Label htmlFor="edit_{field}">{label}</Label>
+                                        <Input
+                                            id={`edit_${field}`}
+                                            type="number"
+                                            min="0"
+                                            value={
+                                                editForm.data[
+                                                    field as
+                                                        | 'max_branches'
+                                                        | 'max_warehouses'
+                                                        | 'max_staff'
+                                                        | 'trial_days'
+                                                        | 'activity_log_retention_days'
+                                                        | 'sort_order'
+                                                ]
+                                            }
+                                            onChange={(e) =>
+                                                editForm.setData(
+                                                    field as
+                                                        | 'max_branches'
+                                                        | 'max_warehouses'
+                                                        | 'max_staff'
+                                                        | 'trial_days'
+                                                        | 'activity_log_retention_days'
+                                                        | 'sort_order',
+                                                    e.target.value === '' ? '' : Number(e.target.value),
+                                                )
+                                            }
+                                            className="rounded-xl"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                         <div className="grid gap-2 md:col-span-2">
                             <Label htmlFor="edit_status">Status</Label>
                             <select
@@ -682,34 +923,25 @@ export default function PlansIndex() {
                                 name="status"
                                 title="Select plan status"
                                 value={editForm.data.status}
-                                onChange={(e) =>
-                                    editForm.setData(
-                                        'status',
-                                        e.target.value as 'active' | 'inactive',
-                                    )
-                                }
-                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-blue-500"
+                                onChange={(e) => editForm.setData('status', e.target.value as PlanStatus)}
+                                className="border-border bg-card text-foreground focus:border-primary h-11 rounded-xl border px-3 text-sm transition outline-none"
                             >
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
+                                <option value="archived">Archived</option>
                             </select>
                             <InputError message={editForm.errors.status} />
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={closeEdit}
-                            className="rounded-xl"
-                        >
+                    <div className="border-border flex justify-end gap-3 border-t pt-4">
+                        <Button type="button" variant="outline" onClick={closeEdit} className="rounded-xl">
                             Cancel
                         </Button>
                         <Button
                             type="submit"
                             disabled={editForm.processing}
-                            className="rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:from-indigo-700 hover:to-blue-700"
+                            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl"
                         >
                             {editForm.processing ? 'Updating...' : 'Save Changes'}
                         </Button>
@@ -729,22 +961,19 @@ export default function PlansIndex() {
 
             {viewingPlan && (
                 <div className="fixed inset-0 z-50">
-                    <div
-                        className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1px]"
-                        onClick={closeViewDrawer}
-                    />
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px]" onClick={closeViewDrawer} />
 
-                    <div className="absolute right-0 top-0 h-full w-full max-w-md border-l border-slate-200 bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4">
+                    <div className="border-border bg-card absolute top-0 right-0 h-full w-full max-w-md border-l shadow-2xl">
+                        <div className="border-border from-primary/[0.07] to-card flex items-center justify-between border-b bg-gradient-to-r px-6 py-4">
                             <div>
-                                <h2 className="text-lg font-bold text-slate-900">Plan Details</h2>
-                                <p className="text-sm text-slate-500">View full plan information</p>
+                                <h2 className="text-foreground text-lg font-bold">Plan Details</h2>
+                                <p className="text-muted-foreground text-sm">View full plan information</p>
                             </div>
 
                             <button
                                 type="button"
                                 onClick={closeViewDrawer}
-                                className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                                className="border-border text-muted-foreground hover:bg-muted rounded-xl border px-3 py-2 text-sm"
                             >
                                 Close
                             </button>
@@ -752,50 +981,79 @@ export default function PlansIndex() {
 
                         <div className="space-y-5 overflow-y-auto p-6">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">ID</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingPlan.id}</p>
+                                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">ID</p>
+                                <p className="text-foreground mt-1 text-sm font-medium">{viewingPlan.id}</p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Product</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingPlan.product_name}</p>
+                                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Product</p>
+                                <p className="text-foreground mt-1 text-sm font-medium">{viewingPlan.product_name}</p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Plan Name</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingPlan.plan_name}</p>
+                                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Plan Name</p>
+                                <p className="text-foreground mt-1 text-sm font-medium">{viewingPlan.plan_name}</p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Description</p>
-                                <p className="mt-1 text-sm leading-6 text-slate-600">
-                                    {viewingPlan.description || 'No description'}
-                                </p>
+                                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Description</p>
+                                <p className="text-muted-foreground mt-1 text-sm leading-6">{viewingPlan.description || 'No description'}</p>
+                            </div>
+
+                            <div className="border-border/70 bg-muted/20 rounded-xl border p-4">
+                                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Plan capabilities</p>
+                                <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                                    <span>
+                                        Role access: <strong>{viewingPlan.has_role_based_access ? 'Yes' : 'No'}</strong>
+                                    </span>
+                                    <span>
+                                        Multi-branch: <strong>{viewingPlan.has_multi_branch ? 'Yes' : 'No'}</strong>
+                                    </span>
+                                    <span>
+                                        Branches: <strong>{viewingPlan.max_branches ?? 'Unlimited'}</strong>
+                                    </span>
+                                    <span>
+                                        Warehouses: <strong>{viewingPlan.max_warehouses ?? 'Unlimited'}</strong>
+                                    </span>
+                                    <span>
+                                        Team: <strong>{viewingPlan.max_staff ?? 'Unlimited'}</strong>
+                                    </span>
+                                    <span>
+                                        Activity logs: <strong>{viewingPlan.has_activity_logs ? 'Enabled' : 'Disabled'}</strong>
+                                    </span>
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Price</p>
-                                    <p className="mt-1 text-sm text-slate-900">{formatPrice(viewingPlan.price)}</p>
+                                    <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Price</p>
+                                    <p className="text-foreground mt-1 text-sm">{formatPrice(viewingPlan.price)}</p>
+                                    <p className="text-muted-foreground mt-1 text-[10px]">
+                                        Quarterly:{' '}
+                                        {viewingPlan.quarterly_price !== null ? formatPrice(viewingPlan.quarterly_price) : 'Not configured'}
+                                    </p>
+                                    <p className="text-muted-foreground mt-1 text-[10px]">
+                                        Yearly: {viewingPlan.yearly_price !== null ? formatPrice(viewingPlan.yearly_price) : 'Not configured'}
+                                    </p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Duration</p>
-                                    <p className="mt-1 text-sm text-slate-900">{viewingPlan.duration_days} days</p>
+                                    <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Duration</p>
+                                    <p className="text-foreground mt-1 text-sm">{viewingPlan.duration_days} days</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Status</p>
-                                    <p className="mt-1 text-sm capitalize text-slate-900">{viewingPlan.status}</p>
+                                    <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Status</p>
+                                    <p className="text-foreground mt-1 text-sm capitalize">{viewingPlan.status}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Created At</p>
-                                    <p className="mt-1 text-sm text-slate-900">{viewingPlan.created_at ?? '-'}</p>
+                                    <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Created At</p>
+                                    <p className="text-foreground mt-1 text-sm">{viewingPlan.created_at ?? '-'}</p>
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 border-t border-slate-200 pt-5">
+                            <div className="border-border flex gap-3 border-t pt-5">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -812,7 +1070,7 @@ export default function PlansIndex() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="inline-flex items-center gap-2 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    className="inline-flex items-center gap-2 rounded-xl border-red-500/20 text-red-600 hover:bg-red-500/10 hover:text-red-300"
                                     onClick={() => {
                                         closeViewDrawer();
                                         openDelete(viewingPlan);

@@ -3,17 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
     protected $fillable = [
         'order_code',
         'user_id',
+        'account_owner_id',
         'product_id',
         'service_id',
         'plan_id',
+        'plan_price_id',
         'billing_type',
+        'subscription_id',
+        'order_type',
         'amount',
+        'currency',
         'duration_days',
         'status',
         'ordered_at',
@@ -22,49 +30,54 @@ class Order extends Model
         'notes',
     ];
 
-    protected $casts = [
-        'ordered_at' => 'datetime',
-        'paid_at' => 'datetime',
-        'verified_at' => 'datetime',
-        'amount' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'ordered_at' => 'datetime',
+            'paid_at' => 'datetime',
+            'verified_at' => 'datetime',
+            'amount' => 'decimal:2',
+            'duration_days' => 'integer',
+        ];
+    }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function product()
+    public function accountOwner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'account_owner_id');
+    }
+
+    public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
     }
 
-    public function service()
+    public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
     }
 
-    public function plan()
+    public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
     }
 
-    public function subscription()
+    public function subscription(): BelongsTo
     {
-        return $this->hasOne(Subscription::class, 'order_id');
+        return $this->belongsTo(Subscription::class);
     }
 
-    public function transactions()
+    public function transactions(): HasMany
     {
-        return $this->hasMany(Transaction::class, 'order_id');
+        return $this->hasMany(Transaction::class);
     }
 
-    public function latestTransaction()
+    public function latestTransaction(): HasOne
     {
-        return $this->hasOne(Transaction::class, 'order_id')->latestOfMany();
-    }
-    public function transaction()
-    {
-        return $this->belongsTo(Transaction::class, 'transaction_id');
+        return $this->hasOne(Transaction::class)->latestOfMany();
     }
 }

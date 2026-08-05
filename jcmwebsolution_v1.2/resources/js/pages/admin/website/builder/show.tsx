@@ -43,22 +43,22 @@ export default function WebsiteBuilderShow() {
     const pricingTypeBadgeClass = (pricingType: string) => {
         switch (pricingType) {
             case 'plan':
-                return 'border-blue-200 bg-blue-50 text-blue-700';
+                return 'border-primary/20 bg-primary/[0.06] text-primary';
             case 'custom':
-                return 'border-indigo-200 bg-indigo-50 text-indigo-700';
+                return 'border-primary/20 bg-primary/10 text-primary';
             default:
-                return 'border-slate-200 bg-slate-100 text-slate-700';
+                return 'border-border bg-muted text-foreground';
         }
     };
 
     const statusBadgeClass = (status: string) => {
         switch (status) {
             case 'active':
-                return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+                return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300';
             case 'inactive':
-                return 'border-red-200 bg-red-50 text-red-700';
+                return 'border-red-500/20 bg-red-500/10 text-red-300';
             default:
-                return 'border-slate-200 bg-slate-100 text-slate-700';
+                return 'border-border bg-muted text-foreground';
         }
     };
 
@@ -66,7 +66,7 @@ export default function WebsiteBuilderShow() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${product.name} Builder`} />
 
-            <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/40 to-indigo-100/50 p-4 md:p-6">
+            <div className="min-h-screen bg-background p-4 md:p-6">
                 <div className="space-y-6">
                     <PageHero
                         title={product.name}
@@ -102,46 +102,46 @@ export default function WebsiteBuilderShow() {
                         description="Review the selected website product before proceeding to the next builder module."
                     >
                         <div className="grid gap-6 lg:grid-cols-[1.1fr_.9fr]">
-                            <div className="rounded-2xl border border-blue-200 bg-white p-6 shadow-sm">
-                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 shadow-sm">
+                            <div className="rounded-2xl border border-primary/20 bg-card p-6 shadow-sm">
+                                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/[0.06] text-primary shadow-sm">
                                     <Globe className="h-7 w-7" />
                                 </div>
 
-                                <h1 className="mt-5 text-2xl font-bold tracking-tight text-slate-900">
+                                <h1 className="mt-5 text-2xl font-bold tracking-tight text-foreground">
                                     {product.name}
                                 </h1>
 
-                                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
+                                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
                                     {product.description || 'This product is ready for the next builder step.'}
                                 </p>
 
-                                <div className="mt-6 inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
+                                <div className="mt-6 inline-flex items-center rounded-full border border-primary/20 bg-primary/[0.06] px-4 py-2 text-sm font-medium text-primary">
                                     Next page placeholder only for now
                                     <ArrowRight className="ml-2 h-4 w-4" />
                                 </div>
                             </div>
 
-                            <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <div className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                         Product Name
                                     </p>
-                                    <p className="mt-1 text-sm font-medium text-slate-900">
+                                    <p className="mt-1 text-sm font-medium text-foreground">
                                         {product.name}
                                     </p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                         Slug
                                     </p>
-                                    <p className="mt-1 text-sm text-slate-900">
+                                    <p className="mt-1 text-sm text-foreground">
                                         {product.slug || '-'}
                                     </p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                         Pricing Type
                                     </p>
                                     <div className="mt-2">
@@ -156,7 +156,7 @@ export default function WebsiteBuilderShow() {
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                         Status
                                     </p>
                                     <div className="mt-2">
@@ -171,10 +171,10 @@ export default function WebsiteBuilderShow() {
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                         Builder Flow
                                     </p>
-                                    <p className="mt-1 text-sm font-medium text-slate-900">
+                                    <p className="mt-1 text-sm font-medium text-foreground">
                                         Ready for next step
                                     </p>
                                 </div>

@@ -12,7 +12,7 @@ export default function StoreItemCard({ item, fallbackIcon, onClick }: StoreItem
         <button
             type="button"
             onClick={onClick}
-            className="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-[0_14px_36px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_18px_44px_rgba(14,165,233,0.14)]"
+            className="group overflow-hidden rounded-2xl border border-border bg-card text-left shadow-[0_14px_36px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_18px_44px_rgba(14,165,233,0.14)]"
         >
             <div className="relative h-[230px] overflow-hidden bg-gradient-to-br from-sky-50 to-blue-100">
                 {item.imageUrl ? (
@@ -23,12 +23,12 @@ export default function StoreItemCard({ item, fallbackIcon, onClick }: StoreItem
                     />
                 ) : (
                     <div className="flex h-full w-full items-center justify-center">
-                        {fallbackIcon ?? <ImageIcon className="h-10 w-10 text-slate-400" />}
+                        {fallbackIcon ?? <ImageIcon className="h-10 w-10 text-muted-foreground" />}
                     </div>
                 )}
 
                 {item.badge && (
-                    <div className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold capitalize text-slate-700 shadow-sm backdrop-blur">
+                    <div className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold capitalize text-foreground shadow-sm backdrop-blur">
                         {item.badge}
                     </div>
                 )}
@@ -38,12 +38,12 @@ export default function StoreItemCard({ item, fallbackIcon, onClick }: StoreItem
                 <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-bold text-sky-600">{item.label}</p>
 
-                    <span className="text-xs font-bold text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-sky-600">
+                    <span className="text-xs font-bold text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-sky-600">
                         View →
                     </span>
                 </div>
 
-                <h3 className="mt-2 line-clamp-2 text-xl font-black leading-tight text-slate-950">
+                <h3 className="mt-2 line-clamp-2 text-xl font-black leading-tight text-foreground">
                     {item.name}
                 </h3>
             </div>

@@ -1,24 +1,9 @@
 import axios from 'axios';
-import {
-    ArrowLeft,
-    Bell,
-    CheckCheck,
-    CheckCircle2,
-    Clock,
-    Loader2,
-    MessageCircle,
-    Package,
-} from 'lucide-react';
+import { ArrowLeft, Bell, CheckCheck, CheckCircle2, Clock, Loader2, MessageCircle, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 type Props = {
     open: boolean;
@@ -179,15 +164,12 @@ export function NotificationsDrawer({ open, onOpenChange }: Props) {
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent
-                side="right"
-                className="flex h-full w-full flex-col overflow-hidden border-l border-slate-200 bg-[#f4f7fb] p-0 sm:max-w-md"
-            >
+            <SheetContent side="right" className="border-border flex h-full w-full flex-col overflow-hidden border-l bg-[#f4f7fb] p-0 sm:max-w-md">
                 <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 text-white">
-                    <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+                    <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
                     <div className="absolute bottom-0 left-10 h-20 w-20 rounded-full bg-blue-300/10 blur-xl" />
 
-                    <div className="relative px-5 pb-5 pt-4">
+                    <div className="relative px-5 pt-4 pb-5">
                         <SheetHeader className="m-0 space-y-0 p-0 text-left">
                             <SheetTitle className="flex items-center justify-between text-white">
                                 <span className="flex items-center gap-3">
@@ -196,15 +178,11 @@ export function NotificationsDrawer({ open, onOpenChange }: Props) {
                                     </span>
 
                                     <span>
-                                        <span className="block text-base font-semibold leading-tight">
-                                            {selectedItem
-                                                ? 'Notification Details'
-                                                : 'Notifications'}
+                                        <span className="block text-base leading-tight font-semibold">
+                                            {selectedItem ? 'Notification Details' : 'Notifications'}
                                         </span>
                                         <span className="mt-0.5 block text-xs font-normal text-blue-100">
-                                            {selectedItem
-                                                ? 'Read the full announcement'
-                                                : 'System updates and order alerts'}
+                                            {selectedItem ? 'Read the full announcement' : 'System updates and order alerts'}
                                         </span>
                                     </span>
                                 </span>
@@ -216,17 +194,13 @@ export function NotificationsDrawer({ open, onOpenChange }: Props) {
                                 )}
                             </SheetTitle>
 
-                            <SheetDescription className="sr-only">
-                                View your recent notifications.
-                            </SheetDescription>
+                            <SheetDescription className="sr-only">View your recent notifications.</SheetDescription>
                         </SheetHeader>
 
                         {!selectedItem && (
                             <div className="relative mt-4 flex items-center gap-2 rounded-2xl bg-white/10 px-3 py-2 text-xs text-blue-50 ring-1 ring-white/15">
                                 <CheckCheck className="h-4 w-4 text-blue-100" />
-                                <span>
-                                    Opening this drawer marks notifications as read.
-                                </span>
+                                <span>Opening this drawer marks notifications as read.</span>
                             </div>
                         )}
                     </div>
@@ -237,25 +211,23 @@ export function NotificationsDrawer({ open, onOpenChange }: Props) {
                         <button
                             type="button"
                             onClick={() => setSelectedItem(null)}
-                            className="mb-4 inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                            className="border-border bg-card text-foreground hover:bg-muted/30 mb-4 inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-semibold shadow-sm transition"
                         >
                             <ArrowLeft className="h-4 w-4" />
                             Back to notifications
                         </button>
 
-                        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                            <div className="bg-gradient-to-br from-blue-50 via-white to-slate-50 p-5">
+                        <div className="border-border bg-card overflow-hidden rounded-3xl border shadow-sm">
+                            <div className="from-primary/[0.055] via-card to-card bg-gradient-to-br p-5">
                                 <div className="flex items-start gap-3">
-                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-700 text-white shadow-sm">
+                                    <div className="bg-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm">
                                         {getIcon(selectedItem.type)}
                                     </div>
 
                                     <div className="min-w-0 flex-1">
-                                        <h3 className="text-lg font-bold leading-6 text-slate-950">
-                                            {selectedItem.title}
-                                        </h3>
+                                        <h3 className="text-foreground text-lg leading-6 font-bold">{selectedItem.title}</h3>
 
-                                        <div className="mt-2 flex items-center gap-1 text-xs text-slate-400">
+                                        <div className="text-muted-foreground mt-2 flex items-center gap-1 text-xs">
                                             <Clock className="h-3.5 w-3.5" />
                                             {formatDate(selectedItem.created_at)}
                                         </div>
@@ -263,10 +235,8 @@ export function NotificationsDrawer({ open, onOpenChange }: Props) {
                                 </div>
                             </div>
 
-                            <div className="border-t border-slate-100 p-5">
-                                <p className="whitespace-pre-line text-sm leading-7 text-slate-700">
-                                    {selectedItem.message}
-                                </p>
+                            <div className="border-border border-t p-5">
+                                <p className="text-foreground text-sm leading-7 whitespace-pre-line">{selectedItem.message}</p>
                             </div>
                         </div>
                     </div>
@@ -274,30 +244,24 @@ export function NotificationsDrawer({ open, onOpenChange }: Props) {
                     <>
                         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                             {loading && (
-                                <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                                <div className="border-border bg-card rounded-3xl border p-8 text-center shadow-sm">
+                                    <div className="bg-primary/[0.06] text-primary mx-auto flex h-12 w-12 items-center justify-center rounded-full">
                                         <Loader2 className="h-6 w-6 animate-spin" />
                                     </div>
 
-                                    <p className="mt-3 text-sm font-medium text-slate-500">
-                                        Loading notifications...
-                                    </p>
+                                    <p className="text-muted-foreground mt-3 text-sm font-medium">Loading notifications...</p>
                                 </div>
                             )}
 
                             {!loading && items.length === 0 && (
-                                <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                                <div className="border-border bg-card rounded-3xl border p-8 text-center shadow-sm">
+                                    <div className="bg-primary/[0.06] text-primary mx-auto flex h-14 w-14 items-center justify-center rounded-2xl">
                                         <Bell className="h-7 w-7" />
                                     </div>
 
-                                    <h4 className="mt-4 font-semibold text-slate-900">
-                                        No notifications
-                                    </h4>
+                                    <h4 className="text-foreground mt-4 font-semibold">No notifications</h4>
 
-                                    <p className="mx-auto mt-1 max-w-xs text-sm leading-6 text-slate-500">
-                                        You have no system updates yet.
-                                    </p>
+                                    <p className="text-muted-foreground mx-auto mt-1 max-w-xs text-sm leading-6">You have no system updates yet.</p>
                                 </div>
                             )}
 
@@ -311,18 +275,14 @@ export function NotificationsDrawer({ open, onOpenChange }: Props) {
                                                 key={item.id}
                                                 type="button"
                                                 onClick={() => void openNotification(item)}
-                                                className={`w-full rounded-3xl border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md ${
-                                                    unread
-                                                        ? 'border-blue-200 ring-4 ring-blue-50'
-                                                        : 'border-slate-200'
+                                                className={`bg-card hover:border-primary/20 w-full rounded-3xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                                                    unread ? 'border-primary/20 ring-4 ring-blue-50' : 'border-border'
                                                 }`}
                                             >
                                                 <div className="flex gap-3">
                                                     <div
                                                         className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-                                                            unread
-                                                                ? 'bg-blue-700 text-white'
-                                                                : 'bg-slate-100 text-blue-700'
+                                                            unread ? 'bg-primary text-white' : 'bg-muted text-primary'
                                                         }`}
                                                     >
                                                         {getIcon(item.type)}
@@ -330,20 +290,14 @@ export function NotificationsDrawer({ open, onOpenChange }: Props) {
 
                                                     <div className="min-w-0 flex-1">
                                                         <div className="flex items-start justify-between gap-2">
-                                                            <h4 className="line-clamp-1 font-semibold text-slate-950">
-                                                                {item.title}
-                                                            </h4>
+                                                            <h4 className="text-foreground line-clamp-1 font-semibold">{item.title}</h4>
 
-                                                            {unread && (
-                                                                <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-blue-700" />
-                                                            )}
+                                                            {unread && <span className="bg-primary mt-1 h-2.5 w-2.5 shrink-0 rounded-full" />}
                                                         </div>
 
-                                                        <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-500">
-                                                            {item.message}
-                                                        </p>
+                                                        <p className="text-muted-foreground mt-1 line-clamp-2 text-sm leading-5">{item.message}</p>
 
-                                                        <div className="mt-3 flex items-center gap-1 text-xs text-slate-400">
+                                                        <div className="text-muted-foreground mt-3 flex items-center gap-1 text-xs">
                                                             <Clock className="h-3.5 w-3.5" />
                                                             {formatDate(item.created_at)}
                                                         </div>
@@ -356,23 +310,15 @@ export function NotificationsDrawer({ open, onOpenChange }: Props) {
                             )}
                         </div>
 
-                        <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-4 shadow-[0_-14px_30px_rgba(15,23,42,0.08)]">
+                        <div className="border-border bg-card shrink-0 border-t px-5 py-4 shadow-[0_-14px_30px_rgba(15,23,42,0.08)]">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={() => void markAll()}
-                                disabled={
-                                    markingAll ||
-                                    items.length === 0 ||
-                                    unreadCount === 0
-                                }
-                                className="h-11 w-full rounded-2xl border-slate-200 bg-white font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                disabled={markingAll || items.length === 0 || unreadCount === 0}
+                                className="border-border bg-card text-foreground hover:bg-muted/30 h-11 w-full rounded-2xl font-semibold disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                {markingAll ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                    <CheckCheck className="mr-2 h-4 w-4" />
-                                )}
+                                {markingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCheck className="mr-2 h-4 w-4" />}
 
                                 {markingAll ? 'Marking...' : 'Mark all as read'}
                             </Button>

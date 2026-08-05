@@ -1,32 +1,23 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { BadgeCheck, Clock3, CreditCard, Plus, ShieldCheck, ShoppingCart, Trash2, XCircle } from 'lucide-react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
-import {
-    BadgeCheck,
-    CreditCard,
-    Plus,
-    Trash2,
-    XCircle,
-    ShoppingCart,
-    Clock3,
-    ShieldCheck,
-} from 'lucide-react';
 
-import AppLayout from '@/layouts/admin-layout';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import AppLayout from '@/layouts/admin-layout';
 import { type BreadcrumbItem } from '@/types';
 
-import { PageHero } from '@/components/admin-ui/page-hero';
-import { StatsCard } from '@/components/admin-ui/stats-card';
-import { SectionCard } from '@/components/admin-ui/section-card';
-import { SearchInput } from '@/components/admin-ui/search-input';
+import { ConfirmModal } from '@/components/admin-ui/confirm-modal';
 import { DataTable } from '@/components/admin-ui/data-table';
 import { FormModal } from '@/components/admin-ui/form-modal';
-import { ConfirmModal } from '@/components/admin-ui/confirm-modal';
+import { PageHero } from '@/components/admin-ui/page-hero';
+import { SearchInput } from '@/components/admin-ui/search-input';
+import { SectionCard } from '@/components/admin-ui/section-card';
+import { StatsCard } from '@/components/admin-ui/stats-card';
 
-type BillingType = 'trial' | 'monthly' | 'yearly' | 'custom';
+type BillingType = 'trial' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
 
 type PlanOption = {
     id: number;
@@ -36,6 +27,14 @@ type PlanOption = {
     price: number;
     duration_days: number;
     label: string;
+};
+
+type PaymentMethodOption = {
+    id: number;
+    name: string;
+    slug: string;
+    account_name: string | null;
+    account_number: string | null;
 };
 
 type UserOption = {
@@ -54,7 +53,7 @@ type OrderRow = {
     billing_type: BillingType;
     amount: number;
     duration_days: number;
-    status: 'pending' | 'paid' | 'verified' | 'failed' | 'cancelled';
+    status: 'pending' | 'payment_submitted' | 'paid' | 'verified' | 'failed' | 'cancelled';
     status_label: string;
     ordered_at: string | null;
     paid_at: string | null;
@@ -68,7 +67,7 @@ type OrderRow = {
         payment_method: string | null;
         reference_number: string | null;
         amount: number;
-        status: 'submitted' | 'verified' | 'rejected';
+        status: 'pending' | 'submitted' | 'verified' | 'rejected' | 'failed' | 'refunded';
         paid_at: string | null;
         verified_at: string | null;
         notes: string | null;
@@ -99,6 +98,7 @@ type PageProps = {
     orders: OrdersPagination;
     plans: PlanOption[];
     users: UserOption[];
+    paymentMethods: PaymentMethodOption[];
     stats: {
         total_orders: number;
         pending_orders: number;
@@ -119,7 +119,7 @@ type CreateOrderForm = {
 };
 
 type PaymentForm = {
-    payment_method: 'gcash' | 'maya' | 'bank_transfer' | 'cash' | 'other';
+    payment_method_id: number | '';
     reference_number: string;
     account_name: string;
     account_number: string;
@@ -142,7 +142,7 @@ const orderTableColumns = [
 
 export default function OrdersIndex() {
     const { props } = usePage<PageProps>();
-    const { orders, plans, users, filters, stats, flash } = props;
+    const { orders, plans, users, paymentMethods, filters, stats, flash } = props;
 
     const [search, setSearch] = useState(filters.search ?? '');
     const [openCreateModal, setOpenCreateModal] = useState(false);
@@ -161,7 +161,7 @@ export default function OrdersIndex() {
     });
 
     const paymentForm = useForm<PaymentForm>({
-        payment_method: 'gcash',
+        payment_method_id: paymentMethods[0]?.id ?? '',
         reference_number: '',
         account_name: '',
         account_number: '',
@@ -212,7 +212,7 @@ export default function OrdersIndex() {
         paymentForm.reset();
         paymentForm.clearErrors();
         paymentForm.setData({
-            payment_method: 'gcash',
+            payment_method_id: paymentMethods[0]?.id ?? '',
             reference_number: '',
             account_name: '',
             account_number: '',
@@ -326,15 +326,9 @@ export default function OrdersIndex() {
             currency: 'PHP',
         }).format(Number(value));
 
-    const selectedPlan =
-        createForm.data.plan_id === ''
-            ? null
-            : plans.find((plan) => plan.id === createForm.data.plan_id) ?? null;
+    const selectedPlan = createForm.data.plan_id === '' ? null : (plans.find((plan) => plan.id === createForm.data.plan_id) ?? null);
 
-    const selectedUser =
-        createForm.data.user_id === ''
-            ? null
-            : users.find((user) => user.id === createForm.data.user_id) ?? null;
+    const selectedUser = createForm.data.user_id === '' ? null : (users.find((user) => user.id === createForm.data.user_id) ?? null);
 
     const computedAmount = useMemo(() => {
         if (!selectedPlan) return 0;
@@ -344,6 +338,8 @@ export default function OrdersIndex() {
                 return 0;
             case 'monthly':
                 return Number(selectedPlan.price);
+            case 'quarterly':
+                return Number(selectedPlan.price) * 3;
             case 'yearly':
                 return Number(selectedPlan.price) * 12;
             case 'custom':
@@ -359,6 +355,8 @@ export default function OrdersIndex() {
                 return createForm.data.duration_days_override === '' ? 7 : Number(createForm.data.duration_days_override);
             case 'monthly':
                 return 30;
+            case 'quarterly':
+                return 90;
             case 'yearly':
                 return 365;
             case 'custom':
@@ -374,6 +372,8 @@ export default function OrdersIndex() {
                 return 'Trial';
             case 'monthly':
                 return 'Monthly';
+            case 'quarterly':
+                return 'Quarterly';
             case 'yearly':
                 return 'Yearly';
             default:
@@ -410,26 +410,27 @@ export default function OrdersIndex() {
     const orderStatusClass = (status: OrderRow['status']) => {
         switch (status) {
             case 'verified':
-                return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+                return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300';
+            case 'payment_submitted':
             case 'paid':
-                return 'border-amber-200 bg-amber-50 text-amber-700';
+                return 'border-amber-500/20 bg-amber-500/10 text-amber-300';
             case 'failed':
-                return 'border-red-200 bg-red-50 text-red-700';
+                return 'border-red-500/20 bg-red-500/10 text-red-300';
             case 'cancelled':
-                return 'border-slate-200 bg-slate-100 text-slate-700';
+                return 'border-border bg-muted text-foreground';
             default:
-                return 'border-blue-200 bg-blue-50 text-blue-700';
+                return 'border-primary/20 bg-primary/[0.06] text-primary';
         }
     };
 
-    const txStatusClass = (status: 'submitted' | 'verified' | 'rejected') => {
+    const txStatusClass = (status: NonNullable<OrderRow['transaction']>['status']) => {
         switch (status) {
             case 'verified':
-                return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+                return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300';
             case 'rejected':
-                return 'border-red-200 bg-red-50 text-red-700';
+                return 'border-red-500/20 bg-red-500/10 text-red-300';
             default:
-                return 'border-amber-200 bg-amber-50 text-amber-700';
+                return 'border-amber-500/20 bg-amber-500/10 text-amber-300';
         }
     };
 
@@ -444,7 +445,7 @@ export default function OrdersIndex() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Orders" />
 
-            <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50/40 to-indigo-100/50 p-4 md:p-6">
+            <div className="bg-background min-h-screen p-4 md:p-6">
                 <div className="space-y-6">
                     <PageHero
                         title="Orders"
@@ -489,7 +490,7 @@ export default function OrdersIndex() {
                     </div>
 
                     {flash?.success && (
-                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-sm">
+                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-300 shadow-sm">
                             {flash.success}
                         </div>
                     )}
@@ -510,7 +511,7 @@ export default function OrdersIndex() {
                                     type="button"
                                     variant="outline"
                                     onClick={resetSearch}
-                                    className="h-11 rounded-xl border-slate-200 bg-white px-4 text-slate-700 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                    className="border-border bg-card text-foreground hover:border-primary/20 hover:bg-primary/[0.06] hover:text-primary h-11 rounded-xl px-4"
                                 >
                                     Reset Search
                                 </Button>
@@ -526,28 +527,22 @@ export default function OrdersIndex() {
                             hoverable
                         >
                             {orders.data.map((order) => (
-                                <tr
-                                    key={order.id}
-                                    className="cursor-pointer"
-                                    onClick={() => openViewDrawer(order)}
-                                >
+                                <tr key={order.id} className="cursor-pointer" onClick={() => openViewDrawer(order)}>
                                     <td className="px-4 py-4">
-                                        <div className="font-medium text-slate-900">{order.order_code}</div>
-                                        <div className="text-xs text-slate-500">{order.ordered_at ?? '-'}</div>
+                                        <div className="text-foreground font-medium">{order.order_code}</div>
+                                        <div className="text-muted-foreground text-xs">{order.ordered_at ?? '-'}</div>
                                     </td>
 
-                                    <td className="px-4 py-4 text-slate-700">
-                                        {order.user_name || '-'}
-                                    </td>
+                                    <td className="text-foreground px-4 py-4">{order.user_name || '-'}</td>
 
                                     <td className="px-4 py-4">
-                                        <div className="font-medium text-slate-900">{order.product_name || '-'}</div>
-                                        <div className="text-xs text-slate-500">{order.plan_name || '-'}</div>
+                                        <div className="text-foreground font-medium">{order.product_name || '-'}</div>
+                                        <div className="text-muted-foreground text-xs">{order.plan_name || '-'}</div>
                                     </td>
 
-                                    <td className="px-4 py-4 text-slate-700">
+                                    <td className="text-foreground px-4 py-4">
                                         <div>{formatPrice(order.amount)}</div>
-                                        <div className="text-xs text-slate-500">{billingLabel(order.billing_type)}</div>
+                                        <div className="text-muted-foreground text-xs">{billingLabel(order.billing_type)}</div>
                                     </td>
 
                                     <td className="px-4 py-4">
@@ -570,20 +565,17 @@ export default function OrdersIndex() {
                                                 {order.transaction.status}
                                             </span>
                                         ) : (
-                                            <span className="text-slate-400">No payment</span>
+                                            <span className="text-muted-foreground">No payment</span>
                                         )}
                                     </td>
 
-                                    <td
-                                        className="px-4 py-4"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
+                                    <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex items-center justify-center gap-2">
                                             {order.status === 'pending' && !order.has_transaction && (
                                                 <Button
                                                     type="button"
                                                     variant="outline"
-                                                    className="h-10 rounded-xl border-blue-200 bg-white px-3 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                                                    className="border-primary/20 bg-card text-primary hover:bg-primary/[0.06] hover:text-primary h-10 rounded-xl px-3"
                                                     title="Submit payment details"
                                                     onClick={() => openPayment(order)}
                                                 >
@@ -596,7 +588,7 @@ export default function OrdersIndex() {
                                                     <Button
                                                         type="button"
                                                         variant="outline"
-                                                        className="h-10 rounded-xl border-emerald-200 bg-white px-3 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                                                        className="bg-card h-10 rounded-xl border-emerald-500/20 px-3 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-300"
                                                         title="Accept order"
                                                         onClick={() => verifyOrder(order)}
                                                     >
@@ -606,7 +598,7 @@ export default function OrdersIndex() {
                                                     <Button
                                                         type="button"
                                                         variant="outline"
-                                                        className="h-10 rounded-xl border-red-200 bg-white px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                        className="bg-card h-10 rounded-xl border-red-500/20 px-3 text-red-600 hover:bg-red-500/10 hover:text-red-300"
                                                         title="Deny order"
                                                         onClick={() => openReject(order)}
                                                     >
@@ -620,7 +612,7 @@ export default function OrdersIndex() {
                                                     <Button
                                                         type="button"
                                                         variant="outline"
-                                                        className="h-10 rounded-xl border-emerald-200 bg-white px-3 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                                                        className="bg-card h-10 rounded-xl border-emerald-500/20 px-3 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-300"
                                                         title="Verify order"
                                                         onClick={() => verifyOrder(order)}
                                                     >
@@ -630,7 +622,7 @@ export default function OrdersIndex() {
                                                     <Button
                                                         type="button"
                                                         variant="outline"
-                                                        className="h-10 rounded-xl border-red-200 bg-white px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                        className="bg-card h-10 rounded-xl border-red-500/20 px-3 text-red-600 hover:bg-red-500/10 hover:text-red-300"
                                                         title="Reject order"
                                                         onClick={() => openReject(order)}
                                                     >
@@ -642,7 +634,7 @@ export default function OrdersIndex() {
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                className="h-10 rounded-xl border-red-200 bg-white px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                className="bg-card h-10 rounded-xl border-red-500/20 px-3 text-red-600 hover:bg-red-500/10 hover:text-red-300"
                                                 title="Delete order"
                                                 onClick={() => openDelete(order)}
                                             >
@@ -676,13 +668,8 @@ export default function OrdersIndex() {
                                         name="user_id"
                                         title="Select user"
                                         value={createForm.data.user_id}
-                                        onChange={(e) =>
-                                            createForm.setData(
-                                                'user_id',
-                                                e.target.value === '' ? '' : Number(e.target.value),
-                                            )
-                                        }
-                                        className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm"
+                                        onChange={(e) => createForm.setData('user_id', e.target.value === '' ? '' : Number(e.target.value))}
+                                        className="border-border bg-card h-11 rounded-xl border px-3 text-sm"
                                     >
                                         <option value="">Select user</option>
                                         {users.map((user) => (
@@ -701,13 +688,8 @@ export default function OrdersIndex() {
                                         name="plan_id"
                                         title="Select plan"
                                         value={createForm.data.plan_id}
-                                        onChange={(e) =>
-                                            createForm.setData(
-                                                'plan_id',
-                                                e.target.value === '' ? '' : Number(e.target.value),
-                                            )
-                                        }
-                                        className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm"
+                                        onChange={(e) => createForm.setData('plan_id', e.target.value === '' ? '' : Number(e.target.value))}
+                                        className="border-border bg-card h-11 rounded-xl border px-3 text-sm"
                                     >
                                         <option value="">Select plan</option>
                                         {plans.map((plan) => (
@@ -727,23 +709,21 @@ export default function OrdersIndex() {
                                         title="Select billing type"
                                         value={createForm.data.billing_type}
                                         onChange={(e) => handleBillingTypeChange(e.target.value as BillingType)}
-                                        className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm"
+                                        className="border-border bg-card h-11 rounded-xl border px-3 text-sm"
                                     >
                                         <option value="trial">Trial</option>
                                         <option value="monthly">Monthly</option>
+                                        <option value="quarterly">Quarterly</option>
                                         <option value="yearly">Yearly</option>
                                         <option value="custom">Custom</option>
                                     </select>
                                     <InputError message={createForm.errors.billing_type} />
                                 </div>
 
-                                {(createForm.data.billing_type === 'trial' ||
-                                    createForm.data.billing_type === 'custom') && (
+                                {(createForm.data.billing_type === 'trial' || createForm.data.billing_type === 'custom') && (
                                     <div className="grid gap-2">
                                         <Label htmlFor="duration_days_override">
-                                            {createForm.data.billing_type === 'trial'
-                                                ? 'Trial Duration (days)'
-                                                : 'Custom Duration (days)'}
+                                            {createForm.data.billing_type === 'trial' ? 'Trial Duration (days)' : 'Custom Duration (days)'}
                                         </Label>
                                         <Input
                                             id="duration_days_override"
@@ -751,10 +731,7 @@ export default function OrdersIndex() {
                                             min={1}
                                             value={createForm.data.duration_days_override}
                                             onChange={(e) =>
-                                                createForm.setData(
-                                                    'duration_days_override',
-                                                    e.target.value === '' ? '' : Number(e.target.value),
-                                                )
+                                                createForm.setData('duration_days_override', e.target.value === '' ? '' : Number(e.target.value))
                                             }
                                             placeholder="Enter number of days"
                                             className="rounded-xl"
@@ -769,7 +746,7 @@ export default function OrdersIndex() {
                                         id="create_notes"
                                         value={createForm.data.notes}
                                         onChange={(e) => createForm.setData('notes', e.target.value)}
-                                        className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                                        className="border-border min-h-[110px] rounded-xl border px-3 py-2 text-sm"
                                         placeholder="Optional notes"
                                     />
                                     <InputError message={createForm.errors.notes} />
@@ -777,74 +754,60 @@ export default function OrdersIndex() {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-blue-200 bg-blue-50/40 p-5">
-                            <h3 className="text-base font-semibold text-slate-900">Order Summary</h3>
-                            <p className="mt-1 text-sm text-slate-500">
-                                Primary order information before saving.
-                            </p>
+                        <div className="border-primary/20 bg-primary/[0.035] rounded-2xl border p-5">
+                            <h3 className="text-foreground text-base font-semibold">Order Summary</h3>
+                            <p className="text-muted-foreground mt-1 text-sm">Primary order information before saving.</p>
 
                             <div className="mt-5 space-y-4">
-                                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">User</p>
-                                    <p className="mt-1 text-sm font-medium text-slate-900">
+                                <div className="border-border bg-card rounded-xl border p-4">
+                                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">User</p>
+                                    <p className="text-foreground mt-1 text-sm font-medium">
                                         {selectedUser ? selectedUser.name : 'No user selected'}
                                     </p>
-                                    <p className="text-xs text-slate-500">
-                                        {selectedUser ? selectedUser.email : '-'}
-                                    </p>
+                                    <p className="text-muted-foreground text-xs">{selectedUser ? selectedUser.email : '-'}</p>
                                 </div>
 
-                                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Product / Plan</p>
-                                    <p className="mt-1 text-sm font-medium text-slate-900">
+                                <div className="border-border bg-card rounded-xl border p-4">
+                                    <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Product / Plan</p>
+                                    <p className="text-foreground mt-1 text-sm font-medium">
                                         {selectedPlan ? selectedPlan.product_name : 'No product selected'}
                                     </p>
-                                    <p className="text-xs text-slate-500">
-                                        {selectedPlan ? selectedPlan.plan_name : '-'}
-                                    </p>
+                                    <p className="text-muted-foreground text-xs">{selectedPlan ? selectedPlan.plan_name : '-'}</p>
                                 </div>
 
-                                <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                                <div className="border-border bg-card space-y-3 rounded-xl border p-4">
                                     <div className="flex items-center justify-between gap-4">
-                                        <span className="text-sm text-slate-500">Billing Type</span>
-                                        <span className="text-sm font-semibold text-slate-900">
-                                            {billingLabel(createForm.data.billing_type)}
-                                        </span>
+                                        <span className="text-muted-foreground text-sm">Billing Type</span>
+                                        <span className="text-foreground text-sm font-semibold">{billingLabel(createForm.data.billing_type)}</span>
                                     </div>
                                     <div className="flex items-center justify-between gap-4">
-                                        <span className="text-sm text-slate-500">Duration</span>
-                                        <span className="text-sm font-semibold text-slate-900">
+                                        <span className="text-muted-foreground text-sm">Duration</span>
+                                        <span className="text-foreground text-sm font-semibold">
                                             {computedDuration} day{computedDuration !== 1 ? 's' : ''}
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between gap-4">
-                                        <span className="text-sm text-slate-500">Amount</span>
-                                        <span className="text-base font-bold text-slate-900">
-                                            {formatPrice(computedAmount)}
-                                        </span>
+                                        <span className="text-muted-foreground text-sm">Amount</span>
+                                        <span className="text-foreground text-base font-bold">{formatPrice(computedAmount)}</span>
                                     </div>
                                 </div>
 
-                                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-                                    <p className="text-xs font-medium uppercase tracking-wide text-blue-700">
-                                        Subscription Note
-                                    </p>
-                                    <p className="mt-1 text-sm text-blue-800">
-                                        Subscription starts only after order verification.
-                                    </p>
+                                <div className="border-primary/20 bg-primary/[0.06] rounded-xl border p-4">
+                                    <p className="text-primary text-xs font-medium tracking-wide uppercase">Subscription Note</p>
+                                    <p className="text-primary mt-1 text-sm">Subscription starts only after order verification.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                    <div className="border-border flex justify-end gap-3 border-t pt-4">
                         <Button type="button" variant="outline" onClick={closeCreate} className="rounded-xl">
                             Cancel
                         </Button>
                         <Button
                             type="submit"
                             disabled={createForm.processing}
-                            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                            className="from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-xl bg-gradient-to-r text-white"
                         >
                             {createForm.processing ? 'Creating...' : 'Create Order'}
                         </Button>
@@ -862,27 +825,23 @@ export default function OrdersIndex() {
                 <form onSubmit={submitPayment} className="space-y-5">
                     <div className="grid gap-5 md:grid-cols-2">
                         <div className="grid gap-2">
-                            <Label htmlFor="payment_method">Payment Method</Label>
+                            <Label htmlFor="payment_method_id">Payment Method</Label>
                             <select
-                                id="payment_method"
-                                name="payment_method"
+                                id="payment_method_id"
+                                name="payment_method_id"
                                 title="Select payment method"
-                                value={paymentForm.data.payment_method}
-                                onChange={(e) =>
-                                    paymentForm.setData(
-                                        'payment_method',
-                                        e.target.value as PaymentForm['payment_method'],
-                                    )
-                                }
-                                className="h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm"
+                                value={paymentForm.data.payment_method_id}
+                                onChange={(e) => paymentForm.setData('payment_method_id', e.target.value === '' ? '' : Number(e.target.value))}
+                                className="border-border bg-card text-foreground h-11 rounded-xl border px-3 text-sm"
                             >
-                                <option value="gcash">GCash</option>
-                                <option value="maya">Maya</option>
-                                <option value="bank_transfer">Bank Transfer</option>
-                                <option value="cash">Cash</option>
-                                <option value="other">Other</option>
+                                <option value="">Select payment method</option>
+                                {paymentMethods.map((method) => (
+                                    <option key={method.id} value={method.id}>
+                                        {method.name}
+                                    </option>
+                                ))}
                             </select>
-                            <InputError message={paymentForm.errors.payment_method} />
+                            <InputError message={paymentForm.errors.payment_method_id} />
                         </div>
 
                         <div className="grid gap-2">
@@ -927,21 +886,21 @@ export default function OrdersIndex() {
                                 id="payment_notes"
                                 value={paymentForm.data.notes}
                                 onChange={(e) => paymentForm.setData('notes', e.target.value)}
-                                className="min-h-[100px] rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                                className="border-border min-h-[100px] rounded-xl border px-3 py-2 text-sm"
                                 placeholder="Optional payment notes"
                             />
                             <InputError message={paymentForm.errors.notes} />
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                    <div className="border-border flex justify-end gap-3 border-t pt-4">
                         <Button type="button" variant="outline" onClick={closePayment} className="rounded-xl">
                             Cancel
                         </Button>
                         <Button
                             type="submit"
                             disabled={paymentForm.processing}
-                            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700"
+                            className="from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 rounded-xl bg-gradient-to-r text-white"
                         >
                             {paymentForm.processing ? 'Submitting...' : 'Submit Payment'}
                         </Button>
@@ -952,7 +911,7 @@ export default function OrdersIndex() {
             <FormModal
                 open={openRejectModal && !!selectedOrder}
                 title="Reject Order"
-                description="Add a note and reject this order."
+                description="A clear rejection reason is required and will be sent to the subscriber."
                 onClose={closeReject}
                 tone="red"
                 maxWidthClass="max-w-md"
@@ -964,21 +923,20 @@ export default function OrdersIndex() {
                             id="reject_notes"
                             value={rejectForm.data.notes}
                             onChange={(e) => rejectForm.setData('notes', e.target.value)}
-                            className="min-h-[100px] rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                            placeholder="Why are you rejecting this order?"
+                            className="border-border min-h-[100px] rounded-xl border px-3 py-2 text-sm"
+                            placeholder="Why are you rejecting this payment/order?"
+                            required
+                            minLength={5}
+                            maxLength={2000}
                         />
                         <InputError message={rejectForm.errors.notes} />
                     </div>
 
-                    <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                    <div className="border-border flex justify-end gap-3 border-t pt-4">
                         <Button type="button" variant="outline" onClick={closeReject} className="rounded-xl">
                             Cancel
                         </Button>
-                        <Button
-                            type="submit"
-                            disabled={rejectForm.processing}
-                            className="rounded-xl bg-red-600 text-white hover:bg-red-700"
-                        >
+                        <Button type="submit" disabled={rejectForm.processing} className="rounded-xl bg-red-600 text-white hover:bg-red-700">
                             {rejectForm.processing ? 'Rejecting...' : 'Reject Order'}
                         </Button>
                     </div>
@@ -997,22 +955,19 @@ export default function OrdersIndex() {
 
             {viewingOrder && (
                 <div className="fixed inset-0 z-50">
-                    <div
-                        className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1px]"
-                        onClick={closeViewDrawer}
-                    />
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px]" onClick={closeViewDrawer} />
 
-                    <div className="absolute right-0 top-0 flex h-screen w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50 px-6 py-4">
+                    <div className="border-border bg-card absolute top-0 right-0 flex h-screen w-full max-w-md flex-col border-l shadow-2xl">
+                        <div className="border-border from-primary/[0.06] to-card flex items-center justify-between border-b bg-gradient-to-r px-6 py-4">
                             <div>
-                                <h2 className="text-lg font-bold text-slate-900">Order Details</h2>
-                                <p className="text-sm text-slate-500">View full order information</p>
+                                <h2 className="text-foreground text-lg font-bold">Order Details</h2>
+                                <p className="text-muted-foreground text-sm">View full order information</p>
                             </div>
 
                             <button
                                 type="button"
                                 onClick={closeViewDrawer}
-                                className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+                                className="border-border text-muted-foreground hover:bg-muted rounded-xl border px-3 py-2 text-sm"
                             >
                                 Close
                             </button>
@@ -1020,135 +975,131 @@ export default function OrdersIndex() {
 
                         <div className="flex-1 space-y-5 overflow-y-auto p-6">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Order Code</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingOrder.order_code}</p>
+                                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Order Code</p>
+                                <p className="text-foreground mt-1 text-sm font-medium">{viewingOrder.order_code}</p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">User</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingOrder.user_name || '-'}</p>
+                                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">User</p>
+                                <p className="text-foreground mt-1 text-sm font-medium">{viewingOrder.user_name || '-'}</p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Product</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingOrder.product_name || '-'}</p>
+                                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Product</p>
+                                <p className="text-foreground mt-1 text-sm font-medium">{viewingOrder.product_name || '-'}</p>
                             </div>
 
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Plan</p>
-                                <p className="mt-1 text-sm font-medium text-slate-900">{viewingOrder.plan_name || '-'}</p>
+                                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Plan</p>
+                                <p className="text-foreground mt-1 text-sm font-medium">{viewingOrder.plan_name || '-'}</p>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Billing Type</p>
-                                    <p className="mt-1 text-sm text-slate-900">{billingLabel(viewingOrder.billing_type)}</p>
+                                    <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Billing Type</p>
+                                    <p className="text-foreground mt-1 text-sm">{billingLabel(viewingOrder.billing_type)}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</p>
-                                    <p className="mt-1 text-sm text-slate-900">{formatPrice(viewingOrder.amount)}</p>
+                                    <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Amount</p>
+                                    <p className="text-foreground mt-1 text-sm">{formatPrice(viewingOrder.amount)}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Duration</p>
-                                    <p className="mt-1 text-sm text-slate-900">{viewingOrder.duration_days} days</p>
+                                    <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Duration</p>
+                                    <p className="text-foreground mt-1 text-sm">{viewingOrder.duration_days} days</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Order Status</p>
-                                    <p className="mt-1 text-sm text-slate-900">{viewingOrder.status_label}</p>
+                                    <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Order Status</p>
+                                    <p className="text-foreground mt-1 text-sm">{viewingOrder.status_label}</p>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Ordered At</p>
-                                    <p className="mt-1 text-sm text-slate-900">{viewingOrder.ordered_at || '-'}</p>
+                                    <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Ordered At</p>
+                                    <p className="text-foreground mt-1 text-sm">{viewingOrder.ordered_at || '-'}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Paid At</p>
-                                    <p className="mt-1 text-sm text-slate-900">{viewingOrder.paid_at || '-'}</p>
+                                    <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Paid At</p>
+                                    <p className="text-foreground mt-1 text-sm">{viewingOrder.paid_at || '-'}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Verified At</p>
-                                    <p className="mt-1 text-sm text-slate-900">{viewingOrder.verified_at || '-'}</p>
+                                    <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Verified At</p>
+                                    <p className="text-foreground mt-1 text-sm">{viewingOrder.verified_at || '-'}</p>
                                 </div>
 
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Subscription</p>
-                                    <p className="mt-1 text-sm text-slate-900">
-                                        {viewingOrder.has_subscription
-                                            ? viewingOrder.subscription_code ?? 'Created'
-                                            : 'Not created'}
+                                    <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Subscription</p>
+                                    <p className="text-foreground mt-1 text-sm">
+                                        {viewingOrder.has_subscription ? (viewingOrder.subscription_code ?? 'Created') : 'Not created'}
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="rounded-xl border border-slate-200 p-4">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Transaction</p>
+                            <div className="border-border rounded-xl border p-4">
+                                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Transaction</p>
 
                                 {viewingOrder.transaction ? (
                                     <div className="mt-3 space-y-3">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <p className="text-xs text-slate-500">Transaction Code</p>
-                                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                                <p className="text-muted-foreground text-xs">Transaction Code</p>
+                                                <p className="text-foreground mt-1 text-sm font-medium">
                                                     {viewingOrder.transaction.transaction_code}
                                                 </p>
                                             </div>
 
                                             <div>
-                                                <p className="text-xs text-slate-500">Status</p>
-                                                <p className="mt-1 text-sm font-medium capitalize text-slate-900">
+                                                <p className="text-muted-foreground text-xs">Status</p>
+                                                <p className="text-foreground mt-1 text-sm font-medium capitalize">
                                                     {viewingOrder.transaction.status}
                                                 </p>
                                             </div>
 
                                             <div>
-                                                <p className="text-xs text-slate-500">Payment Method</p>
-                                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                                <p className="text-muted-foreground text-xs">Payment Method</p>
+                                                <p className="text-foreground mt-1 text-sm font-medium">
                                                     {viewingOrder.transaction.payment_method?.toUpperCase() || '-'}
                                                 </p>
                                             </div>
 
                                             <div>
-                                                <p className="text-xs text-slate-500">Reference Number</p>
-                                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                                <p className="text-muted-foreground text-xs">Reference Number</p>
+                                                <p className="text-foreground mt-1 text-sm font-medium">
                                                     {viewingOrder.transaction.reference_number || '-'}
                                                 </p>
                                             </div>
 
                                             <div>
-                                                <p className="text-xs text-slate-500">Amount</p>
-                                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                                <p className="text-muted-foreground text-xs">Amount</p>
+                                                <p className="text-foreground mt-1 text-sm font-medium">
                                                     {formatPrice(viewingOrder.transaction.amount)}
                                                 </p>
                                             </div>
 
                                             <div>
-                                                <p className="text-xs text-slate-500">Verified At</p>
-                                                <p className="mt-1 text-sm font-medium text-slate-900">
+                                                <p className="text-muted-foreground text-xs">Verified At</p>
+                                                <p className="text-foreground mt-1 text-sm font-medium">
                                                     {viewingOrder.transaction.verified_at || '-'}
                                                 </p>
                                             </div>
                                         </div>
 
                                         <div>
-                                            <p className="text-xs text-slate-500">Notes</p>
-                                            <p className="mt-1 text-sm leading-6 text-slate-900">
-                                                {viewingOrder.transaction.notes || 'No notes'}
-                                            </p>
+                                            <p className="text-muted-foreground text-xs">Notes</p>
+                                            <p className="text-foreground mt-1 text-sm leading-6">{viewingOrder.transaction.notes || 'No notes'}</p>
                                         </div>
                                     </div>
                                 ) : (
-                                    <p className="mt-3 text-sm text-slate-500">No payment transaction yet.</p>
+                                    <p className="text-muted-foreground mt-3 text-sm">No payment transaction yet.</p>
                                 )}
                             </div>
 
-                            <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-5">
+                            <div className="border-border flex flex-wrap gap-3 border-t pt-5">
                                 {viewingOrder.status === 'pending' && !viewingOrder.has_transaction && (
                                     <Button
                                         type="button"
@@ -1169,7 +1120,7 @@ export default function OrdersIndex() {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            className="inline-flex items-center gap-2 rounded-xl border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                                            className="inline-flex items-center gap-2 rounded-xl border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-300"
                                             onClick={() => {
                                                 closeViewDrawer();
                                                 verifyOrder(viewingOrder);
@@ -1182,7 +1133,7 @@ export default function OrdersIndex() {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            className="inline-flex items-center gap-2 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                            className="inline-flex items-center gap-2 rounded-xl border-red-500/20 text-red-600 hover:bg-red-500/10 hover:text-red-300"
                                             onClick={() => {
                                                 closeViewDrawer();
                                                 openReject(viewingOrder);
@@ -1199,7 +1150,7 @@ export default function OrdersIndex() {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            className="inline-flex items-center gap-2 rounded-xl border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                                            className="inline-flex items-center gap-2 rounded-xl border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-300"
                                             onClick={() => {
                                                 closeViewDrawer();
                                                 verifyOrder(viewingOrder);
@@ -1212,7 +1163,7 @@ export default function OrdersIndex() {
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            className="inline-flex items-center gap-2 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                            className="inline-flex items-center gap-2 rounded-xl border-red-500/20 text-red-600 hover:bg-red-500/10 hover:text-red-300"
                                             onClick={() => {
                                                 closeViewDrawer();
                                                 openReject(viewingOrder);
@@ -1227,7 +1178,7 @@ export default function OrdersIndex() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="inline-flex items-center gap-2 rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    className="inline-flex items-center gap-2 rounded-xl border-red-500/20 text-red-600 hover:bg-red-500/10 hover:text-red-300"
                                     onClick={() => {
                                         closeViewDrawer();
                                         openDelete(viewingOrder);

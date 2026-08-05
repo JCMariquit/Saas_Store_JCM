@@ -32,7 +32,7 @@ class WebsiteBuilderController extends Controller
 
     public function show(Product $product): Response
     {
-        return Inertia::render('website/builder/show', [
+        return Inertia::render('admin/website/builder/show', [
             'product' => [
                 'id' => $product->id,
                 'name' => $product->name,

@@ -190,7 +190,7 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="flex h-full w-full flex-col overflow-hidden border-l border-slate-200 bg-[#f4f7fb] p-0 sm:max-w-md"
+                className="flex h-full w-full flex-col overflow-hidden border-l border-border bg-[#f4f7fb] p-0 sm:max-w-md"
             >
                 <div className="shrink-0 overflow-hidden bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 text-white">
                     <div className="relative px-5 pb-5 pt-4">
@@ -245,28 +245,28 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
 
                 <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                     {openingLoading && (
-                        <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-                            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                        <div className="rounded-3xl border border-border bg-card p-6 text-center shadow-sm">
+                            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-primary/[0.06] text-primary">
                                 <Loader2 className="h-5 w-5 animate-spin" />
                             </div>
 
-                            <p className="mt-3 text-sm font-semibold text-slate-700">
+                            <p className="mt-3 text-sm font-semibold text-foreground">
                                 Loading conversation...
                             </p>
                         </div>
                     )}
 
                     {!openingLoading && messages.length === 0 && (
-                        <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                        <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/[0.06] text-primary">
                                 <MessageCircle className="h-7 w-7" />
                             </div>
 
-                            <h4 className="mt-4 font-semibold text-slate-900">
+                            <h4 className="mt-4 font-semibold text-foreground">
                                 No messages yet
                             </h4>
 
-                            <p className="mx-auto mt-1 max-w-xs text-sm leading-6 text-slate-500">
+                            <p className="mx-auto mt-1 max-w-xs text-sm leading-6 text-muted-foreground">
                                 Start your conversation with the admin. Your messages will appear here.
                             </p>
                         </div>
@@ -286,7 +286,7 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
                                     <div key={m.id}>
                                         {showDate && (
                                             <div className="my-4 flex items-center justify-center">
-                                                <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-400 shadow-sm">
+                                                <span className="rounded-full border border-border bg-card px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm">
                                                     {formatDate(m.created_at) || 'Today'}
                                                 </span>
                                             </div>
@@ -298,7 +298,7 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
                                             }`}
                                         >
                                             {isAdmin && (
-                                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                                                     <ShieldCheck className="h-4 w-4" />
                                                 </div>
                                             )}
@@ -306,8 +306,8 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
                                             <div
                                                 className={`max-w-[82%] rounded-3xl px-4 py-3 text-sm shadow-sm ${
                                                     isAdmin
-                                                        ? 'rounded-bl-md border border-slate-200 bg-white text-slate-700'
-                                                        : 'rounded-br-md bg-blue-700 text-white'
+                                                        ? 'rounded-bl-md border border-border bg-card text-foreground'
+                                                        : 'rounded-br-md bg-primary text-white'
                                                 }`}
                                             >
                                                 <p className="whitespace-pre-wrap break-words leading-6">
@@ -317,7 +317,7 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
                                                 <div
                                                     className={`mt-2 flex items-center gap-1 text-[11px] ${
                                                         isAdmin
-                                                            ? 'text-slate-400'
+                                                            ? 'text-muted-foreground'
                                                             : 'justify-end text-blue-100'
                                                     }`}
                                                 >
@@ -348,8 +348,8 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
                     )}
                 </div>
 
-                <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-4 shadow-[0_-14px_30px_rgba(15,23,42,0.08)]">
-                    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-2 focus-within:border-blue-300 focus-within:bg-white focus-within:ring-4 focus-within:ring-blue-50">
+                <div className="shrink-0 border-t border-border bg-card px-5 py-4 shadow-[0_-14px_30px_rgba(15,23,42,0.08)]">
+                    <div className="rounded-3xl border border-border bg-muted/30 p-2 focus-within:border-primary/25 focus-within:bg-card focus-within:ring-4 focus-within:ring-blue-50">
                         <div className="flex items-end gap-2">
                             <textarea
                                 ref={textareaRef}
@@ -366,14 +366,14 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
                                 }}
                                 rows={1}
                                 placeholder="Type your message..."
-                                className="max-h-[120px] min-h-10 flex-1 resize-none bg-transparent px-3 py-2 text-sm leading-6 text-slate-700 outline-none placeholder:text-slate-400"
+                                className="max-h-[120px] min-h-10 flex-1 resize-none bg-transparent px-3 py-2 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
                             />
 
                             <Button
                                 type="button"
                                 onClick={() => void send()}
                                 disabled={loading || !text.trim()}
-                                className="h-11 w-11 shrink-0 rounded-2xl bg-blue-700 p-0 text-white shadow-sm hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="h-11 w-11 shrink-0 rounded-2xl bg-primary p-0 text-white shadow-sm hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {loading ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -383,7 +383,7 @@ export function MessagesDrawer({ open, onOpenChange }: Props) {
                             </Button>
                         </div>
 
-                        <p className="px-3 pb-1 pt-1 text-[11px] text-slate-400">
+                        <p className="px-3 pb-1 pt-1 text-[11px] text-muted-foreground">
                             Press Enter to send, Shift + Enter for new line.
                         </p>
                     </div>

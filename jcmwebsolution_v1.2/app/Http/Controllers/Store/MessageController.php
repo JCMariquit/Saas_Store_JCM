@@ -27,7 +27,9 @@ class MessageController extends Controller
             'message' => ['required', 'string'],
         ]);
 
-        $admin = User::where('role', 'admin')->first();
+        $admin = User::query()->whereHas('platformRoles', function ($query): void {
+            $query->whereIn('role_code', ['super_admin', 'admin']);
+        })->where('is_active', true)->first();
 
         if (!$admin) {
             return response()->json([

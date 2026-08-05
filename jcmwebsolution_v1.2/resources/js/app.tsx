@@ -10,7 +10,7 @@ declare global {
     const route: typeof routeFn;
 }
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'JCM Websolution';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -21,9 +21,9 @@ createInertiaApp({
         root.render(<App {...props} />);
     },
     progress: {
-        color: '#4B5563',
+        color: '#10b981',
     },
 });
 
-// This will set light / dark mode on load...
+// Synchronize the saved Light/Dark mode and JCM theme preset.
 initializeTheme();

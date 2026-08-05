@@ -160,10 +160,10 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
 
             <div className="min-h-screen bg-[#f6f8fb] pb-10">
                 <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 md:px-6">
-                    <section className="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 p-6 text-white shadow-sm">
+                    <section className="rounded-3xl border border-border bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 p-6 text-white shadow-sm">
                         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                             <div className="max-w-3xl">
-                                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-100">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-card/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-100">
                                     <Sparkles className="h-3.5 w-3.5" />
                                     Admin Payment Setup
                                 </div>
@@ -179,8 +179,8 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                                <div className="rounded-2xl border border-white/10 bg-card/5 px-4 py-4">
+                                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                                         Total Methods
                                     </p>
                                     <p className="mt-2 text-lg font-bold text-white">
@@ -188,8 +188,8 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                                     </p>
                                 </div>
 
-                                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                                <div className="rounded-2xl border border-white/10 bg-card/5 px-4 py-4">
+                                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                                         Active
                                     </p>
                                     <p className="mt-2 text-lg font-bold text-white">
@@ -202,17 +202,17 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
 
                     <form onSubmit={submit} className="grid gap-6 xl:grid-cols-[1fr_340px]">
                         <div className="space-y-6">
-                            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
                                 <div className="flex items-center gap-3">
                                     <div className="rounded-2xl bg-slate-900 p-3 text-white">
                                         <Wallet className="h-5 w-5" />
                                     </div>
 
                                     <div>
-                                        <h2 className="text-xl font-bold text-slate-900">
+                                        <h2 className="text-xl font-bold text-foreground">
                                             {isEditing ? 'Edit Payment Method' : 'Add Payment Method'}
                                         </h2>
-                                        <p className="text-sm text-slate-500">
+                                        <p className="text-sm text-muted-foreground">
                                             This will be displayed on the customer order payment page.
                                         </p>
                                     </div>
@@ -276,7 +276,7 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                                             }
                                             placeholder="Optional internal/admin reference"
                                         />
-                                        <p className="mt-1 text-xs text-slate-500">
+                                        <p className="mt-1 text-xs text-muted-foreground">
                                             Optional. This does not need to be displayed publicly.
                                         </p>
                                         <InputError message={form.errors.account_owner} />
@@ -285,7 +285,7 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                                     <div>
                                         <Label className="mb-2 block">Instructions</Label>
                                         <textarea
-                                            className="min-h-[120px] w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-900"
+                                            className="min-h-[120px] w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-border"
                                             value={form.data.instructions}
                                             onChange={(e) =>
                                                 form.setData('instructions', e.target.value)
@@ -299,7 +299,7 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                                         <div>
                                             <Label className="mb-2 block">Status</Label>
                                             <select
-                                                className="h-11 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-900"
+                                                className="h-11 w-full rounded-2xl border border-border bg-card px-4 text-sm text-foreground outline-none transition focus:border-border"
                                                 value={form.data.status ? '1' : '0'}
                                                 onChange={(e) =>
                                                     form.setData('status', e.target.value === '1')
@@ -332,17 +332,17 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                                 </div>
                             </section>
 
-                            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
                                 <div className="flex items-center gap-3">
-                                    <div className="rounded-2xl bg-blue-600 p-3 text-white">
+                                    <div className="rounded-2xl bg-primary p-3 text-white">
                                         <FileImage className="h-5 w-5" />
                                     </div>
 
                                     <div>
-                                        <h2 className="text-xl font-bold text-slate-900">
+                                        <h2 className="text-xl font-bold text-foreground">
                                             Payment QR Image
                                         </h2>
-                                        <p className="text-sm text-slate-500">
+                                        <p className="text-sm text-muted-foreground">
                                             Upload the QR code image for this payment method.
                                         </p>
                                     </div>
@@ -351,7 +351,7 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                                 <div className="mt-5 space-y-4">
                                     <div>
                                         <Label className="mb-2 block">Upload QR Image</Label>
-                                        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-100">
+                                        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-6 text-sm font-medium text-muted-foreground transition hover:border-border hover:bg-muted">
                                             <Upload className="h-4 w-4" />
                                             Select QR Image
                                             <input
@@ -370,28 +370,28 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                                     </div>
 
                                     {form.data.image ? (
-                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                            <p className="text-sm font-semibold text-slate-900">
+                                        <div className="rounded-2xl border border-border bg-muted/30 p-4">
+                                            <p className="text-sm font-semibold text-foreground">
                                                 {form.data.image.name}
                                             </p>
-                                            <p className="text-xs text-slate-500">
+                                            <p className="text-xs text-muted-foreground">
                                                 New image selected
                                             </p>
                                         </div>
                                     ) : editingMethod?.image_path ? (
-                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                            <p className="mb-3 text-sm font-semibold text-slate-900">
+                                        <div className="rounded-2xl border border-border bg-muted/30 p-4">
+                                            <p className="mb-3 text-sm font-semibold text-foreground">
                                                 Current QR Image
                                             </p>
                                             <img
                                                 src={editingMethod.image_path}
                                                 alt={editingMethod.name}
-                                                className="h-40 w-40 rounded-2xl border border-slate-200 bg-white object-contain p-2"
+                                                className="h-40 w-40 rounded-2xl border border-border bg-card object-contain p-2"
                                             />
                                         </div>
                                     ) : (
-                                        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
-                                            <p className="text-sm text-slate-400">
+                                        <div className="rounded-2xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+                                            <p className="text-sm text-muted-foreground">
                                                 No QR image selected yet.
                                             </p>
                                         </div>
@@ -399,17 +399,17 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                                 </div>
                             </section>
 
-                            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
                                 <div className="flex items-center gap-3">
                                     <div className="rounded-2xl bg-slate-900 p-3 text-white">
                                         <CreditCard className="h-5 w-5" />
                                     </div>
 
                                     <div>
-                                        <h2 className="text-xl font-bold text-slate-900">
+                                        <h2 className="text-xl font-bold text-foreground">
                                             Payment Method List
                                         </h2>
-                                        <p className="text-sm text-slate-500">
+                                        <p className="text-sm text-muted-foreground">
                                             Manage active and inactive payment methods.
                                         </p>
                                     </div>
@@ -417,8 +417,8 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
 
                                 <div className="mt-6 space-y-3">
                                     {paymentMethods.length === 0 ? (
-                                        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
-                                            <p className="text-sm text-slate-400">
+                                        <div className="rounded-2xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+                                            <p className="text-sm text-muted-foreground">
                                                 No payment methods added yet.
                                             </p>
                                         </div>
@@ -426,10 +426,10 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                                         paymentMethods.map((method) => (
                                             <div
                                                 key={method.id}
-                                                className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:flex-row md:items-center md:justify-between"
+                                                className="flex flex-col gap-4 rounded-2xl border border-border bg-muted/30 p-4 md:flex-row md:items-center md:justify-between"
                                             >
                                                 <div className="flex items-center gap-4">
-                                                    <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                                                    <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-border bg-card">
                                                         {method.image_path ? (
                                                             <img
                                                                 src={method.image_path}
@@ -437,33 +437,33 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                                                                 className="h-full w-full object-contain p-1"
                                                             />
                                                         ) : (
-                                                            <Wallet className="h-6 w-6 text-slate-400" />
+                                                            <Wallet className="h-6 w-6 text-muted-foreground" />
                                                         )}
                                                     </div>
 
                                                     <div>
                                                         <div className="flex flex-wrap items-center gap-2">
-                                                            <p className="font-bold text-slate-900">
+                                                            <p className="font-bold text-foreground">
                                                                 {method.name}
                                                             </p>
 
                                                             <span
                                                                 className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
                                                                     method.status
-                                                                        ? 'bg-green-100 text-green-700'
-                                                                        : 'bg-red-100 text-red-700'
+                                                                        ? 'bg-emerald-500/10 text-emerald-300'
+                                                                        : 'bg-red-500/10 text-red-300'
                                                                 }`}
                                                             >
                                                                 {method.status ? 'Active' : 'Inactive'}
                                                             </span>
                                                         </div>
 
-                                                        <p className="mt-1 text-sm text-slate-500">
+                                                        <p className="mt-1 text-sm text-muted-foreground">
                                                             {method.account_name || 'No account name'} •{' '}
                                                             {method.account_number || 'No account number'}
                                                         </p>
 
-                                                        <p className="mt-1 text-xs text-slate-400">
+                                                        <p className="mt-1 text-xs text-muted-foreground">
                                                             Sort: {method.sort_order} • Slug: {method.slug}
                                                         </p>
                                                     </div>
@@ -484,7 +484,7 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                                                         type="button"
                                                         variant="outline"
                                                         onClick={() => deleteMethod(method)}
-                                                        className="rounded-2xl text-red-600 hover:text-red-700"
+                                                        className="rounded-2xl text-red-600 hover:text-red-300"
                                                     >
                                                         <Trash2 className="mr-2 h-4 w-4" />
                                                         Delete
@@ -498,10 +498,10 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                         </div>
 
                         <aside className="space-y-6 xl:sticky xl:top-6 xl:self-start">
-                            <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                                <div className="border-b border-slate-200 bg-gradient-to-r from-slate-950 to-slate-800 px-6 py-5 text-white">
+                            <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+                                <div className="border-b border-border bg-gradient-to-r from-slate-950 to-slate-800 px-6 py-5 text-white">
                                     <div className="flex items-center gap-3">
-                                        <div className="rounded-2xl bg-white/10 p-3">
+                                        <div className="rounded-2xl bg-card/10 p-3">
                                             <Settings2 className="h-5 w-5" />
                                         </div>
 
@@ -517,47 +517,47 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                                 </div>
 
                                 <div className="space-y-4 p-6">
-                                    <div className="rounded-2xl bg-slate-50 p-4">
-                                        <p className="text-xs uppercase tracking-wide text-slate-400">
+                                    <div className="rounded-2xl bg-muted/30 p-4">
+                                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
                                             Mode
                                         </p>
-                                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                                        <p className="mt-1 text-sm font-semibold text-foreground">
                                             {isEditing ? 'Editing Existing Method' : 'Creating New Method'}
                                         </p>
                                     </div>
 
-                                    <div className="rounded-2xl bg-slate-50 p-4">
-                                        <p className="text-xs uppercase tracking-wide text-slate-400">
+                                    <div className="rounded-2xl bg-muted/30 p-4">
+                                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
                                             Status
                                         </p>
-                                        <p className="mt-1 text-sm font-semibold capitalize text-slate-900">
+                                        <p className="mt-1 text-sm font-semibold capitalize text-foreground">
                                             {form.data.status ? 'Active' : 'Inactive'}
                                         </p>
                                     </div>
 
-                                    <div className="rounded-2xl bg-slate-50 p-4">
-                                        <p className="text-xs uppercase tracking-wide text-slate-400">
+                                    <div className="rounded-2xl bg-muted/30 p-4">
+                                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
                                             Display Account
                                         </p>
-                                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                                        <p className="mt-1 text-sm font-semibold text-foreground">
                                             {form.data.account_name || '—'}
                                         </p>
                                     </div>
 
-                                    <div className="rounded-2xl bg-slate-50 p-4">
-                                        <p className="text-xs uppercase tracking-wide text-slate-400">
+                                    <div className="rounded-2xl bg-muted/30 p-4">
+                                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
                                             Display Number
                                         </p>
-                                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                                        <p className="mt-1 text-sm font-semibold text-foreground">
                                             {form.data.account_number || '—'}
                                         </p>
                                     </div>
 
-                                    <div className="rounded-2xl bg-slate-50 p-4">
-                                        <p className="text-xs uppercase tracking-wide text-slate-400">
+                                    <div className="rounded-2xl bg-muted/30 p-4">
+                                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
                                             QR Image
                                         </p>
-                                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                                        <p className="mt-1 text-sm font-semibold text-foreground">
                                             {form.data.image
                                                 ? form.data.image.name
                                                 : editingMethod?.image_path
@@ -568,7 +568,7 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
                                 </div>
                             </section>
 
-                            <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                            <div className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-5 shadow-sm">
                                 <Button
                                     type="submit"
                                     disabled={form.processing}
@@ -609,18 +609,18 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
 
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 backdrop-blur-sm">
-                    <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-2xl">
+                    <div className="w-full max-w-md rounded-3xl border border-border bg-card p-7 text-center shadow-2xl">
                         {modalType === 'loading' && (
                             <>
-                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-blue-50">
-                                    <LoaderCircle className="h-11 w-11 animate-spin text-blue-700" />
+                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/[0.06]">
+                                    <LoaderCircle className="h-11 w-11 animate-spin text-primary" />
                                 </div>
 
-                                <h2 className="mt-5 text-2xl font-bold text-slate-900">
+                                <h2 className="mt-5 text-2xl font-bold text-foreground">
                                     Saving payment method
                                 </h2>
 
-                                <p className="mt-2 text-sm leading-6 text-slate-500">
+                                <p className="mt-2 text-sm leading-6 text-muted-foreground">
                                     Please wait while we save your payment method details.
                                 </p>
                             </>
@@ -628,15 +628,15 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
 
                         {modalType === 'success' && (
                             <>
-                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-50">
-                                    <CheckCircle2 className="h-11 w-11 text-green-600" />
+                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10">
+                                    <CheckCircle2 className="h-11 w-11 text-emerald-400" />
                                 </div>
 
-                                <h2 className="mt-5 text-2xl font-bold text-slate-900">
+                                <h2 className="mt-5 text-2xl font-bold text-foreground">
                                     Success
                                 </h2>
 
-                                <p className="mt-2 text-sm leading-6 text-slate-500">
+                                <p className="mt-2 text-sm leading-6 text-muted-foreground">
                                     Payment method has been saved successfully.
                                 </p>
 
@@ -652,15 +652,15 @@ export default function PaymentMethodsIndex({ paymentMethods }: PageProps) {
 
                         {modalType === 'error' && (
                             <>
-                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-50">
+                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-red-500/10">
                                     <XCircle className="h-11 w-11 text-red-600" />
                                 </div>
 
-                                <h2 className="mt-5 text-2xl font-bold text-slate-900">
+                                <h2 className="mt-5 text-2xl font-bold text-foreground">
                                     Failed
                                 </h2>
 
-                                <p className="mt-2 text-sm leading-6 text-slate-500">
+                                <p className="mt-2 text-sm leading-6 text-muted-foreground">
                                     Please check the form fields and try again.
                                 </p>
 

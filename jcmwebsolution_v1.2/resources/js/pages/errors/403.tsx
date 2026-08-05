@@ -28,7 +28,7 @@ export default function Forbidden() {
                     <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
                         <Link
                             href="/store/dashboard"
-                            className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+                            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-primary"
                         >
                             Go to Store Dashboard
                         </Link>

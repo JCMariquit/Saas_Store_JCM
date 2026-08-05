@@ -155,7 +155,7 @@ export function CartDrawer({ open, onOpenChange }: Props) {
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
                 side="right"
-                className="flex h-full w-full flex-col overflow-hidden border-l border-slate-200 bg-[#f4f7fb] p-0 sm:max-w-md"
+                className="flex h-full w-full flex-col overflow-hidden border-l border-border bg-[#f4f7fb] p-0 sm:max-w-md"
             >
                 <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 text-white">
                     <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
@@ -193,28 +193,28 @@ export function CartDrawer({ open, onOpenChange }: Props) {
 
                 <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                     {loading && (
-                        <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-700">
+                        <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
+                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/[0.06] text-primary">
                                 <Loader2 className="h-6 w-6 animate-spin" />
                             </div>
 
-                            <p className="mt-3 text-sm font-medium text-slate-500">
+                            <p className="mt-3 text-sm font-medium text-muted-foreground">
                                 Loading cart...
                             </p>
                         </div>
                     )}
 
                     {!loading && items.length === 0 && (
-                        <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                        <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-sm">
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/[0.06] text-primary">
                                 <ShoppingCart className="h-7 w-7" />
                             </div>
 
-                            <h4 className="mt-4 font-semibold text-slate-900">
+                            <h4 className="mt-4 font-semibold text-foreground">
                                 Your cart is empty
                             </h4>
 
-                            <p className="mx-auto mt-1 max-w-xs text-sm leading-6 text-slate-500">
+                            <p className="mx-auto mt-1 max-w-xs text-sm leading-6 text-muted-foreground">
                                 Products you add to cart will appear here.
                             </p>
                         </div>
@@ -229,10 +229,10 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                                 return (
                                     <div
                                         key={item.id}
-                                        className={`rounded-3xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                                        className={`rounded-3xl border bg-card p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
                                             selected
-                                                ? 'border-blue-300 ring-4 ring-blue-50'
-                                                : 'border-slate-200 hover:border-blue-200'
+                                                ? 'border-primary/25 ring-4 ring-blue-50'
+                                                : 'border-border hover:border-primary/20'
                                         }`}
                                     >
                                         <div className="flex gap-3">
@@ -241,14 +241,14 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                                                 onClick={() => toggleSelected(item.id)}
                                                 className={`mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition ${
                                                     selected
-                                                        ? 'border-blue-700 bg-blue-700 text-white'
-                                                        : 'border-slate-300 bg-white text-transparent hover:border-blue-400'
+                                                        ? 'border-blue-700 bg-primary text-white'
+                                                        : 'border-border bg-card text-transparent hover:border-blue-400'
                                                 }`}
                                             >
                                                 <CheckCircle2 className="h-4 w-4" />
                                             </button>
 
-                                            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-100 bg-slate-100">
+                                            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted">
                                                 {imageSrc ? (
                                                     <img
                                                         src={imageSrc}
@@ -256,18 +256,18 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                                                         className="h-full w-full object-cover"
                                                     />
                                                 ) : (
-                                                    <ImageIcon className="h-7 w-7 text-slate-400" />
+                                                    <ImageIcon className="h-7 w-7 text-muted-foreground" />
                                                 )}
                                             </div>
 
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-start justify-between gap-2">
                                                     <div className="min-w-0 flex-1">
-                                                        <h4 className="line-clamp-1 font-semibold text-slate-950">
+                                                        <h4 className="line-clamp-1 font-semibold text-foreground">
                                                             {item.product_name}
                                                         </h4>
 
-                                                        <p className="mt-1 line-clamp-1 text-sm font-medium text-blue-700">
+                                                        <p className="mt-1 line-clamp-1 text-sm font-medium text-primary">
                                                             {item.plan_name ?? 'Custom plan'}
                                                         </p>
                                                     </div>
@@ -278,7 +278,7 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                                                         size="icon"
                                                         disabled={removingId === item.id}
                                                         onClick={() => void removeItem(item.id)}
-                                                        className="h-8 w-8 shrink-0 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-600"
+                                                        className="h-8 w-8 shrink-0 rounded-xl text-muted-foreground hover:bg-red-500/10 hover:text-red-600"
                                                     >
                                                         {removingId === item.id ? (
                                                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -288,18 +288,18 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                                                     </Button>
                                                 </div>
 
-                                                <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-slate-500">
+                                                <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-muted-foreground">
                                                     {item.product_description ??
                                                         item.plan_description ??
                                                         'No description available.'}
                                                 </p>
 
-                                                <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
-                                                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                                                <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+                                                    <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                                         Qty {item.quantity}
                                                     </span>
 
-                                                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                                                    <span className="rounded-full bg-primary/[0.06] px-3 py-1 text-xs font-bold text-primary">
                                                         {formatPeso(item.plan_price)}
                                                     </span>
                                                 </div>
@@ -312,14 +312,14 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                     )}
                 </div>
 
-                <div className="shrink-0 border-t border-slate-200 bg-white px-5 py-4 shadow-[0_-14px_30px_rgba(15,23,42,0.08)]">
+                <div className="shrink-0 border-t border-border bg-card px-5 py-4 shadow-[0_-14px_30px_rgba(15,23,42,0.08)]">
                     {items.length > 0 && (
-                        <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
-                            <p className="text-sm font-semibold text-slate-700">
+                        <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+                            <p className="text-sm font-semibold text-foreground">
                                 Select one item to proceed
                             </p>
 
-                            <span className="text-xs font-medium text-slate-500">
+                            <span className="text-xs font-medium text-muted-foreground">
                                 {selectedIds.length} selected
                             </span>
                         </div>
@@ -327,10 +327,10 @@ export function CartDrawer({ open, onOpenChange }: Props) {
 
                     <div className="mb-3 flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                 Order Summary
                             </p>
-                            <p className="line-clamp-1 text-sm text-slate-500">
+                            <p className="line-clamp-1 text-sm text-muted-foreground">
                                 {selectedIds.length === 1
                                     ? selectedItems[0]?.product_name
                                     : 'No selected product'}
@@ -338,8 +338,8 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                         </div>
 
                         <div className="shrink-0 text-right">
-                            <p className="text-xs text-slate-400">Subtotal</p>
-                            <p className="text-xl font-bold text-slate-950">
+                            <p className="text-xs text-muted-foreground">Subtotal</p>
+                            <p className="text-xl font-bold text-foreground">
                                 {formatPeso(selectedIds.length > 0 ? selectedTotal : 0)}
                             </p>
                         </div>
@@ -349,7 +349,7 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                         type="button"
                         onClick={proceedToOrder}
                         disabled={selectedIds.length !== 1 || proceeding}
-                        className="h-11 w-full rounded-2xl bg-blue-700 font-semibold text-white shadow-sm hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-11 w-full rounded-2xl bg-primary font-semibold text-white shadow-sm hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {proceeding ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

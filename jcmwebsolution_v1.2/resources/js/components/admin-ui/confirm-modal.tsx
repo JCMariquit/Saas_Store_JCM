@@ -22,17 +22,17 @@ export function ConfirmModal({
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-6 backdrop-blur-sm">
-            <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-                <div className="border-b border-slate-200 bg-gradient-to-r from-red-50 via-white to-rose-50 px-6 py-4">
-                    <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-sm">
+            <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
+                <div className="border-b border-border bg-gradient-to-r from-red-50 via-card to-rose-50 px-6 py-4">
+                    <h2 className="text-xl font-semibold text-foreground">{title}</h2>
                     {description && (
-                        <p className="mt-1 text-sm text-slate-500">{description}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
                     )}
                 </div>
 
                 <div className="px-6 py-5">
-                    <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
                         {message}
                     </div>
 

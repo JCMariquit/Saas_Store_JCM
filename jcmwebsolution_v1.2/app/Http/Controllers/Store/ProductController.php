@@ -48,6 +48,9 @@ class ProductController extends Controller
 
         $statusLabel = match ($product->status) {
             'active' => 'Active',
+            'development' => 'In Development',
+            'maintenance' => 'Maintenance',
+            'paused' => 'Paused',
             'inactive' => 'Inactive',
             default => ucfirst((string) $product->status),
         };
@@ -55,15 +58,15 @@ class ProductController extends Controller
         $plans = $product->plans->map(function ($plan) {
             return [
                 'id' => $plan->id,
-                'name' => $plan->name,
+                'name' => $plan->plan_name,
                 'description' => $plan->description,
                 'price' => $plan->price,
                 'price_label' => $plan->price !== null
                     ? '₱' . number_format((float) $plan->price, 2)
                     : 'Custom Quote',
-                'billing_cycle' => $plan->billing_cycle,
+                'billing_cycle' => $plan->billing_interval,
                 'status' => $plan->status,
-                'features' => $this->normalizePlanFeatures($plan->features ?? null),
+                'features' => [],
             ];
         })->values();
 

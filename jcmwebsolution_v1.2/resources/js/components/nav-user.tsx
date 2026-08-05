@@ -2,9 +2,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -12,18 +9,22 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { useInitials } from '@/hooks/use-initials';
+import { UserMenuContent } from '@/components/user-menu-content';
 import { type SharedData } from '@/types';
-import { Link, router, usePage } from '@inertiajs/react';
-import { ChevronsUpDown, LogOut, Settings } from 'lucide-react';
+import { usePage } from '@inertiajs/react';
+
+function initials(name: string): string {
+    return name
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part.charAt(0).toUpperCase())
+        .join('');
+}
 
 export function NavUser() {
     const { auth } = usePage<SharedData>().props;
-    const getInitials = useInitials();
-
-    const logout = () => {
-        router.post(route('logout'));
-    };
+    const user = auth.user;
 
     return (
         <SidebarMenu>
@@ -32,75 +33,21 @@ export function NavUser() {
                     <DropdownMenuTrigger asChild>
                         <SidebarMenuButton
                             size="lg"
-                            className="bg-[#263f47] text-white hover:bg-[#314d56] hover:text-white data-[state=open]:bg-[#314d56] data-[state=open]:text-white"
+                            tooltip={user.name}
+                            aria-label="Open user menu"
+                            className="size-10 rounded-[10px] p-1 text-sidebar-accent-foreground transition hover:bg-sidebar-accent/70 data-[state=open]:bg-sidebar-accent"
                         >
-                            <Avatar className="h-8 w-8 rounded-full">
-                                <AvatarImage src={auth.user.avatar} alt={auth.user.name} />
-                                <AvatarFallback className="rounded-full bg-[#9f0028] text-white">
-                                    {getInitials(auth.user.name)}
+                            <Avatar className="size-8 rounded-[9px]">
+                                <AvatarImage src={user.avatar} alt={user.name} />
+                                <AvatarFallback className="rounded-[9px] bg-primary/10 text-xs font-semibold text-primary">
+                                    {initials(user.name)}
                                 </AvatarFallback>
                             </Avatar>
-
-                            <div className="grid flex-1 text-left text-sm leading-tight">
-                                <span className="truncate font-semibold text-white">
-                                    {auth.user.name}
-                                </span>
-                                <span className="truncate text-xs text-slate-300">
-                                    {auth.user.email}
-                                </span>
-                            </div>
-
-                            <ChevronsUpDown className="ml-auto size-4 text-slate-300" />
+                            <span className="sr-only">Open user menu</span>
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
-
-                    <DropdownMenuContent
-                        className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-xl border border-white/10 bg-[#1f2f35] p-1 text-white shadow-xl"
-                        align="end"
-                        side="top"
-                        sideOffset={8}
-                    >
-                        <DropdownMenuLabel className="p-0 font-normal">
-                            <div className="flex items-center gap-2 rounded-lg bg-[#263f47] px-3 py-3 text-left text-sm">
-                                <Avatar className="h-9 w-9 rounded-full">
-                                    <AvatarImage src={auth.user.avatar} alt={auth.user.name} />
-                                    <AvatarFallback className="rounded-full bg-[#9f0028] text-white">
-                                        {getInitials(auth.user.name)}
-                                    </AvatarFallback>
-                                </Avatar>
-
-                                <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-semibold text-white">
-                                        {auth.user.name}
-                                    </span>
-                                    <span className="truncate text-xs text-slate-300">
-                                        {auth.user.email}
-                                    </span>
-                                </div>
-                            </div>
-                        </DropdownMenuLabel>
-
-                        <DropdownMenuSeparator className="my-1 bg-white/10" />
-
-                        <DropdownMenuItem
-                            asChild
-                            className="cursor-pointer rounded-lg text-white hover:bg-[#263f47] hover:text-white focus:bg-[#263f47] focus:text-white"
-                        >
-                            <Link href="/settings/profile">
-                                <Settings className="mr-2 h-4 w-4" />
-                                Settings
-                            </Link>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuSeparator className="my-1 bg-white/10" />
-
-                        <DropdownMenuItem
-                            onClick={logout}
-                            className="cursor-pointer rounded-lg text-white hover:bg-[#9f0028] hover:text-white focus:bg-[#9f0028] focus:text-white"
-                        >
-                            <LogOut className="mr-2 h-4 w-4" />
-                            Log out
-                        </DropdownMenuItem>
+                    <DropdownMenuContent className="min-w-64 rounded-xl p-1.5" align="end" side="bottom" sideOffset={8}>
+                        <UserMenuContent user={user} />
                     </DropdownMenuContent>
                 </DropdownMenu>
             </SidebarMenuItem>

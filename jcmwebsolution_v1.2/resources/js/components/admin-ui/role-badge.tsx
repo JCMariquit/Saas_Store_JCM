@@ -1,19 +1,31 @@
 type RoleBadgeProps = {
-    role: 'admin' | 'client' | string;
+    role: 'super_admin' | 'admin' | 'user' | string;
+};
+
+const roleStyles: Record<string, { label: string; className: string }> = {
+    super_admin: {
+        label: 'Super Admin',
+        className: 'border-violet-500/20 bg-violet-500/10 text-violet-400',
+    },
+    admin: {
+        label: 'Administrator',
+        className: 'border-primary/20 bg-primary/10 text-primary',
+    },
+    user: {
+        label: 'Client',
+        className: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400',
+    },
 };
 
 export function RoleBadge({ role }: RoleBadgeProps) {
-    const isAdmin = role === 'admin';
+    const details = roleStyles[role] ?? {
+        label: role.replaceAll('_', ' '),
+        className: 'border-border bg-muted/35 text-muted-foreground',
+    };
 
     return (
-        <span
-            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${
-                isAdmin
-                    ? 'border border-indigo-200 bg-indigo-50 text-indigo-700'
-                    : 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-            }`}
-        >
-            {role}
+        <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold capitalize ${details.className}`}>
+            {details.label}
         </span>
     );
 }

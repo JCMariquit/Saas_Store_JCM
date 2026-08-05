@@ -65,7 +65,7 @@ export default function Dashboard() {
         <AppLayout breadcrumbs={breadcrumbs} fullWidth>
             <Head title="JCM Web Solution" />
 
-            <main className="min-h-screen space-y-6 overflow-x-hidden bg-[#e8e9eb] pb-0 text-slate-900">
+            <main className="min-h-screen space-y-6 overflow-x-hidden bg-background pb-0 text-foreground">
                 <StoreHero banners={banners} />
 
                 <StatsStrip />
@@ -81,9 +81,9 @@ export default function Dashboard() {
                         items={productItems}
                         emptyTitle="No products found"
                         emptyDescription="Products will appear here once available."
-                        emptyIcon={<Boxes className="h-6 w-6 text-slate-500" />}
+                        emptyIcon={<Boxes className="h-6 w-6 text-muted-foreground" />}
                         fallbackIcon={
-                            <MonitorSmartphone className="h-10 w-10 text-slate-400" />
+                            <MonitorSmartphone className="h-10 w-10 text-muted-foreground" />
                         }
                         onItemClick={(item) => router.get(`/products/${item.id}`)}
                     />
@@ -96,8 +96,8 @@ export default function Dashboard() {
                         items={serviceItems}
                         emptyTitle="No services found"
                         emptyDescription="Services will appear here once available."
-                        emptyIcon={<Wrench className="h-6 w-6 text-slate-500" />}
-                        fallbackIcon={<Wrench className="h-10 w-10 text-slate-400" />}
+                        emptyIcon={<Wrench className="h-6 w-6 text-muted-foreground" />}
+                        fallbackIcon={<Wrench className="h-10 w-10 text-muted-foreground" />}
                         onItemClick={(item) => router.get(`/services/${item.id}`)}
                     />
                 </div>

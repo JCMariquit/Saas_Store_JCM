@@ -14,22 +14,12 @@ export default function AppSidebarLayout({
     return (
         <AppShell variant="sidebar">
             <AppSidebar />
-
             <AppContent
                 variant="sidebar"
-                className="min-w-0 overflow-x-hidden bg-slate-50 p-0"
+                className="min-w-0 overflow-x-hidden bg-[var(--workspace-background,var(--background))]"
             >
-                <div className="fixed top-0 right-0 left-0 z-50 h-16 bg-[#9f0028] text-white shadow-sm md:left-[var(--sidebar-width)] [&_*]:text-white">
-                    <div className="hidden md:block absolute -left-10 top-0 h-16 w-10 bg-[#9f0028]" />
-
-                    <AppSidebarHeader breadcrumbs={breadcrumbs} />
-                </div>
-
-                <main className="min-w-0 pt-16">
-                    <div className="p-4">
-                        {children}
-                    </div>
-                </main>
+                <AppSidebarHeader breadcrumbs={breadcrumbs} />
+                <main className="min-w-0 px-4 pb-6 pt-4 md:px-5">{children}</main>
             </AppContent>
         </AppShell>
     );

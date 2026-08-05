@@ -56,7 +56,7 @@ export default function StoreHero({ banners }: StoreHeroProps) {
                         <button
                             type="button"
                             onClick={() => scrollToSection('products-section')}
-                            className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-950 shadow-lg transition hover:-translate-y-0.5 hover:bg-slate-100"
+                            className="rounded-xl bg-card px-5 py-3 text-sm font-bold text-foreground shadow-lg transition hover:-translate-y-0.5 hover:bg-muted"
                         >
                             Browse Products
                         </button>
@@ -99,7 +99,7 @@ export default function StoreHero({ banners }: StoreHeroProps) {
                                     onClick={() => setCurrentBanner(index)}
                                     className={`h-2.5 rounded-full transition-all ${
                                         currentBanner === index
-                                            ? 'w-8 bg-white'
+                                            ? 'w-8 bg-card'
                                             : 'w-2.5 bg-white/50 hover:bg-white/80'
                                     }`}
                                     aria-label={`Show banner ${index + 1}`}

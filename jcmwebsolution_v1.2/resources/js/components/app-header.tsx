@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Bell, Menu, MessageCircle, ShoppingCart, Sparkles } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
+import AppearanceDropdown from '@/components/appearance-dropdown';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { CartDrawer } from '@/components/jcm-ui/drawers/cart-drawer';
 import { MessagesDrawer } from '@/components/jcm-ui/drawers/messages-drawer';
@@ -156,7 +157,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
 
     return (
         <>
-            <div className="border-b border-sidebar-border/80 bg-white">
+            <div className="border-b border-sidebar-border/80 bg-card">
                 <div className="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
                     <div className="lg:hidden">
                         <Sheet>
@@ -186,7 +187,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     <div className="flex flex-col space-y-3 text-sm">
                                         {breadcrumbs.length > 0 && (
                                             <div className="rounded-xl border border-sidebar-border/70 px-3 py-3">
-                                                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-neutral-500">
+                                                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                                                     Current Path
                                                 </p>
 
@@ -206,7 +207,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                             <Link
                                                                 key={`${item.title}-${index}`}
                                                                 href={item.href}
-                                                                className="block text-neutral-600 transition hover:text-foreground"
+                                                                className="block text-muted-foreground transition hover:text-foreground"
                                                             >
                                                                 {item.title}
                                                             </Link>
@@ -232,7 +233,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                     <span>{item.title}</span>
 
                                                     {badgeCount > 0 && (
-                                                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-700 px-1.5 text-[10px] font-bold text-white">
+                                                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-white">
                                                             {badgeCount > 99
                                                                 ? '99+'
                                                                 : badgeCount}
@@ -266,8 +267,12 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
 
                     <div className="ml-auto flex items-center space-x-2">
+                        <div className="hidden lg:block">
+                            <AppearanceDropdown />
+                        </div>
+
                         <div className="hidden lg:flex">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-700">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
                                 <Sparkles className="h-3.5 w-3.5" />
                                 Ready for your business
                             </div>
@@ -290,7 +295,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                                     <item.icon className="size-5 opacity-80 group-hover:opacity-100" />
 
                                                     {badgeCount > 0 && (
-                                                        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-700 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white">
+                                                        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-white ring-2 ring-background">
                                                             {badgeCount > 99
                                                                 ? '99+'
                                                                 : badgeCount}
@@ -319,7 +324,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             src={auth.user.avatar}
                                             alt={auth.user.name}
                                         />
-                                        <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                        <AvatarFallback className="rounded-lg bg-muted text-foreground">
                                             {getInitials(auth.user.name)}
                                         </AvatarFallback>
                                     </Avatar>

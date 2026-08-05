@@ -26,12 +26,16 @@ type Overview = {
     content: string;
 };
 
+type ProductStatus = 'development' | 'active' | 'maintenance' | 'paused' | 'inactive';
+
 type ProductFormData = {
     name: string;
     description: string;
+    app_url: string;
     pricing_type: 'plan' | 'custom';
     price: number | '';
-    status: 'active' | 'inactive';
+    status: ProductStatus;
+    sort_order: number | '';
     features: Feature[];
     overviews: Overview[];
     images: File[];
@@ -41,9 +45,11 @@ export default function AddProduct() {
     const form = useForm<ProductFormData>({
         name: '',
         description: '',
+        app_url: '',
         pricing_type: 'plan',
         price: '',
         status: 'active',
+        sort_order: 0,
         features: [],
         overviews: [],
         images: [],
@@ -113,12 +119,12 @@ export default function AddProduct() {
         <AppLayout>
             <Head title="Add Product" />
 
-            <div className="min-h-screen bg-[#f6f8fb] pb-10">
+            <div className="min-h-screen bg-background pb-10">
                 <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 md:px-6">
-                    <section className="rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 p-6 text-white shadow-sm">
+                    <section className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/[0.14] via-card to-card p-6 text-foreground shadow-[0_18px_60px_var(--theme-glow)]">
                         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                             <div className="max-w-3xl">
-                                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-100">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-card/10 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
                                     <Sparkles className="h-3.5 w-3.5" />
                                     Admin Product Setup
                                 </div>
@@ -127,27 +133,27 @@ export default function AddProduct() {
                                     Create New Product
                                 </h1>
 
-                                <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 md:text-base">
+                                <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
                                     Add a new SaaS product, organize its highlights, upload images,
                                     and prepare its overview content for the storefront and ordering flow.
                                 </p>
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                                <div className="rounded-2xl border border-white/10 bg-card/5 px-4 py-4">
+                                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                                         Pricing Mode
                                     </p>
-                                    <p className="mt-2 text-lg font-bold text-white">
+                                    <p className="mt-2 text-lg font-bold text-foreground">
                                         {form.data.pricing_type === 'plan' ? 'Plan Based' : 'Custom'}
                                     </p>
                                 </div>
 
-                                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-                                    <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">
+                                <div className="rounded-2xl border border-white/10 bg-card/5 px-4 py-4">
+                                    <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
                                         Current Status
                                     </p>
-                                    <p className="mt-2 text-lg font-bold capitalize text-white">
+                                    <p className="mt-2 text-lg font-bold capitalize text-foreground">
                                         {form.data.status}
                                     </p>
                                 </div>
@@ -157,16 +163,16 @@ export default function AddProduct() {
 
                     <form onSubmit={submit} className="grid gap-6 xl:grid-cols-[1fr_340px]">
                         <div className="space-y-6">
-                            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
                                 <div className="flex items-center gap-3">
-                                    <div className="rounded-2xl bg-slate-900 p-3 text-white">
+                                    <div className="rounded-2xl bg-primary/10 p-3 text-primary">
                                         <Blocks className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <h2 className="text-xl font-bold text-slate-900">
+                                        <h2 className="text-xl font-bold text-foreground">
                                             Product Details
                                         </h2>
-                                        <p className="text-sm text-slate-500">
+                                        <p className="text-sm text-muted-foreground">
                                             Basic information for your product listing and detail page.
                                         </p>
                                     </div>
@@ -186,7 +192,7 @@ export default function AddProduct() {
                                     <div>
                                         <Label className="mb-2 block">Short Description</Label>
                                         <textarea
-                                            className="min-h-[110px] w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-900"
+                                            className="min-h-[110px] w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
                                             value={form.data.description}
                                             onChange={(e) => form.setData('description', e.target.value)}
                                             placeholder="Write a short product description..."
@@ -194,11 +200,22 @@ export default function AddProduct() {
                                         <InputError message={form.errors.description} />
                                     </div>
 
+                                    <div>
+                                        <Label className="mb-2 block">Application URL</Label>
+                                        <Input
+                                            type="url"
+                                            value={form.data.app_url}
+                                            onChange={(e) => form.setData('app_url', e.target.value)}
+                                            placeholder="https://inventory.example.com"
+                                        />
+                                        <InputError message={form.errors.app_url} />
+                                    </div>
+
                                     <div className="grid gap-5 md:grid-cols-2">
                                         <div>
                                             <Label className="mb-2 block">Pricing Type</Label>
                                             <select
-                                                className="h-11 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-900"
+                                                className="h-11 w-full rounded-2xl border border-border bg-card px-4 text-sm text-foreground outline-none transition focus:border-primary"
                                                 value={form.data.pricing_type}
                                                 onChange={(e) =>
                                                     form.setData(
@@ -216,20 +233,36 @@ export default function AddProduct() {
                                         <div>
                                             <Label className="mb-2 block">Status</Label>
                                             <select
-                                                className="h-11 w-full rounded-2xl border border-slate-300 bg-white px-4 text-sm text-slate-700 outline-none transition focus:border-slate-900"
+                                                className="h-11 w-full rounded-2xl border border-border bg-card px-4 text-sm text-foreground outline-none transition focus:border-primary"
                                                 value={form.data.status}
                                                 onChange={(e) =>
                                                     form.setData(
                                                         'status',
-                                                        e.target.value as 'active' | 'inactive',
+                                                        e.target.value as ProductStatus,
                                                     )
                                                 }
                                             >
+                                                <option value="development">Development</option>
                                                 <option value="active">Active</option>
+                                                <option value="maintenance">Maintenance</option>
+                                                <option value="paused">Paused</option>
                                                 <option value="inactive">Inactive</option>
                                             </select>
                                             <InputError message={form.errors.status} />
                                         </div>
+                                    </div>
+
+
+                                    <div className="max-w-sm">
+                                        <Label className="mb-2 block">Catalog Sort Order</Label>
+                                        <Input
+                                            type="number"
+                                            min="0"
+                                            value={form.data.sort_order}
+                                            onChange={(e) => form.setData('sort_order', e.target.value === '' ? '' : Number(e.target.value))}
+                                            placeholder="0"
+                                        />
+                                        <InputError message={form.errors.sort_order} />
                                     </div>
 
                                     {form.data.pricing_type === 'custom' && (
@@ -254,15 +287,15 @@ export default function AddProduct() {
                                 </div>
                             </section>
 
-                            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-3">
-                                        <div className="rounded-2xl bg-amber-500 p-3 text-white">
+                                        <div className="rounded-2xl bg-amber-500 p-3 text-foreground">
                                             <FileImage className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <h2 className="text-xl font-bold text-slate-900">Product Images</h2>
-                                            <p className="text-sm text-slate-500">
+                                            <h2 className="text-xl font-bold text-foreground">Product Images</h2>
+                                            <p className="text-sm text-muted-foreground">
                                                 Upload multiple images. The first image will be used as the thumbnail.
                                             </p>
                                         </div>
@@ -272,7 +305,7 @@ export default function AddProduct() {
                                 <div className="mt-5 space-y-4">
                                     <div>
                                         <Label className="mb-2 block">Upload Images</Label>
-                                        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-100">
+                                        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-6 text-sm font-medium text-muted-foreground transition hover:border-border hover:bg-muted">
                                             <Upload className="h-4 w-4" />
                                             Select Images
                                             <input
@@ -287,21 +320,21 @@ export default function AddProduct() {
                                     </div>
 
                                     {form.data.images.length === 0 ? (
-                                        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
-                                            <p className="text-sm text-slate-400">No images selected yet.</p>
+                                        <div className="rounded-2xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+                                            <p className="text-sm text-muted-foreground">No images selected yet.</p>
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
                                             {form.data.images.map((image, index) => (
                                                 <div
                                                     key={`${image.name}-${index}`}
-                                                    className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                                                    className="flex items-center justify-between rounded-2xl border border-border bg-muted/30 p-4"
                                                 >
                                                     <div>
-                                                        <p className="text-sm font-semibold text-slate-900">
+                                                        <p className="text-sm font-semibold text-foreground">
                                                             {image.name}
                                                         </p>
-                                                        <p className="text-xs text-slate-500">
+                                                        <p className="text-xs text-muted-foreground">
                                                             {index === 0 ? 'Thumbnail Image' : `Image ${index + 1}`}
                                                         </p>
                                                     </div>
@@ -322,15 +355,15 @@ export default function AddProduct() {
                                 </div>
                             </section>
 
-                            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-3">
-                                        <div className="rounded-2xl bg-blue-600 p-3 text-white">
+                                        <div className="rounded-2xl bg-primary p-3 text-foreground">
                                             <ClipboardList className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <h2 className="text-xl font-bold text-slate-900">Features</h2>
-                                            <p className="text-sm text-slate-500">
+                                            <h2 className="text-xl font-bold text-foreground">Features</h2>
+                                            <p className="text-sm text-muted-foreground">
                                                 Short highlights or selling points of the product.
                                             </p>
                                         </div>
@@ -343,17 +376,17 @@ export default function AddProduct() {
                                 </div>
 
                                 {form.data.features.length === 0 ? (
-                                    <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
-                                        <p className="text-sm text-slate-400">No features added yet.</p>
+                                    <div className="mt-5 rounded-2xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+                                        <p className="text-sm text-muted-foreground">No features added yet.</p>
                                     </div>
                                 ) : (
                                     <div className="mt-5 space-y-3">
                                         {form.data.features.map((feature, index) => (
                                             <div
                                                 key={index}
-                                                className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:flex-row md:items-center"
+                                                className="flex flex-col gap-3 rounded-2xl border border-border bg-muted/30 p-4 md:flex-row md:items-center"
                                             >
-                                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm font-bold text-slate-700 shadow-sm">
+                                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-card text-sm font-bold text-foreground shadow-sm">
                                                     {index + 1}
                                                 </div>
 
@@ -389,17 +422,17 @@ export default function AddProduct() {
                                 )}
                             </section>
 
-                            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                            <section className="rounded-3xl border border-border bg-card p-6 shadow-sm">
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-3">
-                                        <div className="rounded-2xl bg-slate-900 p-3 text-white">
+                                        <div className="rounded-2xl bg-primary/10 p-3 text-primary">
                                             <FileText className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <h2 className="text-xl font-bold text-slate-900">
+                                            <h2 className="text-xl font-bold text-foreground">
                                                 Product Overview
                                             </h2>
-                                            <p className="text-sm text-slate-500">
+                                            <p className="text-sm text-muted-foreground">
                                                 Add content sections for the detailed product page.
                                             </p>
                                         </div>
@@ -412,18 +445,18 @@ export default function AddProduct() {
                                 </div>
 
                                 {form.data.overviews.length === 0 ? (
-                                    <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
-                                        <p className="text-sm text-slate-400">No overview sections added yet.</p>
+                                    <div className="mt-5 rounded-2xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+                                        <p className="text-sm text-muted-foreground">No overview sections added yet.</p>
                                     </div>
                                 ) : (
                                     <div className="mt-5 space-y-4">
                                         {form.data.overviews.map((overview, index) => (
                                             <div
                                                 key={index}
-                                                className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                                                className="rounded-2xl border border-border bg-muted/30 p-4"
                                             >
                                                 <div className="mb-3 flex items-center justify-between gap-3">
-                                                    <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
+                                                    <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-muted-foreground">
                                                         Section {index + 1}
                                                     </div>
 
@@ -455,7 +488,7 @@ export default function AddProduct() {
                                                     />
 
                                                     <textarea
-                                                        className="min-h-[130px] w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-slate-900"
+                                                        className="min-h-[130px] w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary"
                                                         placeholder="Content..."
                                                         value={overview.content}
                                                         onChange={(e) =>
@@ -478,14 +511,14 @@ export default function AddProduct() {
                         </div>
 
                         <aside className="space-y-6 xl:sticky xl:top-6 xl:self-start">
-                            <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                                <div className="border-b border-slate-200 bg-gradient-to-r from-slate-950 to-slate-800 px-6 py-5 text-white">
+                            <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+                                <div className="border-b border-border bg-gradient-to-r from-slate-950 to-slate-800 px-6 py-5 text-foreground">
                                     <div className="flex items-center gap-3">
-                                        <div className="rounded-2xl bg-white/10 p-3">
+                                        <div className="rounded-2xl bg-card/10 p-3">
                                             <Settings2 className="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">
+                                            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                                 Live Summary
                                             </p>
                                             <h3 className="mt-1 text-xl font-bold">
@@ -496,68 +529,68 @@ export default function AddProduct() {
                                 </div>
 
                                 <div className="space-y-4 p-6">
-                                    <div className="rounded-2xl bg-slate-50 p-4">
-                                        <p className="text-xs uppercase tracking-wide text-slate-400">
+                                    <div className="rounded-2xl bg-muted/30 p-4">
+                                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
                                             Pricing Type
                                         </p>
-                                        <p className="mt-1 text-sm font-semibold capitalize text-slate-900">
+                                        <p className="mt-1 text-sm font-semibold capitalize text-foreground">
                                             {form.data.pricing_type === 'plan' ? 'Plan Based' : 'Custom'}
                                         </p>
                                     </div>
 
-                                    <div className="rounded-2xl bg-slate-50 p-4">
-                                        <p className="text-xs uppercase tracking-wide text-slate-400">
+                                    <div className="rounded-2xl bg-muted/30 p-4">
+                                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
                                             Status
                                         </p>
-                                        <p className="mt-1 text-sm font-semibold capitalize text-slate-900">
+                                        <p className="mt-1 text-sm font-semibold capitalize text-foreground">
                                             {form.data.status}
                                         </p>
                                     </div>
 
-                                    <div className="rounded-2xl bg-slate-50 p-4">
-                                        <p className="text-xs uppercase tracking-wide text-slate-400">
+                                    <div className="rounded-2xl bg-muted/30 p-4">
+                                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
                                             Images
                                         </p>
-                                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                                        <p className="mt-1 text-sm font-semibold text-foreground">
                                             {form.data.images.length}
                                         </p>
                                     </div>
 
-                                    <div className="rounded-2xl bg-slate-50 p-4">
-                                        <p className="text-xs uppercase tracking-wide text-slate-400">
+                                    <div className="rounded-2xl bg-muted/30 p-4">
+                                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
                                             Features
                                         </p>
-                                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                                        <p className="mt-1 text-sm font-semibold text-foreground">
                                             {form.data.features.length}
                                         </p>
                                     </div>
 
-                                    <div className="rounded-2xl bg-slate-50 p-4">
-                                        <p className="text-xs uppercase tracking-wide text-slate-400">
+                                    <div className="rounded-2xl bg-muted/30 p-4">
+                                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
                                             Overview Sections
                                         </p>
-                                        <p className="mt-1 text-sm font-semibold text-slate-900">
+                                        <p className="mt-1 text-sm font-semibold text-foreground">
                                             {form.data.overviews.length}
                                         </p>
                                     </div>
 
                                     {form.data.images.length > 0 && (
-                                        <div className="rounded-2xl bg-slate-50 p-4">
-                                            <p className="text-xs uppercase tracking-wide text-slate-400">
+                                        <div className="rounded-2xl bg-muted/30 p-4">
+                                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
                                                 Thumbnail Source
                                             </p>
-                                            <p className="mt-1 truncate text-sm font-semibold text-slate-900">
+                                            <p className="mt-1 truncate text-sm font-semibold text-foreground">
                                                 {form.data.images[0].name}
                                             </p>
                                         </div>
                                     )}
 
                                     {form.data.pricing_type === 'custom' && (
-                                        <div className="rounded-2xl bg-slate-50 p-4">
-                                            <p className="text-xs uppercase tracking-wide text-slate-400">
+                                        <div className="rounded-2xl bg-muted/30 p-4">
+                                            <p className="text-xs uppercase tracking-wide text-muted-foreground">
                                                 Base Price
                                             </p>
-                                            <p className="mt-1 text-sm font-semibold text-slate-900">
+                                            <p className="mt-1 text-sm font-semibold text-foreground">
                                                 {form.data.price === '' ? '—' : `₱${form.data.price}`}
                                             </p>
                                         </div>
@@ -565,7 +598,7 @@ export default function AddProduct() {
                                 </div>
                             </section>
 
-                            <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                            <div className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-5 shadow-sm">
                                 <Button
                                     type="submit"
                                     disabled={form.processing}

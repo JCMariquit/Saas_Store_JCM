@@ -11,61 +11,38 @@ type PlanDetailsModalProps = {
     onClose: () => void;
 };
 
-export function PlanDetailsModal({
-    open,
-    title,
-    description,
-    price,
-    billing,
-    features,
-    onClose,
-}: PlanDetailsModalProps) {
+export function PlanDetailsModal({ open, title, description, price, billing, features, onClose }: PlanDetailsModalProps) {
     if (!open) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-6 backdrop-blur-sm">
-            <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-                
+            <div className="border-border bg-card w-full max-w-lg overflow-hidden rounded-2xl border shadow-2xl">
                 {/* HEADER */}
-                <div className="border-b border-slate-200 bg-gradient-to-r from-sky-50 via-white to-blue-50 px-6 py-4">
-                    <h2 className="text-xl font-semibold text-slate-900">{title}</h2>
-                    {description && (
-                        <p className="mt-1 text-sm text-slate-500">{description}</p>
-                    )}
+                <div className="border-border from-primary/[0.07] via-card to-card border-b bg-gradient-to-r px-6 py-4">
+                    <h2 className="text-foreground text-xl font-semibold">{title}</h2>
+                    {description && <p className="text-muted-foreground mt-1 text-sm">{description}</p>}
                 </div>
 
                 {/* BODY */}
                 <div className="px-6 py-5">
-                    
                     {/* PRICE */}
-                    <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">
-                            Price
-                        </p>
+                    <div className="border-primary/20 bg-primary/[0.07] rounded-2xl border p-4">
+                        <p className="text-muted-foreground text-xs tracking-wide uppercase">Price</p>
 
-                        <p className="mt-1 text-2xl font-extrabold text-sky-700">
-                            {price}
-                        </p>
+                        <p className="text-primary mt-1 text-2xl font-extrabold">{price}</p>
 
-                        <p className="mt-1 text-sm text-slate-500">
-                            {billing || 'One-time / custom'}
-                        </p>
+                        <p className="text-muted-foreground mt-1 text-sm">{billing || 'One-time / custom'}</p>
                     </div>
 
                     {/* FEATURES */}
                     {features.length > 0 && (
                         <div className="mt-5">
-                            <h3 className="text-sm font-semibold text-slate-900">
-                                What’s included
-                            </h3>
+                            <h3 className="text-foreground text-sm font-semibold">What’s included</h3>
 
                             <div className="mt-3 space-y-2">
                                 {features.map((feature, index) => (
-                                    <div
-                                        key={index}
-                                        className="flex items-start gap-2 text-sm text-slate-600"
-                                    >
-                                        <CheckCircle2 className="mt-0.5 h-4 w-4 text-green-600" />
+                                    <div key={index} className="text-muted-foreground flex items-start gap-2 text-sm">
+                                        <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-400" />
                                         <span>{feature}</span>
                                     </div>
                                 ))}
@@ -75,11 +52,7 @@ export function PlanDetailsModal({
 
                     {/* ACTION */}
                     <div className="mt-6 flex justify-end">
-                        <Button
-                            type="button"
-                            onClick={onClose}
-                            className="rounded-xl bg-slate-900 text-white hover:bg-slate-800"
-                        >
+                        <Button type="button" onClick={onClose} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl">
                             Close
                         </Button>
                     </div>

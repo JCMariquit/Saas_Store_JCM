@@ -82,6 +82,22 @@ return [
             ]) : [],
         ],
 
+        'inventory' => [
+            'driver' => 'mysql',
+            'host' => env('INVENTORY_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('INVENTORY_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('INVENTORY_DB_DATABASE', 'jcm_inventory_db'),
+            'username' => env('INVENTORY_DB_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('INVENTORY_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'unix_socket' => env('INVENTORY_DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+        ],
+
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),

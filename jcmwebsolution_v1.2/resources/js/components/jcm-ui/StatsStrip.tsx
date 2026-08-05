@@ -12,10 +12,10 @@ export default function StatsStrip() {
                 {stats.map((item) => (
                     <div
                         key={item.label}
-                        className="rounded-xl border border-white bg-white p-5 text-center shadow-sm"
+                        className="rounded-xl border border-white bg-card p-5 text-center shadow-sm"
                     >
-                        <p className="text-2xl font-black text-slate-950">{item.value}</p>
-                        <p className="mt-1 text-xs font-medium text-slate-500">{item.label}</p>
+                        <p className="text-2xl font-black text-foreground">{item.value}</p>
+                        <p className="mt-1 text-xs font-medium text-muted-foreground">{item.label}</p>
                     </div>
                 ))}
             </div>

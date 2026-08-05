@@ -17,7 +17,7 @@ export function TableActionButtons({
             <Button
                 type="button"
                 variant="outline"
-                className="h-10 rounded-xl border-blue-200 bg-white px-3 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                className="h-10 rounded-xl border-primary/20 bg-card px-3 text-primary hover:bg-primary/[0.06] hover:text-primary"
                 title={`Edit ${name}`}
                 aria-label={`Edit ${name}`}
                 onClick={onEdit}
@@ -28,7 +28,7 @@ export function TableActionButtons({
             <Button
                 type="button"
                 variant="outline"
-                className="h-10 rounded-xl border-red-200 bg-white px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                className="h-10 rounded-xl border-red-500/20 bg-card px-3 text-red-600 hover:bg-red-500/10 hover:text-red-300"
                 title={`Delete ${name}`}
                 aria-label={`Delete ${name}`}
                 onClick={onDelete}

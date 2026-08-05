@@ -21,9 +21,8 @@ const reasons = [
 
 export default function WhyChooseUs() {
     return (
-        <section className="relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen bg-[#f6f8fb] py-10">
+        <section className="bg-muted/20 relative right-1/2 left-1/2 mr-[-50vw] ml-[-50vw] w-screen py-10">
             <div className="mx-auto max-w-7xl px-4 md:px-6">
-                
                 {/* HEADER ONLY (no card container) */}
                 <SectionHeader
                     eyebrow="Why Businesses Choose JCM"
@@ -39,25 +38,19 @@ export default function WhyChooseUs() {
                         return (
                             <div
                                 key={item.title}
-                                className="group relative rounded-xl border border-slate-200/70 bg-white/60 p-4 backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-sky-200 hover:bg-white/80 hover:shadow-md"
+                                className="group border-border/70 bg-card/60 hover:border-primary/25 hover:bg-card relative rounded-xl border p-4 backdrop-blur-sm transition hover:-translate-y-0.5 hover:shadow-md"
                             >
                                 {/* step number */}
-                                <div className="absolute right-3 top-3 text-3xl font-black text-slate-100">
-                                    0{index + 1}
-                                </div>
+                                <div className="text-muted-foreground/20 absolute top-3 right-3 text-3xl font-black">0{index + 1}</div>
 
                                 {/* icon */}
-                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white transition group-hover:bg-sky-600">
+                                <div className="bg-primary text-primary-foreground group-hover:bg-primary/80 flex h-10 w-10 items-center justify-center rounded-xl transition">
                                     <Icon className="h-5 w-5" />
                                 </div>
 
-                                <h3 className="mt-4 text-sm font-black text-slate-950">
-                                    {item.title}
-                                </h3>
+                                <h3 className="text-foreground mt-4 text-sm font-black">{item.title}</h3>
 
-                                <p className="mt-2 text-[12px] leading-5 text-slate-500">
-                                    {item.desc}
-                                </p>
+                                <p className="text-muted-foreground mt-2 text-[12px] leading-5">{item.desc}</p>
 
                                 <div className="mt-4 h-1 w-8 rounded-full bg-sky-500 transition group-hover:w-14" />
                             </div>

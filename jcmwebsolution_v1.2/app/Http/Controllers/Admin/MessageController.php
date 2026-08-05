@@ -5,143 +5,81 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Message;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class MessageController extends Controller
 {
-    public function index()
+    public function adminThreads(Request $request): JsonResponse
     {
-        $messages = Message::where('user_id', Auth::id())
-            ->orderBy('created_at', 'asc')
-            ->get();
+        $perPage = 15;
+        $userIds = Message::query()->distinct()->pluck('user_id');
 
-        Message::where('user_id', Auth::id())
-            ->where('sender_type', 'admin')
-            ->where('is_read', 1)
-            ->update([
-                'is_read' => 0,
-                'read_at' => now(),
-            ]);
+        $threads = User::query()
+            ->whereIn('id', $userIds)
+            ->get(['id', 'name', 'email'])
+            ->map(function (User $user): array {
+                $lastMessage = Message::query()->where('user_id', $user->id)->latest()->first();
+                $unread = Message::query()
+                    ->where('user_id', $user->id)
+                    ->where('sender_type', 'user')
+                    ->where('is_read', 1)
+                    ->count();
+
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'avatar' => null,
+                    'last_message' => $lastMessage?->message,
+                    'last_message_at' => $lastMessage?->created_at,
+                    'unread_count' => $unread,
+                ];
+            })
+            ->sortByDesc('last_message_at')
+            ->values();
+
+        $page = max(1, (int) $request->integer('page', 1));
 
         return response()->json([
-            'messages' => $messages,
+            'threads' => $threads->forPage($page, $perPage)->values(),
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'has_more' => $threads->count() > ($page * $perPage),
         ]);
     }
 
-    public function store(Request $request)
+    public function adminConversation(User $user): JsonResponse
     {
-        $request->validate([
-            'message' => ['required', 'string'],
-        ]);
-
-        $admin = User::where('role', 'admin')->first();
-
-        if (!$admin) {
-            return response()->json([
-                'message' => 'No admin account found.',
-            ], 404);
-        }
-
-        $message = Message::create([
-            'user_id' => Auth::id(),
-            'sender_id' => Auth::id(),
-            'receiver_id' => $admin->id,
-            'message' => $request->message,
-            'sender_type' => 'user',
-            'is_read' => 1,
-        ]);
-
-        return response()->json([
-            'message' => 'Message sent successfully.',
-            'data' => $message,
-        ]);
-    }
-
-    /**
-     * 🔥 FIXED THREAD LIST (ITO YUNG PROBLEM MO)
-     */
-public function adminThreads(Request $request)
-{
-    abort_if(Auth::user()->role !== 'admin', 403);
-
-    $perPage = 15;
-
-    $userIds = Message::select('user_id')
-        ->distinct()
-        ->pluck('user_id');
-
-    $threads = User::whereIn('id', $userIds)
-        ->get()
-        ->map(function ($user) {
-            $lastMessage = Message::where('user_id', $user->id)
-                ->latest()
-                ->first();
-
-            $unread = Message::where('user_id', $user->id)
-                ->where('sender_type', 'user')
-                ->where('is_read', 1)
-                ->count();
-
-            return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'avatar' => null,
-                'last_message' => $lastMessage?->message,
-                'last_message_at' => $lastMessage?->created_at,
-                'unread_count' => $unread,
-            ];
-        })
-        ->sortByDesc('last_message_at')
-        ->values();
-
-    $page = (int) $request->get('page', 1);
-    $paginated = $threads->forPage($page, $perPage)->values();
-
-    return response()->json([
-        'threads' => $paginated,
-        'current_page' => $page,
-        'per_page' => $perPage,
-        'has_more' => $threads->count() > ($page * $perPage),
-    ]);
-}
-    public function adminConversation(User $user)
-    {
-        abort_if(Auth::user()->role !== 'admin', 403);
-
-        $messages = Message::where('user_id', $user->id)
-            ->orderBy('created_at', 'asc')
+        $messages = Message::query()
+            ->where('user_id', $user->id)
+            ->oldest()
             ->get();
 
-        Message::where('user_id', $user->id)
+        Message::query()
+            ->where('user_id', $user->id)
             ->where('sender_type', 'user')
             ->where('is_read', 1)
-            ->update([
-                'is_read' => 0,
-                'read_at' => now(),
-            ]);
+            ->update(['is_read' => 0, 'read_at' => now()]);
 
         return response()->json([
-            'user' => $user,
+            'user' => $user->only(['id', 'name', 'email']),
             'messages' => $messages,
         ]);
     }
 
-    public function adminReply(Request $request, User $user)
+    public function adminReply(Request $request, User $user): JsonResponse
     {
-        abort_if(Auth::user()->role !== 'admin', 403);
-
-        $request->validate([
-            'message' => ['required', 'string'],
+        $validated = $request->validate([
+            'message' => ['required', 'string', 'max:5000'],
         ]);
 
         $message = Message::create([
             'user_id' => $user->id,
             'sender_id' => Auth::id(),
             'receiver_id' => $user->id,
-            'message' => $request->message,
+            'message' => $validated['message'],
             'sender_type' => 'admin',
             'is_read' => 1,
         ]);

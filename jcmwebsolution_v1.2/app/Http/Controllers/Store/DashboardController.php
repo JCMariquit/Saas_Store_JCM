@@ -5,13 +5,21 @@ namespace App\Http\Controllers\Store;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Service;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response|RedirectResponse
     {
+        // Protect against old links, bookmarks, and intended URLs that still
+        // point to /dashboard or /store/dashboard for an administrator.
+        if ($request->user()?->isAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
+
         return Inertia::render('dashboard', [
             'products' => $this->products(),
             'services' => $this->services(),

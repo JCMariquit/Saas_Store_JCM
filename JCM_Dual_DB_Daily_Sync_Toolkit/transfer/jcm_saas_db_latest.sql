@@ -101,7 +101,7 @@ CREATE TABLE `account_business_profiles` (
   CONSTRAINT `account_business_profiles_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `account_business_profiles_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `account_business_profiles_updated_by_foreign` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -110,7 +110,7 @@ CREATE TABLE `account_business_profiles` (
 
 LOCK TABLES `account_business_profiles` WRITE;
 /*!40000 ALTER TABLE `account_business_profiles` DISABLE KEYS */;
-INSERT INTO `account_business_profiles` VALUES (1,1,'123','123',NULL,'mariquit.junecharles@marsu.edu.ph','01','01',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'PH',1,1,'2026-07-28 05:34:51','2026-07-28 05:34:51');
+INSERT INTO `account_business_profiles` VALUES (1,1,'123','123',NULL,'mariquit.junecharles@marsu.edu.ph','01','01',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'PH',1,1,'2026-07-28 05:34:51','2026-07-28 05:34:51'),(3,21,'gg','g',NULL,'mariquit.junecharles@marsu.edu.ph','42',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'PH',1,1,'2026-08-05 06:19:35','2026-08-05 06:19:35');
 /*!40000 ALTER TABLE `account_business_profiles` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -190,6 +190,46 @@ LOCK TABLES `account_role_sidebar_items` WRITE;
 /*!40000 ALTER TABLE `account_role_sidebar_items` DISABLE KEYS */;
 INSERT INTO `account_role_sidebar_items` VALUES (66,1,11,3,39,1,1,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(67,1,11,3,40,1,1,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(68,1,11,3,41,1,1,'2026-07-28 03:26:29','2026-07-28 03:26:29'),(69,1,11,1,1,1,1,'2026-07-28 07:15:53','2026-07-28 07:15:53'),(70,1,11,5,1,1,1,'2026-07-28 07:16:02','2026-07-28 07:16:02');
 /*!40000 ALTER TABLE `account_role_sidebar_items` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `api_integrations`
+--
+
+DROP TABLE IF EXISTS `api_integrations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `api_integrations` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(160) NOT NULL,
+  `integration_code` varchar(100) NOT NULL,
+  `provider` varchar(120) NOT NULL,
+  `base_url` varchar(500) DEFAULT NULL,
+  `webhook_url` varchar(500) DEFAULT NULL,
+  `environment` enum('local','sandbox','production') NOT NULL DEFAULT 'sandbox',
+  `status` enum('active','inactive','error') NOT NULL DEFAULT 'active',
+  `scopes` longtext DEFAULT NULL,
+  `secret_encrypted` longtext NOT NULL,
+  `secret_last_four` varchar(4) DEFAULT NULL,
+  `last_used_at` timestamp NULL DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `api_integrations_code_unique` (`integration_code`),
+  KEY `api_integrations_status_environment_index` (`status`,`environment`),
+  KEY `api_integrations_created_by_index` (`created_by`),
+  CONSTRAINT `api_integrations_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `api_integrations`
+--
+
+LOCK TABLES `api_integrations` WRITE;
+/*!40000 ALTER TABLE `api_integrations` DISABLE KEYS */;
+/*!40000 ALTER TABLE `api_integrations` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -344,6 +384,127 @@ LOCK TABLES `failed_jobs` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `feature_flags`
+--
+
+DROP TABLE IF EXISTS `feature_flags`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `feature_flags` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `product_id` bigint(20) unsigned NOT NULL,
+  `flag_key` varchar(120) NOT NULL,
+  `name` varchar(160) NOT NULL,
+  `description` varchar(500) DEFAULT NULL,
+  `environment` enum('local','staging','production') NOT NULL DEFAULT 'staging',
+  `is_enabled` tinyint(1) NOT NULL DEFAULT 0,
+  `rollout_percentage` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `conditions` longtext DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `feature_flags_product_key_environment_unique` (`product_id`,`flag_key`,`environment`),
+  KEY `feature_flags_environment_enabled_index` (`environment`,`is_enabled`),
+  KEY `feature_flags_created_by_index` (`created_by`),
+  CONSTRAINT `feature_flags_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `feature_flags_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `feature_flags`
+--
+
+LOCK TABLES `feature_flags` WRITE;
+/*!40000 ALTER TABLE `feature_flags` DISABLE KEYS */;
+/*!40000 ALTER TABLE `feature_flags` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `invoice_items`
+--
+
+DROP TABLE IF EXISTS `invoice_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `invoice_items` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `invoice_id` bigint(20) unsigned NOT NULL,
+  `description` varchar(255) NOT NULL,
+  `quantity` decimal(12,2) NOT NULL DEFAULT 1.00,
+  `unit_price` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `line_total` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `invoice_items_invoice_index` (`invoice_id`),
+  CONSTRAINT `invoice_items_invoice_foreign` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `invoice_items`
+--
+
+LOCK TABLES `invoice_items` WRITE;
+/*!40000 ALTER TABLE `invoice_items` DISABLE KEYS */;
+/*!40000 ALTER TABLE `invoice_items` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `invoices`
+--
+
+DROP TABLE IF EXISTS `invoices`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `invoices` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `invoice_number` varchar(100) NOT NULL,
+  `order_id` bigint(20) unsigned DEFAULT NULL,
+  `subscription_id` bigint(20) unsigned DEFAULT NULL,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `product_id` bigint(20) unsigned DEFAULT NULL,
+  `status` enum('draft','issued','paid','overdue','void') NOT NULL DEFAULT 'draft',
+  `issue_date` date NOT NULL,
+  `due_date` date NOT NULL,
+  `subtotal` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `tax_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `discount_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `total_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `currency` char(3) NOT NULL DEFAULT 'PHP',
+  `notes` text DEFAULT NULL,
+  `paid_at` timestamp NULL DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `invoices_number_unique` (`invoice_number`),
+  KEY `invoices_status_due_index` (`status`,`due_date`),
+  KEY `invoices_user_index` (`user_id`),
+  KEY `invoices_order_index` (`order_id`),
+  KEY `invoices_subscription_index` (`subscription_id`),
+  KEY `invoices_product_index` (`product_id`),
+  KEY `invoices_created_by_index` (`created_by`),
+  CONSTRAINT `invoices_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `invoices_order_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `invoices_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `invoices_subscription_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `invoices_user_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `invoices`
+--
+
+LOCK TABLES `invoices` WRITE;
+/*!40000 ALTER TABLE `invoices` DISABLE KEYS */;
+/*!40000 ALTER TABLE `invoices` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `job_batches`
 --
 
@@ -430,7 +591,7 @@ CREATE TABLE `login_activities` (
   KEY `login_activities_session_index` (`session_id`),
   KEY `login_activities_occurred_at_index` (`occurred_at`),
   CONSTRAINT `login_activities_user_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -439,7 +600,7 @@ CREATE TABLE `login_activities` (
 
 LOCK TABLES `login_activities` WRITE;
 /*!40000 ALTER TABLE `login_activities` DISABLE KEYS */;
-INSERT INTO `login_activities` VALUES (1,1,'junecharlesmariquit553@gmail.com','logout','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0','Microsoft Edge','Windows','Desktop','dai6CykT98L8JdtGj7etfaSZ3B2R81i1ef6L0NZd','2026-08-01 08:46:03','2026-08-01 08:46:03','2026-08-01 08:46:03'),(2,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0','Microsoft Edge','Windows','Desktop','i8BLdBgwo1KN7575397iRIpMbr6w2Y9FecKgGyoV','2026-08-01 08:46:13','2026-08-01 08:46:13','2026-08-01 08:46:13'),(3,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0','Microsoft Edge','Windows','Desktop','upeoUn9Oad68F6IVBvsTwolxYOXjH2mNfoS9nSoa','2026-08-01 11:33:58','2026-08-01 11:33:58','2026-08-01 11:33:58'),(4,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0','Microsoft Edge','Windows','Desktop','RTCVEbgVcWfNtpZ7nkUovLHupOuZya0Vw2po2JBy','2026-08-02 07:00:28','2026-08-02 07:00:28','2026-08-02 07:00:28'),(5,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','Qz8bXzysaeCMsgJLfRux3o7hJXAUVpmkKNVTloV0','2026-08-03 02:18:05','2026-08-03 02:18:05','2026-08-03 02:18:05'),(6,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','sW3dcXKd45494D3vhZSW4RvgQFrgvSIg1qWRBHKG','2026-08-03 05:22:27','2026-08-03 05:22:27','2026-08-03 05:22:27'),(7,1,'junecharlesmariquit553@gmail.com','logout','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','sW3dcXKd45494D3vhZSW4RvgQFrgvSIg1qWRBHKG','2026-08-03 05:48:09','2026-08-03 05:48:09','2026-08-03 05:48:09'),(8,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','VFTM6r2meozYPv5jWZGnoHp2ONUiuiF0rfGTpjXh','2026-08-03 05:48:19','2026-08-03 05:48:19','2026-08-03 05:48:19'),(9,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','SRdi0oPd2QBwX2n60gf99G22mzkCgpGcUVivSwC5','2026-08-04 03:48:00','2026-08-04 03:48:00','2026-08-04 03:48:00'),(10,1,'junecharlesmariquit553@gmail.com','logout','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','SRdi0oPd2QBwX2n60gf99G22mzkCgpGcUVivSwC5','2026-08-04 05:29:10','2026-08-04 05:29:10','2026-08-04 05:29:10'),(11,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','WO0LxRAzIntbdKqKaAduL0nK9p8n0nXoWc0hEzyF','2026-08-04 05:29:21','2026-08-04 05:29:21','2026-08-04 05:29:21'),(12,1,'junecharlesmariquit553@gmail.com','logout','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','WO0LxRAzIntbdKqKaAduL0nK9p8n0nXoWc0hEzyF','2026-08-04 05:33:28','2026-08-04 05:33:28','2026-08-04 05:33:28'),(13,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','lKJy2975i4wKiWup5hzmyP9cDTPxSuWHiDqbkpLT','2026-08-04 05:33:54','2026-08-04 05:33:54','2026-08-04 05:33:54'),(14,1,'junecharlesmariquit553@gmail.com','logout','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','lKJy2975i4wKiWup5hzmyP9cDTPxSuWHiDqbkpLT','2026-08-04 05:34:33','2026-08-04 05:34:33','2026-08-04 05:34:33'),(15,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','3mwpXo9RiiifkpUq13KidBPAA3n8WpVepVrId0Px','2026-08-04 05:34:43','2026-08-04 05:34:43','2026-08-04 05:34:43'),(16,1,'junecharlesmariquit553@gmail.com','logout','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','3mwpXo9RiiifkpUq13KidBPAA3n8WpVepVrId0Px','2026-08-04 06:42:02','2026-08-04 06:42:02','2026-08-04 06:42:02'),(17,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','KYnutoSIWiB74NhFVFmAmdRCfX9Tf1b5S2xPNvFi','2026-08-04 06:42:15','2026-08-04 06:42:15','2026-08-04 06:42:15'),(18,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','GAsvQJQAN37swTx1dxor8qU9C2I9Zdid7EfGSNTp','2026-08-04 06:45:00','2026-08-04 06:45:00','2026-08-04 06:45:00');
+INSERT INTO `login_activities` VALUES (1,1,'junecharlesmariquit553@gmail.com','logout','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0','Microsoft Edge','Windows','Desktop','dai6CykT98L8JdtGj7etfaSZ3B2R81i1ef6L0NZd','2026-08-01 08:46:03','2026-08-01 08:46:03','2026-08-01 08:46:03'),(2,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0','Microsoft Edge','Windows','Desktop','i8BLdBgwo1KN7575397iRIpMbr6w2Y9FecKgGyoV','2026-08-01 08:46:13','2026-08-01 08:46:13','2026-08-01 08:46:13'),(3,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0','Microsoft Edge','Windows','Desktop','upeoUn9Oad68F6IVBvsTwolxYOXjH2mNfoS9nSoa','2026-08-01 11:33:58','2026-08-01 11:33:58','2026-08-01 11:33:58'),(4,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0','Microsoft Edge','Windows','Desktop','RTCVEbgVcWfNtpZ7nkUovLHupOuZya0Vw2po2JBy','2026-08-02 07:00:28','2026-08-02 07:00:28','2026-08-02 07:00:28'),(5,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','Qz8bXzysaeCMsgJLfRux3o7hJXAUVpmkKNVTloV0','2026-08-03 02:18:05','2026-08-03 02:18:05','2026-08-03 02:18:05'),(6,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','sW3dcXKd45494D3vhZSW4RvgQFrgvSIg1qWRBHKG','2026-08-03 05:22:27','2026-08-03 05:22:27','2026-08-03 05:22:27'),(7,1,'junecharlesmariquit553@gmail.com','logout','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','sW3dcXKd45494D3vhZSW4RvgQFrgvSIg1qWRBHKG','2026-08-03 05:48:09','2026-08-03 05:48:09','2026-08-03 05:48:09'),(8,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','VFTM6r2meozYPv5jWZGnoHp2ONUiuiF0rfGTpjXh','2026-08-03 05:48:19','2026-08-03 05:48:19','2026-08-03 05:48:19'),(9,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','SRdi0oPd2QBwX2n60gf99G22mzkCgpGcUVivSwC5','2026-08-04 03:48:00','2026-08-04 03:48:00','2026-08-04 03:48:00'),(10,1,'junecharlesmariquit553@gmail.com','logout','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','SRdi0oPd2QBwX2n60gf99G22mzkCgpGcUVivSwC5','2026-08-04 05:29:10','2026-08-04 05:29:10','2026-08-04 05:29:10'),(11,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','WO0LxRAzIntbdKqKaAduL0nK9p8n0nXoWc0hEzyF','2026-08-04 05:29:21','2026-08-04 05:29:21','2026-08-04 05:29:21'),(12,1,'junecharlesmariquit553@gmail.com','logout','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','WO0LxRAzIntbdKqKaAduL0nK9p8n0nXoWc0hEzyF','2026-08-04 05:33:28','2026-08-04 05:33:28','2026-08-04 05:33:28'),(13,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','lKJy2975i4wKiWup5hzmyP9cDTPxSuWHiDqbkpLT','2026-08-04 05:33:54','2026-08-04 05:33:54','2026-08-04 05:33:54'),(14,1,'junecharlesmariquit553@gmail.com','logout','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','lKJy2975i4wKiWup5hzmyP9cDTPxSuWHiDqbkpLT','2026-08-04 05:34:33','2026-08-04 05:34:33','2026-08-04 05:34:33'),(15,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','3mwpXo9RiiifkpUq13KidBPAA3n8WpVepVrId0Px','2026-08-04 05:34:43','2026-08-04 05:34:43','2026-08-04 05:34:43'),(16,1,'junecharlesmariquit553@gmail.com','logout','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','3mwpXo9RiiifkpUq13KidBPAA3n8WpVepVrId0Px','2026-08-04 06:42:02','2026-08-04 06:42:02','2026-08-04 06:42:02'),(17,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','KYnutoSIWiB74NhFVFmAmdRCfX9Tf1b5S2xPNvFi','2026-08-04 06:42:15','2026-08-04 06:42:15','2026-08-04 06:42:15'),(18,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','GAsvQJQAN37swTx1dxor8qU9C2I9Zdid7EfGSNTp','2026-08-04 06:45:00','2026-08-04 06:45:00','2026-08-04 06:45:00'),(19,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','aG3dyeamukcTXjfvxOnzfGrunFPvY8baCkOzZMQR','2026-08-05 02:06:39','2026-08-05 02:06:39','2026-08-05 02:06:39'),(20,1,'junecharlesmariquit553@gmail.com','login_failed','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','UbIU5N2lP8vwhsVRTvPjHQegy2IKqoAj8ugRNrw1','2026-08-06 02:22:06','2026-08-06 02:22:06','2026-08-06 02:22:06'),(21,1,'junecharlesmariquit553@gmail.com','login_success','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','Google Chrome','Windows','Desktop','MlDo55OVgezWH8V0RKZvRWfhHiPNDIUL4lyqT3mE','2026-08-06 02:22:13','2026-08-06 02:22:13','2026-08-06 02:22:13');
 /*!40000 ALTER TABLE `login_activities` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -468,7 +629,7 @@ CREATE TABLE `messages` (
   CONSTRAINT `messages_receiver_id_foreign` FOREIGN KEY (`receiver_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `messages_sender_id_foreign` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `messages_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -477,7 +638,7 @@ CREATE TABLE `messages` (
 
 LOCK TABLES `messages` WRITE;
 /*!40000 ALTER TABLE `messages` DISABLE KEYS */;
-INSERT INTO `messages` VALUES (8,1,1,1,'ss','user',1,NULL,'2026-05-07 22:42:57','2026-05-07 22:42:57');
+INSERT INTO `messages` VALUES (8,1,1,1,'ss','user',0,'2026-08-06 03:19:25','2026-05-07 22:42:57','2026-08-06 03:19:25'),(9,1,1,1,'k;','admin',1,NULL,'2026-08-06 03:19:32','2026-08-06 03:19:32'),(10,1,1,1,'pop[','admin',1,NULL,'2026-08-06 03:19:35','2026-08-06 03:19:35'),(11,1,1,1,'d','admin',1,NULL,'2026-08-06 03:51:57','2026-08-06 03:51:57'),(12,1,1,1,'l','admin',1,NULL,'2026-08-06 05:23:29','2026-08-06 05:23:29'),(13,1,1,1,'l','admin',1,NULL,'2026-08-06 05:23:30','2026-08-06 05:23:30'),(14,1,1,1,'l','admin',1,NULL,'2026-08-06 05:23:32','2026-08-06 05:23:32'),(15,1,1,1,'l','admin',1,NULL,'2026-08-06 05:23:33','2026-08-06 05:23:33'),(16,1,1,1,'l','admin',1,NULL,'2026-08-06 05:23:34','2026-08-06 05:23:34');
 /*!40000 ALTER TABLE `messages` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -526,7 +687,7 @@ CREATE TABLE `notifications` (
   PRIMARY KEY (`id`),
   KEY `notifications_user_read_index` (`user_id`,`is_read`),
   CONSTRAINT `notifications_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -535,7 +696,7 @@ CREATE TABLE `notifications` (
 
 LOCK TABLES `notifications` WRITE;
 /*!40000 ALTER TABLE `notifications` DISABLE KEYS */;
-INSERT INTO `notifications` VALUES (1,1,'1Welcome to JCM Web Solution','Your account is ready. You can now send inquiries and receive project updates.','system',0,'2026-04-26 18:36:33','2026-04-26 04:24:39','2026-04-26 18:36:33');
+INSERT INTO `notifications` VALUES (1,1,'1Welcome to JCM Web Solution','Your account is ready. You can now send inquiries and receive project updates.','system',0,'2026-04-26 18:36:33','2026-04-26 04:24:39','2026-04-26 18:36:33'),(9,1,'Payment approved','Your payment for ORD-TEST-BASIC-20260805104218-4665E466 has been approved. Subscription access is now active.','payment_approved',1,NULL,'2026-08-05 02:42:56','2026-08-05 02:42:56');
 /*!40000 ALTER TABLE `notifications` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -591,7 +752,7 @@ CREATE TABLE `orders` (
   CONSTRAINT `orders_account_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `orders_plan_price_plan_foreign` FOREIGN KEY (`plan_price_id`, `plan_id`) REFERENCES `plan_prices` (`id`, `plan_id`) ON UPDATE CASCADE,
   CONSTRAINT `orders_subscription_scope_foreign` FOREIGN KEY (`subscription_id`, `product_id`, `account_owner_id`) REFERENCES `subscriptions` (`id`, `product_id`, `account_owner_id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -600,7 +761,7 @@ CREATE TABLE `orders` (
 
 LOCK TABLES `orders` WRITE;
 /*!40000 ALTER TABLE `orders` DISABLE KEYS */;
-INSERT INTO `orders` VALUES (18,'ORD-SUB-1-20260729145952-0LEMHD',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'cancelled','2026-07-29 08:32:41',NULL,NULL,'[TEST RESET 2026-07-30 11:05:07] Open subscription order cancelled to allow a new plan selection.','2026-07-29 06:59:52','2026-07-30 03:05:07'),(19,'ORD-SUB-1-20260730110529-SNIK8E',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'cancelled','2026-07-30 03:05:29',NULL,NULL,'[TEST RESET 2026-07-30 11:29:36] Open subscription order cancelled to allow a new plan selection.','2026-07-30 03:05:29','2026-07-30 03:29:36'),(20,'ORD-SUB-1-20260730112940-2NMVUC',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'cancelled','2026-07-30 03:29:40',NULL,NULL,'[2026-07-30 11:42:04] Checkout cancelled by the account owner.','2026-07-30 03:29:40','2026-07-30 03:42:04'),(21,'ORD-SUB-1-20260730114207-TVET8L',1,1,11,NULL,13,4,'monthly',19,'renewal',1299.00,'PHP',30,'cancelled','2026-07-30 03:42:07',NULL,NULL,'[2026-07-30 11:42:24] Checkout cancelled by the account owner.','2026-07-30 03:42:07','2026-07-30 03:42:24'),(22,'ORD-SUB-1-20260730132718-9XJIXK',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'cancelled','2026-07-30 05:27:18',NULL,NULL,'[2026-07-30 13:27:23] Checkout cancelled by the account owner.','2026-07-30 05:27:18','2026-07-30 05:27:23');
+INSERT INTO `orders` VALUES (18,'ORD-SUB-1-20260729145952-0LEMHD',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'cancelled','2026-07-29 08:32:41',NULL,NULL,'[TEST RESET 2026-07-30 11:05:07] Open subscription order cancelled to allow a new plan selection.','2026-07-29 06:59:52','2026-07-30 03:05:07'),(19,'ORD-SUB-1-20260730110529-SNIK8E',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'cancelled','2026-07-30 03:05:29',NULL,NULL,'[TEST RESET 2026-07-30 11:29:36] Open subscription order cancelled to allow a new plan selection.','2026-07-30 03:05:29','2026-07-30 03:29:36'),(20,'ORD-SUB-1-20260730112940-2NMVUC',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'cancelled','2026-07-30 03:29:40',NULL,NULL,'[2026-07-30 11:42:04] Checkout cancelled by the account owner.','2026-07-30 03:29:40','2026-07-30 03:42:04'),(21,'ORD-SUB-1-20260730114207-TVET8L',1,1,11,NULL,13,4,'monthly',19,'renewal',1299.00,'PHP',30,'cancelled','2026-07-30 03:42:07',NULL,NULL,'[2026-07-30 11:42:24] Checkout cancelled by the account owner.','2026-07-30 03:42:07','2026-07-30 03:42:24'),(22,'ORD-SUB-1-20260730132718-9XJIXK',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'cancelled','2026-07-30 05:27:18',NULL,NULL,'[2026-07-30 13:27:23] Checkout cancelled by the account owner.','2026-07-30 05:27:18','2026-07-30 05:27:23'),(23,'ORD-TEST-BASIC-20260805104218-4665E466',1,1,11,NULL,12,1,'monthly',19,'downgrade',499.00,'PHP',30,'verified','2026-08-05 02:42:18','2026-08-05 02:42:18','2026-08-05 02:42:56','[TEST] Manual payment submission for Basic Inventory approval testing.','2026-08-05 02:42:18','2026-08-05 02:42:56');
 /*!40000 ALTER TABLE `orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -690,7 +851,7 @@ CREATE TABLE `plan_features` (
   CONSTRAINT `plan_features_feature_product_foreign` FOREIGN KEY (`feature_id`, `product_id`) REFERENCES `app_features` (`id`, `product_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `plan_features_plan_foreign` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `plan_features_plan_product_foreign` FOREIGN KEY (`plan_id`, `product_id`) REFERENCES `plans` (`id`, `product_id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=62 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -699,7 +860,7 @@ CREATE TABLE `plan_features` (
 
 LOCK TABLES `plan_features` WRITE;
 /*!40000 ALTER TABLE `plan_features` DISABLE KEYS */;
-INSERT INTO `plan_features` VALUES (1,11,12,3,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(2,11,12,1,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(3,11,12,2,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(4,11,12,4,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(5,11,12,6,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(6,11,12,5,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(7,11,12,8,0,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(8,11,13,1,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(9,11,13,2,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(10,11,13,3,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(11,11,13,4,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(12,11,13,5,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(13,11,13,6,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(14,11,13,7,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(15,11,13,8,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(16,11,13,9,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(17,11,13,10,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(18,11,13,11,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(19,11,13,12,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(20,11,13,13,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(21,11,13,14,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(22,11,13,15,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(23,11,13,16,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(39,11,12,12,1,NULL,'2026-07-13 02:11:28','2026-07-29 06:13:57'),(40,11,12,13,1,NULL,'2026-07-13 02:11:28','2026-07-29 06:13:57'),(41,11,12,11,1,NULL,'2026-07-13 02:11:28','2026-07-29 06:13:57'),(43,11,12,33,1,NULL,'2026-07-21 06:04:47','2026-07-29 06:13:57'),(44,11,13,33,1,NULL,'2026-07-21 06:04:47','2026-07-29 06:13:57'),(46,11,12,34,1,NULL,'2026-07-21 06:04:47','2026-07-29 06:13:57'),(47,11,13,34,1,NULL,'2026-07-21 06:04:47','2026-07-29 06:13:57'),(48,11,12,35,1,NULL,'2026-07-28 03:26:29','2026-07-29 06:13:57'),(49,11,13,35,1,NULL,'2026-07-28 03:26:29','2026-07-29 06:13:57'),(50,11,12,36,1,NULL,'2026-07-28 03:26:29','2026-07-29 06:13:57'),(51,11,13,36,1,NULL,'2026-07-28 03:26:29','2026-07-29 06:13:57'),(55,11,12,9,0,NULL,'2026-07-28 12:07:50','2026-07-29 06:13:57'),(56,11,12,10,0,NULL,'2026-07-28 12:07:50','2026-07-29 06:13:57'),(60,11,13,37,1,NULL,'2026-07-29 06:13:57','2026-07-29 06:13:57');
+INSERT INTO `plan_features` VALUES (1,11,12,3,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(2,11,12,1,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(3,11,12,2,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(4,11,12,4,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(5,11,12,6,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(6,11,12,5,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(7,11,12,8,0,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(8,11,13,1,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(9,11,13,2,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(10,11,13,3,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(11,11,13,4,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(12,11,13,5,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(13,11,13,6,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(14,11,13,7,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(15,11,13,8,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(16,11,13,9,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(17,11,13,10,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(18,11,13,11,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(19,11,13,12,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(20,11,13,13,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(21,11,13,14,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(22,11,13,15,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(23,11,13,16,1,NULL,'2026-07-13 02:00:58','2026-07-29 06:13:57'),(39,11,12,12,1,NULL,'2026-07-13 02:11:28','2026-07-29 06:13:57'),(40,11,12,13,1,NULL,'2026-07-13 02:11:28','2026-07-29 06:13:57'),(41,11,12,11,1,NULL,'2026-07-13 02:11:28','2026-07-29 06:13:57'),(43,11,12,33,1,NULL,'2026-07-21 06:04:47','2026-07-29 06:13:57'),(44,11,13,33,1,NULL,'2026-07-21 06:04:47','2026-07-29 06:13:57'),(46,11,12,34,1,NULL,'2026-07-21 06:04:47','2026-07-29 06:13:57'),(47,11,13,34,1,NULL,'2026-07-21 06:04:47','2026-07-29 06:13:57'),(48,11,12,35,1,NULL,'2026-07-28 03:26:29','2026-07-29 06:13:57'),(49,11,13,35,1,NULL,'2026-07-28 03:26:29','2026-07-29 06:13:57'),(50,11,12,36,1,NULL,'2026-07-28 03:26:29','2026-07-29 06:13:57'),(51,11,13,36,1,NULL,'2026-07-28 03:26:29','2026-07-29 06:13:57'),(55,11,12,9,0,NULL,'2026-07-28 12:07:50','2026-07-29 06:13:57'),(56,11,12,10,0,NULL,'2026-07-28 12:07:50','2026-07-29 06:13:57'),(60,11,13,37,1,NULL,'2026-07-29 06:13:57','2026-07-29 06:13:57'),(61,11,12,14,1,NULL,'2026-08-05 06:58:27','2026-08-05 06:58:27');
 /*!40000 ALTER TABLE `plan_features` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -862,6 +1023,108 @@ INSERT INTO `plans` VALUES (9,10,'basic','Basic POS',499.00,'monthly','PHP',30,0
 UNLOCK TABLES;
 
 --
+-- Table structure for table `platform_audit_logs`
+--
+
+DROP TABLE IF EXISTS `platform_audit_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `platform_audit_logs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `actor_user_id` bigint(20) unsigned DEFAULT NULL,
+  `module` varchar(100) NOT NULL,
+  `action` varchar(100) NOT NULL,
+  `subject_type` varchar(150) DEFAULT NULL,
+  `subject_id` varchar(100) DEFAULT NULL,
+  `description` text NOT NULL,
+  `old_values` longtext DEFAULT NULL,
+  `new_values` longtext DEFAULT NULL,
+  `metadata` longtext DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(1000) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `platform_audit_module_date_index` (`module`,`created_at`),
+  KEY `platform_audit_actor_index` (`actor_user_id`,`created_at`),
+  CONSTRAINT `platform_audit_actor_foreign` FOREIGN KEY (`actor_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `platform_audit_logs`
+--
+
+LOCK TABLES `platform_audit_logs` WRITE;
+/*!40000 ALTER TABLE `platform_audit_logs` DISABLE KEYS */;
+INSERT INTO `platform_audit_logs` VALUES (1,1,'payment_verification','approved','App\\Models\\Transaction','8','Approved a submitted subscription payment and synchronized access.',NULL,'{\"order_id\":23,\"transaction_id\":8,\"subscription_id\":19}','{\"review_notes\":null}','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-08-05 02:42:56'),(2,1,'systems','provisioned','subscription','21','Provisioned JCM Inventory for mariquit.junecharles@marsu.edu.ph.',NULL,'{\"user_id\":21,\"product_id\":11,\"plan_id\":12,\"branch_id\":4,\"warehouse_id\":3}',NULL,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-08-05 06:19:36'),(3,1,'system_access','updated','user_product_access','11','Updated product access assignment.','{\"id\":11,\"user_id\":19,\"product_id\":10,\"product_user_type_id\":6,\"account_owner_id\":1,\"subscription_id\":18,\"status\":\"inactive\",\"assigned_by\":1,\"joined_at\":\"2026-07-14 11:59:29\",\"last_accessed_at\":null,\"created_at\":\"2026-07-28 21:17:39\",\"updated_at\":\"2026-07-28 21:17:39\"}','{\"product_user_type_id\":\"6\",\"status\":\"removed\"}',NULL,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-08-05 06:20:01'),(4,1,'system_access','updated','user_product_access','11','Updated product access assignment.','{\"id\":11,\"user_id\":19,\"product_id\":10,\"product_user_type_id\":6,\"account_owner_id\":1,\"subscription_id\":18,\"status\":\"removed\",\"assigned_by\":1,\"joined_at\":\"2026-07-14 11:59:29\",\"last_accessed_at\":null,\"created_at\":\"2026-07-28 21:17:39\",\"updated_at\":\"2026-08-05 14:20:01\"}','{\"product_user_type_id\":\"6\",\"status\":\"removed\"}',NULL,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-08-05 06:20:02'),(5,1,'system_access','updated','user_product_access','11','Updated product access assignment.','{\"id\":11,\"user_id\":19,\"product_id\":10,\"product_user_type_id\":6,\"account_owner_id\":1,\"subscription_id\":18,\"status\":\"removed\",\"assigned_by\":1,\"joined_at\":\"2026-07-14 11:59:29\",\"last_accessed_at\":null,\"created_at\":\"2026-07-28 21:17:39\",\"updated_at\":\"2026-08-05 14:20:02\"}','{\"product_user_type_id\":\"6\",\"status\":\"removed\"}',NULL,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-08-05 06:20:03'),(6,1,'system_access','updated','user_product_access','11','Updated product access assignment.','{\"id\":11,\"user_id\":19,\"product_id\":10,\"product_user_type_id\":6,\"account_owner_id\":1,\"subscription_id\":18,\"status\":\"removed\",\"assigned_by\":1,\"joined_at\":\"2026-07-14 11:59:29\",\"last_accessed_at\":null,\"created_at\":\"2026-07-28 21:17:39\",\"updated_at\":\"2026-08-05 14:20:03\"}','{\"product_user_type_id\":\"6\",\"status\":\"inactive\"}',NULL,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-08-05 06:20:10');
+/*!40000 ALTER TABLE `platform_audit_logs` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `platform_permissions`
+--
+
+DROP TABLE IF EXISTS `platform_permissions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `platform_permissions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `permission_code` varchar(100) NOT NULL,
+  `name` varchar(140) NOT NULL,
+  `module` varchar(100) NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `platform_permissions_code_unique` (`permission_code`),
+  KEY `platform_permissions_module_status_index` (`module`,`status`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `platform_permissions`
+--
+
+LOCK TABLES `platform_permissions` WRITE;
+/*!40000 ALTER TABLE `platform_permissions` DISABLE KEYS */;
+INSERT INTO `platform_permissions` VALUES (1,'integrations.manage','Manage integrations','Integrations','Create, update, reveal, rotate, and delete API integrations.','active','2026-08-06 07:27:27','2026-08-06 07:27:27'),(2,'roles.manage','Manage roles and permissions','Identity','Create platform roles, permissions, and assignments.','active','2026-08-06 07:27:27','2026-08-06 07:27:27'),(3,'feature_flags.manage','Manage feature flags','Products','Create and control product feature flags.','active','2026-08-06 07:27:27','2026-08-06 07:27:27'),(4,'invoices.manage','Manage invoices','Billing','Create and control invoices.','active','2026-08-06 07:27:27','2026-08-06 07:27:27'),(5,'refunds.manage','Manage refunds','Billing','Review and process payment refunds.','active','2026-08-06 07:27:27','2026-08-06 07:27:27'),(6,'support.manage','Manage support tickets','Support','Create, assign, update, and reply to support tickets.','active','2026-08-06 07:27:27','2026-08-06 07:27:27'),(7,'system_health.view','Run system health checks','Operations','View and run platform health diagnostics.','active','2026-08-06 07:27:27','2026-08-06 07:27:27');
+/*!40000 ALTER TABLE `platform_permissions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `platform_role_permissions`
+--
+
+DROP TABLE IF EXISTS `platform_role_permissions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `platform_role_permissions` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `platform_role_id` bigint(20) unsigned NOT NULL,
+  `permission_id` bigint(20) unsigned NOT NULL,
+  `is_allowed` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `platform_role_permissions_unique` (`platform_role_id`,`permission_id`),
+  KEY `platform_role_permissions_permission_index` (`permission_id`),
+  CONSTRAINT `platform_role_permissions_permission_foreign` FOREIGN KEY (`permission_id`) REFERENCES `platform_permissions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `platform_role_permissions_role_foreign` FOREIGN KEY (`platform_role_id`) REFERENCES `platform_roles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `platform_role_permissions`
+--
+
+LOCK TABLES `platform_role_permissions` WRITE;
+/*!40000 ALTER TABLE `platform_role_permissions` DISABLE KEYS */;
+INSERT INTO `platform_role_permissions` VALUES (1,2,3,1,'2026-08-06 07:27:27','2026-08-06 07:27:27'),(2,1,3,1,'2026-08-06 07:27:27','2026-08-06 07:27:27'),(3,2,1,1,'2026-08-06 07:27:27','2026-08-06 07:27:27'),(4,1,1,1,'2026-08-06 07:27:27','2026-08-06 07:27:27'),(5,2,4,1,'2026-08-06 07:27:27','2026-08-06 07:27:27'),(6,1,4,1,'2026-08-06 07:27:27','2026-08-06 07:27:27'),(7,2,5,1,'2026-08-06 07:27:27','2026-08-06 07:27:27'),(8,1,5,1,'2026-08-06 07:27:27','2026-08-06 07:27:27'),(9,2,2,1,'2026-08-06 07:27:27','2026-08-06 07:27:27'),(10,1,2,1,'2026-08-06 07:27:27','2026-08-06 07:27:27'),(11,2,6,1,'2026-08-06 07:27:27','2026-08-06 07:27:27'),(12,1,6,1,'2026-08-06 07:27:27','2026-08-06 07:27:27'),(13,2,7,1,'2026-08-06 07:27:27','2026-08-06 07:27:27'),(14,1,7,1,'2026-08-06 07:27:27','2026-08-06 07:27:27');
+/*!40000 ALTER TABLE `platform_role_permissions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `platform_roles`
 --
 
@@ -892,6 +1155,47 @@ LOCK TABLES `platform_roles` WRITE;
 /*!40000 ALTER TABLE `platform_roles` DISABLE KEYS */;
 INSERT INTO `platform_roles` VALUES (1,'super_admin','Super Administrator','Full control of the central JCM SaaS platform.',1,10,'active','2026-07-28 13:24:59','2026-07-28 13:24:59'),(2,'admin','Administrator','Administrative access to the central JCM SaaS platform.',1,20,'active','2026-07-28 13:24:59','2026-08-04 03:55:46'),(3,'user','Platform User','Standard JCM account that may access subscribed products.',1,100,'active','2026-07-28 13:24:59','2026-07-28 13:24:59');
 /*!40000 ALTER TABLE `platform_roles` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `platform_sidebar_items`
+--
+
+DROP TABLE IF EXISTS `platform_sidebar_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `platform_sidebar_items` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `parent_id` bigint(20) unsigned DEFAULT NULL,
+  `item_key` varchar(100) NOT NULL,
+  `item_type` enum('link','group','heading') NOT NULL DEFAULT 'link',
+  `label` varchar(150) NOT NULL,
+  `route_name` varchar(200) DEFAULT NULL,
+  `url_override` varchar(255) DEFAULT NULL,
+  `icon_key` varchar(100) DEFAULT NULL,
+  `badge` varchar(30) DEFAULT NULL,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  `allowed_roles` longtext DEFAULT NULL,
+  `is_visible` tinyint(1) NOT NULL DEFAULT 1,
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `platform_sidebar_items_key_unique` (`item_key`),
+  KEY `platform_sidebar_items_parent_index` (`parent_id`),
+  KEY `platform_sidebar_items_render_index` (`status`,`is_visible`,`sort_order`),
+  CONSTRAINT `platform_sidebar_items_parent_foreign` FOREIGN KEY (`parent_id`) REFERENCES `platform_sidebar_items` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `platform_sidebar_items`
+--
+
+LOCK TABLES `platform_sidebar_items` WRITE;
+/*!40000 ALTER TABLE `platform_sidebar_items` DISABLE KEYS */;
+INSERT INTO `platform_sidebar_items` VALUES (1,NULL,'control-center','group','Control Center',NULL,NULL,'LayoutDashboard',NULL,10,'[\"super_admin\",\"admin\"]',0,'inactive','2026-08-05 01:59:33','2026-08-05 03:04:40'),(2,NULL,'systems','group','Systems',NULL,NULL,'Boxes',NULL,20,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 01:59:33','2026-08-06 02:44:39'),(3,NULL,'platform','group','Platform',NULL,NULL,'ShieldCheck',NULL,30,'[\"super_admin\",\"admin\"]',0,'inactive','2026-08-05 01:59:33','2026-08-06 02:44:40'),(4,NULL,'commerce','group','Commerce',NULL,NULL,'ShoppingCart',NULL,40,'[\"super_admin\",\"admin\"]',0,'inactive','2026-08-05 01:59:33','2026-08-06 02:44:40'),(5,NULL,'governance','group','Governance',NULL,NULL,'ScrollText',NULL,70,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 01:59:33','2026-08-06 02:44:39'),(21,40,'dashboard','link','Main Overview','admin.dashboard',NULL,'LayoutDashboard','MAIN',10,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-05 03:04:40'),(22,40,'systems-overview','link','Systems Overview','admin.systems.index',NULL,'Boxes',NULL,50,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-05 03:04:40'),(23,2,'provision-account','link','Provision Account','admin.systems.provision',NULL,'UserPlus',NULL,10,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(24,2,'system-access','link','System Access','admin.systems.access',NULL,'KeyRound',NULL,20,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(25,2,'modules-capabilities','link','Modules & Capabilities','admin.modules.index',NULL,'Blocks',NULL,30,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(26,2,'sidebar-controls','link','Sidebar Controls','admin.sidebar-controls.index',NULL,'PanelLeft','DYNAMIC',40,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(27,46,'users','link','Users & Accounts','admin.users.index',NULL,'Users',NULL,10,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(28,47,'products','link','Product Catalog','admin.products.index',NULL,'PackageSearch',NULL,10,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(29,47,'services','link','Services','admin.services.index',NULL,'Wrench',NULL,20,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(30,47,'plans','link','Plans & Pricing','admin.plans.index',NULL,'SlidersHorizontal',NULL,30,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(31,47,'subscription-policies','link','Subscription Policies','admin.subscription-policies.index',NULL,'FileKey2',NULL,40,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(32,48,'orders','link','Orders','admin.orders.index',NULL,'ReceiptText',NULL,10,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(33,48,'subscriptions','link','Subscription Control','admin.subscriptions.index',NULL,'CreditCard','CORE',30,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(34,48,'transactions','link','Transactions','admin.transactions.index',NULL,'CircleDollarSign',NULL,40,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(35,48,'payment-methods','link','Payment Methods','admin.payment-methods.index',NULL,'WalletCards',NULL,50,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(36,5,'audit-trail','link','Platform Audit Trail','admin.audit-trail.index',NULL,'ScrollText',NULL,10,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(37,5,'website-builder','link','Website Builder','admin.website.builder.index',NULL,'Globe2',NULL,20,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:06:10','2026-08-06 02:44:40'),(39,4,'payment-verifications','link','Payment Verification','admin.payment-verifications.index',NULL,'BadgeCheck','VERIFY',15,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 02:32:39','2026-08-05 02:32:39'),(40,NULL,'overview','heading','Overview',NULL,NULL,'ChartNoAxesCombined',NULL,5,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 03:04:40','2026-08-05 03:04:40'),(42,40,'sales-overview','link','Sales Overview','admin.overviews.sales',NULL,'ChartColumnIncreasing',NULL,20,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 03:04:40','2026-08-05 03:04:40'),(43,40,'users-overview','link','Users Overview','admin.overviews.users',NULL,'UsersRound',NULL,30,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 03:04:40','2026-08-05 03:04:40'),(44,40,'subscriptions-overview','link','Subscriptions Overview','admin.overviews.subscriptions',NULL,'CalendarClock',NULL,40,'[\"super_admin\",\"admin\"]',1,'active','2026-08-05 03:04:40','2026-08-05 03:04:40'),(46,NULL,'accounts','group','Accounts',NULL,NULL,'UsersRound',NULL,30,'[\"super_admin\",\"admin\"]',1,'active','2026-08-06 02:44:39','2026-08-06 02:44:39'),(47,NULL,'catalog-plans','group','Catalog & Plans',NULL,NULL,'PackageSearch',NULL,40,'[\"super_admin\",\"admin\"]',1,'active','2026-08-06 02:44:39','2026-08-06 02:44:39'),(48,NULL,'sales-billing','group','Sales & Billing',NULL,NULL,'CircleDollarSign',NULL,50,'[\"super_admin\",\"admin\"]',1,'active','2026-08-06 02:44:39','2026-08-06 02:44:39'),(49,NULL,'operations','group','Operations',NULL,NULL,'LifeBuoy',NULL,60,'[\"super_admin\",\"admin\"]',1,'active','2026-08-06 02:44:39','2026-08-06 02:44:39'),(52,2,'integrations-api','link','Integrations & API','admin.integrations-api.index',NULL,'PlugZap','DEV',50,'[\"super_admin\",\"admin\"]',1,'active','2026-08-06 02:44:40','2026-08-06 07:27:27'),(53,46,'roles-permissions','link','Roles & Permissions','admin.roles-permissions.index',NULL,'ShieldUser','DEV',20,'[\"super_admin\",\"admin\"]',1,'active','2026-08-06 02:44:40','2026-08-06 07:27:27'),(54,47,'feature-flags','link','Feature Flags','admin.feature-flags.index',NULL,'Flag','DEV',50,'[\"super_admin\",\"admin\"]',1,'active','2026-08-06 02:44:40','2026-08-06 07:27:27'),(55,48,'invoices','link','Invoices','admin.invoices.index',NULL,'FileText','DEV',60,'[\"super_admin\",\"admin\"]',1,'active','2026-08-06 02:44:40','2026-08-06 07:27:27'),(56,48,'refunds','link','Refunds','admin.refunds.index',NULL,'RotateCcw','DEV',70,'[\"super_admin\",\"admin\"]',1,'active','2026-08-06 02:44:40','2026-08-06 07:27:27'),(57,49,'support-tickets','link','Support Tickets','admin.support-tickets.index',NULL,'TicketCheck','DEV',10,'[\"super_admin\",\"admin\"]',1,'active','2026-08-06 02:44:40','2026-08-06 07:27:27'),(58,49,'system-health','link','System Health','admin.system-health.index',NULL,'Activity','DEV',20,'[\"super_admin\",\"admin\"]',1,'active','2026-08-06 02:44:40','2026-08-06 07:27:27');
+/*!40000 ALTER TABLE `platform_sidebar_items` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -1126,6 +1430,59 @@ INSERT INTO `products` VALUES (10,'JCM-POS-001','jcm-pos','JCM POS','Cloud-based
 UNLOCK TABLES;
 
 --
+-- Table structure for table `refunds`
+--
+
+DROP TABLE IF EXISTS `refunds`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `refunds` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `refund_code` varchar(100) NOT NULL,
+  `transaction_id` bigint(20) unsigned DEFAULT NULL,
+  `order_id` bigint(20) unsigned DEFAULT NULL,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `currency` char(3) NOT NULL DEFAULT 'PHP',
+  `reason` text NOT NULL,
+  `status` enum('requested','approved','rejected','processing','refunded','cancelled') NOT NULL DEFAULT 'requested',
+  `requested_by` bigint(20) unsigned DEFAULT NULL,
+  `reviewed_by` bigint(20) unsigned DEFAULT NULL,
+  `processed_by` bigint(20) unsigned DEFAULT NULL,
+  `requested_at` timestamp NULL DEFAULT current_timestamp(),
+  `reviewed_at` timestamp NULL DEFAULT NULL,
+  `processed_at` timestamp NULL DEFAULT NULL,
+  `admin_notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `refunds_code_unique` (`refund_code`),
+  KEY `refunds_status_created_index` (`status`,`created_at`),
+  KEY `refunds_transaction_index` (`transaction_id`),
+  KEY `refunds_order_index` (`order_id`),
+  KEY `refunds_user_index` (`user_id`),
+  KEY `refunds_requested_by_index` (`requested_by`),
+  KEY `refunds_reviewed_by_index` (`reviewed_by`),
+  KEY `refunds_processed_by_index` (`processed_by`),
+  CONSTRAINT `refunds_order_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `refunds_processed_by_foreign` FOREIGN KEY (`processed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `refunds_requested_by_foreign` FOREIGN KEY (`requested_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `refunds_reviewed_by_foreign` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `refunds_transaction_foreign` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `refunds_user_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `refunds`
+--
+
+LOCK TABLES `refunds` WRITE;
+/*!40000 ALTER TABLE `refunds` DISABLE KEYS */;
+/*!40000 ALTER TABLE `refunds` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `service_features`
 --
 
@@ -1277,7 +1634,7 @@ CREATE TABLE `sessions` (
 
 LOCK TABLES `sessions` WRITE;
 /*!40000 ALTER TABLE `sessions` DISABLE KEYS */;
-INSERT INTO `sessions` VALUES ('GAsvQJQAN37swTx1dxor8qU9C2I9Zdid7EfGSNTp',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','YTo1OntzOjY6Il90b2tlbiI7czo0MDoib2djdmJLTUUyQlVYVjByS292QVFWY1NsNEVrdGg4dkozNlJqN2lvMSI7czozOiJ1cmwiO2E6MDp7fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjI3OiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvbG9naW4iO3M6NToicm91dGUiO3M6NToibG9naW4iO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=',1785827430);
+INSERT INTO `sessions` VALUES ('DCHehZAxBX4VgHaobqHkPaiXtqvDQgfXE44zcfAV',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','YTo0OntzOjY6Il90b2tlbiI7czo0MDoiU2U2a3k1RHBqOUZmOXdFbERFYzRDbVdJQ0lHRHE3MTZBaTAwY0c1ciI7czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjk6Il9wcmV2aW91cyI7YToyOntzOjM6InVybCI7czo0NDoiaHR0cDovLzEyNy4wLjAuMTo4MDAwL2FkbWluL2ludGVncmF0aW9ucy1hcGkiO3M6NToicm91dGUiO3M6Mjg6ImFkbWluLmludGVncmF0aW9ucy1hcGkuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19',1786006213),('MlDo55OVgezWH8V0RKZvRWfhHiPNDIUL4lyqT3mE',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','YTo1OntzOjY6Il90b2tlbiI7czo0MDoibHl4NklaeDZZaWgzdHNDaGRyMlJRc2dXUUFwTEI1QkhlZWw3QnFpVCI7czozOiJ1cmwiO2E6MDp7fXM6OToiX3ByZXZpb3VzIjthOjI6e3M6MzoidXJsIjtzOjQzOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYWRtaW4vbWVzc2FnZXM/cGFnZT0xIjtzOjU6InJvdXRlIjtzOjIwOiJhZG1pbi5tZXNzYWdlcy5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==',1785995784);
 /*!40000 ALTER TABLE `sessions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1449,7 +1806,7 @@ CREATE TABLE `subscription_events` (
   CONSTRAINT `subscription_events_order_foreign` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `subscription_events_subscription_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `subscription_events_transaction_foreign` FOREIGN KEY (`transaction_id`) REFERENCES `transactions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1458,7 +1815,7 @@ CREATE TABLE `subscription_events` (
 
 LOCK TABLES `subscription_events` WRITE;
 /*!40000 ALTER TABLE `subscription_events` DISABLE KEYS */;
-INSERT INTO `subscription_events` VALUES (1,18,1,NULL,NULL,'created',NULL,9,NULL,'active','Migrated from the original JCM SaaS subscription.',NULL,'2026-06-09 07:47:30'),(2,18,NULL,NULL,NULL,'expired',9,9,'active','expired','Automatically expired because its end date passed.',NULL,'2026-07-09 23:59:59'),(3,19,1,NULL,NULL,'activated',NULL,13,'pending','active','JCM Inventory development access activated.',NULL,'2026-07-13 02:33:41'),(4,19,1,NULL,NULL,'activated',NULL,13,NULL,'active','Comped Inventory development subscription activated.','{\"source\": \"manual-development-injection\", \"comped\": true}','2026-07-28 13:41:53'),(5,19,1,NULL,NULL,'expired',13,13,'active','expired','Inventory subscription expired manually for middleware testing.','{\"source\": \"manual-test\", \"test_case\": \"expired-subscription\"}','2026-07-29 00:55:13'),(6,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-29 00:56:30'),(7,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-29 01:25:28'),(8,19,1,NULL,NULL,'downgraded',13,12,'expired','active','User 1 switched to Basic Inventory monthly for development testing.','{\"source\": \"manual-test\", \"test_case\": \"basic-inventory-plan\", \"billing_interval\": \"monthly\", \"catalog_price\": 499.00, \"non_owner_memberships\": \"set-inactive\"}','2026-07-29 06:25:33'),(9,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-29 07:15:29'),(10,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-30 05:26:46'),(11,19,1,NULL,NULL,'downgraded',13,12,'expired','active','User 1 switched to Basic Inventory monthly for development testing.','{\"source\": \"manual-test\", \"test_case\": \"basic-inventory-plan\", \"billing_interval\": \"monthly\", \"catalog_price\": 499.00, \"non_owner_memberships\": \"set-inactive\"}','2026-07-30 05:37:59'),(12,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-30 05:42:27'),(13,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-30 06:31:28');
+INSERT INTO `subscription_events` VALUES (1,18,1,NULL,NULL,'created',NULL,9,NULL,'active','Migrated from the original JCM SaaS subscription.',NULL,'2026-06-09 07:47:30'),(2,18,NULL,NULL,NULL,'expired',9,9,'active','expired','Automatically expired because its end date passed.',NULL,'2026-07-09 23:59:59'),(3,19,1,NULL,NULL,'activated',NULL,13,'pending','active','JCM Inventory development access activated.',NULL,'2026-07-13 02:33:41'),(4,19,1,NULL,NULL,'activated',NULL,13,NULL,'active','Comped Inventory development subscription activated.','{\"source\": \"manual-development-injection\", \"comped\": true}','2026-07-28 13:41:53'),(5,19,1,NULL,NULL,'expired',13,13,'active','expired','Inventory subscription expired manually for middleware testing.','{\"source\": \"manual-test\", \"test_case\": \"expired-subscription\"}','2026-07-29 00:55:13'),(6,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-29 00:56:30'),(7,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-29 01:25:28'),(8,19,1,NULL,NULL,'downgraded',13,12,'expired','active','User 1 switched to Basic Inventory monthly for development testing.','{\"source\": \"manual-test\", \"test_case\": \"basic-inventory-plan\", \"billing_interval\": \"monthly\", \"catalog_price\": 499.00, \"non_owner_memberships\": \"set-inactive\"}','2026-07-29 06:25:33'),(9,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-29 07:15:29'),(10,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-30 05:26:46'),(11,19,1,NULL,NULL,'downgraded',13,12,'expired','active','User 1 switched to Basic Inventory monthly for development testing.','{\"source\": \"manual-test\", \"test_case\": \"basic-inventory-plan\", \"billing_interval\": \"monthly\", \"catalog_price\": 499.00, \"non_owner_memberships\": \"set-inactive\"}','2026-07-30 05:37:59'),(12,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-30 05:42:27'),(13,19,1,NULL,NULL,'renewed',13,13,'expired','active','Team monthly subscription restored manually for development testing.','{\"source\": \"manual-test\", \"billing_interval\": \"monthly\", \"catalog_price\": 1299.00}','2026-07-30 06:31:28'),(14,19,1,23,8,'downgraded',13,12,'expired','active',NULL,'{\"source\":\"flagship_manual_payment_verification\",\"amount_matches\":true}','2026-08-05 02:42:56'),(16,21,1,NULL,NULL,'activated',NULL,12,NULL,'active','Provisioned from JCM Flagship Administration.','{\"source\":\"systems_provisioner\"}','2026-08-05 06:19:35');
 /*!40000 ALTER TABLE `subscription_events` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1518,7 +1875,7 @@ CREATE TABLE `subscriptions` (
   CONSTRAINT `fk_subscriptions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `subscriptions_account_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `subscriptions_plan_price_plan_foreign` FOREIGN KEY (`plan_price_id`, `plan_id`) REFERENCES `plan_prices` (`id`, `plan_id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1527,8 +1884,160 @@ CREATE TABLE `subscriptions` (
 
 LOCK TABLES `subscriptions` WRITE;
 /*!40000 ALTER TABLE `subscriptions` DISABLE KEYS */;
-INSERT INTO `subscriptions` VALUES (18,1,1,10,9,NULL,'SUB-1780991250','monthly','expired','2026-06-09','2026-07-09',NULL,'2026-06-08 16:00:00','2026-07-09 15:59:59',NULL,NULL,30,499.00,'PHP',0,0,'2026-06-09 00:00:00',NULL,NULL,'2026-07-09 23:59:59',NULL,'Basic POS subscription for testing','2026-06-09 07:47:30','2026-07-28 11:37:28',NULL),(19,1,1,11,13,4,'SUB-INV-DEV-1-1783910021','monthly','expired','2026-07-30','2026-07-29',NULL,'2026-07-30 06:31:28','2026-07-29 08:36:39',NULL,NULL,30,1299.00,'PHP',0,0,'2026-07-30 06:31:28',NULL,NULL,'2026-07-30 08:36:39',NULL,'Expired manually for JCM Inventory subscription testing.','2026-07-13 02:33:41','2026-07-30 08:36:39',NULL);
+INSERT INTO `subscriptions` VALUES (18,1,1,10,9,NULL,'SUB-1780991250','monthly','expired','2026-06-09','2026-07-09',NULL,'2026-06-08 16:00:00','2026-07-09 15:59:59',NULL,NULL,30,499.00,'PHP',0,0,'2026-06-09 00:00:00',NULL,NULL,'2026-07-09 23:59:59',NULL,'Basic POS subscription for testing','2026-06-09 07:47:30','2026-07-28 11:37:28',NULL),(19,1,1,11,12,1,'SUB-INV-DEV-1-1783910021','monthly','active','2026-08-05','2026-09-04',NULL,'2026-08-05 02:42:56','2026-09-04 02:42:56',NULL,'2026-09-04 02:42:56',30,499.00,'PHP',0,0,'2026-07-30 06:31:28',NULL,NULL,NULL,'2026-08-05 02:42:56','Expired manually for JCM Inventory subscription testing.','2026-07-13 02:33:41','2026-08-05 02:42:56','1:11'),(21,21,21,11,12,1,'SUB-20260805141935-JCJIRJ','monthly','active','2026-08-05','2026-09-04',NULL,'2026-08-05 06:19:35','2026-09-04 06:19:35',NULL,NULL,30,499.00,'PHP',0,0,'2026-08-05 06:19:35',NULL,NULL,NULL,NULL,NULL,'2026-08-05 06:19:35','2026-08-05 06:19:35','21:11');
 /*!40000 ALTER TABLE `subscriptions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `support_ticket_replies`
+--
+
+DROP TABLE IF EXISTS `support_ticket_replies`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `support_ticket_replies` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `ticket_id` bigint(20) unsigned NOT NULL,
+  `user_id` bigint(20) unsigned DEFAULT NULL,
+  `sender_type` enum('user','admin','system') NOT NULL DEFAULT 'admin',
+  `message` text NOT NULL,
+  `is_internal` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `support_ticket_replies_ticket_index` (`ticket_id`,`created_at`),
+  KEY `support_ticket_replies_user_index` (`user_id`),
+  CONSTRAINT `support_ticket_replies_ticket_foreign` FOREIGN KEY (`ticket_id`) REFERENCES `support_tickets` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `support_ticket_replies_user_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `support_ticket_replies`
+--
+
+LOCK TABLES `support_ticket_replies` WRITE;
+/*!40000 ALTER TABLE `support_ticket_replies` DISABLE KEYS */;
+/*!40000 ALTER TABLE `support_ticket_replies` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `support_tickets`
+--
+
+DROP TABLE IF EXISTS `support_tickets`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `support_tickets` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `ticket_code` varchar(100) NOT NULL,
+  `user_id` bigint(20) unsigned DEFAULT NULL,
+  `subject` varchar(180) NOT NULL,
+  `category` varchar(80) NOT NULL DEFAULT 'general',
+  `priority` enum('low','normal','high','urgent') NOT NULL DEFAULT 'normal',
+  `status` enum('open','in_progress','waiting_customer','resolved','closed') NOT NULL DEFAULT 'open',
+  `assigned_to` bigint(20) unsigned DEFAULT NULL,
+  `last_reply_at` timestamp NULL DEFAULT NULL,
+  `closed_at` timestamp NULL DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `support_tickets_code_unique` (`ticket_code`),
+  KEY `support_tickets_queue_index` (`status`,`priority`,`last_reply_at`),
+  KEY `support_tickets_user_index` (`user_id`),
+  KEY `support_tickets_assigned_to_index` (`assigned_to`),
+  KEY `support_tickets_created_by_index` (`created_by`),
+  CONSTRAINT `support_tickets_assigned_to_foreign` FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `support_tickets_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `support_tickets_user_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `support_tickets`
+--
+
+LOCK TABLES `support_tickets` WRITE;
+/*!40000 ALTER TABLE `support_tickets` DISABLE KEYS */;
+/*!40000 ALTER TABLE `support_tickets` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `system_health_snapshots`
+--
+
+DROP TABLE IF EXISTS `system_health_snapshots`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `system_health_snapshots` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `overall_status` enum('healthy','degraded','critical') NOT NULL,
+  `checks` longtext NOT NULL,
+  `response_time_ms` int(10) unsigned NOT NULL DEFAULT 0,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `system_health_status_date_index` (`overall_status`,`created_at`),
+  KEY `system_health_created_by_index` (`created_by`),
+  CONSTRAINT `system_health_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `system_health_snapshots`
+--
+
+LOCK TABLES `system_health_snapshots` WRITE;
+/*!40000 ALTER TABLE `system_health_snapshots` DISABLE KEYS */;
+/*!40000 ALTER TABLE `system_health_snapshots` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `system_provisioning_logs`
+--
+
+DROP TABLE IF EXISTS `system_provisioning_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `system_provisioning_logs` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `account_owner_id` bigint(20) unsigned NOT NULL,
+  `product_id` bigint(20) unsigned NOT NULL,
+  `plan_id` bigint(20) unsigned DEFAULT NULL,
+  `subscription_id` bigint(20) unsigned DEFAULT NULL,
+  `provisioned_by` bigint(20) unsigned DEFAULT NULL,
+  `status` enum('pending','completed','failed','rolled_back') NOT NULL DEFAULT 'pending',
+  `business_name` varchar(180) NOT NULL,
+  `branch_id` bigint(20) unsigned DEFAULT NULL,
+  `warehouse_id` bigint(20) unsigned DEFAULT NULL,
+  `details` longtext DEFAULT NULL,
+  `error_message` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `system_provisioning_owner_index` (`account_owner_id`,`product_id`),
+  KEY `system_provisioning_status_index` (`status`,`created_at`),
+  KEY `system_provisioning_product_foreign` (`product_id`),
+  KEY `system_provisioning_plan_foreign` (`plan_id`),
+  KEY `system_provisioning_subscription_foreign` (`subscription_id`),
+  KEY `system_provisioning_actor_foreign` (`provisioned_by`),
+  CONSTRAINT `system_provisioning_actor_foreign` FOREIGN KEY (`provisioned_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `system_provisioning_owner_foreign` FOREIGN KEY (`account_owner_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `system_provisioning_plan_foreign` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `system_provisioning_product_foreign` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `system_provisioning_subscription_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `system_provisioning_logs`
+--
+
+LOCK TABLES `system_provisioning_logs` WRITE;
+/*!40000 ALTER TABLE `system_provisioning_logs` DISABLE KEYS */;
+INSERT INTO `system_provisioning_logs` VALUES (1,21,11,12,21,1,'completed','gg',4,3,'{\"access_id\":21,\"product_code\":\"JCM-INVENTORY-001\"}',NULL,'2026-08-05 06:19:35','2026-08-05 06:19:35');
+/*!40000 ALTER TABLE `system_provisioning_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -1570,7 +2079,7 @@ CREATE TABLE `transactions` (
   CONSTRAINT `fk_transactions_payment_method` FOREIGN KEY (`payment_method_id`) REFERENCES `payment_methods` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_transactions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `fk_transactions_verified_by` FOREIGN KEY (`verified_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1579,7 +2088,7 @@ CREATE TABLE `transactions` (
 
 LOCK TABLES `transactions` WRITE;
 /*!40000 ALTER TABLE `transactions` DISABLE KEYS */;
-INSERT INTO `transactions` VALUES (6,'TXN-SUB-20260729163254-X9USV2HL',18,1,4,NULL,NULL,NULL,499.00,'subscription-payments/1/rPIvrPlEFujqpFZNboE6AHjFKCfHGRBwxltk4l1r.jpg','rejected','2026-07-29 08:32:54',NULL,NULL,NULL,'[TEST RESET 2026-07-30 11:05:07] Payment attempt closed to allow a new subscription checkout.',NULL,'2026-07-29 08:32:54','2026-07-30 03:05:07'),(7,'TXN-SUB-20260730110651-HBQYUTUL',19,1,4,NULL,NULL,NULL,499.00,'subscription-payments/1/ChEzyeGtSgRewilJ3ymxo6mWMO2UjyqfTnWHYCS4.jpg','rejected','2026-07-30 03:06:51',NULL,NULL,NULL,'[TEST RESET 2026-07-30 11:29:36] Payment attempt closed to allow a new subscription checkout.',NULL,'2026-07-30 03:06:51','2026-07-30 03:29:36');
+INSERT INTO `transactions` VALUES (6,'TXN-SUB-20260729163254-X9USV2HL',18,1,4,NULL,NULL,NULL,499.00,'subscription-payments/1/rPIvrPlEFujqpFZNboE6AHjFKCfHGRBwxltk4l1r.jpg','rejected','2026-07-29 08:32:54',NULL,NULL,NULL,'[TEST RESET 2026-07-30 11:05:07] Payment attempt closed to allow a new subscription checkout.',NULL,'2026-07-29 08:32:54','2026-07-30 03:05:07'),(7,'TXN-SUB-20260730110651-HBQYUTUL',19,1,4,NULL,NULL,NULL,499.00,'subscription-payments/1/ChEzyeGtSgRewilJ3ymxo6mWMO2UjyqfTnWHYCS4.jpg','rejected','2026-07-30 03:06:51',NULL,NULL,NULL,'[TEST RESET 2026-07-30 11:29:36] Payment attempt closed to allow a new subscription checkout.',NULL,'2026-07-30 03:06:51','2026-07-30 03:29:36'),(8,'TXN-TEST-BASIC-20260805104218-4665E466',23,1,4,'TEST-GCASH-20260805104218','June Charles Mariquit',NULL,499.00,'subscription-payments/1/ChEzyeGtSgRewilJ3ymxo6mWMO2UjyqfTnWHYCS4.jpg','verified','2026-08-05 02:42:18','2026-08-05 02:42:18','2026-08-05 02:42:56',NULL,'[TEST] Submitted payment awaiting manual administrator verification.',1,'2026-08-05 02:42:18','2026-08-05 02:42:56');
 /*!40000 ALTER TABLE `transactions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1636,7 +2145,7 @@ CREATE TABLE `user_platform_roles` (
   CONSTRAINT `user_platform_roles_assigned_by_foreign` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `user_platform_roles_role_foreign` FOREIGN KEY (`platform_role_id`) REFERENCES `platform_roles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `user_platform_roles_user_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1645,7 +2154,7 @@ CREATE TABLE `user_platform_roles` (
 
 LOCK TABLES `user_platform_roles` WRITE;
 /*!40000 ALTER TABLE `user_platform_roles` DISABLE KEYS */;
-INSERT INTO `user_platform_roles` VALUES (1,1,3,0,'inactive',NULL,'2026-04-13 21:58:39','2026-07-28 13:24:59','2026-08-04 05:33:24'),(2,7,2,1,'active',NULL,'2026-04-13 21:58:39','2026-07-28 13:24:59','2026-07-28 13:24:59'),(3,12,3,1,'active',1,'2026-05-29 18:52:57','2026-07-28 13:24:59','2026-07-28 13:24:59'),(4,13,3,1,'active',1,'2026-06-05 01:41:18','2026-07-28 13:24:59','2026-07-28 13:24:59'),(5,14,3,1,'active',1,'2026-06-05 01:41:18','2026-07-28 13:24:59','2026-07-28 13:24:59'),(6,15,3,1,'active',1,'2026-06-05 01:41:18','2026-07-28 13:24:59','2026-07-28 13:24:59'),(7,16,3,1,'active',1,'2026-06-05 01:41:18','2026-07-28 13:24:59','2026-07-28 13:24:59'),(8,17,3,1,'active',1,'2026-06-05 01:43:20','2026-07-28 13:24:59','2026-07-28 13:24:59'),(9,18,3,1,'active',1,'2026-05-29 18:52:57','2026-07-28 13:24:59','2026-07-28 13:24:59'),(10,19,3,1,'active',1,'2026-07-14 03:59:29','2026-07-28 13:24:59','2026-07-28 13:24:59'),(11,1,2,1,'active',1,'2026-08-04 05:33:24','2026-08-04 03:55:46','2026-08-04 05:33:24');
+INSERT INTO `user_platform_roles` VALUES (1,1,3,0,'inactive',NULL,'2026-04-13 21:58:39','2026-07-28 13:24:59','2026-08-05 02:06:09'),(2,7,2,1,'active',NULL,'2026-04-13 21:58:39','2026-07-28 13:24:59','2026-07-28 13:24:59'),(3,12,3,1,'active',1,'2026-05-29 18:52:57','2026-07-28 13:24:59','2026-07-28 13:24:59'),(4,13,3,1,'active',1,'2026-06-05 01:41:18','2026-07-28 13:24:59','2026-07-28 13:24:59'),(5,14,3,1,'active',1,'2026-06-05 01:41:18','2026-07-28 13:24:59','2026-07-28 13:24:59'),(6,15,3,1,'active',1,'2026-06-05 01:41:18','2026-07-28 13:24:59','2026-07-28 13:24:59'),(7,16,3,1,'active',1,'2026-06-05 01:41:18','2026-07-28 13:24:59','2026-07-28 13:24:59'),(8,17,3,1,'active',1,'2026-06-05 01:43:20','2026-07-28 13:24:59','2026-07-28 13:24:59'),(9,18,3,1,'active',1,'2026-05-29 18:52:57','2026-07-28 13:24:59','2026-07-28 13:24:59'),(10,19,3,1,'active',1,'2026-07-14 03:59:29','2026-07-28 13:24:59','2026-07-28 13:24:59'),(11,1,2,1,'active',1,'2026-08-05 02:06:10','2026-08-04 03:55:46','2026-08-05 02:06:10'),(18,21,3,1,'active',1,'2026-08-05 06:19:35','2026-08-05 06:19:35','2026-08-05 06:19:35');
 /*!40000 ALTER TABLE `user_platform_roles` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1687,7 +2196,7 @@ CREATE TABLE `user_product_access` (
   CONSTRAINT `user_product_access_subscription_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `user_product_access_subscription_scope_foreign` FOREIGN KEY (`subscription_id`, `product_id`, `account_owner_id`) REFERENCES `subscriptions` (`id`, `product_id`, `account_owner_id`) ON UPDATE CASCADE,
   CONSTRAINT `user_product_access_user_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1696,7 +2205,7 @@ CREATE TABLE `user_product_access` (
 
 LOCK TABLES `user_product_access` WRITE;
 /*!40000 ALTER TABLE `user_product_access` DISABLE KEYS */;
-INSERT INTO `user_product_access` VALUES (1,1,10,4,1,18,'inactive',1,NULL,NULL,'2026-07-13 02:00:57','2026-07-28 13:17:39'),(2,1,11,3,1,19,'active',1,'2026-07-13 02:33:41','2026-08-04 06:43:24','2026-07-13 02:33:41','2026-08-04 06:43:24'),(3,19,11,5,1,19,'active',1,'2026-07-14 03:59:29',NULL,'2026-07-14 03:59:29','2026-07-30 06:31:28'),(4,12,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(5,13,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(6,14,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(7,15,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(8,16,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(9,17,10,9,1,18,'inactive',1,'2026-06-05 01:43:20',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(10,18,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(11,19,10,6,1,18,'inactive',1,'2026-07-14 03:59:29',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39');
+INSERT INTO `user_product_access` VALUES (1,1,10,4,1,18,'inactive',1,NULL,NULL,'2026-07-13 02:00:57','2026-07-28 13:17:39'),(2,1,11,3,1,19,'active',1,'2026-08-05 02:42:56','2026-08-04 06:43:24','2026-07-13 02:33:41','2026-08-05 02:42:56'),(3,19,11,5,1,19,'active',1,'2026-07-14 03:59:29',NULL,'2026-07-14 03:59:29','2026-07-30 06:31:28'),(4,12,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(5,13,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(6,14,10,2,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(7,15,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(8,16,10,6,1,18,'inactive',1,'2026-06-05 01:41:18',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(9,17,10,9,1,18,'inactive',1,'2026-06-05 01:43:20',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(10,18,10,9,1,18,'inactive',1,'2026-05-29 18:52:57',NULL,'2026-07-28 13:17:39','2026-07-28 13:17:39'),(11,19,10,6,1,18,'inactive',1,'2026-07-14 03:59:29',NULL,'2026-07-28 13:17:39','2026-08-05 06:20:10'),(21,21,11,3,21,21,'active',1,'2026-08-05 06:19:35',NULL,'2026-08-05 06:19:35','2026-08-05 06:19:35');
 /*!40000 ALTER TABLE `user_product_access` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1722,7 +2231,7 @@ CREATE TABLE `user_product_access_scopes` (
   KEY `user_product_access_scopes_lookup_index` (`access_id`,`scope_type`,`status`),
   KEY `user_product_access_scopes_external_index` (`scope_type`,`scope_id`,`status`),
   CONSTRAINT `user_product_access_scopes_access_foreign` FOREIGN KEY (`access_id`) REFERENCES `user_product_access` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1731,7 +2240,7 @@ CREATE TABLE `user_product_access_scopes` (
 
 LOCK TABLES `user_product_access_scopes` WRITE;
 /*!40000 ALTER TABLE `user_product_access_scopes` DISABLE KEYS */;
-INSERT INTO `user_product_access_scopes` VALUES (1,5,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(2,6,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(3,7,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(4,8,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(5,4,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(6,9,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(7,10,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(8,3,'branch',3,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"single_active_access\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:34:43','2026-07-28 13:34:43');
+INSERT INTO `user_product_access_scopes` VALUES (1,5,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(2,6,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(3,7,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(4,8,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(5,4,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(6,9,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(7,10,'branch',1,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"explicit_pos\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:24:59','2026-07-28 13:34:43'),(8,3,'branch',3,1,'active','{\"source\": \"users.branch_id\", \"resolution_method\": \"single_active_access\", \"migration\": \"legacy-cleanup-safe-resume-v1.2\"}','2026-07-28 13:34:43','2026-07-28 13:34:43'),(9,21,'branch',4,1,'active','{\"provisioned\":true}','2026-08-05 06:19:35','2026-08-05 06:19:35'),(10,21,'warehouse',3,1,'active','{\"provisioned\":true}','2026-08-05 06:19:35','2026-08-05 06:19:35');
 /*!40000 ALTER TABLE `user_product_access_scopes` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1829,7 +2338,7 @@ CREATE TABLE `users` (
   UNIQUE KEY `users_email_unique` (`email`),
   KEY `users_created_by_foreign` (`created_by`),
   CONSTRAINT `users_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1838,7 +2347,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'June Charles Mariquit','junecharlesmariquit553@gmail.com','admin',NULL,'$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi',NULL,NULL,NULL,'9JBOAudIQEwEwivs77UjkTIUXSJBU6reFUHleYeCoCKw6kvTHQR1z2RN12ht','2026-04-13 21:58:39','2026-08-04 05:33:24',NULL,1),(7,'admin','admin@gmail.com','client',NULL,'$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi',NULL,NULL,NULL,'AKzQuJt0QVa7Gfsmsdgbl7sZzNkzjrD04AxBAX7SjbmjrBx0ZVXnNHNNyqCn','2026-04-13 21:58:39','2026-04-13 21:58:39',NULL,1),(12,'cashier','cashier@pos.com','client',NULL,'$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-05-29 18:52:57','2026-05-29 18:52:57',1,1),(13,'Store Manager 1','manager1@pos.com','client','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(14,'Store Manager 2','manager2@pos.com','client','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(15,'Store Staff 1','staff1@pos.com','client','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(16,'Store Staff 2','staff2@pos.com','client','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-08 19:38:03',1,1),(17,'Cashier 2','cashier2@pos.com','client','2026-06-05 01:43:20','$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',NULL,NULL,NULL,NULL,'2026-06-05 01:43:20','2026-06-05 01:43:20',1,1),(18,'cashier1','cashier1@pos.com','client',NULL,'$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-05-29 18:52:57','2026-05-29 18:52:57',1,1),(19,'staff','staff@inventory.com','client',NULL,'$2y$12$NdDKLmZaROoi/5YdtQeVYOE77wbMgLXLjAhHixLGlPC9VSUn0wfkK',NULL,NULL,NULL,NULL,'2026-07-14 03:59:29','2026-07-23 01:00:53',1,1);
+INSERT INTO `users` VALUES (1,'June Charles Mariquit','junecharlesmariquit553@gmail.com','admin',NULL,'$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi',NULL,NULL,NULL,'9JBOAudIQEwEwivs77UjkTIUXSJBU6reFUHleYeCoCKw6kvTHQR1z2RN12ht','2026-04-13 21:58:39','2026-08-05 02:06:09',NULL,1),(7,'admin','admin@gmail.com','client',NULL,'$2y$12$knLKVXIAam08KApxVgv6eOA7nnoZykl8Ef2r4H3kmdOBOI40.2FOi',NULL,NULL,NULL,'AKzQuJt0QVa7Gfsmsdgbl7sZzNkzjrD04AxBAX7SjbmjrBx0ZVXnNHNNyqCn','2026-04-13 21:58:39','2026-04-13 21:58:39',NULL,1),(12,'cashier','cashier@pos.com','client',NULL,'$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-05-29 18:52:57','2026-05-29 18:52:57',1,1),(13,'Store Manager 1','manager1@pos.com','client','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(14,'Store Manager 2','manager2@pos.com','client','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(15,'Store Staff 1','staff1@pos.com','client','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-05 01:41:18',1,1),(16,'Store Staff 2','staff2@pos.com','client','2026-06-05 01:41:18','$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-06-05 01:41:18','2026-06-08 19:38:03',1,1),(17,'Cashier 2','cashier2@pos.com','client','2026-06-05 01:43:20','$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',NULL,NULL,NULL,NULL,'2026-06-05 01:43:20','2026-06-05 01:43:20',1,1),(18,'cashier1','cashier1@pos.com','client',NULL,'$2y$12$m/UNFXRTz3F57XWwWS4Wku1MqmOCQUPC1FxK11n7UpTFPUJKOI8NO',NULL,NULL,NULL,NULL,'2026-05-29 18:52:57','2026-05-29 18:52:57',1,1),(19,'staff','staff@inventory.com','client',NULL,'$2y$12$NdDKLmZaROoi/5YdtQeVYOE77wbMgLXLjAhHixLGlPC9VSUn0wfkK',NULL,NULL,NULL,NULL,'2026-07-14 03:59:29','2026-07-23 01:00:53',1,1),(21,'June Charles Mariquit','mariquit.junecharles@marsu.edu.ph','client',NULL,'$2y$12$QDn0yP9jyqgTx7HQYYXH3e4PFh819HrdCDUEGb7kuu6bL4hSCn99.',NULL,NULL,NULL,NULL,'2026-08-05 06:19:35','2026-08-05 06:19:35',1,1);
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2096,4 +2605,4 @@ USE `jcm_saas_db`;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-08-04 17:00:14
+-- Dump completed on 2026-08-06 16:50:41

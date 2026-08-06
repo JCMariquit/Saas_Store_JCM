@@ -52,7 +52,7 @@ CREATE TABLE `branches` (
   KEY `branches_tenant_id_index` (`tenant_id`),
   KEY `branches_tenant_active_index` (`tenant_id`,`is_active`),
   KEY `branches_created_by_index` (`created_by`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -61,7 +61,7 @@ CREATE TABLE `branches` (
 
 LOCK TABLES `branches` WRITE;
 /*!40000 ALTER TABLE `branches` DISABLE KEYS */;
-INSERT INTO `branches` VALUES (3,1,'Main Branch','MAIN','Mogpog Marinduque','09321654987','main@gmail.com',1,1,1,'2026-07-16 01:12:59','2026-07-16 01:12:59',NULL,1);
+INSERT INTO `branches` VALUES (3,1,'Main Branch','MAIN','Mogpog Marinduque','09321654987','main@gmail.com',1,1,1,'2026-07-16 01:12:59','2026-07-16 01:12:59',NULL,1),(4,21,'Main Branch','MAIN',NULL,'42','mariquit.junecharles@marsu.edu.ph',1,1,1,'2026-08-05 06:19:35','2026-08-05 06:19:35',NULL,21);
 /*!40000 ALTER TABLE `branches` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1749,7 +1749,7 @@ CREATE TABLE `warehouses` (
   KEY `warehouses_created_by_index` (`created_by`),
   CONSTRAINT `warehouses_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON UPDATE CASCADE,
   CONSTRAINT `warehouses_tenant_branch_foreign` FOREIGN KEY (`tenant_id`, `branch_id`) REFERENCES `branches` (`tenant_id`, `id`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1758,7 +1758,7 @@ CREATE TABLE `warehouses` (
 
 LOCK TABLES `warehouses` WRITE;
 /*!40000 ALTER TABLE `warehouses` DISABLE KEYS */;
-INSERT INTO `warehouses` VALUES (2,1,3,'main Warehouse','WH1','qwerty','qwerty','qwerty','09123456789',1,1,1,'2026-07-16 01:13:39','2026-07-16 01:13:39',NULL,1,3);
+INSERT INTO `warehouses` VALUES (2,1,3,'main Warehouse','WH1','qwerty','qwerty','qwerty','09123456789',1,1,1,'2026-07-16 01:13:39','2026-07-16 01:13:39',NULL,1,3),(3,21,4,'Main Warehouse','MAIN-WH','Default warehouse provisioned by JCM Flagship.',NULL,NULL,NULL,1,1,1,'2026-08-05 06:19:36','2026-08-05 06:19:36',NULL,21,4);
 /*!40000 ALTER TABLE `warehouses` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1779,7 +1779,7 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-08-04 17:00:13
+-- Dump completed on 2026-08-06 16:50:39
 
 
 -- ============================================================

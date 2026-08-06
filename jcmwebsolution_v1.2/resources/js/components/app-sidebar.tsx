@@ -39,6 +39,19 @@ function isActive(currentUrl: string, targetUrl: string): boolean {
     return current === target || current.startsWith(`${target}/`);
 }
 
+
+function isUnavailable(item: AdminSidebarItem): boolean {
+    const badge = item.badge?.trim().toLowerCase();
+    const target = item.url?.trim() ?? '';
+
+    return (
+        badge === 'soon' &&
+        (!target ||
+            target === '#' ||
+            target.includes('/coming-soon'))
+    );
+}
+
 function resolveActiveGroupKey(currentUrl: string, groups: AdminSidebarGroup[]): string | null {
     return groups.find((group) => group.collapsible && group.items.some((item) => isActive(currentUrl, item.url)))?.key ?? null;
 }
@@ -76,7 +89,7 @@ function Badge({ value }: { value?: string | null }) {
 
 function DirectItem({ item, currentUrl, collapsed }: { item: AdminSidebarItem; currentUrl: string; collapsed: boolean }) {
     const ItemIcon = resolveIcon(item.icon);
-    const disabled = item.badge?.trim().toLowerCase() === 'soon';
+    const disabled = isUnavailable(item);
     const active = !disabled && isActive(currentUrl, item.url);
 
     const content = (
@@ -146,7 +159,7 @@ function DirectItem({ item, currentUrl, collapsed }: { item: AdminSidebarItem; c
 
 function GroupChild({ item, currentUrl }: { item: AdminSidebarItem; currentUrl: string }) {
     const ItemIcon = resolveIcon(item.icon);
-    const disabled = item.badge?.trim().toLowerCase() === 'soon';
+    const disabled = isUnavailable(item);
     const active = !disabled && isActive(currentUrl, item.url);
 
     const className = cn(

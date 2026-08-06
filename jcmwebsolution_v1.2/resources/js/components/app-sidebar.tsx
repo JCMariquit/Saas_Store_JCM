@@ -58,6 +58,7 @@ function Badge({ value }: { value?: string | null }) {
             dev: 'border-sky-500/15 bg-sky-500/[0.075] text-sky-400',
             beta: 'border-violet-500/15 bg-violet-500/[0.075] text-violet-400',
             test: 'border-amber-500/15 bg-amber-500/[0.075] text-amber-400',
+            soon: 'border-amber-500/20 bg-amber-500/[0.09] text-amber-300',
         }[normalized] ?? 'border-slate-500/15 bg-slate-500/[0.07] text-slate-400';
 
     return (
@@ -75,48 +76,69 @@ function Badge({ value }: { value?: string | null }) {
 
 function DirectItem({ item, currentUrl, collapsed }: { item: AdminSidebarItem; currentUrl: string; collapsed: boolean }) {
     const ItemIcon = resolveIcon(item.icon);
-    const active = isActive(currentUrl, item.url);
+    const disabled = item.badge?.trim().toLowerCase() === 'soon';
+    const active = !disabled && isActive(currentUrl, item.url);
+
+    const content = (
+        <>
+            {active && <span aria-hidden="true" className="bg-primary absolute inset-y-2 left-0 w-0.5 rounded-r-full" />}
+
+            <span
+                className={cn(
+                    'relative flex size-7 shrink-0 items-center justify-center rounded-lg border',
+                    'transition-all duration-200',
+                    active
+                        ? 'border-primary/25 bg-primary/15 text-primary'
+                        : disabled
+                          ? 'border-amber-500/10 bg-amber-500/[0.04] text-sidebar-foreground/30'
+                          : 'text-sidebar-foreground/40 group-hover:border-primary/20 group-hover:bg-primary/[0.06] group-hover:text-primary border-transparent bg-transparent',
+                )}
+            >
+                <ItemIcon className="size-[15px]" />
+
+                {active && collapsed && (
+                    <span aria-hidden="true" className="bg-primary ring-sidebar absolute -top-0.5 -right-0.5 size-1.5 rounded-full ring-2" />
+                )}
+            </span>
+
+            {!collapsed && (
+                <>
+                    <span className={cn('min-w-0 flex-1 truncate text-left', active ? 'font-semibold' : 'font-medium')}>{item.title}</span>
+                    <Badge value={item.badge} />
+                </>
+            )}
+        </>
+    );
 
     return (
         <SidebarMenuItem>
             <SidebarMenuButton
                 asChild
-                tooltip={item.title}
+                tooltip={disabled ? `${item.title} — Coming soon` : item.title}
                 className={cn(
                     'group relative h-10 overflow-hidden rounded-xl border border-transparent',
                     'text-[13px] transition-all duration-200',
                     collapsed ? 'size-10 justify-center px-0' : 'w-full px-2.5',
-                    active
-                        ? 'border-primary/25 bg-primary/10 text-primary shadow-sm'
-                        : 'text-sidebar-foreground/58 hover:border-primary/15 hover:bg-primary/[0.05] hover:text-sidebar-foreground',
+                    disabled
+                        ? 'cursor-not-allowed text-sidebar-foreground/38 opacity-75 hover:border-transparent hover:bg-transparent'
+                        : active
+                          ? 'border-primary/25 bg-primary/10 text-primary shadow-sm'
+                          : 'text-sidebar-foreground/58 hover:border-primary/15 hover:bg-primary/[0.05] hover:text-sidebar-foreground',
                 )}
             >
-                <Link href={item.url} className={cn('flex h-full w-full items-center', collapsed ? 'justify-center' : 'gap-2.5')}>
-                    {active && <span aria-hidden="true" className="bg-primary absolute inset-y-2 left-0 w-0.5 rounded-r-full" />}
-
-                    <span
-                        className={cn(
-                            'relative flex size-7 shrink-0 items-center justify-center rounded-lg border',
-                            'transition-all duration-200',
-                            active
-                                ? 'border-primary/25 bg-primary/15 text-primary'
-                                : 'text-sidebar-foreground/40 group-hover:border-primary/20 group-hover:bg-primary/[0.06] group-hover:text-primary border-transparent bg-transparent',
-                        )}
+                {disabled ? (
+                    <div
+                        aria-disabled="true"
+                        title={`${item.title} — Coming soon`}
+                        className={cn('flex h-full w-full items-center select-none', collapsed ? 'justify-center' : 'gap-2.5')}
                     >
-                        <ItemIcon className="size-[15px]" />
-
-                        {active && collapsed && (
-                            <span aria-hidden="true" className="bg-primary ring-sidebar absolute -top-0.5 -right-0.5 size-1.5 rounded-full ring-2" />
-                        )}
-                    </span>
-
-                    {!collapsed && (
-                        <>
-                            <span className={cn('min-w-0 flex-1 truncate text-left', active ? 'font-semibold' : 'font-medium')}>{item.title}</span>
-                            <Badge value={item.badge} />
-                        </>
-                    )}
-                </Link>
+                        {content}
+                    </div>
+                ) : (
+                    <Link href={item.url} className={cn('flex h-full w-full items-center', collapsed ? 'justify-center' : 'gap-2.5')}>
+                        {content}
+                    </Link>
+                )}
             </SidebarMenuButton>
         </SidebarMenuItem>
     );
@@ -124,20 +146,22 @@ function DirectItem({ item, currentUrl, collapsed }: { item: AdminSidebarItem; c
 
 function GroupChild({ item, currentUrl }: { item: AdminSidebarItem; currentUrl: string }) {
     const ItemIcon = resolveIcon(item.icon);
-    const active = isActive(currentUrl, item.url);
+    const disabled = item.badge?.trim().toLowerCase() === 'soon';
+    const active = !disabled && isActive(currentUrl, item.url);
 
-    return (
-        <Link
-            href={item.url}
-            className={cn(
-                'group relative flex h-9 w-full items-center gap-2 overflow-hidden rounded-lg',
-                'border border-transparent px-2.5 text-left text-[12px] font-medium',
-                'transition-all duration-200',
-                active
-                    ? 'border-primary/20 bg-primary/10 text-primary'
-                    : 'text-sidebar-foreground/52 hover:border-primary/15 hover:bg-primary/[0.05] hover:text-sidebar-foreground',
-            )}
-        >
+    const className = cn(
+        'group relative flex h-9 w-full items-center gap-2 overflow-hidden rounded-lg',
+        'border border-transparent px-2.5 text-left text-[12px] font-medium',
+        'transition-all duration-200',
+        disabled
+            ? 'cursor-not-allowed text-sidebar-foreground/35 opacity-75'
+            : active
+              ? 'border-primary/20 bg-primary/10 text-primary'
+              : 'text-sidebar-foreground/52 hover:border-primary/15 hover:bg-primary/[0.05] hover:text-sidebar-foreground',
+    );
+
+    const content = (
+        <>
             {active && <span aria-hidden="true" className="bg-primary absolute inset-y-2 left-0 w-0.5 rounded-r-full" />}
 
             <span
@@ -146,7 +170,9 @@ function GroupChild({ item, currentUrl }: { item: AdminSidebarItem; currentUrl: 
                     'transition-colors duration-200',
                     active
                         ? 'border-primary/25 bg-primary/15 text-primary border'
-                        : 'text-sidebar-foreground/35 group-hover:bg-background/50 group-hover:text-sidebar-foreground/65',
+                        : disabled
+                          ? 'bg-amber-500/[0.04] text-sidebar-foreground/28'
+                          : 'text-sidebar-foreground/35 group-hover:bg-background/50 group-hover:text-sidebar-foreground/65',
                 )}
             >
                 <ItemIcon className="size-[13px]" />
@@ -154,6 +180,20 @@ function GroupChild({ item, currentUrl }: { item: AdminSidebarItem; currentUrl: 
 
             <span className="min-w-0 flex-1 truncate">{item.title}</span>
             <Badge value={item.badge} />
+        </>
+    );
+
+    if (disabled) {
+        return (
+            <div aria-disabled="true" title={`${item.title} — Coming soon`} className={className}>
+                {content}
+            </div>
+        );
+    }
+
+    return (
+        <Link href={item.url} className={className}>
+            {content}
         </Link>
     );
 }
@@ -289,14 +329,6 @@ export function AppSidebar() {
         }
     }, [activeGroupKey]);
 
-    const settingsItem: AdminSidebarItem = {
-        key: 'platform-settings',
-        title: 'Platform Settings',
-        url: '/settings/profile',
-        icon: 'Settings',
-        badge: null,
-    };
-
     return (
         <>
             <style>{`
@@ -389,7 +421,6 @@ export function AppSidebar() {
                                     />
                                 ))}
 
-                                <DirectItem item={settingsItem} currentUrl={url} collapsed />
                             </SidebarMenu>
                         ) : (
                             <div className="space-y-1 px-3">
@@ -403,10 +434,6 @@ export function AppSidebar() {
                                         onOpenChange={setOpenGroupKey}
                                     />
                                 ))}
-
-                                <SidebarMenu className="space-y-0.5 pt-1">
-                                    <DirectItem item={settingsItem} currentUrl={url} collapsed={false} />
-                                </SidebarMenu>
                             </div>
                         )}
                     </section>

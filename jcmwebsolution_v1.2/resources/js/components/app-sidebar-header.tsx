@@ -1,12 +1,22 @@
 import { AdminMessageDrawer } from '@/components/admin-ui/admin-message-drawer';
 import { AdminNotificationDrawer } from '@/components/admin-ui/admin-notification-drawer';
-import AppearanceDropdown from '@/components/appearance-dropdown';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { NavUser } from '@/components/nav-user';
 import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
 import { type BreadcrumbItem as BreadcrumbItemType } from '@/types';
-import { Bell, Boxes, CreditCard, LayoutDashboard, Menu, MessageSquare, Settings, ShoppingCart, Users, type LucideIcon } from 'lucide-react';
+import {
+    Bell,
+    Boxes,
+    CreditCard,
+    LayoutDashboard,
+    Menu,
+    MessageSquare,
+    Settings,
+    ShoppingCart,
+    Users,
+    type LucideIcon,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type ActiveDrawer = 'messages' | 'notifications' | null;
@@ -19,22 +29,46 @@ type HeaderContext = {
 function resolveContext(breadcrumbs: BreadcrumbItemType[]): HeaderContext {
     const text = breadcrumbs.map((item) => item.title.toLowerCase()).join(' ');
 
-    if (text.includes('subscription') || text.includes('transaction') || text.includes('order')) {
+    if (
+        text.includes('subscription') ||
+        text.includes('transaction') ||
+        text.includes('order')
+    ) {
         return { label: 'Commerce Control', icon: CreditCard };
     }
-    if (text.includes('user')) return { label: 'Account Management', icon: Users };
-    if (text.includes('product') || text.includes('service') || text.includes('plan')) {
+
+    if (text.includes('user')) {
+        return { label: 'Account Management', icon: Users };
+    }
+
+    if (
+        text.includes('product') ||
+        text.includes('service') ||
+        text.includes('plan')
+    ) {
         return { label: 'Product Platform', icon: Boxes };
     }
-    if (text.includes('setting') || text.includes('appearance') || text.includes('privacy')) {
+
+    if (
+        text.includes('setting') ||
+        text.includes('appearance') ||
+        text.includes('privacy')
+    ) {
         return { label: 'Platform Settings', icon: Settings };
     }
-    if (text.includes('payment')) return { label: 'Payment Operations', icon: ShoppingCart };
+
+    if (text.includes('payment')) {
+        return { label: 'Payment Operations', icon: ShoppingCart };
+    }
 
     return { label: 'JCM Flagship', icon: LayoutDashboard };
 }
 
-export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: BreadcrumbItemType[] }) {
+export function AppSidebarHeader({
+    breadcrumbs = [],
+}: {
+    breadcrumbs?: BreadcrumbItemType[];
+}) {
     const { toggleSidebar } = useSidebar();
     const [activeDrawer, setActiveDrawer] = useState<ActiveDrawer>(null);
 
@@ -49,12 +83,27 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
 
         window.addEventListener('admin-drawer-open', handleOpenDrawer);
 
-        return () => window.removeEventListener('admin-drawer-open', handleOpenDrawer);
+        return () =>
+            window.removeEventListener(
+                'admin-drawer-open',
+                handleOpenDrawer,
+            );
     }, []);
 
     const context = resolveContext(breadcrumbs);
     const ContextIcon = context.icon;
-    const activePage = breadcrumbs[breadcrumbs.length - 1]?.title ?? 'Dashboard';
+    const activePage =
+        breadcrumbs[breadcrumbs.length - 1]?.title ?? 'Dashboard';
+
+    const messageButtonClass =
+        activeDrawer === 'messages'
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground';
+
+    const notificationButtonClass =
+        activeDrawer === 'notifications'
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground';
 
     return (
         <>
@@ -81,45 +130,73 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
 
                     <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                            <p className="text-muted-foreground truncate text-[9px] font-semibold tracking-[0.12em] uppercase">{context.label}</p>
+                            <p className="text-muted-foreground truncate text-[9px] font-semibold tracking-[0.12em] uppercase">
+                                {context.label}
+                            </p>
+
                             <span className="border-primary/15 bg-primary/[0.07] text-primary hidden rounded-full border px-2 py-0.5 text-[7px] font-semibold tracking-[0.1em] uppercase xl:inline-flex">
                                 Admin Workspace
                             </span>
                         </div>
-                        <p className="text-foreground mt-0.5 truncate text-xs font-semibold">{activePage}</p>
+
+                        <p className="text-foreground mt-0.5 truncate text-xs font-semibold">
+                            {activePage}
+                        </p>
                     </div>
 
                     <div className="bg-border/60 mx-2 hidden h-8 w-px 2xl:block" />
+
                     <div className="hidden min-w-0 2xl:block">
                         <Breadcrumbs breadcrumbs={breadcrumbs} />
                     </div>
                 </div>
 
-                <div className="relative ml-auto flex shrink-0 items-center gap-1.5">
-                    <AppearanceDropdown />
+                <div className="relative ml-auto flex shrink-0 items-center gap-1">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                            setActiveDrawer((current) =>
+                                current === 'messages'
+                                    ? null
+                                    : 'messages',
+                            )
+                        }
+                        className={`relative size-9 rounded-lg transition-colors duration-200 ${messageButtonClass}`}
+                        aria-label="Messages"
+                        aria-pressed={activeDrawer === 'messages'}
+                    >
+                        <MessageSquare className="size-4" />
 
-                    <div className="border-border/60 bg-background/35 flex items-center gap-0.5 rounded-xl border p-1">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setActiveDrawer('messages')}
-                            className="text-muted-foreground hover:bg-muted/70 hover:text-foreground size-8 rounded-lg"
-                            aria-label="Messages"
-                        >
-                            <MessageSquare className="size-3.5 text-sky-400" />
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setActiveDrawer('notifications')}
-                            className="text-muted-foreground hover:bg-muted/70 hover:text-foreground size-8 rounded-lg"
-                            aria-label="Notifications"
-                        >
-                            <Bell className="size-3.5 text-amber-400" />
-                        </Button>
-                    </div>
+                        <span
+                            aria-hidden="true"
+                            className="bg-primary ring-[var(--header-background,var(--card))] absolute top-1.5 right-1.5 size-1.5 rounded-full ring-2"
+                        />
+                    </Button>
+
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                            setActiveDrawer((current) =>
+                                current === 'notifications'
+                                    ? null
+                                    : 'notifications',
+                            )
+                        }
+                        className={`relative size-9 rounded-lg transition-colors duration-200 ${notificationButtonClass}`}
+                        aria-label="Notifications"
+                        aria-pressed={activeDrawer === 'notifications'}
+                    >
+                        <Bell className="size-4" />
+
+                        <span
+                            aria-hidden="true"
+                            className="bg-primary ring-[var(--header-background,var(--card))] absolute top-1.5 right-1.5 size-1.5 rounded-full ring-2"
+                        />
+                    </Button>
 
                     <div className="hidden sm:block">
                         <NavUser />
@@ -127,8 +204,19 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                 </div>
             </header>
 
-            <AdminMessageDrawer open={activeDrawer === 'messages'} onOpenChange={(open) => !open && setActiveDrawer(null)} />
-            <AdminNotificationDrawer open={activeDrawer === 'notifications'} onOpenChange={(open) => !open && setActiveDrawer(null)} />
+            <AdminMessageDrawer
+                open={activeDrawer === 'messages'}
+                onOpenChange={(open) =>
+                    !open && setActiveDrawer(null)
+                }
+            />
+
+            <AdminNotificationDrawer
+                open={activeDrawer === 'notifications'}
+                onOpenChange={(open) =>
+                    !open && setActiveDrawer(null)
+                }
+            />
         </>
     );
 }

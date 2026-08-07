@@ -1,5 +1,5 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { BadgeCheck, Clock3, CreditCard, Plus, ShieldCheck, ShoppingCart, Trash2, XCircle } from 'lucide-react';
+import { BadgeCheck, Clock3, CreditCard, Plus, ShieldAlert, ShieldCheck, ShoppingCart, Trash2, XCircle } from 'lucide-react';
 import { FormEventHandler, useEffect, useMemo, useState } from 'react';
 
 import InputError from '@/components/input-error';
@@ -12,7 +12,6 @@ import { type BreadcrumbItem } from '@/types';
 import { ConfirmModal } from '@/components/admin-ui/confirm-modal';
 import { DataTable } from '@/components/admin-ui/data-table';
 import { FormModal } from '@/components/admin-ui/form-modal';
-import { PageHero } from '@/components/admin-ui/page-hero';
 import { SearchInput } from '@/components/admin-ui/search-input';
 import { SectionCard } from '@/components/admin-ui/section-card';
 import { StatsCard } from '@/components/admin-ui/stats-card';
@@ -148,6 +147,7 @@ export default function OrdersIndex() {
     const [openCreateModal, setOpenCreateModal] = useState(false);
     const [openPaymentModal, setOpenPaymentModal] = useState(false);
     const [openRejectModal, setOpenRejectModal] = useState(false);
+    const [openVerifyModal, setOpenVerifyModal] = useState(false);
     const [openDeleteModal, setOpenDeleteModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null);
     const [viewingOrder, setViewingOrder] = useState<OrderRow | null>(null);
@@ -228,6 +228,37 @@ export default function OrdersIndex() {
         setOpenPaymentModal(false);
     };
 
+    const needsManualVerification = (order: OrderRow) => {
+        if (!order.transaction) return false;
+
+        const orderWaitingForReview =
+            order.status === 'pending' ||
+            order.status === 'payment_submitted' ||
+            order.status === 'paid';
+
+        const transactionWaitingForReview =
+            order.transaction.status === 'pending' ||
+            order.transaction.status === 'submitted';
+
+        return orderWaitingForReview && transactionWaitingForReview;
+    };
+
+    const paymentAmountMatches = (order: OrderRow) => {
+        if (!order.transaction) return false;
+
+        return Math.abs(Number(order.transaction.amount) - Number(order.amount)) < 0.01;
+    };
+
+    const openVerify = (order: OrderRow) => {
+        setSelectedOrder(order);
+        setOpenVerifyModal(true);
+    };
+
+    const closeVerify = () => {
+        setSelectedOrder(null);
+        setOpenVerifyModal(false);
+    };
+
     const openReject = (order: OrderRow) => {
         setSelectedOrder(order);
         rejectForm.reset();
@@ -289,8 +320,13 @@ export default function OrdersIndex() {
         });
     };
 
-    const verifyOrder = (order: OrderRow) => {
-        router.post(route('admin.orders.verify', order.id), {}, { preserveScroll: true });
+    const confirmVerify = () => {
+        if (!selectedOrder) return;
+
+        router.post(route('admin.orders.verify', selectedOrder.id), {}, {
+            preserveScroll: true,
+            onSuccess: () => closeVerify(),
+        });
     };
 
     const confirmDelete = () => {
@@ -447,13 +483,12 @@ export default function OrdersIndex() {
 
             <div className="bg-background min-h-screen p-4 md:p-6">
                 <div className="space-y-6">
-                    <PageHero
-                        title="Orders"
-                        description="Manage order records, payment references, and transaction verification."
-                        actionLabel="Create Order"
-                        actionIcon={<Plus className="h-4 w-4" />}
-                        onAction={openCreate}
-                    />
+                    <div>
+                        <h1 className="text-foreground text-2xl font-bold tracking-tight">Orders</h1>
+                        <p className="text-muted-foreground mt-1 text-sm">
+                            Manage orders and manually verify submitted payments before subscription activation.
+                        </p>
+                    </div>
 
                     <div className="grid gap-4 md:grid-cols-4">
                         <StatsCard
@@ -514,6 +549,16 @@ export default function OrdersIndex() {
                                     className="border-border bg-card text-foreground hover:border-primary/20 hover:bg-primary/[0.06] hover:text-primary h-11 rounded-xl px-4"
                                 >
                                     Reset Search
+                                </Button>
+
+
+                                <Button
+                                    type="button"
+                                    onClick={openCreate}
+                                    className="from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 h-11 rounded-xl bg-gradient-to-r px-4 text-white"
+                                >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Create Order
                                 </Button>
                             </div>
                         }
@@ -583,14 +628,14 @@ export default function OrdersIndex() {
                                                 </Button>
                                             )}
 
-                                            {order.status === 'pending' && order.has_transaction && (
+                                            {needsManualVerification(order) && (
                                                 <>
                                                     <Button
                                                         type="button"
                                                         variant="outline"
                                                         className="bg-card h-10 rounded-xl border-emerald-500/20 px-3 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-300"
-                                                        title="Accept order"
-                                                        onClick={() => verifyOrder(order)}
+                                                        title="Approve payment"
+                                                        onClick={() => openVerify(order)}
                                                     >
                                                         <BadgeCheck className="h-4 w-4" />
                                                     </Button>
@@ -599,31 +644,7 @@ export default function OrdersIndex() {
                                                         type="button"
                                                         variant="outline"
                                                         className="bg-card h-10 rounded-xl border-red-500/20 px-3 text-red-600 hover:bg-red-500/10 hover:text-red-300"
-                                                        title="Deny order"
-                                                        onClick={() => openReject(order)}
-                                                    >
-                                                        <XCircle className="h-4 w-4" />
-                                                    </Button>
-                                                </>
-                                            )}
-
-                                            {order.status === 'paid' && (
-                                                <>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        className="bg-card h-10 rounded-xl border-emerald-500/20 px-3 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-300"
-                                                        title="Verify order"
-                                                        onClick={() => verifyOrder(order)}
-                                                    >
-                                                        <BadgeCheck className="h-4 w-4" />
-                                                    </Button>
-
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        className="bg-card h-10 rounded-xl border-red-500/20 px-3 text-red-600 hover:bg-red-500/10 hover:text-red-300"
-                                                        title="Reject order"
+                                                        title="Reject payment"
                                                         onClick={() => openReject(order)}
                                                     >
                                                         <XCircle className="h-4 w-4" />
@@ -908,9 +929,23 @@ export default function OrdersIndex() {
                 </form>
             </FormModal>
 
+            <ConfirmModal
+                open={openVerifyModal && !!selectedOrder}
+                title="Approve Payment"
+                description="Manual payment verification"
+                message={
+                    selectedOrder?.transaction
+                        ? `Confirm that you checked ${selectedOrder.transaction.payment_method?.toUpperCase() || 'the payment channel'}, reference ${selectedOrder.transaction.reference_number || '-'}, and the exact amount of ${formatPrice(selectedOrder.transaction.amount)} before approving.`
+                        : 'Confirm that you manually verified this payment before approving.'
+                }
+                confirmLabel="Approve Payment"
+                onClose={closeVerify}
+                onConfirm={confirmVerify}
+            />
+
             <FormModal
                 open={openRejectModal && !!selectedOrder}
-                title="Reject Order"
+                title="Reject Payment"
                 description="A clear rejection reason is required and will be sent to the subscriber."
                 onClose={closeReject}
                 tone="red"
@@ -937,7 +972,7 @@ export default function OrdersIndex() {
                             Cancel
                         </Button>
                         <Button type="submit" disabled={rejectForm.processing} className="rounded-xl bg-red-600 text-white hover:bg-red-700">
-                            {rejectForm.processing ? 'Rejecting...' : 'Reject Order'}
+                            {rejectForm.processing ? 'Rejecting...' : 'Reject Payment'}
                         </Button>
                     </div>
                 </form>
@@ -1040,36 +1075,146 @@ export default function OrdersIndex() {
                                 </div>
                             </div>
 
-                            <div className="border-border rounded-xl border p-4">
-                                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Transaction</p>
+                            {viewingOrder.transaction ? (
+                                needsManualVerification(viewingOrder) ? (
+                                    <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.055] p-5">
+                                        <div className="flex items-start gap-3">
+                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
+                                                <ShieldAlert className="h-5 w-5" />
+                                            </span>
 
-                                {viewingOrder.transaction ? (
-                                    <div className="mt-3 space-y-3">
-                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                                    <div>
+                                                        <h3 className="text-foreground text-sm font-semibold">Manual Payment Verification</h3>
+                                                        <p className="text-muted-foreground mt-1 text-xs leading-5">
+                                                            Check GCash or your bank account, then confirm the reference and exact amount.
+                                                        </p>
+                                                    </div>
+
+                                                    <span
+                                                        className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase ${
+                                                            paymentAmountMatches(viewingOrder)
+                                                                ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
+                                                                : 'border-red-500/20 bg-red-500/10 text-red-400'
+                                                        }`}
+                                                    >
+                                                        {paymentAmountMatches(viewingOrder) ? 'Amount matched' : 'Check amount'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                                    <div className="border-border/70 bg-card rounded-xl border p-3">
+                                                        <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">Expected</p>
+                                                        <p className="text-foreground mt-1 text-sm font-bold">{formatPrice(viewingOrder.amount)}</p>
+                                                    </div>
+
+                                                    <div className="border-border/70 bg-card rounded-xl border p-3">
+                                                        <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">Submitted</p>
+                                                        <p
+                                                            className={`mt-1 text-sm font-bold ${
+                                                                paymentAmountMatches(viewingOrder) ? 'text-emerald-400' : 'text-red-400'
+                                                            }`}
+                                                        >
+                                                            {formatPrice(viewingOrder.transaction.amount)}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="border-border/70 bg-card rounded-xl border p-3">
+                                                        <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">Method</p>
+                                                        <p className="text-foreground mt-1 text-sm font-semibold">
+                                                            {viewingOrder.transaction.payment_method?.toUpperCase() || '-'}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="border-border/70 bg-card rounded-xl border p-3">
+                                                        <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">Reference</p>
+                                                        <p className="text-foreground mt-1 break-all text-sm font-semibold">
+                                                            {viewingOrder.transaction.reference_number || '-'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="border-border/60 mt-4 grid gap-3 border-t pt-4 sm:grid-cols-2">
+                                                    <div>
+                                                        <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">Transaction Code</p>
+                                                        <p className="text-foreground mt-1 break-all text-xs font-medium">
+                                                            {viewingOrder.transaction.transaction_code}
+                                                        </p>
+                                                    </div>
+
+                                                    <div>
+                                                        <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">Status</p>
+                                                        <p className="text-foreground mt-1 text-xs font-semibold capitalize">
+                                                            {viewingOrder.transaction.status}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {viewingOrder.transaction.notes && (
+                                                    <div className="mt-4">
+                                                        <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">Notes</p>
+                                                        <p className="text-foreground mt-1 text-sm leading-6">{viewingOrder.transaction.notes}</p>
+                                                    </div>
+                                                )}
+
+                                                <div className="mt-5 flex flex-wrap gap-2">
+                                                    <Button
+                                                        type="button"
+                                                        className="rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+                                                        onClick={() => {
+                                                            closeViewDrawer();
+                                                            openVerify(viewingOrder);
+                                                        }}
+                                                    >
+                                                        <BadgeCheck className="mr-2 h-4 w-4" />
+                                                        Approve Payment
+                                                    </Button>
+
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className="rounded-xl border-red-500/20 text-red-500 hover:bg-red-500/10 hover:text-red-400"
+                                                        onClick={() => {
+                                                            closeViewDrawer();
+                                                            openReject(viewingOrder);
+                                                        }}
+                                                    >
+                                                        <XCircle className="mr-2 h-4 w-4" />
+                                                        Reject Payment
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="border-border rounded-xl border p-4">
+                                        <div className="flex items-center justify-between gap-3">
                                             <div>
-                                                <p className="text-muted-foreground text-xs">Transaction Code</p>
-                                                <p className="text-foreground mt-1 text-sm font-medium">
-                                                    {viewingOrder.transaction.transaction_code}
-                                                </p>
+                                                <p className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Payment Transaction</p>
+                                                <p className="text-foreground mt-1 text-sm font-semibold">{viewingOrder.transaction.transaction_code}</p>
                                             </div>
 
-                                            <div>
-                                                <p className="text-muted-foreground text-xs">Status</p>
-                                                <p className="text-foreground mt-1 text-sm font-medium capitalize">
-                                                    {viewingOrder.transaction.status}
-                                                </p>
-                                            </div>
+                                            <span
+                                                className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-semibold capitalize ${txStatusClass(
+                                                    viewingOrder.transaction.status,
+                                                )}`}
+                                            >
+                                                {viewingOrder.transaction.status}
+                                            </span>
+                                        </div>
 
+                                        <div className="mt-4 grid grid-cols-2 gap-4">
                                             <div>
-                                                <p className="text-muted-foreground text-xs">Payment Method</p>
+                                                <p className="text-muted-foreground text-xs">Method</p>
                                                 <p className="text-foreground mt-1 text-sm font-medium">
                                                     {viewingOrder.transaction.payment_method?.toUpperCase() || '-'}
                                                 </p>
                                             </div>
 
                                             <div>
-                                                <p className="text-muted-foreground text-xs">Reference Number</p>
-                                                <p className="text-foreground mt-1 text-sm font-medium">
+                                                <p className="text-muted-foreground text-xs">Reference</p>
+                                                <p className="text-foreground mt-1 break-all text-sm font-medium">
                                                     {viewingOrder.transaction.reference_number || '-'}
                                                 </p>
                                             </div>
@@ -1089,92 +1234,36 @@ export default function OrdersIndex() {
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <p className="text-muted-foreground text-xs">Notes</p>
-                                            <p className="text-foreground mt-1 text-sm leading-6">{viewingOrder.transaction.notes || 'No notes'}</p>
-                                        </div>
+                                        {viewingOrder.transaction.notes && (
+                                            <div className="mt-4">
+                                                <p className="text-muted-foreground text-xs">Notes</p>
+                                                <p className="text-foreground mt-1 text-sm leading-6">{viewingOrder.transaction.notes}</p>
+                                            </div>
+                                        )}
                                     </div>
-                                ) : (
-                                    <p className="text-muted-foreground mt-3 text-sm">No payment transaction yet.</p>
-                                )}
-                            </div>
+                                )
+                            ) : (
+                                <div className="border-border rounded-xl border p-4">
+                                    <p className="text-muted-foreground text-sm">No payment transaction yet.</p>
 
-                            <div className="border-border flex flex-wrap gap-3 border-t pt-5">
-                                {viewingOrder.status === 'pending' && !viewingOrder.has_transaction && (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="inline-flex items-center gap-2 rounded-xl"
-                                        onClick={() => {
-                                            closeViewDrawer();
-                                            openPayment(viewingOrder);
-                                        }}
-                                    >
-                                        <CreditCard className="h-4 w-4" />
-                                        Submit Payment
-                                    </Button>
-                                )}
-
-                                {viewingOrder.status === 'pending' && viewingOrder.has_transaction && (
-                                    <>
+                                    {viewingOrder.status === 'pending' && (
                                         <Button
                                             type="button"
                                             variant="outline"
-                                            className="inline-flex items-center gap-2 rounded-xl border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-300"
+                                            className="mt-4 inline-flex items-center gap-2 rounded-xl"
                                             onClick={() => {
                                                 closeViewDrawer();
-                                                verifyOrder(viewingOrder);
+                                                openPayment(viewingOrder);
                                             }}
                                         >
-                                            <BadgeCheck className="h-4 w-4" />
-                                            Accept
+                                            <CreditCard className="h-4 w-4" />
+                                            Submit Payment
                                         </Button>
+                                    )}
+                                </div>
+                            )}
 
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="inline-flex items-center gap-2 rounded-xl border-red-500/20 text-red-600 hover:bg-red-500/10 hover:text-red-300"
-                                            onClick={() => {
-                                                closeViewDrawer();
-                                                openReject(viewingOrder);
-                                            }}
-                                        >
-                                            <XCircle className="h-4 w-4" />
-                                            Deny
-                                        </Button>
-                                    </>
-                                )}
-
-                                {viewingOrder.status === 'paid' && (
-                                    <>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="inline-flex items-center gap-2 rounded-xl border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-300"
-                                            onClick={() => {
-                                                closeViewDrawer();
-                                                verifyOrder(viewingOrder);
-                                            }}
-                                        >
-                                            <BadgeCheck className="h-4 w-4" />
-                                            Verify
-                                        </Button>
-
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="inline-flex items-center gap-2 rounded-xl border-red-500/20 text-red-600 hover:bg-red-500/10 hover:text-red-300"
-                                            onClick={() => {
-                                                closeViewDrawer();
-                                                openReject(viewingOrder);
-                                            }}
-                                        >
-                                            <XCircle className="h-4 w-4" />
-                                            Reject
-                                        </Button>
-                                    </>
-                                )}
-
+                            <div className="border-border flex justify-end border-t pt-5">
                                 <Button
                                     type="button"
                                     variant="outline"
